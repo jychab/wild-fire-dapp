@@ -2,7 +2,12 @@
 
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconChevronDown, IconEdit, IconPlus } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconEdit,
+  IconExclamationCircle,
+  IconPlus,
+} from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,7 +15,6 @@ import { FC, useEffect, useMemo, useState } from 'react';
 import { formatLargeNumber } from '../program/utils/helper';
 import { AppHero } from '../ui/ui-layout';
 import {
-  useClaim,
   useGetAllTokenAccounts,
   useGetMintDetails,
   useGetMintMetadata,
@@ -30,7 +34,7 @@ export const CreateBtn: FC = () => {
 export interface AuthorityData {
   mint: PublicKey;
   admin: PublicKey;
-  feeCollector: PublicKey;
+  distributor: PublicKey;
   feesCollected: number;
   mutable: number;
 }
@@ -88,6 +92,7 @@ export const DashBoard: FC = () => {
         </div>
         <MainPanel data={selected} />
         <Details data={selected} />
+        <Activities data={selected} />
       </div>
     </div>
   );
@@ -129,6 +134,62 @@ const DashBoardLandingPage: FC = () => {
   );
 };
 
+const Activities: FC<PanelProps> = ({ data }) => {
+  const { data: mintQuery } = useGetMintDetails({
+    mint: data.mint,
+  });
+  const { data: allTokenAccounts } = useGetAllTokenAccounts({
+    mint: data.mint,
+  });
+  return (
+    <div className="p-4 bg-base-200 gap-4 card w-full">
+      <span className="card-title">Activities</span>
+      <div className="card bg-base-100 col-span-2 p-4 rounded">
+        <span className="card-title text-base">Top 20 Holders List</span>
+        {allTokenAccounts && mintQuery && (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Wallet</th>
+                  <th>Quantity</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allTokenAccounts
+                  .filter((x) => x.amount > 0)
+                  .sort((a, b) => b.amount - a.amount)
+                  .filter((_, index) => index < 20)
+                  .map((x, index) => (
+                    <tr key={x.address}>
+                      <th>{index + 1}</th>
+                      <td className="max-w-xs truncate hover:text-info">
+                        <Link href={`https://solana.fm/address/${x.owner}`}>
+                          {x.owner}
+                        </Link>
+                      </td>
+                      <td className="">
+                        {formatLargeNumber(x.amount / 10 ** 6)}
+                      </td>
+                      <td className="">
+                        {`${(Number(mintQuery.supply) != 0
+                          ? (x.amount / Number(mintQuery.supply)) * 100
+                          : 0
+                        ).toFixed(2)}%`}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface PanelProps {
   data: AuthorityData;
 }
@@ -158,8 +219,7 @@ const Details: FC<PanelProps> = ({ data }) => {
     return <div></div>;
   }
   const { image, metaData, description } = metaDataQuery.data;
-  const { transferFeeConfigAuthority, newerTransferFee, olderTransferFee } =
-    transferFeeConfigQuery.data;
+  const { newerTransferFee, olderTransferFee } = transferFeeConfigQuery.data;
   return (
     <div className="p-4 bg-base-200 gap-4 card w-full">
       <span className="card-title">
@@ -192,18 +252,27 @@ const Details: FC<PanelProps> = ({ data }) => {
           )}
         </div>
         <div className="flex flex-col gap-2 items-start w-1/2 text-start ">
-          <div className="grid grid-cols-2 gap-2 items-center justify-center w-full">
-            <span className="text-xs text-secondary">Name</span>
-            <span className="text-xs text-secondary">Symbol</span>
-            <span className="text-sm">{metaData.name}</span>
-            <span className="text-sm">{metaData.symbol}</span>
+          <div className="flex justify-evenly w-full items-center">
+            <div className="stat px-0 gap-2">
+              <div className="stat-title text-xs ">Name</div>
+              <span className="stat-value text-sm  truncate font-normal">
+                {metaData.name}
+              </span>
+            </div>
+            <div className="stat px-0 gap-2">
+              <span className="stat-title text-xs ">Symbol</span>
+              <span className="stat-value text-sm  truncate font-normal">
+                {metaData.symbol}
+              </span>
+            </div>
           </div>
-
           {description && (
-            <span className="text-xs text-secondary">Details</span>
-          )}
-          {description && (
-            <span className="truncate w-full text-sm">{description}</span>
+            <div className="stat px-0 gap-2">
+              <span className="stat-title text-xs ">Details</span>
+              <span className="stat-value text-sm truncate font-normal">
+                {description}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -218,22 +287,21 @@ const Details: FC<PanelProps> = ({ data }) => {
               {metaData.mint.toBase58()}
             </Link>
             <div className="stat-title text-sm md:text-base truncate">
-              Update Authority
+              Authority
             </div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${metaData.updateAuthority?.toBase58()}`}
+              href={`https://solana.fm/address/${data.admin.toBase58()}`}
             >
-              {metaData.updateAuthority?.toBase58()}
+              {data.admin.toBase58()}
             </Link>
           </div>
         </div>
         <div className="card bg-base-100 rounded col-span-4 md:col-span-2">
-          <div className="flex flex-col h-full p-4">
+          <div className="stat gap-1">
             <div className="stat-title text-sm md:text-base truncate">
               Transfer Fee
             </div>
-            <div className="stat-title text-sm md:text-base truncate">{`Current Epoch: ${currentEpoch}`}</div>
             <div className="stat-value text-base md:text-xl truncate font-normal">{`${
               currentEpoch && newerTransferFee.epoch <= currentEpoch
                 ? `${newerTransferFee.transferFeeBasisPoints / 100}%`
@@ -273,21 +341,12 @@ const Details: FC<PanelProps> = ({ data }) => {
         </div>
         <div className="card bg-base-100 col-span-4 md:col-span-2 rounded">
           <div className="stat gap-2">
-            <div className="stat-title text-sm md:text-base">Fee Collector</div>
+            <div className="stat-title text-sm md:text-base">Distributor</div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${data.feeCollector.toBase58()}`}
+              href={`https://solana.fm/address/${data.distributor.toBase58()}`}
             >
-              {data.feeCollector.toBase58()}
-            </Link>
-            <div className="stat-title text-sm md:text-base truncate">
-              Fee Config Authority
-            </div>
-            <Link
-              className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${transferFeeConfigAuthority.toBase58()}`}
-            >
-              {transferFeeConfigAuthority.toBase58()}
+              {data.distributor.toBase58()}
             </Link>
           </div>
         </div>
@@ -297,8 +356,6 @@ const Details: FC<PanelProps> = ({ data }) => {
 };
 
 export const MainPanel: FC<PanelProps> = ({ data }) => {
-  const router = useRouter();
-
   const { data: mintQuery } = useGetMintDetails({
     mint: data.mint,
   });
@@ -333,11 +390,6 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
     }
   }, [allTokenAccounts, data, transferFeeConfigData]);
 
-  const claimMutation = useClaim({
-    mint: data.mint,
-    feeCollector: data.feeCollector,
-  });
-
   return (
     <div className="p-4 bg-base-200 gap-4 card w-full">
       <span className="card-title">Overview</span>
@@ -351,45 +403,9 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
               </span>
               <span className="stat-desc text-xs">{`(Claimable: $${feesEarned.claimable})`}</span>
             </div>
-            <div className="flex gap-2 items-center">
-              <button
-                disabled={claimMutation.isPending}
-                onClick={() =>
-                  claimMutation.mutateAsync(
-                    allTokenAccounts
-                      ?.filter(
-                        (x) =>
-                          x.token_extensions.transfer_fee_amount
-                            .withheld_amount > 0
-                      )
-                      .map((x) => new PublicKey(x.address))
-                  )
-                }
-                className="btn btn-outline btn-sm rounded"
-              >
-                Claim
-              </button>
-              <button
-                onClick={() => {
-                  router.push(`/mint?mintId=${data.mint}`);
-                }}
-                className="btn btn-outline btn-sm rounded"
-              >
-                Mint
-              </button>
-              {/* <label className="cursor-pointer label gap-2">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-success"
-                  checked
-                  readOnly
-                />
-                <span className="label-text">Auto Claim Enabled</span>
-              </label> */}
-            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="card bg-base-100 col-span-2 rounded">
+            <div className="card bg-base-100 rounded">
               <div className="shadow text-right w-full">
                 <div className="stat gap-2">
                   <Link
@@ -404,48 +420,56 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
                 </div>
               </div>
             </div>
+            <div className="card bg-base-100 rounded">
+              <div className="shadow text-right w-full">
+                <div className="stat gap-2">
+                  <span className="stat-value font-normal truncate hover:text-info">
+                    {allTokenAccounts
+                      ? allTokenAccounts.filter((x) => x.amount > 0).length
+                      : 0}
+                  </span>
+                  <div className="stat-desc text-xs">total holders</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="card bg-base-100 p-4 rounded">
-          <span className="card-title text-base">Top Holders List</span>
-          {allTokenAccounts && mintQuery && (
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Wallet</th>
-                    <th>Quantity</th>
-                    <th>Percentage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allTokenAccounts
-                    .filter((x) => x.amount > 0)
-                    .sort((a, b) => b.amount - a.amount)
-                    .map((x, index) => (
-                      <tr key={x.address}>
-                        <th>{index + 1}</th>
-                        <td className="max-w-xs truncate hover:text-info">
-                          <Link href={`https://solana.fm/address/${x.owner}`}>
-                            {x.owner}
-                          </Link>
-                        </td>
-                        <td className="text-center">
-                          {formatLargeNumber(x.amount / 10 ** 6)}
-                        </td>
-                        <td className="text-center">
-                          {`${(Number(mintQuery.supply) != 0
-                            ? (x.amount / Number(mintQuery.supply)) * 100
-                            : 0
-                          ).toFixed(2)}%`}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+        <div className="card bg-base-100 p-4 rounded gap-4">
+          <div className="card-title">
+            Fee Distribution
+            <div
+              className="tooltip"
+              data-tip="Fees are automatically distributed once every hour"
+            >
+              <IconExclamationCircle />
             </div>
-          )}
+          </div>
+          <div className="dropdown dropdown-start">
+            <div
+              tabIndex={0}
+              role="button"
+              className="btn w-full max-w-sm btn-sm"
+            >
+              <span className="truncate w-4/5 max-w-xs">
+                Select your fee distribution mode
+              </span>
+              <IconChevronDown size={14} />
+            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
+            >
+              <li>
+                <a>Fee Collector Mode</a>
+              </li>
+              <li>
+                <a>Burn Mode</a>
+              </li>
+              <li>
+                <a>Referral Mode</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

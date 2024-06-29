@@ -54,14 +54,12 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
   const [description, setDescription] = useState('');
   const [fee, setFee] = useState('0');
   const [maxFee, setMaxFee] = useState('');
-  const [feeCollector, setFeeCollector] = useState('');
   const [authority, setAuthority] = useState('');
   const [totalSupply, setTotalSupply] = useState('1000000000');
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const { publicKey } = useWallet();
   useEffect(() => {
     if (publicKey) {
-      setFeeCollector(publicKey.toBase58());
       setAuthority(publicKey.toBase58());
     }
   }, [publicKey]);
@@ -111,8 +109,6 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
           setPage={setPage}
           fee={fee}
           setFee={setFee}
-          feeCollector={feeCollector}
-          setFeeCollector={setFeeCollector}
           authority={authority}
           setAuthority={setAuthority}
           totalSupply={totalSupply}
@@ -126,7 +122,6 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
           setPage={setPage}
           fee={fee}
           maxFee={maxFee}
-          feeCollector={feeCollector}
           authority={authority}
           tempImageUrl={tempImageUrl}
           name={name}
@@ -146,7 +141,6 @@ interface ReviewPageProps {
   setPage: (number: number) => void;
   fee: string;
   maxFee: string;
-  feeCollector: string;
   authority: string;
   tempImageUrl: string | null;
   name: string;
@@ -162,7 +156,6 @@ const ReviewPage: FC<ReviewPageProps> = ({
   page,
   fee,
   maxFee,
-  feeCollector,
   authority,
   symbol,
   description,
@@ -176,10 +169,8 @@ const ReviewPage: FC<ReviewPageProps> = ({
   });
   const [valid, setValid] = useState(false);
   useEffect(() => {
-    setValid(
-      !(!picture || !name || !symbol || !feeCollector || !authority || !fee)
-    );
-  }, [picture, publicKey, name, symbol, feeCollector, authority, fee]);
+    setValid(!(!picture || !name || !symbol || !authority || !fee));
+  }, [picture, publicKey, name, symbol, authority, fee]);
 
   const router = useRouter();
 
@@ -210,22 +201,36 @@ const ReviewPage: FC<ReviewPageProps> = ({
           </div>
 
           <div className="flex flex-col gap-2 items-start w-3/5 text-start ">
-            <div className="grid grid-cols-2 gap-2 items-center justify-center w-full">
-              <span className="text-xs text-secondary">Name</span>
-              <span className="text-xs text-secondary">Symbol</span>
-              <span className="text-sm">{name != '' ? name : 'undefined'}</span>
-              <span className="text-sm">
-                {symbol != '' ? symbol : 'undefined'}
-              </span>
+            <div className="flex justify-evenly w-full items-center">
+              {name && (
+                <div className="stat px-0 gap-2">
+                  <div className="stat-title text-xs ">Name</div>
+                  <span className="stat-value text-sm truncate font-normal">
+                    {name}
+                  </span>
+                </div>
+              )}
+              {symbol && (
+                <div className="stat px-0 gap-2">
+                  <span className="stat-title text-xs">Symbol</span>
+                  <span className="stat-value text-sm truncate font-normal">
+                    {symbol}
+                  </span>
+                </div>
+              )}
             </div>
             {description && (
-              <span className="text-xs text-secondary">Description</span>
+              <div className="stat px-0 gap-2">
+                <span className="stat-title text-xs">Details</span>
+                <span className="stat-value text-sm truncate font-normal">
+                  {description}
+                </span>
+              </div>
             )}
-            {description && <span className="text-sm">{description}</span>}
           </div>
         </div>
-        <div className="grid grid-cols-4 md:grid-cols-4 gap-2 ">
-          <div className="card bg-base-100 col-span-2  rounded">
+        <div className="grid grid-cols-4 gap-2 w-full">
+          <div className="card bg-base-100 col-span-4 rounded">
             <div className="stat gap-2">
               <div className="stat-title text-sm md:text-base truncate">
                 Authority
@@ -258,16 +263,6 @@ const ReviewPage: FC<ReviewPageProps> = ({
               )}
             </div>
           </div>
-          <div className="card bg-base-100 col-span-2 rounded">
-            <div className="stat gap-2">
-              <div className="stat-title text-sm md:text-base">
-                Fee Collector
-              </div>
-              <span className="stat-value text-xs md:text-sm truncate font-normal">
-                {feeCollector}
-              </span>
-            </div>
-          </div>
         </div>
         <button
           onClick={() => setPage(Math.max(1, page - 1))}
@@ -282,6 +277,7 @@ const ReviewPage: FC<ReviewPageProps> = ({
               toast.error('Missing Picture!');
               return;
             }
+            // call to backend to generate distributor
             createMutation
               .mutateAsync({
                 name: name,
@@ -290,7 +286,7 @@ const ReviewPage: FC<ReviewPageProps> = ({
                 description: description,
                 transferFee: parseFloat(fee) * 100,
                 maxTransferFee: maxFee != '' ? parseFloat(maxFee) : undefined,
-                feeCollector: new PublicKey(feeCollector),
+                distributor: new PublicKey(''),
                 authority: new PublicKey(authority),
                 totalSupply: parseFloat(totalSupply),
               })
@@ -323,8 +319,6 @@ interface SettingsAndPermissionPageProps {
   setMaxFee: (value: string) => void;
   fee: string;
   setFee: (value: string) => void;
-  feeCollector: string;
-  setFeeCollector: (value: string) => void;
   authority: string;
   setAuthority: (value: string) => void;
   totalSupply: string;
@@ -337,8 +331,6 @@ const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
   setMaxFee,
   fee,
   setFee,
-  feeCollector,
-  setFeeCollector,
   authority,
   setAuthority,
   totalSupply,
@@ -364,21 +356,6 @@ const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
             <input
               value={authority}
               onChange={(e) => setAuthority(e.target.value)}
-              type="text"
-              className="w-full"
-              placeholder=""
-            />
-          </label>
-          <span className="col-span-3 md:col-span-1 text-sm">
-            Fee Collector
-          </span>
-          <label
-            className="tooltip col-span-7 input input-bordered flex items-center w-full text-sm gap-2"
-            data-tip="Fees collected will be deposited to this wallet address"
-          >
-            <input
-              value={feeCollector}
-              onChange={(e) => setFeeCollector(e.target.value)}
               type="text"
               className="w-full"
               placeholder=""

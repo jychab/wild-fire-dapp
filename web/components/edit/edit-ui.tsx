@@ -30,7 +30,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const { publicKey } = useWallet();
   const [immutable, setImmutable] = useState(false);
-  const [feeCollector, setFeeCollector] = useState('');
   const [admin, setAdmin] = useState('');
 
   const editMutation = useEditData({ mint: new PublicKey(mintId) });
@@ -48,7 +47,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   useEffect(() => {
     if (mintTokenData && !mintTokenDataLoaded) {
       setAdmin(mintTokenData.admin.toString());
-      setFeeCollector(mintTokenData.feeCollector.toString());
       setMintTokenDataLoaded(true);
     }
   }, [mintTokenData, mintTokenDataLoaded]);
@@ -228,15 +226,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             value={admin}
             onChange={(e) => setAdmin(e.target.value)}
           />
-          <span className="text-sm">Fee Collector</span>
-          <input
-            disabled={mintTokenData?.mutable == 0}
-            type="text"
-            placeholder="fee collector"
-            className="col-span-3 input input-bordered w-full text-sm rounded"
-            value={feeCollector}
-            onChange={(e) => setFeeCollector(e.target.value)}
-          />
         </div>
         <div className="grid grid-cols-4 w-full items-center gap-4">
           <span className="text-sm ">Transfer Fee</span>
@@ -293,13 +282,13 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             </div>
           </div>
           {mintTokenData?.mutable == 1 && (
-            <span className="text-sm">Set Fees Immutable</span>
+            <span className="text-sm">Set Immutable</span>
           )}
           {mintTokenData?.mutable == 1 && (
             <input
               type="checkbox"
               className="tooltip toggle toggle-primary col-span-3"
-              data-tip="Once enabled you can no longer change your fees"
+              data-tip="Once enabled you can no longer make any changes"
               checked={immutable}
               onChange={(e) => {
                 setImmutable(e.currentTarget.checked);
@@ -321,17 +310,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               toast.error('Unable to fetch current mint metadata.');
               return;
             }
-            if (
-              !publicKey ||
-              metaData.metaData.updateAuthority?.toBase58() !==
-                publicKey.toBase58()
-            ) {
-              toast.error('You are unauthorised to do this action.');
-              return;
-            }
             await editMutation.mutateAsync({
               admin: new PublicKey(admin),
-              feeCollector: new PublicKey(feeCollector),
               immutable: immutable,
               name: name,
               symbol: symbol,

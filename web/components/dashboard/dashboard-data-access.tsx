@@ -169,13 +169,7 @@ export function useGetAllTokenAccounts({ mint }: { mint: PublicKey }) {
   });
 }
 
-export function useClaim({
-  mint,
-  feeCollector,
-}: {
-  mint: PublicKey | undefined;
-  feeCollector: PublicKey | undefined;
-}) {
+export function useClaim({ mint }: { mint: PublicKey | undefined }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
@@ -187,14 +181,12 @@ export function useClaim({
       {
         endpoint: connection.rpcEndpoint,
         mint,
-        feeCollector,
       },
     ],
     mutationFn: async (tokenAccounts: PublicKey[] | undefined) => {
       if (
         !mint ||
         !wallet.publicKey ||
-        !feeCollector ||
         !wallet.signTransaction ||
         !tokenAccounts ||
         tokenAccounts.length == 0
@@ -207,12 +199,7 @@ export function useClaim({
           tokenAccounts,
           TOKEN_2022_PROGRAM_ID
         );
-        const ix2 = await withdrawFees(
-          connection,
-          wallet.publicKey,
-          mint,
-          feeCollector
-        );
+        const ix2 = await withdrawFees(connection, wallet.publicKey, mint);
         signature = await buildAndSendTransaction(
           connection,
           [ix1, ix2],

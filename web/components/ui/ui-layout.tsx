@@ -112,15 +112,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
           <div className=" p-4 w-44 min-h-full bg-base-200 gap-4 flex flex-col justify-between">
             <div>
               <div className="flex gap-2 items-start">
-                <span className="text-lg">Navigation</span>
-                <ThemeComponent toggleTheme={toggleTheme} theme={theme} />
+                <span className="text-lg">WildFire</span>
               </div>
               <ul className="menu gap-2">
-                <li>
-                  <Link className={pathname == '/' ? 'active' : ''} href={'/'}>
-                    Home
-                  </Link>
-                </li>
                 {links.map(({ label, path }) => (
                   <li key={path}>
                     <Link
@@ -212,7 +206,7 @@ export function AppHero({
   return (
     <div className={`hero py-[32px] `}>
       <div className="hero-content text-center w-full">
-        <div className={`max-w-3xl w-full `}>
+        <div className={`max-w-2xl w-full `}>
           {typeof title === 'string' ? (
             <h1 className="text-3xl lg:text-5xl font-bold text-base-content">
               {title}

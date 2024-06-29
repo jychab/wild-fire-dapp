@@ -14,7 +14,6 @@ import { uploadImage, uploadMetadata } from '../create/create-data-access';
 import { AuthorityData } from '../dashboard/dashboard-ui';
 import {
   changeAdmin,
-  changeFeeCollector,
   changeTransferFee,
   closeFeeAccount,
   program,
@@ -32,12 +31,10 @@ interface EditMintArgs {
   fee: number;
   maxFee: number | undefined;
   immutable: boolean;
-  feeCollector: PublicKey;
   admin: PublicKey;
   previous: {
     maximumFee: bigint;
     transferFeeBasisPoints: number;
-    feeCollector: PublicKey;
     admin: PublicKey;
     metaData: TokenMetadata;
     image: string;
@@ -202,19 +199,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         if (input.previous.admin.toString() != input.admin.toString()) {
           tx.push(
             await changeAdmin(connection, wallet.publicKey, mint, input.admin)
-          );
-        }
-        if (
-          input.previous.feeCollector.toString() !=
-          input.feeCollector.toString()
-        ) {
-          tx.push(
-            await changeFeeCollector(
-              connection,
-              wallet.publicKey,
-              mint,
-              input.feeCollector
-            )
           );
         }
 

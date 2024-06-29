@@ -21,7 +21,7 @@ interface CreateMintArgs {
   description: string;
   transferFee: number;
   maxTransferFee?: number;
-  feeCollector: PublicKey;
+  distributor: PublicKey;
   authority: PublicKey;
   totalSupply: number;
 }
@@ -87,7 +87,7 @@ export function useCreateMint({ address }: { address: string | null }) {
           mintKeypair,
           mint,
           mintLen,
-          input.feeCollector,
+          input.distributor,
           input.transferFee,
           input.maxTransferFee,
           input.authority,

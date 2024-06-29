@@ -7,7 +7,6 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack } from '@solana/spl-token-metadata';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
-import { PROTOCOL } from '../const';
 import Idl from './idl/wild_fire.json';
 import { WildFire } from './types/wild_fire';
 
@@ -19,7 +18,7 @@ export async function createMint(
   mintKeypair: Keypair,
   mint: PublicKey,
   mintLen: number,
-  feeCollector: PublicKey,
+  distributor: PublicKey,
   fees: number,
   maxFee: number | undefined,
   authority: PublicKey,
@@ -36,7 +35,7 @@ export async function createMint(
   const ix2 = await program(connection)
     .methods.createMint({
       admin: authority,
-      feeCollector: feeCollector,
+      distributor: distributor,
       transferFeeArgs: {
         feeBasisPts: fees,
         maxFee: maxFee
@@ -45,6 +44,7 @@ export async function createMint(
       },
     })
     .accounts({
+      distributor: distributor,
       mint: mint,
       payer: payer,
     })
@@ -105,26 +105,11 @@ export async function issueMint(
 export async function withdrawFees(
   connection: Connection,
   payer: PublicKey,
-  mint: PublicKey,
-  feeCollector: PublicKey
+  mint: PublicKey
 ) {
   const [authority] = PublicKey.findProgramAddressSync(
     [Buffer.from('authority'), mint.toBuffer()],
     program(connection).programId
-  );
-
-  const protocolMintTokenAccount = getAssociatedTokenAddressSync(
-    mint,
-    PROTOCOL,
-    true,
-    TOKEN_2022_PROGRAM_ID
-  );
-
-  const feeCollectorMintTokenAccount = getAssociatedTokenAddressSync(
-    mint,
-    feeCollector,
-    true,
-    TOKEN_2022_PROGRAM_ID
   );
 
   const authorityMintTokenAccount = getAssociatedTokenAddressSync(
@@ -140,8 +125,6 @@ export async function withdrawFees(
       payer: payer,
       mint: mint,
       authorityMintTokenAccount: authorityMintTokenAccount,
-      protocolMintTokenAccount: protocolMintTokenAccount,
-      feeCollectorMintTokenAccount: feeCollectorMintTokenAccount,
     })
     .instruction();
   return ix;
@@ -163,27 +146,6 @@ export async function changeTransferFee(
     .accounts({
       payer: payer,
       mint: mint,
-      authority: authority,
-    })
-    .instruction();
-
-  return ix;
-}
-
-export async function changeFeeCollector(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey,
-  newFeeCollector: PublicKey
-) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
-    program(connection).programId
-  );
-  const ix = await program(connection)
-    .methods.changeFeeCollector(newFeeCollector)
-    .accounts({
-      payer: payer,
       authority: authority,
     })
     .instruction();

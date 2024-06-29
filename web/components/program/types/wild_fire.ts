@@ -35,27 +35,6 @@ export type WildFire = {
       ];
     },
     {
-      name: 'changeFeeCollector';
-      discriminator: [137, 128, 77, 210, 95, 153, 82, 253];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'authority';
-          writable: true;
-        }
-      ];
-      args: [
-        {
-          name: 'newFeeCollector';
-          type: 'pubkey';
-        }
-      ];
-    },
-    {
       name: 'changeTransferFee';
       discriminator: [80, 16, 175, 186, 185, 22, 46, 194];
       accounts: [
@@ -135,6 +114,10 @@ export type WildFire = {
               }
             ];
           };
+        },
+        {
+          name: 'distributor';
+          writable: true;
         },
         {
           name: 'protocolWallet';
@@ -226,6 +209,53 @@ export type WildFire = {
       ];
     },
     {
+      name: 'distributeFees';
+      discriminator: [120, 56, 27, 7, 53, 176, 113, 186];
+      accounts: [
+        {
+          name: 'payer';
+          writable: true;
+          signer: true;
+        },
+        {
+          name: 'mint';
+        },
+        {
+          name: 'authority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+              },
+              {
+                kind: 'account';
+                path: 'mint';
+              }
+            ];
+          };
+        },
+        {
+          name: 'authorityMintTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'destinationMintTokenAccount';
+          writable: true;
+        },
+        {
+          name: 'tokenProgramMint';
+          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        }
+      ];
+      args: [
+        {
+          name: 'amount';
+          type: 'u64';
+        }
+      ];
+    },
+    {
       name: 'issueMint';
       discriminator: [32, 116, 128, 230, 104, 245, 249, 124];
       accounts: [
@@ -275,76 +305,6 @@ export type WildFire = {
         {
           name: 'amount';
           type: 'u64';
-        }
-      ];
-    },
-    {
-      name: 'setProtocolFee';
-      discriminator: [173, 239, 83, 242, 136, 43, 144, 217];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'protocolFeeConfig';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [99, 111, 110, 102, 105, 103];
-              },
-              {
-                kind: 'const';
-                value: [
-                  89,
-                  214,
-                  188,
-                  20,
-                  127,
-                  43,
-                  23,
-                  54,
-                  204,
-                  20,
-                  185,
-                  59,
-                  190,
-                  189,
-                  74,
-                  135,
-                  156,
-                  126,
-                  14,
-                  89,
-                  17,
-                  93,
-                  34,
-                  58,
-                  229,
-                  244,
-                  244,
-                  93,
-                  146,
-                  89,
-                  95,
-                  247
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'systemProgram';
-          address: '11111111111111111111111111111111';
-        }
-      ];
-      args: [
-        {
-          name: 'feeBasisPts';
-          type: 'u16';
         }
       ];
     },
@@ -454,66 +414,6 @@ export type WildFire = {
           writable: true;
         },
         {
-          name: 'protocolFeeConfig';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [99, 111, 110, 102, 105, 103];
-              },
-              {
-                kind: 'const';
-                value: [
-                  89,
-                  214,
-                  188,
-                  20,
-                  127,
-                  43,
-                  23,
-                  54,
-                  204,
-                  20,
-                  185,
-                  59,
-                  190,
-                  189,
-                  74,
-                  135,
-                  156,
-                  126,
-                  14,
-                  89,
-                  17,
-                  93,
-                  34,
-                  58,
-                  229,
-                  244,
-                  244,
-                  93,
-                  146,
-                  89,
-                  95,
-                  247
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'protocolWallet';
-          address: '73hCTYpoZNdFiwbh2PrW99ykAyNcQVfUwPMUhu9ogNTg';
-        },
-        {
-          name: 'protocolMintTokenAccount';
-          writable: true;
-        },
-        {
-          name: 'feeCollectorMintTokenAccount';
-          writable: true;
-        },
-        {
           name: 'tokenProgramMint';
           address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
         },
@@ -533,10 +433,6 @@ export type WildFire = {
     {
       name: 'authority';
       discriminator: [36, 108, 254, 18, 167, 144, 27, 36];
-    },
-    {
-      name: 'protocolFeeConfig';
-      discriminator: [81, 109, 12, 19, 140, 182, 21, 238];
     }
   ];
   errors: [
@@ -618,7 +514,7 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'feeCollector';
+            name: 'distributor';
             type: 'pubkey';
           },
           {
@@ -638,7 +534,7 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'feeCollector';
+            name: 'distributor';
             type: 'pubkey';
           },
           {
@@ -648,22 +544,6 @@ export type WildFire = {
                 name: 'transferFeeArgs';
               };
             };
-          }
-        ];
-      };
-    },
-    {
-      name: 'protocolFeeConfig';
-      type: {
-        kind: 'struct';
-        fields: [
-          {
-            name: 'bump';
-            type: 'u8';
-          },
-          {
-            name: 'feeBasisPts';
-            type: 'u16';
           }
         ];
       };
