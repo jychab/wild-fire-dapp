@@ -247,7 +247,7 @@ export function AppHero({
   subtitle: ReactNode;
 }) {
   return (
-    <div className={`hero py-[32px] `}>
+    <div className={`hero py-[32px]`}>
       <div className="hero-content text-center w-full">
         <div className={`w-full items-center flex flex-col`}>
           {typeof title === 'string' ? (

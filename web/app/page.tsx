@@ -2,7 +2,13 @@
 
 import { AppHero } from '@/components/ui/ui-layout';
 import Image from 'next/image';
-import HowItWorks from '.././images/howitworks.png';
+import step1 from '.././images/How it works-1.png';
+
+import step2 from '.././images/How it works-2.png';
+
+import step3 from '.././images/How it works-3.png';
+
+import step4 from '.././images/How it works-4.png';
 
 export default function Page() {
   return (
@@ -32,13 +38,19 @@ export default function Page() {
         </div>
       }
       children={
-        <div className="stats shadow py-6">
-          <Image
-            src={HowItWorks}
-            alt={'how it works'}
-            width={1200}
-            height={800}
-          />
+        <div className="carousel carousel-center rounded-box">
+          <div id="item1" className="carousel-item bg-base-content">
+            <Image src={step1} alt="Pizza" width={250} />
+          </div>
+          <div id="item2" className="carousel-item">
+            <Image src={step2} alt="Pizza" width={250} />
+          </div>
+          <div id="item3" className="carousel-item">
+            <Image src={step3} alt="Pizza" width={250} />
+          </div>
+          <div id="item4" className="carousel-item">
+            <Image src={step4} alt="Pizza" width={250} />
+          </div>
         </div>
       }
     />
