@@ -24,7 +24,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'gateway.irys.xyz',
+        hostname: '*',
       },
     ],
   },

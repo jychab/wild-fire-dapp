@@ -1,16 +1,18 @@
 'use client';
 
 import { ReactNode, Suspense, useEffect, useRef } from 'react';
-import { WalletButton } from '../solana/solana-provider';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useLocalStorage } from '@solana/wallet-adapter-react';
+import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
+import { signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
-import logodark from '../../images/logo-dark.png';
-import logolight from '../../images/logo-light.png';
+import logo from '../../images/logo.png';
+import { auth } from '../firebase/firebase';
+import { createLoginMessage, verifyAndGetToken } from '../firebase/functions';
 import { SocialComponent, ThemeComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
@@ -26,10 +28,54 @@ export function UiLayout({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const links: { label: string; path: string }[] = [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Create', path: '/create' },
+    // { label: 'Dashboard', path: '/dashboard' },
+    // { label: 'Create', path: '/create' },
   ];
   const pathname = usePathname();
+
+  const { publicKey, signMessage, disconnect } = useWallet();
+  const signOut = async () => {
+    if (auth.currentUser) {
+      await auth.signOut();
+    }
+    if (publicKey) {
+      await disconnect();
+    }
+  };
+  const handleLogin = async (
+    publicKey: PublicKey,
+    signMessage: (message: Uint8Array) => Promise<Uint8Array>
+  ) => {
+    if (
+      (auth.currentUser && publicKey.toBase58() !== auth.currentUser.uid) ||
+      !auth.currentUser ||
+      auth.currentUser.isAnonymous
+    ) {
+      try {
+        let currentUser = auth.currentUser;
+        if (!currentUser) {
+          currentUser = (await signInAnonymously(auth)).user;
+        }
+        const sessionKey = await currentUser.getIdToken();
+        const message = createLoginMessage(sessionKey);
+        const output = await signMessage(new TextEncoder().encode(message));
+        const token = await verifyAndGetToken(publicKey, output);
+        // Sign in with Firebase Authentication using a custom token.
+        await signInWithCustomToken(auth, token);
+      } catch (error) {
+        signOut();
+        console.log(error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (auth.currentUser == null && publicKey && signMessage) {
+      handleLogin(publicKey, signMessage);
+    } else if (auth.currentUser && !publicKey) {
+      signOut();
+    }
+  }, [auth.currentUser, publicKey]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -62,12 +108,8 @@ export function UiLayout({ children }: { children: ReactNode }) {
               className="hidden md:flex px-4 items-center gap-2 w-[480px]"
               href="/"
             >
-              {theme === 'cupcake' ? (
-                <Image width={50} src={logolight} alt={'logo'} />
-              ) : (
-                <Image width={50} src={logodark} alt={'logo'} />
-              )}
-              <span className="text-lg font-bold">WildFire</span>
+              <span className="text-2xl font-bold uppercase">HashFeed</span>
+              <Image src={logo} alt={'logo'} width={30} height={30} />
             </Link>
             <div className="hidden md:flex w-full">
               <ul className="menu menu-horizontal gap-2">
@@ -84,10 +126,10 @@ export function UiLayout({ children }: { children: ReactNode }) {
               </ul>
             </div>
             <div className="navbar-end w-full gap-4">
-              <div className="hidden md:flex">
+              <div className="hidden">
                 <ThemeComponent toggleTheme={toggleTheme} theme={theme} />
               </div>
-              <WalletButton />
+              {/* <WalletButton /> */}
             </div>
           </div>
           <div className="flex-grow mx-4 w-full mx-auto">
@@ -111,8 +153,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
           />
           <div className=" p-4 w-44 min-h-full bg-base-200 gap-4 flex flex-col justify-between">
             <div>
-              <div className="flex gap-2 items-start">
-                <span className="text-lg">WildFire</span>
+              <div className="flex gap-1 items-center">
+                <span className="text-xl font-bold uppercase">HashFeed</span>
+                <Image src={logo} alt={'logo'} width={25} height={25} />
               </div>
               <ul className="menu gap-2">
                 {links.map(({ label, path }) => (
@@ -206,9 +249,9 @@ export function AppHero({
   return (
     <div className={`hero py-[32px] `}>
       <div className="hero-content text-center w-full">
-        <div className={`max-w-2xl w-full `}>
+        <div className={`w-full items-center flex flex-col`}>
           {typeof title === 'string' ? (
-            <h1 className="text-3xl lg:text-5xl font-bold text-base-content">
+            <h1 className="max-w-3xl text-3xl lg:text-5xl font-bold text-base-content">
               {title}
             </h1>
           ) : (

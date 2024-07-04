@@ -1,18 +1,25 @@
 'use client';
 
-import { WebIrys } from '@irys/sdk';
 import { ExtensionType, getMintLen } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Keypair, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation } from '@tanstack/react-query';
+import {
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  uploadString,
+} from 'firebase/storage';
 import toast from 'react-hot-toast';
+import { storage } from '../firebase/firebase';
+import { getDistributor } from '../firebase/functions';
 import {
   createMint,
   createMintMetadata,
   issueMint,
 } from '../program/instructions';
-import { buildAndSendTransaction } from '../program/utils/transactionBuilder';
 import { useTransactionToast } from '../ui/ui-layout';
+import { buildAndSendTransaction } from '../utils/transactionBuilder';
 
 interface CreateMintArgs {
   name: string;
@@ -21,9 +28,6 @@ interface CreateMintArgs {
   description: string;
   transferFee: number;
   maxTransferFee?: number;
-  distributor: PublicKey;
-  authority: PublicKey;
-  totalSupply: number;
 }
 
 export function useCreateMint({ address }: { address: string | null }) {
@@ -42,58 +46,34 @@ export function useCreateMint({ address }: { address: string | null }) {
     mutationFn: async (input: CreateMintArgs) => {
       let signature: TransactionSignature = '';
       try {
-        const webIrys = new WebIrys({
-          network: 'mainnet',
-          token: 'solana',
-          wallet: {
-            rpcUrl: connection.rpcEndpoint,
-            name: 'solana',
-            provider: wallet,
-          },
-        });
-        await webIrys.ready();
-        toast('Checking if there is sufficient funds to upload metadata...');
-        const balance = (
-          await webIrys.getBalance(wallet.publicKey!.toBase58())
-        ).toNumber();
-        const price =
-          (await webIrys.getPrice(input.picture.size)).toNumber() + 10000; // 10000 if the estimated number of bytes for description + imageurl
-        if (balance < price) {
-          toast(
-            'Insufficient funds, topping up required. This might take awhile please wait...'
-          );
-          await webIrys.fund(price);
-        }
+        const mintKeypair = Keypair.generate();
+        const mint = mintKeypair.publicKey;
+        const distributor = await getDistributor(mint.toBase58());
         toast('Uploading image metadata...');
-        const imageUrl = await uploadImage(webIrys, input.picture);
+        const imageUrl = await uploadImage(input.picture, mint);
         toast('Uploading text metadata...');
         const uri = await uploadMetadata(
-          webIrys,
           input.name,
           input.symbol,
           input.description,
-          imageUrl
+          imageUrl,
+          mint
         );
-        toast('Creating Mint...');
-        const mintKeypair = Keypair.generate();
-        const mint = mintKeypair.publicKey;
         const mintLen = getMintLen([
           ExtensionType.TransferFeeConfig,
           ExtensionType.MetadataPointer,
         ]);
-
         let ix = await createMint(
           connection,
           mintKeypair,
           mint,
           mintLen,
-          input.distributor,
+          new PublicKey(distributor),
           input.transferFee,
           input.maxTransferFee,
-          input.authority,
+          wallet.publicKey!,
           wallet.publicKey!
         );
-
         ix.push(
           await createMintMetadata(
             connection,
@@ -107,14 +87,8 @@ export function useCreateMint({ address }: { address: string | null }) {
             wallet.publicKey!
           )
         );
-
         ix.push(
-          await issueMint(
-            connection,
-            input.totalSupply,
-            mint,
-            wallet.publicKey!
-          )
+          await issueMint(connection, 1000000000, mint, wallet.publicKey!)
         );
 
         signature = await buildAndSendTransaction(
@@ -125,7 +99,6 @@ export function useCreateMint({ address }: { address: string | null }) {
           'confirmed',
           [mintKeypair]
         );
-
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
@@ -144,11 +117,11 @@ export function useCreateMint({ address }: { address: string | null }) {
 }
 
 export async function uploadMetadata(
-  webIrys: WebIrys,
   name: string,
   symbol: string,
   description: string,
-  image: string
+  image: string,
+  mint: PublicKey
 ) {
   const payload = {
     name,
@@ -156,12 +129,13 @@ export async function uploadMetadata(
     description,
     image,
   };
-
-  const receipt = await webIrys.upload(JSON.stringify(payload));
-  return `https://gateway.irys.xyz/${receipt.id}`;
+  const payloadRef = ref(storage, `${mint.toBase58()}/${crypto.randomUUID()}`);
+  await uploadString(payloadRef, JSON.stringify(payload));
+  return await getDownloadURL(payloadRef);
 }
 
-export async function uploadImage(webIrys: WebIrys, picture: File) {
-  const receipt = await webIrys.uploadFile(picture);
-  return `https://gateway.irys.xyz/${receipt.id}`;
+export async function uploadImage(picture: File, mint: PublicKey) {
+  const imageRef = ref(storage, `${mint.toBase58()}/${crypto.randomUUID()}`);
+  await uploadBytes(imageRef, picture);
+  return await getDownloadURL(imageRef);
 }

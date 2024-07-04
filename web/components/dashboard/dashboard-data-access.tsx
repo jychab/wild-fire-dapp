@@ -3,18 +3,14 @@
 import {
   Mint,
   TOKEN_2022_PROGRAM_ID,
-  createHarvestWithheldTokensToMintInstruction,
   getMint,
   getTokenMetadata,
   getTransferFeeConfig,
 } from '@solana/spl-token';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, TransactionSignature } from '@solana/web3.js';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { program, withdrawFees } from '../program/instructions';
-import { buildAndSendTransaction } from '../program/utils/transactionBuilder';
-import { useTransactionToast } from '../ui/ui-layout';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
+import { useQuery } from '@tanstack/react-query';
+import { program } from '../program/instructions';
 
 export function useGetMintTransferFeeConfig({
   mint,
@@ -66,7 +62,6 @@ export function useGetMintMetadata({ mint }: { mint: PublicKey }) {
 
 export function useGetToken({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection();
-
   return useQuery({
     queryKey: ['get-token', { endpoint: connection.rpcEndpoint, address }],
     queryFn: () =>
@@ -87,12 +82,12 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         })
         .then((result) => {
           if (result.length > 0) {
-            return result.map((acc) =>
-              program(connection).coder.accounts.decode(
-                'authority',
+            return result.map((acc) => {
+              return program(connection).coder.accounts.decode(
+                'Authority',
                 acc.account.data
-              )
-            );
+              );
+            });
           } else {
             return null;
           }
@@ -166,74 +161,5 @@ export function useGetAllTokenAccounts({ mint }: { mint: PublicKey }) {
       return Array.from(allTokenAccounts);
     },
     staleTime: 1000 * 5 * 60,
-  });
-}
-
-export function useClaim({ mint }: { mint: PublicKey | undefined }) {
-  const { connection } = useConnection();
-  const transactionToast = useTransactionToast();
-  const wallet = useWallet();
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationKey: [
-      'claim-fees',
-      {
-        endpoint: connection.rpcEndpoint,
-        mint,
-      },
-    ],
-    mutationFn: async (tokenAccounts: PublicKey[] | undefined) => {
-      if (
-        !mint ||
-        !wallet.publicKey ||
-        !wallet.signTransaction ||
-        !tokenAccounts ||
-        tokenAccounts.length == 0
-      )
-        return;
-      let signature: TransactionSignature = '';
-      try {
-        const ix1 = createHarvestWithheldTokensToMintInstruction(
-          mint,
-          tokenAccounts,
-          TOKEN_2022_PROGRAM_ID
-        );
-        const ix2 = await withdrawFees(connection, wallet.publicKey, mint);
-        signature = await buildAndSendTransaction(
-          connection,
-          [ix1, ix2],
-          wallet.publicKey,
-          wallet.signTransaction,
-          'confirmed'
-        );
-        return signature;
-      } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error} ` + signature);
-        return;
-      }
-    },
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
-        return Promise.all([
-          client.invalidateQueries({
-            queryKey: [
-              'get-all-token-accounts',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-token',
-              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
-            ],
-          }),
-        ]);
-      }
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${error}`);
-    },
   });
 }

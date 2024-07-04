@@ -12,8 +12,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useState } from 'react';
-import { formatLargeNumber } from '../program/utils/helper';
 import { AppHero } from '../ui/ui-layout';
+import { formatLargeNumber } from '../utils/helper';
 import {
   useGetAllTokenAccounts,
   useGetMintDetails,
@@ -45,6 +45,7 @@ export const DashBoard: FC = () => {
   const [selected, setSelected] = useState<AuthorityData>();
 
   useEffect(() => {
+    console.log(data);
     if (!selected && data && data.length > 0) {
       setSelected(data[0]);
     }
@@ -170,9 +171,7 @@ const Activities: FC<PanelProps> = ({ data }) => {
                           {x.owner}
                         </Link>
                       </td>
-                      <td className="">
-                        {formatLargeNumber(x.amount / 10 ** 6)}
-                      </td>
+                      <td className="">{formatLargeNumber(x.amount)}</td>
                       <td className="">
                         {`${(Number(mintQuery.supply) != 0
                           ? (x.amount / Number(mintQuery.supply)) * 100
@@ -376,15 +375,14 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
       );
       return {
         total:
-          (mintWithheldFees +
-            tokenAccountWithheldFees +
-            Number(data.feesCollected)) /
-          10 ** 6,
-        claimable: (mintWithheldFees + tokenAccountWithheldFees) / 10 ** 6,
+          mintWithheldFees +
+          tokenAccountWithheldFees +
+          Number(data.feesCollected),
+        claimable: mintWithheldFees + tokenAccountWithheldFees,
       };
     } else {
       return {
-        total: data.feesCollected ? Number(data.feesCollected) / 10 ** 6 : 0,
+        total: data.feesCollected ? Number(data.feesCollected) : 0,
         claimable: 0,
       };
     }
@@ -397,9 +395,9 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
         <div className="flex flex-col gap-4">
           <div className="card gap-4 bg-base-100 rounded p-4">
             <div className="stat gap-2 p-0">
-              <div className="stat-title text-xs">Total Fees</div>
+              <div className="stat-title text-xs">Total Fees Generated</div>
               <span className="stat-value font-normal truncate">
-                {`$${feesEarned.total}`}
+                {`${feesEarned.total}`}
               </span>
               <span className="stat-desc text-xs">{`(Claimable: $${feesEarned.claimable})`}</span>
             </div>
@@ -413,7 +411,7 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
                     href={`https://solana.fm/address/${mintQuery?.address}`}
                   >
                     {mintQuery
-                      ? formatLargeNumber(Number(mintQuery.supply) / 10 ** 6)
+                      ? formatLargeNumber(Number(mintQuery.supply))
                       : 0}
                   </Link>
                   <div className="stat-desc text-xs">in circulation</div>

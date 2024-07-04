@@ -89,10 +89,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
           Number.MAX_SAFE_INTEGER
       ) {
         setMaxFee(
-          (
-            Number(transferFeeConfig.newerTransferFee.maximumFee) /
-            10 ** 6
-          ).toString()
+          Number(transferFeeConfig.newerTransferFee.maximumFee).toString()
         );
         setShowMaxFee(true);
       }

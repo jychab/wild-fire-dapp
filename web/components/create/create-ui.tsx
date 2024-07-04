@@ -1,10 +1,9 @@
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { formatLargeNumber } from '../program/utils/helper';
+import { formatLargeNumber } from '../utils/helper';
 import { useCreateMint } from './create-data-access';
 
 interface ProgressBarProps {
@@ -18,7 +17,7 @@ export const ProgressBar: FC<ProgressBarProps> = ({ page, setPage }) => {
       <li
         onClick={() => page >= 1 && setPage(1)}
         className={`step hover:cursor-pointer ${
-          page >= 1 ? 'step-primary step-info' : 'step-error'
+          page >= 1 ? 'step-primary' : 'step-neutral'
         } text-sm`}
       >
         Details
@@ -26,15 +25,15 @@ export const ProgressBar: FC<ProgressBarProps> = ({ page, setPage }) => {
       <li
         onClick={() => page >= 2 && setPage(2)}
         className={`step hover:cursor-pointer ${
-          page >= 2 ? 'step-primary step-info' : 'step-neutral'
+          page >= 2 ? 'step-primary' : 'step-neutral'
         } text-sm`}
       >
-        Settings & Permission
+        Settings
       </li>
       <li
         onClick={() => page >= 3 && setPage(3)}
         className={`step hover:cursor-pointer ${
-          page >= 3 ? 'step-primary step-info' : 'step-neutral'
+          page >= 3 ? 'step-primary' : 'step-neutral'
         } text-sm`}
       >
         Review
@@ -54,15 +53,8 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
   const [description, setDescription] = useState('');
   const [fee, setFee] = useState('0');
   const [maxFee, setMaxFee] = useState('');
-  const [authority, setAuthority] = useState('');
-  const [totalSupply, setTotalSupply] = useState('1000000000');
+  const [publicSalePercentage, setPublicSalePercentage] = useState('80');
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
-  const { publicKey } = useWallet();
-  useEffect(() => {
-    if (publicKey) {
-      setAuthority(publicKey.toBase58());
-    }
-  }, [publicKey]);
 
   const handlePictureChange = (e: any) => {
     const selectedFile = e.target.files[0];
@@ -109,10 +101,8 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
           setPage={setPage}
           fee={fee}
           setFee={setFee}
-          authority={authority}
-          setAuthority={setAuthority}
-          totalSupply={totalSupply}
-          setTotalSupply={setTotalSupply}
+          publicSalePercentage={publicSalePercentage}
+          setPublicSalePercentage={setPublicSalePercentage}
         />
       );
     case 3:
@@ -122,13 +112,12 @@ export const CreatePanel: FC<CreatePanelProps> = ({ page, setPage }) => {
           setPage={setPage}
           fee={fee}
           maxFee={maxFee}
-          authority={authority}
           tempImageUrl={tempImageUrl}
           name={name}
           symbol={symbol}
           description={description}
           picture={picture}
-          totalSupply={totalSupply}
+          publicSalePercentage={publicSalePercentage}
         />
       );
     default:
@@ -141,13 +130,12 @@ interface ReviewPageProps {
   setPage: (number: number) => void;
   fee: string;
   maxFee: string;
-  authority: string;
   tempImageUrl: string | null;
   name: string;
   symbol: string;
   description: string;
   picture: File | null;
-  totalSupply: string;
+  publicSalePercentage: string;
 }
 
 const ReviewPage: FC<ReviewPageProps> = ({
@@ -156,12 +144,11 @@ const ReviewPage: FC<ReviewPageProps> = ({
   page,
   fee,
   maxFee,
-  authority,
   symbol,
   description,
   setPage,
   picture,
-  totalSupply,
+  publicSalePercentage,
 }) => {
   const { publicKey } = useWallet();
   const createMutation = useCreateMint({
@@ -169,28 +156,28 @@ const ReviewPage: FC<ReviewPageProps> = ({
   });
   const [valid, setValid] = useState(false);
   useEffect(() => {
-    setValid(!(!picture || !name || !symbol || !authority || !fee));
-  }, [picture, publicKey, name, symbol, authority, fee]);
+    setValid(!(!picture || !name || !symbol || !fee));
+  }, [picture, publicKey, name, symbol, fee]);
 
   const router = useRouter();
 
   return (
     <div className="flex flex-col gap-4 my-4 items-center">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        Thats it! You are now ready to create your own token.
+        Thats it! You are now ready to create your account.
       </span>
       <span className="text-xs md:text-sm lg:text-base w-3/4">
         Double check all details are accurate.
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full bg-base-200 border border-base-content rounded">
         <span>Review</span>
-        <div className="flex flex-row w-full gap-4 py-4 items-start border-y border-base-content">
+        <div className="flex flex-row w-full gap-4 py-4 items-start border-t border-base-content">
           <div className="flex w-32 h-32 lg:w-40 lg:h-40 items-center justify-center">
             {tempImageUrl && (
               <div className="relative h-full w-full">
                 <Image
                   priority={true}
-                  className={`rounded object-cover`}
+                  className={`rounded-full object-cover`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   src={tempImageUrl}
@@ -199,11 +186,10 @@ const ReviewPage: FC<ReviewPageProps> = ({
               </div>
             )}
           </div>
-
-          <div className="flex flex-col gap-2 items-start w-3/5 text-start ">
+          <div className="flex flex-col items-start w-1/2 text-start ">
             <div className="flex justify-evenly w-full items-center">
               {name && (
-                <div className="stat px-0 gap-2">
+                <div className="stat px-0 gap-1">
                   <div className="stat-title text-xs ">Name</div>
                   <span className="stat-value text-sm truncate font-normal">
                     {name}
@@ -211,7 +197,7 @@ const ReviewPage: FC<ReviewPageProps> = ({
                 </div>
               )}
               {symbol && (
-                <div className="stat px-0 gap-2">
+                <div className="stat px-0 gap-1">
                   <span className="stat-title text-xs">Symbol</span>
                   <span className="stat-value text-sm truncate font-normal">
                     {symbol}
@@ -220,7 +206,7 @@ const ReviewPage: FC<ReviewPageProps> = ({
               )}
             </div>
             {description && (
-              <div className="stat px-0 gap-2">
+              <div className="stat px-0 gap-1">
                 <span className="stat-title text-xs">Details</span>
                 <span className="stat-value text-sm truncate font-normal">
                   {description}
@@ -229,28 +215,8 @@ const ReviewPage: FC<ReviewPageProps> = ({
             )}
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2 w-full">
-          <div className="card bg-base-100 col-span-4 rounded">
-            <div className="stat gap-2">
-              <div className="stat-title text-sm md:text-base truncate">
-                Authority
-              </div>
-              <span className="stat-value text-xs md:text-sm truncate font-normal">
-                {authority}
-              </span>
-            </div>
-          </div>
-          <div className="card bg-base-100 rounded justify-center col-span-2">
-            <div className="stat ">
-              <div className="stat-title text-sm md:text-base truncate">
-                Total Supply
-              </div>
-              <div className="stat-value text-base truncate font-normal">{`${formatLargeNumber(
-                totalSupply
-              )}`}</div>
-            </div>
-          </div>
-          <div className="card bg-base-100 rounded justify-center col-span-2">
+        <div className="grid grid-cols-2 gap-2 w-full">
+          <div className="card bg-base-100 col-span-2 rounded justify-center">
             <div className="stat ">
               <div className="stat-title text-sm md:text-base truncate">
                 Transfer Fee
@@ -261,6 +227,24 @@ const ReviewPage: FC<ReviewPageProps> = ({
                   maxFee
                 )}`}</div>
               )}
+            </div>
+          </div>
+          <div className="card bg-base-100 rounded justify-center">
+            <div className="stat ">
+              <div className="stat-title text-sm md:text-base truncate">
+                Public Allocation
+              </div>
+              <div className="stat-value text-base truncate font-normal">{`${publicSalePercentage}%`}</div>
+            </div>
+          </div>
+          <div className="card bg-base-100 rounded justify-center">
+            <div className="stat ">
+              <div className="stat-title text-sm md:text-base truncate">
+                Own Allocation
+              </div>
+              <div className="stat-value text-base truncate font-normal">{`${
+                100 - parseFloat(publicSalePercentage)
+              }%`}</div>
             </div>
           </div>
         </div>
@@ -286,9 +270,6 @@ const ReviewPage: FC<ReviewPageProps> = ({
                 description: description,
                 transferFee: parseFloat(fee) * 100,
                 maxTransferFee: maxFee != '' ? parseFloat(maxFee) : undefined,
-                distributor: new PublicKey(''),
-                authority: new PublicKey(authority),
-                totalSupply: parseFloat(totalSupply),
               })
               .then(() => router.push('/dashboard'));
           }}
@@ -319,10 +300,8 @@ interface SettingsAndPermissionPageProps {
   setMaxFee: (value: string) => void;
   fee: string;
   setFee: (value: string) => void;
-  authority: string;
-  setAuthority: (value: string) => void;
-  totalSupply: string;
-  setTotalSupply: (value: string) => void;
+  publicSalePercentage: string;
+  setPublicSalePercentage: (value: string) => void;
 }
 const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
   page,
@@ -331,66 +310,28 @@ const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
   setMaxFee,
   fee,
   setFee,
-  authority,
-  setAuthority,
-  totalSupply,
-  setTotalSupply,
+  publicSalePercentage,
+  setPublicSalePercentage,
 }) => {
   const [showMaxFee, setShowMaxFee] = useState(maxFee != '');
   return (
     <div className="flex flex-col gap-4 my-4 items-center">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        Collect fees whenever your token is used.
+        Earn fees whenever your account is shared.
       </span>
       <span className="text-xs md:text-sm lg:text-base w-3/4">
-        Set your desired fees and designate a wallet to collect fees.
+        Whenever your account is shared, the fees collected from the recipient
+        will be transferred to sharer.
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full border border-base-content rounded bg-base-200">
-        <span>Configure your token settings</span>
-        <div className="border-t border-base-content grid grid-cols-10 md:grid-cols-8 items-center gap-4 py-4 w-full">
-          <span className="col-span-3 md:col-span-1 text-sm">Authority</span>
-          <label
-            className="tooltip col-span-7 input input-bordered flex items-center w-full text-sm gap-2"
-            data-tip="This authority have the permission to change your token settings."
-          >
-            <input
-              value={authority}
-              onChange={(e) => setAuthority(e.target.value)}
-              type="text"
-              className="w-full"
-              placeholder=""
-            />
-          </label>
-          <span className="col-span-3 md:col-span-1 text-sm ">
-            Total Supply
-          </span>
-          <label
-            className="tooltip col-span-7 flex items-center input input-bordered w-full text-sm gap-2"
-            data-tip="Max amount of tokens"
-          >
-            <div className="w-full justify-start flex items-center">
-              <input
-                value={totalSupply}
-                onChange={(e) => {
-                  setTotalSupply(e.target.value);
-                }}
-                type="number"
-                className="w-full"
-                placeholder=""
-              />
-            </div>
-            <span className="stat-desc">token</span>
-          </label>
-        </div>
-
-        <span>Transfer Fees</span>
-        <div className="border-t border-base-content grid grid-cols-10 md:grid-cols-8 items-center gap-4 py-4 w-full">
-          <span className="col-span-3 md:col-span-1 text-sm ">
+        <span>Fee Configuration</span>
+        <div className="border-t border-base-content grid grid-cols-10 items-center gap-4 py-4 w-full">
+          <span className="col-span-3 md:col-span-2 text-sm ">
             Transfer Fee
           </span>
           <label
-            className="tooltip col-span-7 flex items-center w-fit text-sm gap-2"
-            data-tip="High fees might discourage users from using your token"
+            className="tooltip col-span-7 md:col-span-8 flex items-center w-fit text-sm gap-2"
+            data-tip="High fees might discourage users from sharing your account"
           >
             <div className="w-full justify-start input input-bordered flex items-center">
               <input
@@ -409,14 +350,14 @@ const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
               onClick={() => setFee('0.1')}
               className="badge badge-primary hover:badge-secondary"
             >
-              Recommended
+              Recommend
             </button>
           </label>
-          <span className="col-span-3 md:col-span-1 text-sm">
+          <span className="col-span-3 md:col-span-2 text-sm">
             Max Transfer Fee
           </span>
 
-          <div className="col-span-7 flex flex-col items-start gap-2">
+          <div className="col-span-7 md:col-span-8 flex flex-col items-start gap-2">
             <div className="flex items-center text-sm gap-4 w-full">
               {showMaxFee && (
                 <label
@@ -449,6 +390,53 @@ const SettingsAndPermissionPage: FC<SettingsAndPermissionPageProps> = ({
               />
             </div>
           </div>
+        </div>
+        <span>Token Supply</span>
+        <div className="border-t border-base-content grid grid-cols-10 items-center gap-4 py-4 w-full">
+          <span className="col-span-3 md:col-span-2 text-sm ">
+            Public Allocation
+          </span>
+          <label
+            className="tooltip col-span-7 md:col-span-8 flex items-center w-fit text-sm gap-2"
+            data-tip="Amount of tokens that will be available to the public"
+          >
+            <div className="w-full justify-start input input-bordered flex items-center">
+              <input
+                value={publicSalePercentage}
+                onChange={(e) => {
+                  setPublicSalePercentage(e.target.value);
+                }}
+                type="number"
+                className="w-10 text-right px-1"
+                placeholder=""
+              />
+              <span className="stat-desc">%</span>
+            </div>
+            <button
+              onClick={() => setPublicSalePercentage('80')}
+              className="badge badge-primary hover:badge-secondary"
+            >
+              Recommend
+            </button>
+          </label>
+          <span className="col-span-3 md:col-span-2 text-sm ">
+            Own Allocation
+          </span>
+          <label
+            className="tooltip col-span-7 md:col-span-8 flex items-center w-fit text-sm gap-2"
+            data-tip="Amount of tokens that will be sent to your wallet"
+          >
+            <div className="w-full justify-start input flex items-center">
+              <input
+                value={100 - parseFloat(publicSalePercentage)}
+                readOnly
+                type="number"
+                className="w-10 text-right px-1"
+                placeholder=""
+              />
+              <span className="stat-desc">%</span>
+            </div>
+          </label>
         </div>
 
         <button
@@ -495,14 +483,13 @@ const CreateTokenPage: FC<CreateTokenPageProps> = ({
   return (
     <div className="flex flex-col gap-4 my-4 items-center">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        Create your token in 3 steps.
+        Create your account in 3 steps.
       </span>
       <span className="text-xs md:text-sm lg:text-base w-3/4">
-        Give your token an image, name and symbol. You can always edit the
-        description later.
+        Add a profile picture, name and symbol. You can always edit it later.
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full border border-base-content rounded bg-base-200">
-        <span>Create your token</span>
+        <span>Create your account</span>
         <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center border-y border-base-content">
           <div className="w-32 h-32 lg:w-40 lg:h-40">
             <label
@@ -511,16 +498,16 @@ const CreateTokenPage: FC<CreateTokenPageProps> = ({
             >
               {tempImageUrl ? (
                 <Image
-                  className={`rounded object-cover cursor-pointer`}
+                  className={`rounded-full object-cover cursor-pointer`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   src={tempImageUrl}
                   alt={''}
                 />
               ) : (
-                <div className="flex flex-col w-full h-full border border-neutral items-center justify-center bg-base-100">
+                <div className="flex flex-col w-full h-full border border-neutral rounded-full items-center justify-center bg-base-100">
                   <svg
-                    className="w-8 h-8 mb-4 text-gray-400"
+                    className="w-8 h-8 mb-2 text-gray-400"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -534,7 +521,7 @@ const CreateTokenPage: FC<CreateTokenPageProps> = ({
                       d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                     />
                   </svg>
-                  <p className="text-sm text-center flex flex-col text-gray-400">
+                  <p className="text-xs md:text-sm text-center flex flex-col text-gray-400">
                     <span className="font-semibold">Click to upload</span>
                     <span>or drag and drop</span>
                   </p>

@@ -1,6 +1,5 @@
 'use client';
 
-import { WebIrys } from '@irys/sdk';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -20,8 +19,8 @@ import {
   setToImmutable,
   updateMetadata,
 } from '../program/instructions';
-import { buildAndSendTransaction } from '../program/utils/transactionBuilder';
 import { useTransactionToast } from '../ui/ui-layout';
+import { buildAndSendTransaction } from '../utils/transactionBuilder';
 
 interface EditMintArgs {
   name: string;
@@ -140,44 +139,19 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           input.description != input.previous.description ||
           fieldsToUpdate.size != 0
         ) {
-          const webIrys = new WebIrys({
-            network: 'mainnet',
-            token: 'solana',
-            wallet: {
-              rpcUrl: connection.rpcEndpoint,
-              name: 'solana',
-              provider: wallet,
-            },
-          });
-          await webIrys.ready();
-          toast('Checking if there is sufficient funds to upload metadata...');
-          const balance = (
-            await webIrys.getBalance(wallet.publicKey.toBase58())
-          ).toNumber();
-          const price =
-            (input.picture
-              ? (await webIrys.getPrice(input.picture.size)).toNumber()
-              : 0) + 10000; // 10000 if the estimated number of bytes for description + imageurl
-          if (balance < price) {
-            toast(
-              'Insufficient funds, topping up required. This might take awhile please wait...'
-            );
-            await webIrys.fund(price);
-          }
-
           let imageUrl;
           if (input.picture) {
             toast('Uploading image metadata...');
-            imageUrl = await uploadImage(webIrys, input.picture);
+            imageUrl = await uploadImage(input.picture, mint);
           }
 
           toast('Uploading text metadata...');
           const uri = await uploadMetadata(
-            webIrys,
             input.name,
             input.symbol,
             input.description,
-            imageUrl ? imageUrl : input.previous.image
+            imageUrl ? imageUrl : input.previous.image,
+            mint
           );
 
           fieldsToUpdate.set('uri', uri);
@@ -289,7 +263,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
         .then((result) => {
           if (result.length > 0) {
             return program(connection).coder.accounts.decode(
-              'authority',
+              'Authority',
               result[0].account.data
             ) as AuthorityData;
           } else {
