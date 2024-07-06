@@ -29,7 +29,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   const [maxFee, setMaxFee] = useState('');
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const { publicKey } = useWallet();
-  const [immutable, setImmutable] = useState(false);
   const [admin, setAdmin] = useState('');
 
   const editMutation = useEditData({ mint: new PublicKey(mintId) });
@@ -59,6 +58,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
+    console.log(metaData);
     if (metaData && !metaDataLoaded) {
       setTempImageUrl(metaData.image);
 
@@ -147,7 +147,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             >
               {tempImageUrl ? (
                 <Image
-                  className={`rounded object-cover cursor-pointer`}
+                  className={`rounded-full object-cover cursor-pointer`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   src={tempImageUrl}
@@ -190,13 +190,13 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               type="text"
               placeholder="name"
               value={name}
-              className="input input-bordered w-full max-w-xs text-sm rounded"
+              className="input input-bordered w-full text-sm rounded"
               onChange={handleNameChange}
             />
             <input
               type="text"
               placeholder="symbol"
-              className="input input-bordered w-full max-w-xs text-sm rounded"
+              className="input input-bordered w-full text-sm rounded"
               value={symbol}
               onChange={handleSymbolChange}
             />
@@ -278,20 +278,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               />
             </div>
           </div>
-          {mintTokenData?.mutable == 1 && (
-            <span className="text-sm">Set Immutable</span>
-          )}
-          {mintTokenData?.mutable == 1 && (
-            <input
-              type="checkbox"
-              className="tooltip toggle toggle-primary col-span-3"
-              data-tip="Once enabled you can no longer make any changes"
-              checked={immutable}
-              onChange={(e) => {
-                setImmutable(e.currentTarget.checked);
-              }}
-            />
-          )}
         </div>
 
         <button
@@ -309,7 +295,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             }
             await editMutation.mutateAsync({
               admin: new PublicKey(admin),
-              immutable: immutable,
               name: name,
               symbol: symbol,
               description: description,
@@ -322,7 +307,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               fee: parseFloat(fee) * 100,
               maxFee: maxFee != '' ? parseInt(maxFee) : undefined,
             });
-
             router.push('/dashboard');
           }}
           className="btn btn-primary btn-sm w-full rounded"

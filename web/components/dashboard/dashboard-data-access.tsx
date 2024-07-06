@@ -11,6 +11,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import { program } from '../program/instructions';
+import { AuthorityData } from './dashboard-ui';
 
 export function useGetMintTransferFeeConfig({
   mint,
@@ -41,11 +42,12 @@ export function useGetMintDetails({ mint }: { mint: PublicKey | undefined }) {
   });
 }
 
-export function useGetMintMetadata({ mint }: { mint: PublicKey }) {
+export function useGetMintMetadata({ mint }: { mint: PublicKey | undefined }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: ['get-mint-metadata', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: () =>
+      mint &&
       getTokenMetadata(connection, mint).then(async (details) => {
         if (!details) return null;
         const uriMetadata = await (await fetch(details.uri)).json();
@@ -57,6 +59,7 @@ export function useGetMintMetadata({ mint }: { mint: PublicKey }) {
           description: description,
         };
       }),
+    enabled: !!mint,
   });
 }
 
@@ -84,9 +87,9 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
           if (result.length > 0) {
             return result.map((acc) => {
               return program(connection).coder.accounts.decode(
-                'Authority',
+                'authority',
                 acc.account.data
-              );
+              ) as AuthorityData;
             });
           } else {
             return null;

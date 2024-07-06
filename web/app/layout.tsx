@@ -3,8 +3,9 @@ import { UiLayout } from '@/components/ui/ui-layout';
 import './global.css';
 import { ReactQueryProvider } from './react-query-provider';
 export const metadata = {
-  title: 'HashFeed',
-  description: 'On a mission to be the most distributed token',
+  title: 'HashFeed - Aidrop To Share',
+  description:
+    'Create your content and airdrop it directly to your audience wallets.',
 };
 
 export default function RootLayout({

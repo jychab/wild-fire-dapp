@@ -4,12 +4,7 @@ import { ExtensionType, getMintLen } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Keypair, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation } from '@tanstack/react-query';
-import {
-  getDownloadURL,
-  ref,
-  uploadBytes,
-  uploadString,
-} from 'firebase/storage';
+import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import { storage } from '../firebase/firebase';
 import { getDistributor } from '../firebase/functions';
@@ -129,13 +124,17 @@ export async function uploadMetadata(
     description,
     image,
   };
-  const payloadRef = ref(storage, `${mint.toBase58()}/${crypto.randomUUID()}`);
-  await uploadString(payloadRef, JSON.stringify(payload));
-  return await getDownloadURL(payloadRef);
+  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
+  const payloadRef = ref(storage, path);
+  await uploadString(payloadRef, JSON.stringify(payload), undefined, {
+    contentType: 'text/plain',
+  });
+  return 'https://' + payloadRef.bucket + '/' + path;
 }
 
 export async function uploadImage(picture: File, mint: PublicKey) {
-  const imageRef = ref(storage, `${mint.toBase58()}/${crypto.randomUUID()}`);
+  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
+  const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture);
-  return await getDownloadURL(imageRef);
+  return 'https://' + imageRef.bucket + '/' + path;
 }

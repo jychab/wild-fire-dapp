@@ -1,7 +1,10 @@
 'use client';
 
+import { FC } from 'react';
 import { DashBoard } from './dashboard-ui';
-
-export default function DashboardFeature() {
-  return <DashBoard />;
+interface DashboardFeatureProps {
+  mintId: string | null;
 }
+export const DashboardFeature: FC<DashboardFeatureProps> = ({ mintId }) => {
+  return mintId && <DashBoard mintId={mintId} />;
+};

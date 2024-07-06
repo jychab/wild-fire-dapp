@@ -89,7 +89,7 @@ export async function buildAndSendTransaction(
   signers?: Signer[]
 ): Promise<string> {
   const [microLamports, units, recentBlockhash] = await Promise.all([
-    getPriorityFeeEstimate('VeryHigh', ixs, publicKey, connection),
+    getPriorityFeeEstimate('High', ixs, publicKey, connection),
     getSimulationUnits(connection, ixs, publicKey, []),
     connection.getLatestBlockhash({ commitment: 'confirmed' }),
   ]);
@@ -123,7 +123,6 @@ export async function buildAndSendTransaction(
     signedTx as VersionedTransaction,
     {
       maxRetries: 0,
-      skipPreflight: true,
     }
   );
   const result = await connection.confirmTransaction(

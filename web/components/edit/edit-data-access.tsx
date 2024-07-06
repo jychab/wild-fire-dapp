@@ -4,6 +4,7 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
+  SystemProgram,
   TransactionInstruction,
   TransactionSignature,
 } from '@solana/web3.js';
@@ -15,8 +16,8 @@ import {
   changeAdmin,
   changeTransferFee,
   closeFeeAccount,
+  getAdditionalRentForUpdatedMetadata,
   program,
-  setToImmutable,
   updateMetadata,
 } from '../program/instructions';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -29,7 +30,6 @@ interface EditMintArgs {
   description: string;
   fee: number;
   maxFee: number | undefined;
-  immutable: boolean;
   admin: PublicKey;
   previous: {
     maximumFee: bigint;
@@ -123,8 +123,11 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async (input: EditMintArgs) => {
       let signature: TransactionSignature = '';
+
+      let tx: TransactionInstruction[] = [];
       try {
         if (!wallet.publicKey || !mint) return;
+
         let fieldsToUpdate = new Map<string, string>();
         if (input.previous.metaData.name !== input.name) {
           fieldsToUpdate.set('name', input.name);
@@ -133,7 +136,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           fieldsToUpdate.set('symbol', input.symbol);
         }
 
-        let tx: TransactionInstruction[] = [];
         if (
           input.picture ||
           input.description != input.previous.description ||
@@ -144,7 +146,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             toast('Uploading image metadata...');
             imageUrl = await uploadImage(input.picture, mint);
           }
-
           toast('Uploading text metadata...');
           const uri = await uploadMetadata(
             input.name,
@@ -153,32 +154,42 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             imageUrl ? imageUrl : input.previous.image,
             mint
           );
-
           fieldsToUpdate.set('uri', uri);
-
-          toast('Editing Mint...');
-
-          fieldsToUpdate.forEach(async (value, key) => {
+          const lamports = await getAdditionalRentForUpdatedMetadata(
+            connection,
+            mint,
+            fieldsToUpdate
+          );
+          if (lamports > 0) {
+            tx.push(
+              SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: mint,
+                lamports: lamports,
+              })
+            );
+          }
+          for (let x of fieldsToUpdate) {
             tx.push(
               await updateMetadata(
                 connection,
                 wallet.publicKey!,
                 mint,
-                key,
-                value
+                x[0],
+                x[1]
               )
             );
-          });
+          }
         }
         if (input.previous.admin.toString() != input.admin.toString()) {
           tx.push(
             await changeAdmin(connection, wallet.publicKey, mint, input.admin)
           );
         }
-
         if (
           input.previous.transferFeeBasisPoints != input.fee ||
-          Number(input.previous.maximumFee) != input.maxFee
+          Number(input.previous.maximumFee) !=
+            (input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER)
         ) {
           tx.push(
             await changeTransferFee(
@@ -189,9 +200,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER
             )
           );
-        }
-        if (input.immutable) {
-          tx.push(await setToImmutable(connection, wallet.publicKey, mint));
         }
         if (tx.length == 0) return;
         signature = await buildAndSendTransaction(
@@ -263,7 +271,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
         .then((result) => {
           if (result.length > 0) {
             return program(connection).coder.accounts.decode(
-              'Authority',
+              'authority',
               result[0].account.data
             ) as AuthorityData;
           } else {

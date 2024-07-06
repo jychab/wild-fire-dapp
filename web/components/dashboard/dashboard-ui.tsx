@@ -1,35 +1,22 @@
 'use client';
 
+import { Mint, TransferFeeConfig } from '@solana/spl-token';
+import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import {
-  IconChevronDown,
-  IconEdit,
-  IconExclamationCircle,
-  IconPlus,
-} from '@tabler/icons-react';
+import { IconEdit, IconExclamationCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useState } from 'react';
-import { AppHero } from '../ui/ui-layout';
+import { useGetMintToken } from '../edit/edit-data-access';
 import { formatLargeNumber } from '../utils/helper';
 import {
   useGetAllTokenAccounts,
   useGetMintDetails,
   useGetMintMetadata,
   useGetMintTransferFeeConfig,
-  useGetToken,
 } from './dashboard-data-access';
-
-export const CreateBtn: FC = () => {
-  return (
-    <Link className="btn btn btn-outline my-6" href={'/create'}>
-      <IconPlus />
-      <span>Get Started</span>
-    </Link>
-  );
-};
 
 export interface AuthorityData {
   mint: PublicKey;
@@ -39,113 +26,157 @@ export interface AuthorityData {
   mutable: number;
 }
 
-export const DashBoard: FC = () => {
-  const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
+interface DashBoardProps {
+  mintId: string;
+}
+
+enum TabsEnum {
+  BUCKET = 'Bucket',
+  DETAILS = 'Details',
+  TRADE = 'Buy / Sell',
+}
+
+export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
+  const { data: mintTokenData } = useGetMintToken({
+    mint: new PublicKey(mintId),
+  });
+
+  const { data: mintQuery } = useGetMintDetails({
+    mint: new PublicKey(mintId),
+  });
+  const { data: allTokenAccounts } = useGetAllTokenAccounts({
+    mint: new PublicKey(mintId),
+  });
+
+  const { data: metaDataQuery } = useGetMintMetadata({
+    mint: new PublicKey(mintId),
+  });
+
+  const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
+    mint: mintQuery,
+  });
+
   const [selected, setSelected] = useState<AuthorityData>();
+  const [selectedTab, setSelectedTab] = useState(TabsEnum.BUCKET);
 
   useEffect(() => {
-    console.log(data);
-    if (!selected && data && data.length > 0) {
-      setSelected(data[0]);
+    if (!selected && mintTokenData) {
+      setSelected(mintTokenData); // assume each user only has one account for now
     }
-  }, [selected, data]);
+  }, [selected, mintTokenData]);
 
-  return !selected ? (
-    <DashBoardLandingPage />
-  ) : (
-    <div className="flex flex-col py-[64px] h-full w-full items-center">
-      <div className="flex flex-col gap-4 items-start w-full max-w-5xl p-4">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex gap-4 items-center">
-            <span className="lg:text-3xl">Dashboard</span>
-            {/* <button>
-              <IconRefresh />
-            </button> */}
-          </div>
-          <div className="dropdown dropdown-start">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-outline max-w-[150px] md:max-w-[300px] btn-sm "
-            >
-              <span className="truncate w-4/5 max-w-xs">
-                {selected.mint.toBase58()}
-              </span>
-              <IconChevronDown size={14} />
-            </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full"
-            >
-              {data &&
-                data.map((x) => (
-                  <li key={x.mint.toBase58()}>
-                    <button onClick={() => setSelected(x)}>
-                      <span className="max-w-xs truncate">
-                        {x.mint.toBase58()}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-            </ul>
+  if (
+    !metaDataQuery ||
+    !mintTokenData ||
+    !transferFeeConfig ||
+    !allTokenAccounts ||
+    !mintQuery
+  ) {
+    return <div></div>;
+  }
+
+  return (
+    selected && (
+      <div className="flex flex-col h-full w-full items-center">
+        <div className="flex flex-col gap-8 items-start w-full max-w-5xl px-4 py-8">
+          <Profile
+            metaData={metaDataQuery}
+            allTokenAccounts={allTokenAccounts}
+            authorityData={mintTokenData}
+          />
+          <div className="flex flex-col w-full bg-base-200">
+            <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+            {selectedTab == TabsEnum.DETAILS && (
+              <div className="border-base-300 bg-base-100 border-x border-b">
+                <MainPanel
+                  transferFeeConfig={transferFeeConfig}
+                  authorityData={mintTokenData}
+                  allTokenAccounts={allTokenAccounts}
+                  mintQuery={mintQuery}
+                />
+                <Details
+                  transferFeeConfig={transferFeeConfig}
+                  authorityData={mintTokenData}
+                />
+                <Activities
+                  allTokenAccounts={allTokenAccounts}
+                  mintQuery={mintQuery}
+                />
+              </div>
+            )}
           </div>
         </div>
-        <MainPanel data={selected} />
-        <Details data={selected} />
-        <Activities data={selected} />
       </div>
-    </div>
+    )
   );
 };
 
-const DashBoardLandingPage: FC = () => {
+interface TabsProps {
+  selectedTab: TabsEnum;
+  setSelectedTab: (value: TabsEnum) => void;
+}
+
+const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
   return (
-    <div className="flex flex-col justify-center items-center h-full w-full">
-      <AppHero
-        title="Manage your tokens with our custom tools"
-        children={<CreateBtn />}
-        subtitle={
-          <div className="overflow-x-auto py-6 flex flex-col items-center w-full">
-            <table className="table w-fit text-center">
-              <thead>
-                <tr>
-                  <th>Features Include</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Detailed Insight into Token Activities</td>
-                </tr>
-                <tr>
-                  <td>User-Friendly Token Configuration</td>
-                </tr>
-                <tr>
-                  <td>Automated Fee Collection</td>
-                </tr>
-                <tr>
-                  <td>Effortless Airdrop Distribution</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        }
+    <div
+      role="tablist"
+      className="tabs tabs-lifted tabs-md md:tabs-lg w-full rounded"
+    >
+      <input
+        type="radio"
+        role="tab"
+        className={`tab text-lg font-semibold ${
+          selectedTab == TabsEnum.BUCKET ? 'tab-active' : ''
+        }`}
+        checked={selectedTab == TabsEnum.BUCKET}
+        onChange={() => setSelectedTab(TabsEnum.BUCKET)}
+        aria-label={TabsEnum.BUCKET}
+      />
+      <input
+        type="radio"
+        role="tab"
+        className={`tab text-lg font-semibold ${
+          selectedTab == TabsEnum.TRADE ? 'tab-active' : ''
+        }`}
+        checked={selectedTab == TabsEnum.TRADE}
+        onChange={() => setSelectedTab(TabsEnum.TRADE)}
+        aria-label={TabsEnum.TRADE}
+      />
+      <input
+        type="radio"
+        role="tab"
+        className={`tab text-lg font-semibold ${
+          selectedTab == TabsEnum.DETAILS ? 'tab-active' : ''
+        }`}
+        aria-label={TabsEnum.DETAILS}
+        onChange={() => setSelectedTab(TabsEnum.DETAILS)}
+        checked={selectedTab == TabsEnum.DETAILS}
       />
     </div>
   );
 };
 
-const Activities: FC<PanelProps> = ({ data }) => {
-  const { data: mintQuery } = useGetMintDetails({
-    mint: data.mint,
-  });
-  const { data: allTokenAccounts } = useGetAllTokenAccounts({
-    mint: data.mint,
-  });
+interface ActivitiesProps {
+  allTokenAccounts: {
+    address: string;
+    mint: string;
+    owner: string;
+    amount: number;
+    frozen: boolean;
+    token_extensions: {
+      transfer_fee_amount: {
+        withheld_amount: number;
+      };
+    };
+  }[];
+  mintQuery: Mint;
+}
+
+const Activities: FC<ActivitiesProps> = ({ allTokenAccounts, mintQuery }) => {
   return (
-    <div className="p-4 bg-base-200 gap-4 card w-full">
+    <div className="p-4 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Activities</span>
-      <div className="card bg-base-100 col-span-2 p-4 rounded">
+      <div className="rounded bg-base-200 col-span-2 p-4">
         <span className="card-title text-base">Top 20 Holders List</span>
         {allTokenAccounts && mintQuery && (
           <div className="overflow-x-auto">
@@ -189,147 +220,177 @@ const Activities: FC<PanelProps> = ({ data }) => {
   );
 };
 
-interface PanelProps {
-  data: AuthorityData;
+interface ProfileProps {
+  metaData: {
+    metaData: TokenMetadata;
+    image: any;
+    description: any;
+  };
+  allTokenAccounts: {
+    address: string;
+    mint: string;
+    owner: string;
+    amount: number;
+    frozen: boolean;
+    token_extensions: {
+      transfer_fee_amount: {
+        withheld_amount: number;
+      };
+    };
+  }[];
+  authorityData: AuthorityData;
 }
-const Details: FC<PanelProps> = ({ data }) => {
+
+const Profile: FC<ProfileProps> = ({
+  metaData,
+  allTokenAccounts,
+  authorityData,
+}) => {
+  const router = useRouter();
+  const { publicKey } = useWallet();
+  return (
+    <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
+      <div className="w-32 h-32 lg:w-40 lg:h-40">
+        {metaData.image && (
+          <div className="relative h-full w-full">
+            <Image
+              priority={true}
+              className={`object-cover rounded-full`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              src={metaData.image}
+              alt={''}
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start">
+        <div className="flex flex-col">
+          <div className="flex gap-2 items-center">
+            <span className="text-2xl lg:text-3xl font-bold">
+              {metaData.metaData.name}
+            </span>
+          </div>
+          <span className="">{metaData.metaData.symbol}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button className="btn btn-success btn-sm w-32">Subscribe</button>
+          {authorityData.mutable == 1 &&
+            publicKey?.toBase58() == authorityData.admin.toBase58() && (
+              <button
+                className="btn btn-outline btn-sm items-center"
+                onClick={() => {
+                  router.push(
+                    `/edit?mintId=${metaData.metaData.mint.toBase58()}`
+                  );
+                }}
+              >
+                <IconEdit />
+                Edit
+              </button>
+            )}
+        </div>
+
+        <span>
+          {formatLargeNumber(
+            allTokenAccounts?.filter((x) => x.amount > 0).length || 0
+          ) + ' Followers'}
+        </span>
+
+        <span className="text-sm truncate font-normal">
+          {metaData.description}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+interface DataProps {
+  transferFeeConfig: TransferFeeConfig;
+  authorityData: AuthorityData;
+}
+
+const Details: FC<DataProps> = ({ transferFeeConfig, authorityData }) => {
   const { connection } = useConnection();
   const [currentEpoch, setCurrentEpoch] = useState<number>();
-  const router = useRouter();
-  const metaDataQuery = useGetMintMetadata({
-    mint: data.mint,
-  });
-  const { data: mintQuery } = useGetMintDetails({
-    mint: data.mint,
-  });
-  const transferFeeConfigQuery = useGetMintTransferFeeConfig({
-    mint: mintQuery,
-  });
+
   useEffect(() => {
     if (!currentEpoch && connection) {
       connection.getEpochInfo().then((x) => setCurrentEpoch(x.epoch));
     }
   }, [connection, currentEpoch]);
-  if (
-    !metaDataQuery.data ||
-    !transferFeeConfigQuery ||
-    !transferFeeConfigQuery.data
-  ) {
-    return <div></div>;
-  }
-  const { image, metaData, description } = metaDataQuery.data;
-  const { newerTransferFee, olderTransferFee } = transferFeeConfigQuery.data;
+
   return (
-    <div className="p-4 bg-base-200 gap-4 card w-full">
-      <span className="card-title">
-        Details
-        {data.mutable == 1 ? (
-          <button
-            onClick={() => {
-              router.push(`/edit?mintId=${data.mint.toBase58()}`);
-            }}
-          >
-            <IconEdit />
-          </button>
-        ) : (
-          <span>[Immutable]</span>
-        )}
-      </span>
-      <div className="flex items-start p-4 gap-4 w-full bg-base-100 rounded">
-        <div className="w-32 h-32 lg:w-40 lg:h-40">
-          {image && (
-            <div className="relative h-full w-full">
-              <Image
-                priority={true}
-                className={`rounded object-cover`}
-                fill={true}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                src={image}
-                alt={''}
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 items-start w-1/2 text-start ">
-          <div className="flex justify-evenly w-full items-center">
-            <div className="stat px-0 gap-2">
-              <div className="stat-title text-xs ">Name</div>
-              <span className="stat-value text-sm  truncate font-normal">
-                {metaData.name}
-              </span>
-            </div>
-            <div className="stat px-0 gap-2">
-              <span className="stat-title text-xs ">Symbol</span>
-              <span className="stat-value text-sm  truncate font-normal">
-                {metaData.symbol}
-              </span>
-            </div>
-          </div>
-          {description && (
-            <div className="stat px-0 gap-2">
-              <span className="stat-title text-xs ">Details</span>
-              <span className="stat-value text-sm truncate font-normal">
-                {description}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="bg-base-100 px-4 gap-4 w-full">
       <div className="grid grid-cols-4 gap-2 ">
-        <div className="card bg-base-100 col-span-4 rounded">
+        <div className="card rounded bg-base-200 col-span-4">
           <div className="stat gap-2">
             <div className="stat-title text-sm md:text-base">Mint</div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${metaData.mint.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData.mint.toBase58()}`}
             >
-              {metaData.mint.toBase58()}
+              {authorityData.mint.toBase58()}
             </Link>
             <div className="stat-title text-sm md:text-base truncate">
               Authority
             </div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${data.admin.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData.admin.toBase58()}`}
             >
-              {data.admin.toBase58()}
+              {authorityData.admin.toBase58()}
             </Link>
           </div>
         </div>
-        <div className="card bg-base-100 rounded col-span-4 md:col-span-2">
+        <div className="card bg-base-200 rounded col-span-4 md:col-span-2 ">
           <div className="stat gap-1">
             <div className="stat-title text-sm md:text-base truncate">
               Transfer Fee
             </div>
             <div className="stat-value text-base md:text-xl truncate font-normal">{`${
-              currentEpoch && newerTransferFee.epoch <= currentEpoch
-                ? `${newerTransferFee.transferFeeBasisPoints / 100}%`
+              currentEpoch &&
+              transferFeeConfig.newerTransferFee.epoch <= currentEpoch
+                ? `${
+                    transferFeeConfig.newerTransferFee.transferFeeBasisPoints /
+                    100
+                  }%`
                 : `${
-                    olderTransferFee.transferFeeBasisPoints / 100
+                    transferFeeConfig.olderTransferFee.transferFeeBasisPoints /
+                    100
                   }% (current) -> ${
-                    newerTransferFee.transferFeeBasisPoints / 100
+                    transferFeeConfig.newerTransferFee.transferFeeBasisPoints /
+                    100
                   }% (upcoming)`
             } `}</div>
             {
               <div className="stat-desc text-xs md:text-sm truncate font-normal">
                 {`Max Fee: ${
-                  currentEpoch && newerTransferFee.epoch <= currentEpoch
-                    ? Number(newerTransferFee.maximumFee) !=
+                  currentEpoch &&
+                  transferFeeConfig.newerTransferFee.epoch <= currentEpoch
+                    ? Number(transferFeeConfig.newerTransferFee.maximumFee) !=
                       Number.MAX_SAFE_INTEGER
-                      ? formatLargeNumber(Number(newerTransferFee.maximumFee))
+                      ? formatLargeNumber(
+                          Number(transferFeeConfig.newerTransferFee.maximumFee)
+                        )
                       : 'None'
                     : `${
-                        Number(olderTransferFee.maximumFee) !=
+                        Number(transferFeeConfig.olderTransferFee.maximumFee) !=
                         Number.MAX_SAFE_INTEGER
                           ? formatLargeNumber(
-                              Number(olderTransferFee.maximumFee)
+                              Number(
+                                transferFeeConfig.olderTransferFee.maximumFee
+                              )
                             )
                           : 'None'
                       } -> ${
-                        Number(newerTransferFee.maximumFee) !=
+                        Number(transferFeeConfig.newerTransferFee.maximumFee) !=
                         Number.MAX_SAFE_INTEGER
                           ? formatLargeNumber(
-                              Number(newerTransferFee.maximumFee)
+                              Number(
+                                transferFeeConfig.newerTransferFee.maximumFee
+                              )
                             )
                           : 'None'
                       }`
@@ -338,14 +399,14 @@ const Details: FC<PanelProps> = ({ data }) => {
             }
           </div>
         </div>
-        <div className="card bg-base-100 col-span-4 md:col-span-2 rounded">
+        <div className="card bg-base-200 col-span-4 md:col-span-2 rounded">
           <div className="stat gap-2">
             <div className="stat-title text-sm md:text-base">Distributor</div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${data.distributor.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData.distributor.toBase58()}`}
             >
-              {data.distributor.toBase58()}
+              {authorityData.distributor.toBase58()}
             </Link>
           </div>
         </div>
@@ -354,20 +415,34 @@ const Details: FC<PanelProps> = ({ data }) => {
   );
 };
 
-export const MainPanel: FC<PanelProps> = ({ data }) => {
-  const { data: mintQuery } = useGetMintDetails({
-    mint: data.mint,
-  });
-  const { data: transferFeeConfigData } = useGetMintTransferFeeConfig({
-    mint: mintQuery,
-  });
-  const { data: allTokenAccounts } = useGetAllTokenAccounts({
-    mint: data.mint,
-  });
+interface MainPanelProps {
+  transferFeeConfig: TransferFeeConfig;
+  authorityData: AuthorityData;
+  allTokenAccounts: {
+    address: string;
+    mint: string;
+    owner: string;
+    amount: number;
+    frozen: boolean;
+    token_extensions: {
+      transfer_fee_amount: {
+        withheld_amount: number;
+      };
+    };
+  }[];
 
+  mintQuery: Mint;
+}
+
+export const MainPanel: FC<MainPanelProps> = ({
+  transferFeeConfig,
+  authorityData,
+  allTokenAccounts,
+  mintQuery,
+}) => {
   const feesEarned = useMemo(() => {
-    if (allTokenAccounts && transferFeeConfigData) {
-      const mintWithheldFees = Number(transferFeeConfigData.withheldAmount);
+    if (allTokenAccounts && transferFeeConfig) {
+      const mintWithheldFees = Number(transferFeeConfig.withheldAmount);
       const tokenAccountWithheldFees = allTokenAccounts.reduce(
         (sum, x) =>
           sum + x.token_extensions.transfer_fee_amount.withheld_amount,
@@ -377,23 +452,25 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
         total:
           mintWithheldFees +
           tokenAccountWithheldFees +
-          Number(data.feesCollected),
+          Number(authorityData.feesCollected),
         claimable: mintWithheldFees + tokenAccountWithheldFees,
       };
     } else {
       return {
-        total: data.feesCollected ? Number(data.feesCollected) : 0,
+        total: authorityData.feesCollected
+          ? Number(authorityData.feesCollected)
+          : 0,
         claimable: 0,
       };
     }
-  }, [allTokenAccounts, data, transferFeeConfigData]);
+  }, [allTokenAccounts, authorityData, transferFeeConfig]);
 
   return (
-    <div className="p-4 bg-base-200 gap-4 card w-full">
+    <div className="p-4 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Overview</span>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="flex flex-col gap-4">
-          <div className="card gap-4 bg-base-100 rounded p-4">
+          <div className="card rounded gap-4 bg-base-200 p-4">
             <div className="stat gap-2 p-0">
               <div className="stat-title text-xs">Total Fees Generated</div>
               <span className="stat-value font-normal truncate">
@@ -403,7 +480,7 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="card bg-base-100 rounded">
+            <div className="card bg-base-200 rounded">
               <div className="shadow text-right w-full">
                 <div className="stat gap-2">
                   <Link
@@ -418,7 +495,7 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
                 </div>
               </div>
             </div>
-            <div className="card bg-base-100 rounded">
+            <div className="card bg-base-200 rounded">
               <div className="shadow text-right w-full">
                 <div className="stat gap-2">
                   <span className="stat-value font-normal truncate hover:text-info">
@@ -432,41 +509,15 @@ export const MainPanel: FC<PanelProps> = ({ data }) => {
             </div>
           </div>
         </div>
-        <div className="card bg-base-100 p-4 rounded gap-4">
+        <div className="card bg-base-200 p-4 rounded gap-4">
           <div className="card-title">
             Fee Distribution
             <div
               className="tooltip"
-              data-tip="Fees are automatically distributed once every hour"
+              data-tip="Fees are automatically distributed once every 5min"
             >
               <IconExclamationCircle />
             </div>
-          </div>
-          <div className="dropdown dropdown-start">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn w-full max-w-sm btn-sm"
-            >
-              <span className="truncate w-4/5 max-w-xs">
-                Select your fee distribution mode
-              </span>
-              <IconChevronDown size={14} />
-            </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
-            >
-              <li>
-                <a>Fee Collector Mode</a>
-              </li>
-              <li>
-                <a>Burn Mode</a>
-              </li>
-              <li>
-                <a>Referral Mode</a>
-              </li>
-            </ul>
           </div>
         </div>
       </div>

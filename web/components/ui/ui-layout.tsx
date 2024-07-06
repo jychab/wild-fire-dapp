@@ -5,28 +5,19 @@ import { ReactNode, Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../../images/logo.png';
+import Authentication from '../authentication/authentication-feature';
 import { auth } from '../firebase/firebase';
 import { createLoginMessage, verifyAndGetToken } from '../firebase/functions';
-import { SocialComponent, ThemeComponent } from './ui-component';
+import { UploadBtn } from '../upload/upload-ui';
+import { SocialComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useLocalStorage('theme', 'cupcake');
-  const toggleTheme = () => {
-    setTheme(theme === 'night' ? 'cupcake' : 'night');
-  };
-
-  useEffect(() => {
-    if (document.querySelector('html')) {
-      document.querySelector('html')!.setAttribute('data-theme', theme);
-    }
-  }, [theme]);
-
   const links: { label: string; path: string }[] = [
     // { label: 'Dashboard', path: '/dashboard' },
     // { label: 'Create', path: '/create' },
@@ -81,11 +72,16 @@ export function UiLayout({ children }: { children: ReactNode }) {
     <div className="flex flex-col h-screen">
       <div className="drawer drawer-end flex flex-1">
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-content flex flex-col w-full">
-          <div className="w-full navbar ">
-            <Link className="flex px-4 items-center gap-2 w-[480px]" href="/">
-              <span className="text-2xl font-bold uppercase">HashFeed</span>
+        <div className="drawer-content flex flex-col w-full items-center">
+          <div className="w-full navbar shadow-xl bg-base-200">
+            <Link
+              className="flex px-4 items-center gap-1 w-[200px] max-w-1/3"
+              href="/"
+            >
               <Image src={logo} alt={'logo'} width={30} height={30} />
+              <span className="hidden sm:block text-2xl font-bold uppercase">
+                HashFeed
+              </span>
             </Link>
             <div className="hidden md:flex w-full">
               <ul className="menu menu-horizontal gap-2">
@@ -101,36 +97,12 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 ))}
               </ul>
             </div>
-
-            <div className="navbar-end w-full gap-4">
-              <div className="flex-none md:hidden">
-                <label
-                  htmlFor="my-drawer-3"
-                  aria-label="open sidebar"
-                  className="btn btn-square btn-ghost"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    className="inline-block w-6 h-6 stroke-current"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M4 6h16M4 12h16M4 18h16"
-                    ></path>
-                  </svg>
-                </label>
-              </div>
-              <div className="hidden">
-                <ThemeComponent toggleTheme={toggleTheme} theme={theme} />
-              </div>
-              {/* <WalletButton /> */}
+            <div className="navbar-end flex w-full gap-4 px-4">
+              <UploadBtn />
+              <Authentication />
             </div>
           </div>
-          <div className="flex-grow mx-4 w-full mx-auto">
+          <div className="flex flex-1 mx-4 w-full mx-auto">
             <Suspense
               fallback={
                 <div className="text-center my-32">
@@ -151,10 +123,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
           />
           <div className=" p-4 w-44 min-h-full bg-base-200 gap-4 flex flex-col justify-between">
             <div>
-              <div className="flex gap-1 items-center">
-                <span className="text-xl font-bold uppercase">HashFeed</span>
-                <Image src={logo} alt={'logo'} width={25} height={25} />
-              </div>
               <ul className="menu gap-2">
                 {links.map(({ label, path }) => (
                   <li key={path}>
@@ -245,23 +213,23 @@ export function AppHero({
   subtitle: ReactNode;
 }) {
   return (
-    <div className={`hero py-[32px]`}>
-      <div className="hero-content text-center w-full">
-        <div className={`w-full items-center flex flex-col`}>
+    <div className={`hero py-[32px] items-start `}>
+      <div className="hero-content flex flex-col lg:flex-row gap-8 w-full max-w-5xl ">
+        <div className="flex flex-col gap-8 max-w-xl text-center lg:text-left">
           {typeof title === 'string' ? (
-            <h1 className="max-w-3xl text-3xl lg:text-5xl font-bold text-base-content">
+            <h1 className="max-w-3xl text-5xl lg:text-7xl font-bold text-base-content">
               {title}
             </h1>
           ) : (
             title
           )}
           {typeof subtitle === 'string' ? (
-            <p className="py-6 text-base-content">{subtitle}</p>
+            <p className="py-6 text-base-content max-w-xl">{subtitle}</p>
           ) : (
             subtitle
           )}
-          {children}
         </div>
+        {children}
       </div>
     </div>
   );

@@ -1,55 +1,52 @@
 'use client';
 
+import Authentication from '@/components/authentication/authentication-feature';
 import { AppHero } from '@/components/ui/ui-layout';
-import Image from 'next/image';
-import step1 from '.././images/How it works-1.png';
+import { useWallet } from '@solana/wallet-adapter-react';
 
-import step2 from '.././images/How it works-2.png';
-
-import step3 from '.././images/How it works-3.png';
-
-import step4 from '.././images/How it works-4.png';
-
+// Register the plugins
 export default function Page() {
+  const { publicKey } = useWallet();
   return (
     <AppHero
-      title={"On a mission to create the world's most distributed token ever"}
+      title={'Your feed, reimagined.'}
       subtitle={
-        <div className="flex flex-col gap-4 py-6">
-          <div className="stats shadow">
-            <div className="stat gap-1 place-items-center">
-              <div className="stat-title">Market Cap</div>
-              <div className="stat-value">31K</div>
-              <div className="stat-desc">↗︎ 40 (2%)</div>
-            </div>
-
-            <div className="stat gap-1 place-items-center">
-              <div className="stat-title">Holders</div>
-              <div className="stat-value text-secondary">4,200</div>
-              <div className="stat-desc text-secondary">↘︎ 90 (14%)</div>
-            </div>
-
-            <div className="stat gap-1 place-items-center">
-              <div className="stat-title">Price</div>
-              <div className="stat-value">$1</div>
-              <div className="stat-desc">↘︎ 90 (14%)</div>
-            </div>
-          </div>
+        <div className="flex flex-col gap-4 items-center lg:items-start">
+          <p className="text-neutral text-lg">
+            Discover content specially curated by the tokens you hold.
+          </p>
+          {!publicKey && <Authentication />}
         </div>
       }
       children={
-        <div className="carousel carousel-center rounded-box">
-          <div id="item1" className="carousel-item bg-base-content">
-            <Image src={step1} alt="Pizza" width={250} />
-          </div>
-          <div id="item2" className="carousel-item">
-            <Image src={step2} alt="Pizza" width={250} />
-          </div>
-          <div id="item3" className="carousel-item">
-            <Image src={step3} alt="Pizza" width={250} />
-          </div>
-          <div id="item4" className="carousel-item">
-            <Image src={step4} alt="Pizza" width={250} />
+        <div className="mockup-phone w-80">
+          <div className="camera"></div>
+          <div className="display w-full">
+            <div className="artboard artboard-demo phone-1">
+              <div className="carousel carousel-vertical rounded-box w-full">
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1559703248-dcaaec9fab78.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1565098772267-60af42b81ef2.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1572635148818-ef6fd45eb394.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1494253109108-2e30c049369b.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1550258987-190a2d41a8ba.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1559181567-c3190ca9959b.jpg" />
+                </div>
+                <div className="carousel-item h-full">
+                  <img src="https://img.daisyui.com/images/stock/photo-1601004890684-d8cbf643f5f2.jpg" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       }

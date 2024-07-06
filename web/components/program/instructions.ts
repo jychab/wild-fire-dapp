@@ -1,54 +1,41 @@
 import { BN, Program } from '@coral-xyz/anchor';
-import { PDAUtil, WhirlpoolContext } from '@orca-so/whirlpools-sdk';
 import {
-  initializeConfigExtensionIx,
-  initializeConfigIx,
-  initializeTokenBadgeIx,
-} from '@orca-so/whirlpools-sdk/dist/instructions';
-import {
+  ExtensionType,
   LENGTH_SIZE,
-  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TYPE_SIZE,
+  TokenAccountNotFoundError,
   getAssociatedTokenAddressSync,
+  getExtensionData,
+  getNewAccountLenForExtensionLen,
+  unpackMint,
+  updateTokenMetadata,
 } from '@solana/spl-token';
-import { TokenMetadata, pack } from '@solana/spl-token-metadata';
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  VersionedTransaction,
-} from '@solana/web3.js';
-import { buildAndSendTransaction } from '../utils/transactionBuilder';
+import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
+import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import Idl from './idl/wild_fire.json';
 import { WildFire } from './types/wild_fire';
 
 export const program = (connection: Connection) =>
-  new Program<WildFire>(
-    Idl as unknown as WildFire,
-    new PublicKey('7F7zr8aB4NFkF8DDxNstX5oU8X9w4ohgJyEqfXU5dnLX'),
-    {
-      connection,
-    }
-  );
-
-export interface WhirlPoolWallet<T extends Transaction | VersionedTransaction> {
-  publicKey: PublicKey;
-  signAllTransactions: (transactions: T[]) => Promise<T[]>;
-  signTransaction: (transaction: T) => Promise<T>;
-}
-
-export const whirlPoolCtx = (
-  connection: Connection,
-  wallet: WhirlPoolWallet<any>
-) =>
-  WhirlpoolContext.from(
+  new Program<WildFire>(Idl as unknown as WildFire, {
     connection,
-    wallet,
-    new PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc')
-  );
+  });
+
+// export interface WhirlPoolWallet<T extends Transaction | VersionedTransaction> {
+//   publicKey: PublicKey;
+//   signAllTransactions: (transactions: T[]) => Promise<T[]>;
+//   signTransaction: (transaction: T) => Promise<T>;
+// }
+
+// export const whirlPoolCtx = (
+//   connection: Connection,
+//   wallet: WhirlPoolWallet<any>
+// ) =>
+//   WhirlpoolContext.from(
+//     connection,
+//     wallet,
+//     new PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc')
+//   );
 
 export async function createMint(
   connection: Connection,
@@ -62,10 +49,7 @@ export async function createMint(
   payer: PublicKey
 ) {
   const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
-    program(connection).programId
-  );
+
   const ix1 = SystemProgram.createAccount({
     fromPubkey: payer,
     newAccountPubkey: mint,
@@ -75,6 +59,7 @@ export async function createMint(
   });
   const ix2 = await program(connection)
     .methods.createMint({
+      decimal: 0,
       admin: admin,
       distributor: distributor,
       transferFeeArgs: {
@@ -85,8 +70,7 @@ export async function createMint(
     .accounts({
       mint: mint,
       payer: payer,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
-      authority: authority,
+      program: program(connection).programId,
     })
     .signers([mintKeypair])
     .instruction();
@@ -118,8 +102,6 @@ export async function createMintMetadata(
     .accounts({
       mint: metaData.mint,
       payer: payer,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
-      authority: authority,
     })
     .instruction();
   return ix;
@@ -147,9 +129,7 @@ export async function issueMint(
     .accounts({
       mint: mint,
       payer: payer,
-      payerMintTokenAccount: payerMintTokenAccount,
-      authority: authority,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
+      program: program(connection).programId,
     })
     .instruction();
 }
@@ -171,7 +151,27 @@ export async function changeTransferFee(
       payer: payer,
       mint: mint,
       authority: authority,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
+    })
+    .instruction();
+
+  return ix;
+}
+
+export async function changeDistributor(
+  connection: Connection,
+  payer: PublicKey,
+  mint: PublicKey,
+  newDistributor: PublicKey
+) {
+  const [authority] = PublicKey.findProgramAddressSync(
+    [Buffer.from('authority'), mint.toBuffer()],
+    program(connection).programId
+  );
+  const ix = await program(connection)
+    .methods.changeDistributor(newDistributor)
+    .accounts({
+      payer: payer,
+      authority: authority,
     })
     .instruction();
 
@@ -214,7 +214,6 @@ export async function setToImmutable(
       payer: payer,
       authority: authority,
       mint: mint,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
     })
     .instruction();
 
@@ -243,6 +242,21 @@ export async function closeFeeAccount(
   return ix;
 }
 
+export async function removeFieldFromMetadata(
+  connection: Connection,
+  payer: PublicKey,
+  mint: PublicKey,
+  field: string
+) {
+  return await program(connection)
+    .methods.removeKeyFromMetadata(field)
+    .accounts({
+      mint: mint,
+      payer: payer,
+    })
+    .instruction();
+}
+
 export async function updateMetadata(
   connection: Connection,
   payer: PublicKey,
@@ -250,80 +264,123 @@ export async function updateMetadata(
   field: string,
   value: string
 ) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
-    program(connection).programId
-  );
   return await program(connection)
     .methods.updateMintMetadata(field, value)
     .accounts({
       mint: mint,
       payer: payer,
-      authority: authority,
-      tokenProgramMint: TOKEN_2022_PROGRAM_ID,
     })
     .instruction();
 }
 
-export async function initializeWhirlPoolConfig(
+export async function getAdditionalRentForUpdatedMetadata(
   connection: Connection,
-  wallet: WhirlPoolWallet<any>
-) {
-  let whirlPoolContext = whirlPoolCtx(connection, wallet);
-  let configKeypair = Keypair.generate();
-  let config = configKeypair.publicKey;
-  console.log(config.toBase58());
-  let ix = initializeConfigIx(whirlPoolContext.program, {
-    whirlpoolsConfigKeypair: configKeypair,
-    feeAuthority: wallet.publicKey,
-    collectProtocolFeesAuthority: wallet.publicKey,
-    rewardEmissionsSuperAuthority: wallet.publicKey,
-    defaultProtocolFeeRate: 2500,
-    funder: wallet.publicKey,
-  });
-  await buildAndSendTransaction(
-    connection,
-    ix.instructions,
-    wallet.publicKey,
-    wallet.signTransaction
+  address: PublicKey,
+  fieldsToUpdate: Map<string, string>,
+  programId = TOKEN_2022_PROGRAM_ID
+): Promise<number> {
+  const info = await connection.getAccountInfo(address);
+  if (!info) {
+    throw new TokenAccountNotFoundError();
+  }
+
+  const mint = unpackMint(address, info, programId);
+  const extensionData = getExtensionData(
+    ExtensionType.TokenMetadata,
+    mint.tlvData
+  );
+  if (extensionData === null) {
+    throw new Error('TokenMetadata extension not initialized');
+  }
+
+  let updatedTokenMetadata = unpack(extensionData);
+  for (let x of fieldsToUpdate) {
+    updatedTokenMetadata = updateTokenMetadata(
+      unpack(extensionData),
+      x[0],
+      x[1]
+    );
+  }
+
+  const extensionLen = pack(updatedTokenMetadata).length;
+
+  const newAccountLen = getNewAccountLenForExtensionLen(
+    info,
+    address,
+    ExtensionType.TokenMetadata,
+    extensionLen,
+    programId
   );
 
-  ix = initializeConfigExtensionIx(whirlPoolContext.program, {
-    whirlpoolsConfig: config,
-    whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(
-      whirlPoolContext.program.programId,
-      config
-    ),
-    funder: wallet.publicKey,
-    feeAuthority: wallet.publicKey,
-  });
-  await buildAndSendTransaction(
-    connection,
-    ix.instructions,
-    wallet.publicKey,
-    wallet.signTransaction
-  );
-  ix = initializeTokenBadgeIx(whirlPoolContext.program, {
-    whirlpoolsConfig: config,
-    whirlpoolsConfigExtension: PDAUtil.getConfigExtension(
-      whirlPoolContext.program.programId,
-      config
-    ).publicKey,
-    tokenBadgeAuthority: wallet.publicKey,
-    tokenMint: NATIVE_MINT,
-    tokenBadgePda: PDAUtil.getTokenBadge(
-      whirlPoolContext.program.programId,
-      config,
-      NATIVE_MINT
-    ),
-    funder: wallet.publicKey,
-  });
-  await buildAndSendTransaction(
-    connection,
-    ix.instructions,
-    wallet.publicKey,
-    wallet.signTransaction
-  );
+  if (newAccountLen <= info.data.length) {
+    return 0;
+  }
 
-  return ix;
+  const newRentExemptMinimum =
+    await connection.getMinimumBalanceForRentExemption(newAccountLen);
+
+  return newRentExemptMinimum - info.lamports;
 }
+
+// export async function initializeWhirlPoolConfig(
+//   connection: Connection,
+//   wallet: WhirlPoolWallet<any>
+// ) {
+//   let whirlPoolContext = whirlPoolCtx(connection, wallet);
+//   let configKeypair = Keypair.generate();
+//   let config = configKeypair.publicKey;
+//   console.log(config.toBase58());
+//   let ix = initializeConfigIx(whirlPoolContext.program, {
+//     whirlpoolsConfigKeypair: configKeypair,
+//     feeAuthority: wallet.publicKey,
+//     collectProtocolFeesAuthority: wallet.publicKey,
+//     rewardEmissionsSuperAuthority: wallet.publicKey,
+//     defaultProtocolFeeRate: 2500,
+//     funder: wallet.publicKey,
+//   });
+//   await buildAndSendTransaction(
+//     connection,
+//     ix.instructions,
+//     wallet.publicKey,
+//     wallet.signTransaction
+//   );
+
+//   ix = initializeConfigExtensionIx(whirlPoolContext.program, {
+//     whirlpoolsConfig: config,
+//     whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(
+//       whirlPoolContext.program.programId,
+//       config
+//     ),
+//     funder: wallet.publicKey,
+//     feeAuthority: wallet.publicKey,
+//   });
+//   await buildAndSendTransaction(
+//     connection,
+//     ix.instructions,
+//     wallet.publicKey,
+//     wallet.signTransaction
+//   );
+//   ix = initializeTokenBadgeIx(whirlPoolContext.program, {
+//     whirlpoolsConfig: config,
+//     whirlpoolsConfigExtension: PDAUtil.getConfigExtension(
+//       whirlPoolContext.program.programId,
+//       config
+//     ).publicKey,
+//     tokenBadgeAuthority: wallet.publicKey,
+//     tokenMint: NATIVE_MINT,
+//     tokenBadgePda: PDAUtil.getTokenBadge(
+//       whirlPoolContext.program.programId,
+//       config,
+//       NATIVE_MINT
+//     ),
+//     funder: wallet.publicKey,
+//   });
+//   await buildAndSendTransaction(
+//     connection,
+//     ix.instructions,
+//     wallet.publicKey,
+//     wallet.signTransaction
+//   );
+
+//   return ix;
+// }

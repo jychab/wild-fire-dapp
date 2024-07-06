@@ -1,4 +1,10 @@
+'use client';
+import { DashboardFeature } from '@/components/dashboard/dashboard-feature';
+import { useSearchParams } from 'next/navigation';
+
 export default function page() {
-  // return <DashboardFeature />;
-  return <div></div>;
+  const searchParams = useSearchParams();
+  const mintId = searchParams.get('mintId');
+  return <DashboardFeature mintId={mintId} />;
+  // return <div></div>;
 }
