@@ -1,13 +1,23 @@
 'use client';
 
-import Authentication from '@/components/authentication/authentication-feature';
+import { AuthenticationBtn } from '@/components/authentication/authentication-ui';
+import { ContentFeature } from '@/components/content/content-feature';
+import { CreateAccountBtn } from '@/components/create/create-ui';
+import { useGetToken } from '@/components/dashboard/dashboard-data-access';
 import { AppHero } from '@/components/ui/ui-layout';
 import { useWallet } from '@solana/wallet-adapter-react';
 
 // Register the plugins
 export default function Page() {
   const { publicKey } = useWallet();
-  return (
+  const { data } = useGetToken({ address: publicKey });
+  return publicKey ? (
+    <div className="flex w-full items-center justify-center">
+      <div className="max-w-7xl h-full">
+        <ContentFeature />
+      </div>
+    </div>
+  ) : (
     <AppHero
       title={'Your feed, reimagined.'}
       subtitle={
@@ -15,11 +25,20 @@ export default function Page() {
           <p className="text-neutral text-lg">
             Discover content specially curated by the tokens you hold.
           </p>
-          {!publicKey && <Authentication />}
+          {publicKey && !data && (
+            <div className="w-36">
+              <CreateAccountBtn />
+            </div>
+          )}
+          {!publicKey && (
+            <div className="w-24">
+              <AuthenticationBtn />
+            </div>
+          )}
         </div>
       }
       children={
-        <div className="mockup-phone w-80">
+        <div className="mockup-phone w-full max-w-xs">
           <div className="camera"></div>
           <div className="display w-full">
             <div className="artboard artboard-demo phone-1">

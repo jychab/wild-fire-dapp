@@ -9,10 +9,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useState } from 'react';
+import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { formatLargeNumber } from '../utils/helper';
 import {
-  useGetAllTokenAccounts,
+  useGetAllTokenAccountsFromMint,
   useGetMintDetails,
   useGetMintMetadata,
   useGetMintTransferFeeConfig,
@@ -31,7 +32,7 @@ interface DashBoardProps {
 }
 
 enum TabsEnum {
-  BUCKET = 'Bucket',
+  CONTENT = 'Content',
   DETAILS = 'Details',
   TRADE = 'Buy / Sell',
 }
@@ -44,7 +45,7 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
   const { data: mintQuery } = useGetMintDetails({
     mint: new PublicKey(mintId),
   });
-  const { data: allTokenAccounts } = useGetAllTokenAccounts({
+  const { data: allTokenAccounts } = useGetAllTokenAccountsFromMint({
     mint: new PublicKey(mintId),
   });
 
@@ -57,7 +58,7 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
   });
 
   const [selected, setSelected] = useState<AuthorityData>();
-  const [selectedTab, setSelectedTab] = useState(TabsEnum.BUCKET);
+  const [selectedTab, setSelectedTab] = useState(TabsEnum.CONTENT);
 
   useEffect(() => {
     if (!selected && mintTokenData) {
@@ -86,28 +87,52 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
           />
           <div className="flex flex-col w-full bg-base-200">
             <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+            {selectedTab == TabsEnum.CONTENT &&
+              (metaDataQuery.content ? (
+                <ContentGrid content={metaDataQuery.content} />
+              ) : (
+                <div>No Content Found</div>
+              ))}
             {selectedTab == TabsEnum.DETAILS && (
-              <div className="border-base-300 bg-base-100 border-x border-b">
-                <MainPanel
-                  transferFeeConfig={transferFeeConfig}
-                  authorityData={mintTokenData}
-                  allTokenAccounts={allTokenAccounts}
-                  mintQuery={mintQuery}
-                />
-                <Details
-                  transferFeeConfig={transferFeeConfig}
-                  authorityData={mintTokenData}
-                />
-                <Activities
-                  allTokenAccounts={allTokenAccounts}
-                  mintQuery={mintQuery}
-                />
-              </div>
+              <DetailsPanel
+                transferFeeConfig={transferFeeConfig}
+                authorityData={mintTokenData}
+                allTokenAccounts={allTokenAccounts}
+                mintQuery={mintQuery}
+              />
             )}
           </div>
         </div>
       </div>
     )
+  );
+};
+
+interface DetailsPanelProps
+  extends MainPanelProps,
+    DetailsProps,
+    ActivitiesProps {}
+
+const DetailsPanel: FC<DetailsPanelProps> = ({
+  transferFeeConfig,
+  mintQuery,
+  authorityData,
+  allTokenAccounts,
+}) => {
+  return (
+    <div className="border-base-300 bg-base-100 border-x border-b">
+      <MainPanel
+        transferFeeConfig={transferFeeConfig}
+        authorityData={authorityData}
+        allTokenAccounts={allTokenAccounts}
+        mintQuery={mintQuery}
+      />
+      <Details
+        transferFeeConfig={transferFeeConfig}
+        authorityData={authorityData}
+      />
+      <Activities allTokenAccounts={allTokenAccounts} mintQuery={mintQuery} />
+    </div>
   );
 };
 
@@ -126,11 +151,11 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
         type="radio"
         role="tab"
         className={`tab text-lg font-semibold ${
-          selectedTab == TabsEnum.BUCKET ? 'tab-active' : ''
+          selectedTab == TabsEnum.CONTENT ? 'tab-active' : ''
         }`}
-        checked={selectedTab == TabsEnum.BUCKET}
-        onChange={() => setSelectedTab(TabsEnum.BUCKET)}
-        aria-label={TabsEnum.BUCKET}
+        checked={selectedTab == TabsEnum.CONTENT}
+        onChange={() => setSelectedTab(TabsEnum.CONTENT)}
+        aria-label={TabsEnum.CONTENT}
       />
       <input
         type="radio"
@@ -306,12 +331,12 @@ const Profile: FC<ProfileProps> = ({
   );
 };
 
-interface DataProps {
+interface DetailsProps {
   transferFeeConfig: TransferFeeConfig;
   authorityData: AuthorityData;
 }
 
-const Details: FC<DataProps> = ({ transferFeeConfig, authorityData }) => {
+const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
   const { connection } = useConnection();
   const [currentEpoch, setCurrentEpoch] = useState<number>();
 

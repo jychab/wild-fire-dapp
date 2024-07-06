@@ -10,8 +10,8 @@ import {
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { uploadImage, uploadMetadata } from '../create/create-data-access';
 import { AuthorityData } from '../dashboard/dashboard-ui';
+import { uploadImage, uploadMetadata } from '../firebase/functions';
 import {
   changeAdmin,
   changeTransferFee,
@@ -147,13 +147,13 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             imageUrl = await uploadImage(input.picture, mint);
           }
           toast('Uploading text metadata...');
-          const uri = await uploadMetadata(
-            input.name,
-            input.symbol,
-            input.description,
-            imageUrl ? imageUrl : input.previous.image,
-            mint
-          );
+          const payload = {
+            name: input.name,
+            symbol: input.symbol,
+            description: input.description,
+            image: imageUrl ? imageUrl : input.previous.image,
+          };
+          const uri = await uploadMetadata(JSON.stringify(payload), mint);
           fieldsToUpdate.set('uri', uri);
           const lamports = await getAdditionalRentForUpdatedMetadata(
             connection,

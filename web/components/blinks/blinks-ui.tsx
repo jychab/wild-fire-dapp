@@ -482,8 +482,8 @@ export const ActionLayout = ({
           />
         </Link>
       )}
-      <div className="flex flex-col gap-2 p-4">
-        <div className="mb-2 flex items-center gap-2">
+      <div className="flex flex-col gap-2 p-2">
+        <div className="flex items-center gap-2 text-sm">
           {websiteUrl && (
             <Link
               href={websiteUrl}
@@ -491,7 +491,7 @@ export const ActionLayout = ({
               className="link flex gap-2 items-center truncate"
               rel="noopener noreferrer"
             >
-              <IconLink size={18} />
+              <IconLink size={16} />
               {websiteText ?? websiteUrl}
             </Link>
           )}
@@ -514,7 +514,7 @@ export const ActionLayout = ({
             )}
             {type === 'trusted' && (
               <div className="badge badge-success">
-                <IconShield size={18} />
+                <IconShield size={16} />
               </div>
             )}
             {type === 'unknown' && (
@@ -524,17 +524,19 @@ export const ActionLayout = ({
             )}
           </Link>
         </div>
-        <span className="font-semibold">{title}</span>
-        <span className="whitespace-pre-wrap text-subtext ">{description}</span>
+        <span className="font-semibold text-sm">{title}</span>
+        <span className="whitespace-pre-wrap text-subtext text-xs">
+          {description}
+        </span>
         {disclaimer && <div className="mb-4">{disclaimer}</div>}
         <ActionContent form={form} inputs={inputs} buttons={buttons} />
         {success && (
-          <span className="mt-4 flex justify-center text-subtext text-blink-success">
+          <span className="mt-4 flex justify-center text-subtext text-success">
             {success}
           </span>
         )}
         {error && !success && (
-          <span className="mt-4 flex justify-center text-subtext text-blink-error">
+          <span className="mt-4 flex justify-center text-subtext text-error">
             {error}
           </span>
         )}
@@ -618,16 +620,16 @@ const ActionInput = ({
     (placeholder || 'Type here...') + (required ? '*' : '');
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-[#3D4144] transition-colors focus-within:border-blink-accent motion-reduce:transition-none">
+    <div className="flex items-center gap-2 rounded-box border transition-colors focus-within:border-primary motion-reduce:transition-none">
       <input
         placeholder={placeholderWithRequired}
         value={value}
         disabled={disabled}
         onChange={extendedChange}
-        className="my-3 ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-blink-neutral-50 disabled:text-blink-neutral-50"
+        className="my-2 ml-2 flex-1 truncate bg-transparent outline-none placeholder:text-neutral disabled:text-neutral"
       />
       {button && (
-        <div className="my-2 mr-2">
+        <div className="my-1 mr-1">
           <ActionButton
             {...button}
             onClick={() => button.onClick({ [name]: value })}
@@ -655,7 +657,7 @@ const ActionButton = ({
       );
     if (variant === 'success')
       return (
-        <span className="flex flex-row items-center justify-center gap-2 text-blink-success">
+        <span className="flex flex-row items-center justify-center gap-2 text-success">
           {text}
           <IconCheck />
         </span>
@@ -702,7 +704,7 @@ export const Button = ({
   const buttonStyle = disabled ? 'btn-disabled ' : 'btn-primary';
   return (
     <button
-      className={`${buttonStyle} btn flex w-full items-center justify-center rounded-full p-4 text-text font-semibold transition-colors motion-reduce:transition-none`}
+      className={`${buttonStyle} btn btn-xs flex w-full items-center justify-center rounded-full text-text font-semibold transition-colors motion-reduce:transition-none`}
       disabled={disabled}
       onClick={onClick}
     >

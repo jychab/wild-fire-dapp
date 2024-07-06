@@ -11,7 +11,7 @@ import { signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../../images/logo.png';
-import Authentication from '../authentication/authentication-feature';
+import { SignInBtn } from '../authentication/authentication-ui';
 import { auth } from '../firebase/firebase';
 import { createLoginMessage, verifyAndGetToken } from '../firebase/functions';
 import { UploadBtn } from '../upload/upload-ui';
@@ -97,9 +97,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 ))}
               </ul>
             </div>
-            <div className="navbar-end flex w-full gap-4 px-4">
+            <div className="navbar-end w-full flex gap-2 items-center ">
               <UploadBtn />
-              <Authentication />
+              <SignInBtn />
             </div>
           </div>
           <div className="flex flex-1 mx-4 w-full mx-auto">
@@ -213,11 +213,11 @@ export function AppHero({
   subtitle: ReactNode;
 }) {
   return (
-    <div className={`hero py-[32px] items-start `}>
-      <div className="hero-content flex flex-col lg:flex-row gap-8 w-full max-w-5xl ">
-        <div className="flex flex-col gap-8 max-w-xl text-center lg:text-left">
+    <div className={`hero py-[32px]`}>
+      <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
+        <div className="flex flex-col gap-8 w-full text-center ">
           {typeof title === 'string' ? (
-            <h1 className="max-w-3xl text-5xl lg:text-7xl font-bold text-base-content">
+            <h1 className="max-w-2xl text-5xl lg:text-7xl lg:text-left font-bold text-base-content">
               {title}
             </h1>
           ) : (

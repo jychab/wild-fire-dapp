@@ -9,8 +9,8 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
+import { CreateAccountBtn } from '../create/create-ui';
 import {
   useGetMintMetadata,
   useGetToken,
@@ -28,20 +28,32 @@ export const SignInBtn: FC = () => {
     <>
       {metaDataQuery ? (
         <ProfileButton metaDataQuery={metaDataQuery} />
+      ) : publicKey ? (
+        <div className="w-36">
+          <CreateAccountBtn />
+        </div>
       ) : (
-        <button
-          className="btn btn-accent rounded btn"
-          onClick={() =>
-            (
-              document.getElementById(
-                'authentication_modal'
-              ) as HTMLDialogElement
-            ).showModal()
-          }
-        >
-          {publicKey && !metaDataQuery ? 'Create Account' : 'Log In'}
-        </button>
+        <div className="w-24">
+          <AuthenticationBtn />
+        </div>
       )}
+    </>
+  );
+};
+
+export const AuthenticationBtn: FC = () => {
+  return (
+    <>
+      <button
+        className="btn btn-accent w-full"
+        onClick={() =>
+          (
+            document.getElementById('authentication_modal') as HTMLDialogElement
+          ).showModal()
+        }
+      >
+        Log In
+      </button>
       <AuthenticationDialog />
     </>
   );
@@ -57,7 +69,6 @@ interface ProfileButtonProps {
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { publicKey, disconnect } = useWallet();
-  const router = useRouter();
   return (
     <button
       type="button"

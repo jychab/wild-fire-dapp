@@ -11,6 +11,18 @@ interface ProgressBarProps {
   setPage: (number: number) => void;
 }
 
+export const CreateAccountBtn: FC = () => {
+  const router = useRouter();
+  return (
+    <button
+      onClick={() => router.push('/create')}
+      className="btn btn-primary rounded btn w-full"
+    >
+      Create Account
+    </button>
+  );
+};
+
 export const ProgressBar: FC<ProgressBarProps> = ({ page, setPage }) => {
   return (
     <ul className="steps gap-4 w-full">
@@ -171,7 +183,7 @@ const ReviewPage: FC<ReviewPageProps> = ({
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full bg-base-200 border border-base-content rounded">
         <span>Review</span>
-        <div className="flex flex-row w-full gap-4 py-4 items-start border-t border-base-content">
+        <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
           <div className="flex w-32 h-32 lg:w-40 lg:h-40 items-center justify-center">
             {tempImageUrl && (
               <div className="relative h-full w-full">
@@ -181,38 +193,19 @@ const ReviewPage: FC<ReviewPageProps> = ({
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   src={tempImageUrl}
-                  alt={''}
+                  alt={'profile pic'}
                 />
               </div>
             )}
           </div>
-          <div className="flex flex-col items-start w-1/2 text-start ">
-            <div className="flex justify-evenly w-full items-center">
-              {name && (
-                <div className="stat px-0 gap-1">
-                  <div className="stat-title text-xs ">Name</div>
-                  <span className="stat-value text-sm truncate font-normal">
-                    {name}
-                  </span>
-                </div>
-              )}
-              {symbol && (
-                <div className="stat px-0 gap-1">
-                  <span className="stat-title text-xs">Symbol</span>
-                  <span className="stat-value text-sm truncate font-normal">
-                    {symbol}
-                  </span>
-                </div>
-              )}
-            </div>
-            {description && (
-              <div className="stat px-0 gap-1">
-                <span className="stat-title text-xs">Details</span>
-                <span className="stat-value text-sm truncate font-normal">
-                  {description}
-                </span>
+          <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start">
+            <div className="flex flex-col">
+              <div className="flex gap-2 items-center">
+                <span className="text-2xl lg:text-3xl font-bold">{name}</span>
               </div>
-            )}
+              <span className="">{symbol}</span>
+            </div>
+            <span className="text-sm truncate font-normal">{description}</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 w-full">

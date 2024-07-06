@@ -4,10 +4,12 @@ import { ExtensionType, getMintLen } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Keypair, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation } from '@tanstack/react-query';
-import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import toast from 'react-hot-toast';
-import { storage } from '../firebase/firebase';
-import { getDistributor } from '../firebase/functions';
+import {
+  getDistributor,
+  uploadImage,
+  uploadMetadata,
+} from '../firebase/functions';
 import {
   createMint,
   createMintMetadata,
@@ -47,13 +49,13 @@ export function useCreateMint({ address }: { address: string | null }) {
         toast('Uploading image metadata...');
         const imageUrl = await uploadImage(input.picture, mint);
         toast('Uploading text metadata...');
-        const uri = await uploadMetadata(
-          input.name,
-          input.symbol,
-          input.description,
-          imageUrl,
-          mint
-        );
+        const payload = {
+          name: input.name,
+          symbol: input.symbol,
+          description: input.description,
+          image: imageUrl,
+        };
+        const uri = await uploadMetadata(JSON.stringify(payload), mint);
         const mintLen = getMintLen([
           ExtensionType.TransferFeeConfig,
           ExtensionType.MetadataPointer,
@@ -109,32 +111,4 @@ export function useCreateMint({ address }: { address: string | null }) {
       console.error(`Transaction failed! ${error}`);
     },
   });
-}
-
-export async function uploadMetadata(
-  name: string,
-  symbol: string,
-  description: string,
-  image: string,
-  mint: PublicKey
-) {
-  const payload = {
-    name,
-    symbol,
-    description,
-    image,
-  };
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
-  const payloadRef = ref(storage, path);
-  await uploadString(payloadRef, JSON.stringify(payload), undefined, {
-    contentType: 'text/plain',
-  });
-  return 'https://' + payloadRef.bucket + '/' + path;
-}
-
-export async function uploadImage(picture: File, mint: PublicKey) {
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
-  const imageRef = ref(storage, path);
-  await uploadBytes(imageRef, picture);
-  return 'https://' + imageRef.bucket + '/' + path;
 }
