@@ -447,11 +447,11 @@ export const ActionLayout = ({
   error,
   success,
 }: LayoutProps) => {
+  const [showMore, setShowMore] = useState(false);
   return (
     <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
       {image && websiteUrl && (
-        <Link
-          href={websiteUrl.toString()}
+        <div
           className={`block px-5 pt-5 relative w-full ${
             form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
           }`}
@@ -464,7 +464,7 @@ export const ActionLayout = ({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             alt="action-image"
           />
-        </Link>
+        </div>
       )}
       <div className="px-4 pb-4 pt-2 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm">
@@ -513,7 +513,15 @@ export const ActionLayout = ({
           {description}
         </span>
         {disclaimer && <div className="mb-4">{disclaimer}</div>}
-        <ActionContent form={form} inputs={inputs} buttons={buttons} />
+        <span
+          onClick={() => setShowMore(!showMore)}
+          className="text-xs stat-desc link link-hover"
+        >
+          {showMore ? 'Hide Actions' : 'Show Actions'}
+        </span>
+        {showMore && (
+          <ActionContent form={form} inputs={inputs} buttons={buttons} />
+        )}
         {success && (
           <span className="mt-4 flex justify-center text-subtext text-success">
             {success}
