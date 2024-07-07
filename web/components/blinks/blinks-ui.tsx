@@ -102,17 +102,18 @@ export const Blinks: FC<BlinksProps> = ({ actionUrl }) => {
       checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
   });
 
-  return (
-    action &&
-    actionsRegistry && (
-      <ActionContainer
-        actionsRegistry={actionsRegistry}
-        action={action}
-        websiteText={actionUrl.hostname}
-        websiteUrl={actionUrl.toString()}
-        normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
-      />
-    )
+  return action && actionsRegistry ? (
+    <ActionContainer
+      actionsRegistry={actionsRegistry}
+      action={action}
+      websiteText={actionUrl.hostname}
+      websiteUrl={actionUrl.toString()}
+      normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
+    />
+  ) : (
+    <div className="w-full p-4 flex items-center justify-center h-64">
+      <div className="loading loading-dots"></div>
+    </div>
   );
 };
 
@@ -352,26 +353,24 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   }, [executionState.status, isPassingSecurityCheck, overallState]);
 
   return (
-    overallState && (
-      <ActionLayout
-        type={overallState}
-        title={action.title}
-        description={action.description}
-        websiteUrl={websiteUrl}
-        websiteText={websiteText}
-        image={action.icon}
-        error={
-          executionState.status !== 'success'
-            ? executionState.errorMessage ?? action.error
-            : null
-        }
-        success={executionState.successMessage}
-        buttons={buttons.map(asButtonProps)}
-        inputs={inputs.map((input) => asInputProps(input))}
-        form={form ? asFormProps(form) : undefined}
-        disclaimer={disclaimer}
-      />
-    )
+    <ActionLayout
+      type={overallState || 'unknown'}
+      title={action.title}
+      description={action.description}
+      websiteUrl={websiteUrl}
+      websiteText={websiteText}
+      image={action.icon}
+      error={
+        executionState.status !== 'success'
+          ? executionState.errorMessage ?? action.error
+          : null
+      }
+      success={executionState.successMessage}
+      buttons={buttons.map(asButtonProps)}
+      inputs={inputs.map((input) => asInputProps(input))}
+      form={form ? asFormProps(form) : undefined}
+      disclaimer={disclaimer}
+    />
   );
 };
 
@@ -452,7 +451,7 @@ export const ActionLayout = ({
     <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
       {image && websiteUrl && (
         <Link
-          href={websiteUrl?.toString()}
+          href={websiteUrl.toString()}
           className={`block px-5 pt-5 relative w-full ${
             form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
           }`}

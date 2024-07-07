@@ -12,7 +12,7 @@ export default function Page() {
 
   return publicKey ? (
     <div className="flex w-full items-center justify-center">
-      <div className="max-w-7xl h-full sm:p-4">
+      <div className="max-w-7xl w-full h-full sm:p-4">
         <ContentFeature />
       </div>
     </div>

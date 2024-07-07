@@ -48,9 +48,9 @@ export const BlinksCard: FC<{
   try {
     const url = new URL(content.uri);
     return (
-      <div className="flex flex-col gap-2 bg-base-300 rounded">
+      <div className="flex flex-col gap-2 bg-base-300 rounded w-full">
         {showMintDetails && (
-          <div className="flex gap-2 px-4 pt-2 items-center">
+          <div className="flex gap-2 px-4 pt-2 items-center w-full">
             <Link
               className="relative w-8 h-8 rounded-full"
               href={`/dashboard?mintId=${content.mint.toBase58()}`}
