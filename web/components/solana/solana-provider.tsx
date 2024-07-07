@@ -2,12 +2,9 @@
 
 import dynamic from 'next/dynamic';
 
+import { UnifiedWalletProvider } from '@jup-ag/wallet-adapter';
 import { WalletError } from '@solana/wallet-adapter-base';
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { ConnectionProvider } from '@solana/wallet-adapter-react';
 import { ReactNode, useCallback, useMemo } from 'react';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -29,9 +26,27 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={[]} onError={onError} autoConnect={true}>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
+      <UnifiedWalletProvider
+        wallets={[]}
+        config={{
+          autoConnect: true,
+          env: 'mainnet-beta',
+          metadata: {
+            name: 'UnifiedWallet',
+            description: 'UnifiedWallet',
+            url: 'https://jup.ag',
+            iconUrls: ['https://jup.ag/favicon.ico'],
+          },
+          notificationCallback: undefined,
+          walletlistExplanation: {
+            href: 'https://station.jup.ag/docs/additional-topics/wallet-list',
+          },
+          theme: 'dark',
+          lang: 'en',
+        }}
+      >
+        {children}
+      </UnifiedWalletProvider>
     </ConnectionProvider>
   );
 }

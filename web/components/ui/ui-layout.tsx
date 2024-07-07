@@ -121,7 +121,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 ))}
               </ul>
             </div>
-            <div className="navbar-end w-full flex gap-2 items-center ">
+            <div className="navbar-end flex gap-2 items-center ">
               <div className="hidden sm:block">
                 <UploadBtn />
               </div>

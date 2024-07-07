@@ -278,7 +278,15 @@ const ReviewPage: FC<ReviewPageProps> = ({
             )}
           </button>
         ) : (
-          <AuthenticationBtn />
+          <div className="w-full">
+            <AuthenticationBtn
+              children={
+                <div className="w-full rounded btn-primary btn btn-sm">
+                  Connect Wallet
+                </div>
+              }
+            />
+          </div>
         )}
       </div>
     </div>
