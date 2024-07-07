@@ -28,7 +28,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
         {content.map((x) => {
           if (x.type.toLowerCase() == ContentType.BLINKS.toLowerCase()) {
             return (
-              <BlinksCard
+              <BlinksCardFull
                 key={x.uri}
                 content={x}
                 showMintDetails={showMintDetails}
@@ -41,7 +41,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
   );
 };
 
-export const BlinksCard: FC<{
+export const BlinksCardFull: FC<{
   content: ContentWithMetada;
   showMintDetails?: boolean;
 }> = ({ content, showMintDetails = true }) => {

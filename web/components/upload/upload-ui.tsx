@@ -11,7 +11,10 @@ import { useUploadMutation } from './upload.data-access';
 export const UploadBtn: FC = () => {
   const router = useRouter();
   return (
-    <button onClick={() => router.push('/upload')} className="btn btn-outline ">
+    <button
+      onClick={() => router.push('/upload')}
+      className="btn btn-sm btn-outline "
+    >
       <IconPlus />
       Upload
     </button>

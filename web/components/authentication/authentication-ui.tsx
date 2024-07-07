@@ -43,7 +43,7 @@ export const AuthenticationBtn: FC = () => {
   return (
     <>
       <button
-        className="btn btn-accent w-full"
+        className="btn btn-sm btn-accent w-full"
         onClick={() =>
           (
             document.getElementById('authentication_modal') as HTMLDialogElement

@@ -2,8 +2,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { formatLargeNumber } from '../../utils/helper/format';
+import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { useCreateMint } from './create-data-access';
 
 interface ProgressBarProps {
@@ -247,41 +247,39 @@ const ReviewPage: FC<ReviewPageProps> = ({
         >
           Back
         </button>
-        <button
-          disabled={!valid || !publicKey || createMutation.isPending}
-          onClick={() => {
-            if (!picture || !publicKey) {
-              toast.error('Missing Picture!');
-              return;
-            }
-            // call to backend to generate distributor
-            createMutation
-              .mutateAsync({
-                name: name,
-                symbol: symbol,
-                picture: picture,
-                description: description,
-                transferFee: parseFloat(fee) * 100,
-                maxTransferFee: maxFee != '' ? parseFloat(maxFee) : undefined,
-              })
-              .then(() => router.push('/dashboard'));
-          }}
-          className="btn btn-primary btn-sm w-full rounded"
-        >
-          {valid ? (
-            publicKey ? (
+        {publicKey ? (
+          <button
+            disabled={!valid || createMutation.isPending}
+            onClick={() => {
+              // call to backend to generate distributor
+              createMutation
+                .mutateAsync({
+                  name: name,
+                  symbol: symbol,
+                  picture: picture!,
+                  description: description,
+                  transferFee: parseFloat(fee) * 100,
+                  maxTransferFee: maxFee != '' ? parseFloat(maxFee) : undefined,
+                })
+                .then(() => router.push('/dashboard'));
+            }}
+            className="btn btn-primary btn-sm w-full rounded"
+          >
+            {valid ? (
               createMutation.isPending ? (
                 <div className="loading loading-spinner loading-sm" />
               ) : (
                 'Create'
               )
+            ) : picture ? (
+              'Missing Fields!'
             ) : (
-              'Connect Wallet'
-            )
-          ) : (
-            'Missing Fields!'
-          )}
-        </button>
+              'Missing Profile Picture!'
+            )}
+          </button>
+        ) : (
+          <AuthenticationBtn />
+        )}
       </div>
     </div>
   );
