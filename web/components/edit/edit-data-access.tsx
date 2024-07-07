@@ -37,7 +37,7 @@ interface EditMintArgs {
     admin: PublicKey;
     metaData: TokenMetadata;
     image: string;
-    description: string;
+    description: string | undefined;
   };
 }
 

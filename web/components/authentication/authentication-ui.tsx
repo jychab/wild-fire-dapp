@@ -5,12 +5,13 @@ import {
   IconCurrencySolana,
   IconLogout,
   IconUser,
+  IconUserCircle,
+  IconUserPlus,
   IconX,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
-import { CreateAccountBtn } from '../create/create-ui';
 import {
   useGetMintMetadata,
   useGetToken,
@@ -26,12 +27,8 @@ export const SignInBtn: FC = () => {
 
   return (
     <>
-      {metaDataQuery ? (
+      {publicKey ? (
         <ProfileButton metaDataQuery={metaDataQuery} />
-      ) : publicKey ? (
-        <div className="w-36">
-          <CreateAccountBtn />
-        </div>
       ) : (
         <div className="w-24">
           <AuthenticationBtn />
@@ -60,11 +57,14 @@ export const AuthenticationBtn: FC = () => {
 };
 
 interface ProfileButtonProps {
-  metaDataQuery: {
-    metaData: TokenMetadata;
-    image: any;
-    description: any;
-  };
+  metaDataQuery:
+    | {
+        metaData: TokenMetadata;
+        image: any;
+        description: any;
+      }
+    | null
+    | undefined;
 }
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
@@ -75,17 +75,21 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       className="dropdown dropdown-end dropdown-bottom relative w-10 h-10"
       id="user-menu-button"
     >
-      <Image
-        src={metaDataQuery.image}
-        priority={true}
-        className={`object-cover rounded-full`}
-        fill={true}
-        sizes="100vw"
-        alt={'profile pic'}
-      />
+      {metaDataQuery ? (
+        <Image
+          src={metaDataQuery.image}
+          priority={true}
+          className={`object-cover rounded-full`}
+          fill={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt={'profile pic'}
+        />
+      ) : (
+        <IconUserCircle size={32} />
+      )}
       <div className="dropdown-content menu bg-base-200 rounded-box z-[1] shadow">
         <div tabIndex={0} className="p-4 text-left">
-          <span className="block text-sm truncate w-40 cursor-default">
+          <span className="block text-sm truncate w-44 cursor-default">
             {publicKey ? publicKey.toString() : ''}
           </span>
           <span className="block text-sm truncate cursor-default">
@@ -93,13 +97,20 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
           </span>
         </div>
         <ul tabIndex={0} className="flex flex-col gap-2">
+          {metaDataQuery && (
+            <li className="w-full">
+              <Link
+                href={`/dashboard?mintId=${metaDataQuery.metaData.mint.toBase58()}`}
+              >
+                <IconUser />
+                Profile
+              </Link>
+            </li>
+          )}
           <li className="w-full">
-            <Link
-              className="btn btn-ghost justify-start"
-              href={`/dashboard?mintId=${metaDataQuery.metaData.mint.toBase58()}`}
-            >
-              <IconUser />
-              Profile
+            <Link href={`/create`}>
+              <IconUserPlus />
+              Create New Account
             </Link>
           </li>
           <li className="w-full">
@@ -110,7 +121,6 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
               onClick={async () => {
                 await disconnect();
               }}
-              className="btn btn-ghost justify-start"
             >
               <IconLogout />
               Log Out

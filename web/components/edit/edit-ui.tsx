@@ -58,7 +58,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
-    console.log(metaData);
     if (metaData && !metaDataLoaded) {
       setTempImageUrl(metaData.image);
 
@@ -66,7 +65,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
       setSymbol(metaData.metaData.symbol);
 
-      if (description == '' && metaData.description != '') {
+      if (
+        description == '' &&
+        metaData.description &&
+        metaData.description != ''
+      ) {
         setDescription(metaData.description);
       }
       setMetadataLoaded(true);

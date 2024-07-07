@@ -1,19 +1,18 @@
 'use client';
 
-import { AuthenticationBtn } from '@/components/authentication/authentication-ui';
 import { ContentFeature } from '@/components/content/content-feature';
-import { CreateAccountBtn } from '@/components/create/create-ui';
-import { useGetToken } from '@/components/dashboard/dashboard-data-access';
 import { AppHero } from '@/components/ui/ui-layout';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useRouter } from 'next/navigation';
 
 // Register the plugins
 export default function Page() {
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
+  const router = useRouter();
+
   return publicKey ? (
     <div className="flex w-full items-center justify-center">
-      <div className="max-w-7xl h-full">
+      <div className="max-w-7xl h-full md:p-4">
         <ContentFeature />
       </div>
     </div>
@@ -25,16 +24,12 @@ export default function Page() {
           <p className="text-neutral text-lg">
             Discover content specially curated by the tokens you hold.
           </p>
-          {publicKey && !data && (
-            <div className="w-36">
-              <CreateAccountBtn />
-            </div>
-          )}
-          {!publicKey && (
-            <div className="w-24">
-              <AuthenticationBtn />
-            </div>
-          )}
+          <button
+            onClick={() => router.push('/create')}
+            className="btn btn-outline"
+          >
+            Get Started
+          </button>
         </div>
       }
       children={

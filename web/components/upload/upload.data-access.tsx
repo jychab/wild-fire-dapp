@@ -65,7 +65,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           ...uriMetadata,
           content: newContent,
         };
-        console.log(payload);
         const uri = await uploadMetadata(JSON.stringify(payload), mint);
         fieldsToUpdate.set('uri', uri);
         const lamports = await getAdditionalRentForUpdatedMetadata(

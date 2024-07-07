@@ -465,7 +465,7 @@ export const ActionLayout = ({
   success,
 }: LayoutProps) => {
   return (
-    <div className="w-full cursor-default overflow-hidden rounded-2xl border bg-base-200 shadow-action">
+    <div className="w-full cursor-default md:rounded overflow-hidden bg-base-200 shadow-action">
       {image && websiteUrl && (
         <Link
           href={websiteUrl?.toString()}
@@ -477,12 +477,13 @@ export const ActionLayout = ({
             className={`object-cover object-left `}
             src={image}
             fill={true}
+            priority={true}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             alt="action-image"
           />
         </Link>
       )}
-      <div className="flex flex-col gap-2 p-2">
+      <div className="flex flex-col gap-2 p-4">
         <div className="flex items-center gap-2 text-sm">
           {websiteUrl && (
             <Link

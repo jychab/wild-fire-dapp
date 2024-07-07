@@ -81,8 +81,6 @@ export const execute = async (
     );
     const signedTx = await signTransaction(transaction);
 
-    console.log(signedTx);
-
     const txId = await connection.sendTransaction(signedTx, {
       skipPreflight: true,
       maxRetries: 0,

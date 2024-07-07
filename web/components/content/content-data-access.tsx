@@ -1,10 +1,10 @@
-import { getTokenMetadata } from '@solana/spl-token';
+import { DAS } from '@/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Content } from '../upload/upload.data-access';
 
-export function useGetAllTokenAccountsFromOwner({
+export function useGetAllFungibleTokensFromOwner({
   address,
 }: {
   address: PublicKey | null;
@@ -12,96 +12,69 @@ export function useGetAllTokenAccountsFromOwner({
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
-      'get-all-token-accounts-from-address',
+      'get-all-fungible-tokens-from-address',
       { endpoint: connection.rpcEndpoint, address },
     ],
     queryFn: async () => {
       if (!address) return;
-      let allTokenAccounts = new Set<{
-        address: string;
-        mint: string;
-        owner: string;
-        amount: number;
-        frozen: boolean;
-        token_extensions: {
-          transfer_fee_amount: {
-            withheld_amount: number;
-          };
-        };
-      }>();
-      let cursor;
 
-      while (true) {
-        let params: {
-          limit: number;
-          owner: string;
-          cursor?: any;
-          options: any;
-        } = {
-          limit: 1000,
-          owner: address.toBase58(),
-          options: {
-            showZeroBalance: false,
+      const response = await fetch(connection.rpcEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '',
+          method: 'searchAssets',
+          params: {
+            ownerAddress: address.toBase58(),
+            tokenType: 'fungible',
+            options: {
+              showZeroBalance: false,
+            },
           },
-        };
-
-        if (cursor != undefined) {
-          params.cursor = cursor;
-        }
-
-        const response = await fetch(connection.rpcEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: '',
-            method: 'getTokenAccounts',
-            params: params,
-          }),
-        });
-        const data = await response.json();
-
-        if (!data.result || data.result.token_accounts.length === 0) {
-          break;
-        }
-
-        data.result.token_accounts.forEach((account: any) => {
-          allTokenAccounts.add(account);
-        });
-        cursor = data.result.cursor;
-      }
-      return Array.from(allTokenAccounts);
+        }),
+      });
+      const data = (await response.json()).result as DAS.GetAssetResponseList;
+      return data;
     },
     enabled: !!address,
     staleTime: 1000 * 5 * 60,
   });
 }
 
-export function useGetMultipleMintMetadata({ mints }: { mints: PublicKey[] }) {
+export function useGetMultipleMintUriMetadata({
+  mintsUri,
+}: {
+  mintsUri: string[];
+}) {
   const { connection } = useConnection();
-  const queries = mints.map((mint) => {
+  const queries = mintsUri.map((uri) => {
     return {
       queryKey: [
-        'get-mint-metadata',
-        { endpoint: connection.rpcEndpoint, mint },
+        'get-mint-uri-metadata',
+        { endpoint: connection.rpcEndpoint, uri },
       ],
-      queryFn: () =>
-        mint &&
-        getTokenMetadata(connection, mint).then(async (details) => {
-          if (!details) return null;
-          const uriMetadata = await (await fetch(details.uri)).json();
+      queryFn: async () => {
+        try {
+          const uriMetadata = await (await fetch(uri)).json();
+          const name = uriMetadata.name;
+          const symbol = uriMetadata.symbol;
           const imageUrl = uriMetadata.image;
           const description = uriMetadata.description;
           const content = uriMetadata.content;
           return {
-            metaData: details,
+            name: name as string,
+            symbol: symbol as string,
             image: imageUrl as string,
             description: description as string | undefined,
             content: content as Content[] | undefined,
           };
-        }),
+        } catch (e) {
+          return null;
+        }
+      },
     };
   });
   return useQueries({ queries });

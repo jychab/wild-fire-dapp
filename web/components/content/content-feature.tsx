@@ -1,21 +1,23 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
 import {
-  useGetAllTokenAccountsFromOwner,
-  useGetMultipleMintMetadata,
+  useGetAllFungibleTokensFromOwner,
+  useGetMultipleMintUriMetadata,
 } from './content-data-access';
 import { ContentGrid } from './content-ui';
 export const ContentFeature: FC = () => {
   const { publicKey } = useWallet();
-  const { data: allTokenAccounts } = useGetAllTokenAccountsFromOwner({
+  const { data: allTokenAccounts } = useGetAllFungibleTokensFromOwner({
     address: publicKey,
   });
-  const allMintMetadataQuery = useGetMultipleMintMetadata({
-    mints: allTokenAccounts
-      ? allTokenAccounts.map((x) => new PublicKey(x.mint))
+
+  const allMintMetadataQuery = useGetMultipleMintUriMetadata({
+    mintsUri: allTokenAccounts
+      ? allTokenAccounts.items
+          .filter((x) => x.content)
+          .map((x) => x.content!.json_uri)
       : [],
   });
 

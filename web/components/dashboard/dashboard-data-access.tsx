@@ -1,5 +1,6 @@
 'use client';
 
+import { DAS } from '@/types/das';
 import {
   Mint,
   TOKEN_2022_PROGRAM_ID,
@@ -109,18 +110,7 @@ export function useGetAllTokenAccountsFromMint({ mint }: { mint: PublicKey }) {
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
-      let allTokenAccounts = new Set<{
-        address: string;
-        mint: string;
-        owner: string;
-        amount: number;
-        frozen: boolean;
-        token_extensions: {
-          transfer_fee_amount: {
-            withheld_amount: number;
-          };
-        };
-      }>();
+      let allTokenAccounts = new Set<DAS.TokenAccounts>();
       let cursor;
 
       while (true) {
@@ -153,16 +143,17 @@ export function useGetAllTokenAccountsFromMint({ mint }: { mint: PublicKey }) {
             params: params,
           }),
         });
-        const data = await response.json();
+        const data = (await response.json())
+          .result as DAS.GetTokenAccountsResponse;
 
-        if (!data.result || data.result.token_accounts.length === 0) {
+        if (!data || !data.token_accounts || data.token_accounts.length == 0) {
           break;
         }
 
-        data.result.token_accounts.forEach((account: any) => {
+        data.token_accounts.forEach((account) => {
           allTokenAccounts.add(account);
         });
-        cursor = data.result.cursor;
+        cursor = data.cursor;
       }
       return Array.from(allTokenAccounts);
     },

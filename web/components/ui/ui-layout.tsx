@@ -7,7 +7,11 @@ import { usePathname } from 'next/navigation';
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { signInAnonymously, signInWithCustomToken } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signInAnonymously,
+  signInWithCustomToken,
+} from 'firebase/auth';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../../images/logo.png';
@@ -23,8 +27,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
     // { label: 'Create', path: '/create' },
   ];
   const pathname = usePathname();
-
   const { publicKey, signMessage, disconnect } = useWallet();
+  const isLoggingInRef = useRef(false);
+
   const signOut = async () => {
     if (auth.currentUser) {
       await auth.signOut();
@@ -37,12 +42,14 @@ export function UiLayout({ children }: { children: ReactNode }) {
     publicKey: PublicKey,
     signMessage: (message: Uint8Array) => Promise<Uint8Array>
   ) => {
-    if (
-      (auth.currentUser && publicKey.toBase58() !== auth.currentUser.uid) ||
-      !auth.currentUser ||
-      auth.currentUser.isAnonymous
-    ) {
-      try {
+    if (isLoggingInRef.current) return; // Prevent re-entry if already logging in
+    isLoggingInRef.current = true;
+    try {
+      if (
+        (auth.currentUser && publicKey.toBase58() !== auth.currentUser.uid) ||
+        !auth.currentUser ||
+        auth.currentUser.isAnonymous
+      ) {
         let currentUser = auth.currentUser;
         if (!currentUser) {
           currentUser = (await signInAnonymously(auth)).user;
@@ -53,20 +60,30 @@ export function UiLayout({ children }: { children: ReactNode }) {
         const token = await verifyAndGetToken(publicKey, output);
         // Sign in with Firebase Authentication using a custom token.
         await signInWithCustomToken(auth, token);
-      } catch (error) {
-        signOut();
-        console.log(error);
       }
+    } catch (error) {
+      signOut();
+    } finally {
+      isLoggingInRef.current = false;
     }
   };
 
   useEffect(() => {
-    if (auth.currentUser == null && publicKey && signMessage) {
-      handleLogin(publicKey, signMessage);
-    } else if (auth.currentUser && !publicKey) {
-      signOut();
-    }
-  }, [auth.currentUser, publicKey]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (
+        publicKey &&
+        signMessage &&
+        ((user && publicKey.toBase58() !== user.uid) ||
+          !user ||
+          user.isAnonymous)
+      ) {
+        handleLogin(publicKey, signMessage);
+      }
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, [publicKey, signMessage]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -78,7 +95,13 @@ export function UiLayout({ children }: { children: ReactNode }) {
               className="flex px-4 items-center gap-1 w-[200px] max-w-1/3"
               href="/"
             >
-              <Image src={logo} alt={'logo'} width={30} height={30} />
+              <Image
+                src={logo}
+                alt={'logo'}
+                width={30}
+                height={30}
+                priority={true}
+              />
               <span className="hidden sm:block text-2xl font-bold uppercase">
                 HashFeed
               </span>

@@ -1,5 +1,6 @@
 'use client';
 
+import { DAS } from '@/types/das';
 import { Mint, TransferFeeConfig } from '@solana/spl-token';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -150,7 +151,7 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
       <input
         type="radio"
         role="tab"
-        className={`tab text-lg font-semibold ${
+        className={`tab font-semibold ${
           selectedTab == TabsEnum.CONTENT ? 'tab-active' : ''
         }`}
         checked={selectedTab == TabsEnum.CONTENT}
@@ -160,7 +161,7 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
       <input
         type="radio"
         role="tab"
-        className={`tab text-lg font-semibold ${
+        className={`tab font-semibold ${
           selectedTab == TabsEnum.TRADE ? 'tab-active' : ''
         }`}
         checked={selectedTab == TabsEnum.TRADE}
@@ -170,7 +171,7 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
       <input
         type="radio"
         role="tab"
-        className={`tab text-lg font-semibold ${
+        className={`tab font-semibold ${
           selectedTab == TabsEnum.DETAILS ? 'tab-active' : ''
         }`}
         aria-label={TabsEnum.DETAILS}
@@ -182,18 +183,7 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
 };
 
 interface ActivitiesProps {
-  allTokenAccounts: {
-    address: string;
-    mint: string;
-    owner: string;
-    amount: number;
-    frozen: boolean;
-    token_extensions: {
-      transfer_fee_amount: {
-        withheld_amount: number;
-      };
-    };
-  }[];
+  allTokenAccounts: DAS.TokenAccounts[];
   mintQuery: Mint;
 }
 
@@ -216,8 +206,8 @@ const Activities: FC<ActivitiesProps> = ({ allTokenAccounts, mintQuery }) => {
               </thead>
               <tbody>
                 {allTokenAccounts
-                  .filter((x) => x.amount > 0)
-                  .sort((a, b) => b.amount - a.amount)
+                  .filter((x) => x.amount && x.amount > 0)
+                  .sort((a, b) => b.amount! - a.amount!)
                   .filter((_, index) => index < 20)
                   .map((x, index) => (
                     <tr key={x.address}>
@@ -227,10 +217,10 @@ const Activities: FC<ActivitiesProps> = ({ allTokenAccounts, mintQuery }) => {
                           {x.owner}
                         </Link>
                       </td>
-                      <td className="">{formatLargeNumber(x.amount)}</td>
+                      <td className="">{formatLargeNumber(x.amount!)}</td>
                       <td className="">
                         {`${(Number(mintQuery.supply) != 0
-                          ? (x.amount / Number(mintQuery.supply)) * 100
+                          ? (x.amount! / Number(mintQuery.supply)) * 100
                           : 0
                         ).toFixed(2)}%`}
                       </td>
@@ -251,18 +241,7 @@ interface ProfileProps {
     image: any;
     description: any;
   };
-  allTokenAccounts: {
-    address: string;
-    mint: string;
-    owner: string;
-    amount: number;
-    frozen: boolean;
-    token_extensions: {
-      transfer_fee_amount: {
-        withheld_amount: number;
-      };
-    };
-  }[];
+  allTokenAccounts: DAS.TokenAccounts[];
   authorityData: AuthorityData;
 }
 
@@ -319,7 +298,8 @@ const Profile: FC<ProfileProps> = ({
 
         <span>
           {formatLargeNumber(
-            allTokenAccounts?.filter((x) => x.amount > 0).length || 0
+            allTokenAccounts?.filter((x) => x.amount && x.amount > 0).length ||
+              0
           ) + ' Followers'}
         </span>
 
@@ -443,18 +423,7 @@ const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
 interface MainPanelProps {
   transferFeeConfig: TransferFeeConfig;
   authorityData: AuthorityData;
-  allTokenAccounts: {
-    address: string;
-    mint: string;
-    owner: string;
-    amount: number;
-    frozen: boolean;
-    token_extensions: {
-      transfer_fee_amount: {
-        withheld_amount: number;
-      };
-    };
-  }[];
+  allTokenAccounts: DAS.TokenAccounts[];
 
   mintQuery: Mint;
 }
@@ -470,7 +439,7 @@ export const MainPanel: FC<MainPanelProps> = ({
       const mintWithheldFees = Number(transferFeeConfig.withheldAmount);
       const tokenAccountWithheldFees = allTokenAccounts.reduce(
         (sum, x) =>
-          sum + x.token_extensions.transfer_fee_amount.withheld_amount,
+          sum + x.token_extensions!.transfer_fee_amount.withheld_amount,
         0
       );
       return {
@@ -525,7 +494,8 @@ export const MainPanel: FC<MainPanelProps> = ({
                 <div className="stat gap-2">
                   <span className="stat-value font-normal truncate hover:text-info">
                     {allTokenAccounts
-                      ? allTokenAccounts.filter((x) => x.amount > 0).length
+                      ? allTokenAccounts.filter((x) => x.amount && x.amount > 0)
+                          .length
                       : 0}
                   </span>
                   <div className="stat-desc text-xs">total holders</div>

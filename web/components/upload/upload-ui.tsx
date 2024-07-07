@@ -21,7 +21,7 @@ export const UploadBtn: FC = () => {
 export enum ContentType {
   IMAGE = 'IMAGE',
   VIDEO = 'VIDEO',
-  BLINKS = 'blinks',
+  BLINKS = 'BLINKS',
 }
 
 export const Upload: FC = () => {

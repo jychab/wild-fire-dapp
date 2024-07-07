@@ -9,7 +9,7 @@ interface ContentGridProps {
 
 export const ContentGrid: FC<ContentGridProps> = ({ content }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5">
       {content.map((x) => {
         if (x.type.toLowerCase() == ContentType.BLINKS.toLowerCase()) {
           return <BlinksCard key={x.uri} uri={x.uri} />;
