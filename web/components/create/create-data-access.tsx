@@ -9,14 +9,14 @@ import {
   getDistributor,
   uploadImage,
   uploadMetadata,
-} from '../firebase/functions';
+} from '../../utils/firebase/functions';
+import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   createMint,
   createMintMetadata,
   issueMint,
-} from '../program/instructions';
+} from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
-import { buildAndSendTransaction } from '../utils/transactionBuilder';
 
 interface CreateMintArgs {
   name: string;

@@ -1,4 +1,4 @@
-import { JitoRegion } from '@/types/rpc';
+import { JitoRegion } from '../types/rpc';
 
 export declare enum WebhookType {
   ENHANCED = 'enhanced',

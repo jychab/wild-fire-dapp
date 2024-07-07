@@ -1,13 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
-import { Action } from './actions';
 import {
   ActionsJsonConfig,
   ActionsRegistry,
   ActionsRegistryConfig,
-  ActionsURLMapper,
   LookupType,
   RegisteredEntity,
-} from './utils';
+} from '@/utils/types/blinks';
+import { useQuery } from '@tanstack/react-query';
+import { Action, ActionsURLMapper } from '../../utils/helper/blinks';
 
 export function useGetBlinkAction({
   actionUrl,

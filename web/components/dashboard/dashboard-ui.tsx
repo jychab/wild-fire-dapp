@@ -1,6 +1,6 @@
 'use client';
 
-import { DAS } from '@/types/das';
+import { DAS } from '@/utils/types/das';
 import { Mint, TransferFeeConfig } from '@solana/spl-token';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -10,9 +10,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useState } from 'react';
+import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { formatLargeNumber } from '../utils/helper';
+import { Content } from '../upload/upload.data-access';
 import {
   useGetAllTokenAccountsFromMint,
   useGetMintDetails,
@@ -80,20 +81,17 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
   return (
     selected && (
       <div className="flex flex-col h-full w-full items-center">
-        <div className="flex flex-col gap-8 items-start w-full max-w-5xl px-4 py-8">
+        <div className="flex flex-col gap-8 items-start w-full max-w-6xl py-8">
           <Profile
             metaData={metaDataQuery}
             allTokenAccounts={allTokenAccounts}
             authorityData={mintTokenData}
           />
-          <div className="flex flex-col w-full bg-base-200">
+          <div className="flex flex-col w-full">
             <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-            {selectedTab == TabsEnum.CONTENT &&
-              (metaDataQuery.content ? (
-                <ContentGrid content={metaDataQuery.content} />
-              ) : (
-                <div>No Content Found</div>
-              ))}
+            {selectedTab == TabsEnum.CONTENT && (
+              <ContentPanel metadata={metaDataQuery} />
+            )}
             {selectedTab == TabsEnum.DETAILS && (
               <DetailsPanel
                 transferFeeConfig={transferFeeConfig}
@@ -109,6 +107,36 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
   );
 };
 
+interface ContentPanelProps {
+  metadata: {
+    metaData: TokenMetadata;
+    image: string;
+    description: string | undefined;
+    content: Content[] | undefined;
+  };
+}
+
+const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
+  return metadata.content ? (
+    <div className="sm:p-4 border-x border-b rounded border-base-200">
+      <ContentGrid
+        showMintDetails={false}
+        content={metadata.content.map((x) => {
+          return {
+            ...x,
+            name: metadata.metaData.name,
+            symbol: metadata.metaData.symbol,
+            image: metadata.image,
+            mint: metadata.metaData.mint,
+          };
+        })}
+      />
+    </div>
+  ) : (
+    <div>No Content Found</div>
+  );
+};
+
 interface DetailsPanelProps
   extends MainPanelProps,
     DetailsProps,
@@ -121,7 +149,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
   allTokenAccounts,
 }) => {
   return (
-    <div className="border-base-300 bg-base-100 border-x border-b">
+    <div className="border-base-200 rounded border-x border-b">
       <MainPanel
         transferFeeConfig={transferFeeConfig}
         authorityData={authorityData}
@@ -424,7 +452,6 @@ interface MainPanelProps {
   transferFeeConfig: TransferFeeConfig;
   authorityData: AuthorityData;
   allTokenAccounts: DAS.TokenAccounts[];
-
   mintQuery: Mint;
 }
 

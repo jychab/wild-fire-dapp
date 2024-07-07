@@ -1,3 +1,15 @@
+import { ExecutionType } from '@/utils/enums/blinks';
+import {
+  ACTIONS_REGISTRY_URL_ALL,
+  ActionStateWithOrigin,
+  ActionsRegistry,
+  ExecutionState,
+  ExecutionStatus,
+  ExtendedActionState,
+  NormalizedSecurityLevel,
+  Parameter,
+  Source,
+} from '@/utils/types/blinks';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   IconCheck,
@@ -10,31 +22,23 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { PropsWithChildren } from 'react';
 import { FC, ReactNode, useMemo, useState, type ChangeEvent } from 'react';
-import { Action, ActionComponent } from './actions';
+import {
+  Action,
+  ActionComponent,
+  checkSecurity,
+  checkSecurityFromActionState,
+  execute,
+  executionReducer,
+  isInterstitial,
+  mergeActionStates,
+  normalizeOptions,
+} from '../../utils/helper/blinks';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
   useGetBlinkAction,
   useGetBlinkActionJsonUrl,
 } from './blink-data-access';
-import { execute } from './functions';
-import {
-  ACTIONS_REGISTRY_URL_ALL,
-  ActionsRegistry,
-  ExecutionState,
-  ExecutionStatus,
-  ExecutionType,
-  ExtendedActionState,
-  NormalizedSecurityLevel,
-  Parameter,
-  Source,
-  checkSecurity,
-  checkSecurityFromActionState,
-  executionReducer,
-  isInterstitial,
-  mergeActionStates,
-  normalizeOptions,
-} from './utils';
 
 interface BlinksProps {
   actionUrl: URL;
@@ -119,24 +123,6 @@ interface ActionContainerProps {
   websiteText?: string | null;
   normalizedSecurityLevel: NormalizedSecurityLevel;
 }
-
-export interface ActionContext {
-  originalUrl: string;
-  action: Action;
-  actionType: 'trusted' | 'malicious' | 'unknown';
-  triggeredLinkedAction: ActionComponent;
-}
-
-export type ActionStateWithOrigin =
-  | {
-      action: ExtendedActionState;
-      origin?: never;
-    }
-  | {
-      action: ExtendedActionState;
-      origin: ExtendedActionState;
-      originType: Source;
-    };
 
 export const ActionContainer: FC<ActionContainerProps> = ({
   websiteText,
@@ -413,8 +399,6 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
   );
 };
 
-type ActionType = ExtendedActionState;
-
 interface LayoutProps {
   image?: string;
   error?: string | null;
@@ -422,14 +406,14 @@ interface LayoutProps {
   websiteUrl?: string | null;
   websiteText?: string | null;
   disclaimer?: ReactNode;
-  type: ActionType;
+  type: ExtendedActionState;
   title: string;
   description: string;
   buttons?: ButtonProps[];
   inputs?: InputProps[];
   form?: FormProps;
 }
-export interface ButtonProps {
+interface ButtonProps {
   text: string | null;
   loading?: boolean;
   variant?: 'default' | 'success' | 'error';
@@ -437,7 +421,7 @@ export interface ButtonProps {
   onClick: (params?: Record<string, string>) => void;
 }
 
-export interface InputProps {
+interface InputProps {
   placeholder?: string;
   name: string;
   disabled: boolean;
@@ -445,7 +429,7 @@ export interface InputProps {
   button?: ButtonProps;
 }
 
-export interface FormProps {
+interface FormProps {
   inputs: Array<Omit<InputProps, 'button'>>;
   button: ButtonProps;
 }
@@ -465,7 +449,7 @@ export const ActionLayout = ({
   success,
 }: LayoutProps) => {
   return (
-    <div className="w-full cursor-default md:rounded overflow-hidden bg-base-200 shadow-action">
+    <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
       {image && websiteUrl && (
         <Link
           href={websiteUrl?.toString()}
@@ -483,7 +467,7 @@ export const ActionLayout = ({
           />
         </Link>
       )}
-      <div className="flex flex-col gap-2 p-4">
+      <div className="px-4 pb-4 pt-2 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm">
           {websiteUrl && (
             <Link
@@ -627,7 +611,7 @@ const ActionInput = ({
         value={value}
         disabled={disabled}
         onChange={extendedChange}
-        className="my-2 ml-2 flex-1 truncate bg-transparent outline-none placeholder:text-neutral disabled:text-neutral"
+        className="text-sm ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-neutral disabled:text-neutral"
       />
       {button && (
         <div className="my-1 mr-1">

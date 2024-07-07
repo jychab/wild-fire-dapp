@@ -7,7 +7,7 @@ import {
   RoyaltyModel,
   Scope,
   UseMethods,
-} from '@/enums/das';
+} from '../enums/das';
 import { FullRwaAccount } from './rpc';
 
 export declare namespace DAS {

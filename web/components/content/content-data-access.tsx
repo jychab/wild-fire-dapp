@@ -1,4 +1,4 @@
-import { DAS } from '@/types/das';
+import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -45,26 +45,27 @@ export function useGetAllFungibleTokensFromOwner({
 }
 
 export function useGetMultipleMintUriMetadata({
-  mintsUri,
+  mints,
 }: {
-  mintsUri: string[];
+  mints: { mint: PublicKey; uri: string }[];
 }) {
   const { connection } = useConnection();
-  const queries = mintsUri.map((uri) => {
+  const queries = mints.map((mint) => {
     return {
       queryKey: [
         'get-mint-uri-metadata',
-        { endpoint: connection.rpcEndpoint, uri },
+        { endpoint: connection.rpcEndpoint, mint: mint.mint, uri: mint.uri },
       ],
       queryFn: async () => {
         try {
-          const uriMetadata = await (await fetch(uri)).json();
+          const uriMetadata = await (await fetch(mint.uri)).json();
           const name = uriMetadata.name;
           const symbol = uriMetadata.symbol;
           const imageUrl = uriMetadata.image;
           const description = uriMetadata.description;
           const content = uriMetadata.content;
           return {
+            mint: mint.mint,
             name: name as string,
             symbol: symbol as string,
             image: imageUrl as string,

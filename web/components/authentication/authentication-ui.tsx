@@ -4,6 +4,7 @@ import {
   IconArrowLeft,
   IconCurrencySolana,
   IconLogout,
+  IconUpload,
   IconUser,
   IconUserCircle,
   IconUserPlus,
@@ -87,16 +88,16 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       ) : (
         <IconUserCircle size={32} />
       )}
-      <div className="dropdown-content menu bg-base-200 rounded-box z-[1] shadow">
+      <div className="dropdown-content menu bg-base-300 rounded-box z-[1] shadow">
         <div tabIndex={0} className="p-4 text-left">
-          <span className="block text-sm truncate w-44 cursor-default">
+          <span className="block text-sm truncate w-40 cursor-default">
             {publicKey ? publicKey.toString() : ''}
           </span>
           <span className="block text-sm truncate cursor-default">
             {'mainnet-beta'}
           </span>
         </div>
-        <ul tabIndex={0} className="flex flex-col gap-2">
+        <ul tabIndex={0} className="flex flex-col">
           {metaDataQuery && (
             <li className="w-full">
               <Link
@@ -111,6 +112,12 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             <Link href={`/create`}>
               <IconUserPlus />
               Create New Account
+            </Link>
+          </li>
+          <li className="w-full">
+            <Link href={`/upload`}>
+              <IconUpload />
+              Upload
             </Link>
           </li>
           <li className="w-full">

@@ -1,6 +1,6 @@
 'use client';
 
-import { DAS } from '@/types/das';
+import { DAS } from '@/utils/types/das';
 import {
   Mint,
   TOKEN_2022_PROGRAM_ID,
@@ -11,7 +11,7 @@ import {
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
-import { program } from '../program/instructions';
+import { program } from '../../utils/helper/transcationInstructions';
 import { Content } from '../upload/upload.data-access';
 import { AuthorityData } from './dashboard-ui';
 

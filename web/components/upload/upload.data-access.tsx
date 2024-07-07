@@ -8,13 +8,13 @@ import {
 } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { uploadMetadata } from '../firebase/functions';
+import { uploadMetadata } from '../../utils/firebase/functions';
+import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   getAdditionalRentForUpdatedMetadata,
   updateMetadata,
-} from '../program/instructions';
+} from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
-import { buildAndSendTransaction } from '../utils/transactionBuilder';
 import { ContentType } from './upload-ui';
 
 export interface Content {

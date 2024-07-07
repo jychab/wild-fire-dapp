@@ -10,8 +10,8 @@ import {
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { AuthorityData } from '../dashboard/dashboard-ui';
-import { uploadImage, uploadMetadata } from '../firebase/functions';
+import { uploadImage, uploadMetadata } from '../../utils/firebase/functions';
+import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   changeAdmin,
   changeTransferFee,
@@ -19,9 +19,9 @@ import {
   getAdditionalRentForUpdatedMetadata,
   program,
   updateMetadata,
-} from '../program/instructions';
+} from '../../utils/helper/transcationInstructions';
+import { AuthorityData } from '../dashboard/dashboard-ui';
 import { useTransactionToast } from '../ui/ui-layout';
-import { buildAndSendTransaction } from '../utils/transactionBuilder';
 
 interface EditMintArgs {
   name: string;

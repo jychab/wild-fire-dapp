@@ -13,8 +13,8 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
-import Idl from './idl/wild_fire.json';
-import { WildFire } from './types/wild_fire';
+import Idl from '../program/idl/wild_fire.json';
+import { WildFire } from '../program/types/wild_fire';
 
 export const program = (connection: Connection) =>
   new Program<WildFire>(Idl as unknown as WildFire, {

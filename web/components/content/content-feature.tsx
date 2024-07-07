@@ -1,6 +1,7 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
 import {
   useGetAllFungibleTokensFromOwner,
@@ -14,16 +15,28 @@ export const ContentFeature: FC = () => {
   });
 
   const allMintMetadataQuery = useGetMultipleMintUriMetadata({
-    mintsUri: allTokenAccounts
+    mints: allTokenAccounts
       ? allTokenAccounts.items
           .filter((x) => x.content)
-          .map((x) => x.content!.json_uri)
+          .map((x) => {
+            return { mint: new PublicKey(x.id), uri: x.content!.json_uri };
+          })
       : [],
   });
 
   const content = allMintMetadataQuery
     .filter((x) => x.data && x.data.content != undefined)
-    .map((x) => x.data?.content);
+    .map((x) => {
+      return x.data!.content?.map((y) => {
+        return {
+          ...y,
+          name: x.data!.name,
+          symbol: x.data!.symbol,
+          image: x.data!.image,
+          mint: x.data!.mint,
+        };
+      });
+    });
 
   const flattenedContent = content.reduce((acc, val) => acc!.concat(val!), []);
 
