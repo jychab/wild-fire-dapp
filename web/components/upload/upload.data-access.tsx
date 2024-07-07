@@ -1,3 +1,4 @@
+import { proxify } from '@/utils/helper/proxy';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -51,7 +52,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
 
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
-        const uriMetadata = await (await fetch(details.uri)).json();
+        const uriMetadata = await (await fetch(proxify(details.uri))).json();
         const currentContent = uriMetadata.content as Content[] | undefined;
         const newContent = currentContent
           ? currentContent.concat(input.content)

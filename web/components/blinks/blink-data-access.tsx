@@ -1,3 +1,4 @@
+import { proxify } from '@/utils/helper/proxy';
 import {
   ActionsJsonConfig,
   ActionsRegistry,
@@ -37,7 +38,7 @@ export function useGetBlinkActionJsonUrl({
     queryFn: async () => {
       const actionsJsonUrl = origin + '/actions.json';
       try {
-        const res = await fetch(actionsJsonUrl);
+        const res = await fetch(proxify(actionsJsonUrl));
         const actionsJson = (await res.json()) as ActionsJsonConfig;
         return new ActionsURLMapper(actionsJson);
       } catch (_) {
@@ -134,7 +135,7 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
         interstitialsByHost: {},
       };
       try {
-        const response = await fetch(registryUrl);
+        const response = await fetch(proxify(registryUrl));
         let config;
         if (!response.ok) {
           console.error(

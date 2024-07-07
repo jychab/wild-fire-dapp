@@ -23,6 +23,7 @@ import {
   Transaction,
   VersionedTransaction,
 } from '@solana/web3.js';
+import { proxify } from './proxy';
 
 const solanaActionPrefix = /^(solana-action:|solana:)/;
 
@@ -404,7 +405,7 @@ export class Action {
 
   static async fetch(apiUrl: string) {
     try {
-      const response = await fetch(apiUrl, {
+      const response = await fetch(proxify(apiUrl), {
         headers: {
           Accept: 'application/json',
         },
@@ -491,7 +492,7 @@ export class ActionComponent {
   }
 
   public async post(account: string) {
-    const response = await fetch(this.href, {
+    const response = await fetch(proxify(this.href), {
       method: 'POST',
       body: JSON.stringify({ account } as ActionsSpecPostRequestBody),
       headers: {

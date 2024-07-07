@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import {
   Mint,
@@ -52,7 +53,7 @@ export function useGetMintMetadata({ mint }: { mint: PublicKey | undefined }) {
       mint &&
       getTokenMetadata(connection, mint).then(async (details) => {
         if (!details) return null;
-        const uriMetadata = await (await fetch(details.uri)).json();
+        const uriMetadata = await (await fetch(proxify(details.uri))).json();
         const imageUrl = uriMetadata.image;
         const description = uriMetadata.description;
         const content = uriMetadata.content;

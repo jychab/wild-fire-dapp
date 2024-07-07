@@ -1,3 +1,4 @@
+import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -58,7 +59,7 @@ export function useGetMultipleMintUriMetadata({
       ],
       queryFn: async () => {
         try {
-          const uriMetadata = await (await fetch(mint.uri)).json();
+          const uriMetadata = await (await fetch(proxify(mint.uri))).json();
           const name = uriMetadata.name;
           const symbol = uriMetadata.symbol;
           const imageUrl = uriMetadata.image;
