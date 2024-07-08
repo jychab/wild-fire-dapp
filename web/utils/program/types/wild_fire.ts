@@ -25,6 +25,58 @@ export type WildFire = {
         {
           name: 'authority';
           writable: true;
+        },
+        {
+          name: 'newAdminMint';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: 'arg';
+                path: 'newAdmin';
+              }
+            ];
+          };
+        },
+        {
+          name: 'systemProgram';
+          address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -65,6 +117,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'admin';
+          signer: true;
+        },
+        {
           name: 'authority';
         },
         {
@@ -97,6 +153,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'admin';
+          signer: true;
+        },
+        {
           name: 'authority';
           writable: true;
         },
@@ -117,8 +177,24 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'admin';
+          signer: true;
+        },
+        {
           name: 'mint';
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: 'account';
+                path: 'admin';
+              }
+            ];
+          };
         },
         {
           name: 'authority';
@@ -203,6 +279,10 @@ export type WildFire = {
         {
           name: 'payer';
           writable: true;
+          signer: true;
+        },
+        {
+          name: 'admin';
           signer: true;
         },
         {
@@ -405,13 +485,17 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'payerMintTokenAccount';
+          name: 'admin';
+          signer: true;
+        },
+        {
+          name: 'adminMintTokenAccount';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'account';
-                path: 'payer';
+                path: 'admin';
               },
               {
                 kind: 'account';
@@ -543,6 +627,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'admin';
+          signer: true;
+        },
+        {
           name: 'mint';
           writable: true;
         },
@@ -587,6 +675,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'admin';
+          signer: true;
+        },
+        {
           name: 'authority';
           writable: true;
         },
@@ -608,6 +700,10 @@ export type WildFire = {
         {
           name: 'payer';
           writable: true;
+          signer: true;
+        },
+        {
+          name: 'admin';
           signer: true;
         },
         {
@@ -791,6 +887,10 @@ export type WildFire = {
   ];
   events: [
     {
+      name: 'changeAdmin';
+      discriminator: [231, 73, 8, 168, 43, 125, 226, 99];
+    },
+    {
       name: 'createMint';
       discriminator: [174, 206, 148, 3, 212, 221, 222, 175];
     },
@@ -868,6 +968,22 @@ export type WildFire = {
       };
     },
     {
+      name: 'changeAdmin';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'newAdmin';
+            type: 'pubkey';
+          }
+        ];
+      };
+    },
+    {
       name: 'createMint';
       type: {
         kind: 'struct';
@@ -892,10 +1008,6 @@ export type WildFire = {
       type: {
         kind: 'struct';
         fields: [
-          {
-            name: 'admin';
-            type: 'pubkey';
-          },
           {
             name: 'distributor';
             type: 'pubkey';
