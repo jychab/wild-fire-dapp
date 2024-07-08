@@ -10,7 +10,7 @@ import {
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { uploadImage, uploadMetadata } from '../../utils/firebase/functions';
+import { uploadMedia, uploadMetadata } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   changeAdmin,
@@ -144,7 +144,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           let imageUrl;
           if (input.picture) {
             toast('Uploading image metadata...');
-            imageUrl = await uploadImage(input.picture, mint);
+            imageUrl = await uploadMedia(input.picture, mint);
           }
           toast('Uploading text metadata...');
           const payload = {

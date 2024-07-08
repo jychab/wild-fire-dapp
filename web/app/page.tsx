@@ -1,6 +1,6 @@
 'use client';
 
-import { ContentFeature } from '@/components/content/content-feature';
+import { ContentGridFeature } from '@/components/content/content-feature';
 import { AppHero } from '@/components/ui/ui-layout';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRouter } from 'next/navigation';
@@ -12,8 +12,8 @@ export default function Page() {
 
   return publicKey ? (
     <div className="flex w-full items-center justify-center">
-      <div className="max-w-7xl w-full h-full sm:p-4">
-        <ContentFeature />
+      <div className="max-w-xl w-full h-full sm:p-4">
+        <ContentGridFeature />
       </div>
     </div>
   ) : (
@@ -21,11 +21,11 @@ export default function Page() {
       title={'Your feed, reimagined.'}
       subtitle={
         <div className="flex flex-col gap-4 items-center lg:items-start">
-          <p className="text-neutral text-lg">
+          <p className="text-lg">
             Discover content specially curated by the tokens you hold.
           </p>
           <button
-            onClick={() => router.push('/create')}
+            onClick={() => router.push('/mint/create')}
             className="btn btn-outline"
           >
             Get Started

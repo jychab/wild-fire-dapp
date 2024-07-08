@@ -1,8 +1,27 @@
+import { uploadMetadata } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
+import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import {
+  getAdditionalRentForUpdatedMetadata,
+  updateMetadata,
+} from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
-import { useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { getTokenMetadata } from '@solana/spl-token';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import {
+  PublicKey,
+  SystemProgram,
+  TransactionInstruction,
+  TransactionSignature,
+} from '@solana/web3.js';
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { useTransactionToast } from '../ui/ui-layout';
 import { Content } from '../upload/upload.data-access';
 
 export function useGetAllFungibleTokensFromOwner({
@@ -80,4 +99,98 @@ export function useGetMultipleMintUriMetadata({
     };
   });
   return useQueries({ queries });
+}
+
+export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationKey: [
+      'remove-mint-content',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async (id: string) => {
+      let signature: TransactionSignature = '';
+      let tx: TransactionInstruction[] = [];
+      try {
+        if (!wallet.publicKey || !mint || !id) return;
+        const details = await getTokenMetadata(connection, mint);
+        if (!details) return;
+        const uriMetadata = await (await fetch(proxify(details.uri))).json();
+        const currentContent = uriMetadata.content as Content[] | undefined;
+        if (!currentContent) return;
+        const newContent = currentContent.filter((x) => x.id != id);
+        newContent.sort((a, b) => b.updatedAt - a.updatedAt);
+        let fieldsToUpdate = new Map<string, string>();
+        const payload = {
+          ...uriMetadata,
+          content: newContent,
+        };
+        const uri = await uploadMetadata(JSON.stringify(payload), mint);
+        fieldsToUpdate.set('uri', uri);
+        const lamports = await getAdditionalRentForUpdatedMetadata(
+          connection,
+          mint,
+          fieldsToUpdate
+        );
+        if (lamports > 0) {
+          tx.push(
+            SystemProgram.transfer({
+              fromPubkey: wallet.publicKey,
+              toPubkey: mint,
+              lamports: lamports,
+            })
+          );
+        }
+        for (let x of fieldsToUpdate) {
+          tx.push(
+            await updateMetadata(
+              connection,
+              wallet.publicKey!,
+              mint,
+              x[0],
+              x[1]
+            )
+          );
+        }
+
+        if (tx.length == 0) return;
+        signature = await buildAndSendTransaction(
+          connection,
+          tx,
+          wallet.publicKey!,
+          wallet.signTransaction!,
+          'confirmed'
+        );
+
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error}` + signature);
+        return;
+      }
+    },
+
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+        return Promise.all([
+          client.invalidateQueries({
+            queryKey: [
+              'get-mint-metadata',
+              { endpoint: connection.rpcEndpoint, mint },
+            ],
+          }),
+        ]);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${JSON.stringify(error)}`);
+    },
+  });
 }

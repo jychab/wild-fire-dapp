@@ -50,7 +50,7 @@ export async function uploadMetadata(payload: string, mint: PublicKey) {
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 
-export async function uploadImage(picture: File, mint: PublicKey) {
+export async function uploadMedia(picture: File, mint: PublicKey) {
   const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture);

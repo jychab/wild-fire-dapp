@@ -13,10 +13,27 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [require('daisyui')],
+  plugins: [require('@tailwindcss/typography'), require('daisyui')],
   daisyui: {
     themes: [
-      'light',
+      {
+        light: {
+          primary: '#fb7185',
+          'primary-content': '#f3f4f6',
+          secondary: '#9ca3af',
+          'secondary-content': '#f3f4f6',
+          accent: '#f43f5e',
+          'accent-content': '#f3f4f6',
+          neutral: '#ffffff',
+          'neutral-content': '#f3f4f6',
+          'base-100': '#ffffff',
+          'base-200': '#e5e7eb',
+          'base-300': '#e5e7eb',
+          'base-content': '#161616',
+          info: '#d1d5db',
+          'info-content': '#161616',
+        },
+      },
       {
         dark: {
           primary: '#ffffff',

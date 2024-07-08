@@ -7,7 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   getDistributor,
-  uploadImage,
+  uploadMedia,
   uploadMetadata,
 } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
@@ -47,7 +47,7 @@ export function useCreateMint({ address }: { address: string | null }) {
         const mint = mintKeypair.publicKey;
         const distributor = await getDistributor(mint.toBase58());
         toast('Uploading image metadata...');
-        const imageUrl = await uploadImage(input.picture, mint);
+        const imageUrl = await uploadMedia(input.picture, mint);
         toast('Uploading text metadata...');
         const payload = {
           name: input.name,

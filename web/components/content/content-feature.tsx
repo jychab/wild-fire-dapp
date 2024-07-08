@@ -3,12 +3,13 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
+import { useGetMintMetadata } from '../dashboard/dashboard-data-access';
 import {
   useGetAllFungibleTokensFromOwner,
   useGetMultipleMintUriMetadata,
 } from './content-data-access';
-import { ContentGrid } from './content-ui';
-export const ContentFeature: FC = () => {
+import { ContentGrid, ContentWithMetada, DisplayContent } from './content-ui';
+export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
   const { data: allTokenAccounts } = useGetAllFungibleTokensFromOwner({
     address: publicKey,
@@ -41,4 +42,34 @@ export const ContentFeature: FC = () => {
   const flattenedContent = content.reduce((acc, val) => acc!.concat(val!), []);
 
   return flattenedContent && <ContentGrid content={flattenedContent} />;
+};
+
+interface ContentFeatureProps {
+  mintId: string;
+  id: string;
+}
+
+export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
+  const { data: metadataQuery } = useGetMintMetadata({
+    mint: mintId ? new PublicKey(mintId) : undefined,
+  });
+
+  const content = metadataQuery
+    ? {
+        ...(metadataQuery.content!.find((x) => x.id == id) || {}),
+        name: metadataQuery.metaData.name,
+        symbol: metadataQuery.metaData.symbol,
+        image: metadataQuery.image,
+        mint: metadataQuery.metaData.mint,
+      }
+    : undefined;
+  return (
+    content && (
+      <div className="flex flex-col py-[32px] w-full items-center">
+        <div className="max-w-xl w-full">
+          <DisplayContent content={content as ContentWithMetada} />
+        </div>
+      </div>
+    )
+  );
 };

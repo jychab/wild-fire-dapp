@@ -1,4 +1,5 @@
 import { ExecutionType } from '@/utils/enums/blinks';
+import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
   ACTIONS_REGISTRY_URL_ALL,
   ActionStateWithOrigin,
@@ -12,14 +13,18 @@ import {
 } from '@/utils/types/blinks';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
+  IconAlertTriangleFilled,
   IconCheck,
-  IconExclamationCircle,
+  IconDotsVertical,
+  IconHelpOctagonFilled,
   IconLink,
   IconProgress,
-  IconShield,
+  IconShieldCheckFilled,
+  IconTrash,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 import { FC, ReactNode, useMemo, useState, type ChangeEvent } from 'react';
 import {
@@ -33,6 +38,8 @@ import {
   mergeActionStates,
   normalizeOptions,
 } from '../../utils/helper/blinks';
+import { useRemoveContentMutation } from '../content/content-data-access';
+import { AdditionalMetadata } from '../content/content-ui';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -42,8 +49,16 @@ import {
 
 interface BlinksProps {
   actionUrl: URL;
+  additionalMetadata?: AdditionalMetadata;
+  editable?: boolean;
+  multiGrid?: boolean;
 }
-export const Blinks: FC<BlinksProps> = ({ actionUrl }) => {
+export const Blinks: FC<BlinksProps> = ({
+  actionUrl,
+  additionalMetadata,
+  editable = false,
+  multiGrid = false,
+}) => {
   let actionApiUrl: string | null = null;
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
@@ -104,11 +119,14 @@ export const Blinks: FC<BlinksProps> = ({ actionUrl }) => {
 
   return action && actionsRegistry ? (
     <ActionContainer
+      editable={editable}
+      additionalMetadata={additionalMetadata}
       actionsRegistry={actionsRegistry}
       action={action}
       websiteText={actionUrl.hostname}
       websiteUrl={actionUrl.toString()}
       normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
+      multiGrid={multiGrid}
     />
   ) : (
     <div className="w-full p-4 flex items-center justify-center h-64">
@@ -123,6 +141,9 @@ interface ActionContainerProps {
   websiteUrl?: string | null;
   websiteText?: string | null;
   normalizedSecurityLevel: NormalizedSecurityLevel;
+  additionalMetadata?: AdditionalMetadata;
+  editable: boolean;
+  multiGrid: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
@@ -131,6 +152,9 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   action,
   actionsRegistry,
   normalizedSecurityLevel,
+  additionalMetadata,
+  editable,
+  multiGrid,
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -354,6 +378,9 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
   return (
     <ActionLayout
+      multiGrid={multiGrid}
+      editable={editable}
+      additionalMetadata={additionalMetadata}
       type={overallState || 'unknown'}
       title={action.title}
       description={action.description}
@@ -399,6 +426,9 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 };
 
 interface LayoutProps {
+  multiGrid: boolean;
+  editable: boolean;
+  additionalMetadata?: AdditionalMetadata;
   image?: string;
   error?: string | null;
   success?: string | null;
@@ -434,6 +464,9 @@ interface FormProps {
 }
 
 export const ActionLayout = ({
+  multiGrid,
+  editable,
+  additionalMetadata,
   title,
   description,
   image,
@@ -448,6 +481,10 @@ export const ActionLayout = ({
   success,
 }: LayoutProps) => {
   const [showMore, setShowMore] = useState(false);
+  const removeContentMutation = useRemoveContentMutation({
+    mint: editable && additionalMetadata ? additionalMetadata.mint : null,
+  });
+  const router = useRouter();
   return (
     <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
       {image && websiteUrl && (
@@ -466,72 +503,110 @@ export const ActionLayout = ({
           />
         </div>
       )}
-      <div className="px-4 pb-4 pt-2 flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-sm">
-          {websiteUrl && (
-            <Link
-              href={websiteUrl}
-              target="_blank"
-              className="link flex gap-2 items-center truncate"
-              rel="noopener noreferrer"
-            >
-              <IconLink size={16} />
-              {websiteText ?? websiteUrl}
-            </Link>
+      <div className={`px-4 pb-4 pt-2 flex flex-col w-full justify-between`}>
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between">
+            <div className="flex gap-2 text-sm items-end">
+              {websiteUrl && (
+                <Link
+                  href={websiteUrl}
+                  target="_blank"
+                  className="link font-bold flex gap-2 items-center truncate"
+                  rel="noopener noreferrer"
+                >
+                  {!websiteText && <IconLink size={16} />}
+                  {websiteText ?? websiteUrl}
+                </Link>
+              )}
+              {websiteText && !websiteUrl && (
+                <span className="inline-flex items-center truncate">
+                  {websiteText}
+                </span>
+              )}
+              <Link
+                href="https://docs.dialect.to/documentation/actions/security"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center"
+              >
+                {type === 'malicious' && <IconAlertTriangleFilled />}
+                {type === 'trusted' && <IconShieldCheckFilled />}
+                {type === 'unknown' && <IconHelpOctagonFilled />}
+              </Link>
+            </div>
+            {editable && additionalMetadata && (
+              <div className="dropdown dropdown-end">
+                <div tabIndex={0} role="button">
+                  <IconDotsVertical size={18} />
+                </div>
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content menu bg-base-300 rounded-box z-[1] p-0 text-sm w-32"
+                >
+                  <li>
+                    <button
+                      disabled={removeContentMutation.isPending}
+                      onClick={() =>
+                        removeContentMutation.mutateAsync(additionalMetadata.id)
+                      }
+                      className="btn btn-sm btn-outline border-none gap-2 items-center justify-start"
+                    >
+                      {removeContentMutation.isPending ? (
+                        <div className="loading loading-spinner loading-sm" />
+                      ) : (
+                        <IconTrash size={18} />
+                      )}
+                      Delete Post
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+          {showMore ? (
+            <>
+              <span className="font-semibold text-sm">{title}</span>
+              <p className="text-xs whitespace-pre-wrap ">{description}</p>
+              {disclaimer && <div className="mb-4">{disclaimer}</div>}
+              <ActionContent form={form} inputs={inputs} buttons={buttons} />
+              {success && (
+                <span className="mt-4 flex justify-center text-xs text-success">
+                  {success}
+                </span>
+              )}
+              {error && !success && (
+                <span className="mt-4 flex justify-center text-subtext text-error">
+                  {error}
+                </span>
+              )}
+            </>
+          ) : (
+            <p className="text-xs truncate">{description}</p>
           )}
-          {websiteText && !websiteUrl && (
-            <span className="inline-flex items-center truncate">
-              {websiteText}
+        </div>
+        <div className="flex flex-col gap-2 pt-2">
+          <span
+            onClick={() => {
+              if (!multiGrid) {
+                setShowMore(!showMore);
+              } else if (additionalMetadata) {
+                router.push(
+                  `/content?mintId=${additionalMetadata?.mint.toBase58()}&id=${
+                    additionalMetadata?.id
+                  }`
+                );
+              }
+            }}
+            className="text-xs stat-desc link link-hover"
+          >
+            {showMore ? 'Hide' : 'Show More'}
+          </span>
+          {additionalMetadata && (
+            <span className="text-xs stat-desc">
+              {convertUTCTimeToDayMonth(additionalMetadata.updatedAt)}
             </span>
           )}
-          <Link
-            href="https://docs.dialect.to/documentation/actions/security"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            {type === 'malicious' && (
-              <div className="badge badge-error">
-                <IconExclamationCircle size={18} />
-                Blocked
-              </div>
-            )}
-            {type === 'trusted' && (
-              <div className="badge badge-success">
-                <IconShield size={16} />
-              </div>
-            )}
-            {type === 'unknown' && (
-              <div className="badge badge-warning">
-                <IconShield size={18} />
-              </div>
-            )}
-          </Link>
         </div>
-        <span className="font-semibold text-sm">{title}</span>
-        <span className="whitespace-pre-wrap text-subtext text-xs">
-          {description}
-        </span>
-        {disclaimer && <div className="mb-4">{disclaimer}</div>}
-        <span
-          onClick={() => setShowMore(!showMore)}
-          className="text-xs stat-desc link link-hover"
-        >
-          {showMore ? 'Hide Actions' : 'Show Actions'}
-        </span>
-        {showMore && (
-          <ActionContent form={form} inputs={inputs} buttons={buttons} />
-        )}
-        {success && (
-          <span className="mt-4 flex justify-center text-subtext text-success">
-            {success}
-          </span>
-        )}
-        {error && !success && (
-          <span className="mt-4 flex justify-center text-subtext text-error">
-            {error}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -612,13 +687,13 @@ const ActionInput = ({
     (placeholder || 'Type here...') + (required ? '*' : '');
 
   return (
-    <div className="flex items-center gap-2 rounded-box border transition-colors focus-within:border-primary motion-reduce:transition-none">
+    <div className="flex items-center gap-2 rounded-box border border-primary-content transition-colors focus-within:border-primary motion-reduce:transition-none">
       <input
         placeholder={placeholderWithRequired}
         value={value}
         disabled={disabled}
         onChange={extendedChange}
-        className="text-sm ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-neutral disabled:text-neutral"
+        className="text-sm ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-disabled disabled:text-disabled"
       />
       {button && (
         <div className="my-1 mr-1">
@@ -696,7 +771,7 @@ export const Button = ({
   const buttonStyle = disabled ? 'btn-disabled ' : 'btn-primary';
   return (
     <button
-      className={`${buttonStyle} btn btn-xs flex w-full items-center justify-center rounded-full text-text font-semibold transition-colors motion-reduce:transition-none`}
+      className={`${buttonStyle} btn btn-xs flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
       disabled={disabled}
       onClick={onClick}
     >

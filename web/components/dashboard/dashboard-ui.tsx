@@ -81,7 +81,7 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
   return (
     selected && (
       <div className="flex flex-col h-full w-full items-center">
-        <div className="flex flex-col gap-8 items-start w-full max-w-6xl py-8">
+        <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
           <Profile
             metaData={metaDataQuery}
             allTokenAccounts={allTokenAccounts}
@@ -120,7 +120,9 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
   return metadata.content ? (
     <div className="sm:p-4 border-x border-b rounded border-base-200">
       <ContentGrid
+        multiGrid={true}
         showMintDetails={false}
+        editable={true}
         content={metadata.content.map((x) => {
           return {
             ...x,
@@ -314,7 +316,7 @@ const Profile: FC<ProfileProps> = ({
                 className="btn btn-outline btn-sm items-center"
                 onClick={() => {
                   router.push(
-                    `/edit?mintId=${metaData.metaData.mint.toBase58()}`
+                    `/mint/edit?mintId=${metaData.metaData.mint.toBase58()}`
                   );
                 }}
               >

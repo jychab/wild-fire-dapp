@@ -15,7 +15,7 @@ export const CreateAccountBtn: FC = () => {
   const router = useRouter();
   return (
     <button
-      onClick={() => router.push('/create')}
+      onClick={() => router.push('/mint/create')}
       className="btn btn-primary rounded btn w-full"
     >
       Create Account
@@ -504,7 +504,7 @@ const CreateTokenPage: FC<CreateTokenPageProps> = ({
                   alt={''}
                 />
               ) : (
-                <div className="flex flex-col w-full h-full border border-neutral rounded-full items-center justify-center bg-base-100">
+                <div className="flex flex-col w-full h-full border rounded-full items-center justify-center bg-base-100">
                   <svg
                     className="w-8 h-8 mb-2 text-gray-400"
                     aria-hidden="true"

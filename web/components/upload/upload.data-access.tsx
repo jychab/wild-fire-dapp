@@ -18,15 +18,38 @@ import {
 import { useTransactionToast } from '../ui/ui-layout';
 import { ContentType } from './upload-ui';
 
-export interface Content {
-  fileType?: string;
+export type Content = BlinkContent | PostContent;
+
+export interface BaseContent {
   type: ContentType;
+  createdAt: number;
+  updatedAt: number;
+  id: string;
+}
+export interface BlinkContent extends BaseContent {
   uri: string;
-  date: number;
+}
+
+export interface PostContent extends BaseContent {
+  carousel: Carousel[];
+  caption: string;
+}
+
+export type Carousel = ImageContent | VideoContent;
+
+export interface ImageContent {
+  uri: string;
+  fileType: string;
+}
+
+export interface VideoContent {
+  uri: string;
+  fileType: string;
+  duration: number;
 }
 
 interface UploadArgs {
-  content: Content[];
+  content: Content;
 }
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -37,7 +60,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
 
   return useMutation({
     mutationKey: [
-      'edit-mint',
+      'upload-mint-content',
       {
         endpoint: connection.rpcEndpoint,
         mint,
@@ -53,11 +76,11 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
         const uriMetadata = await (await fetch(proxify(details.uri))).json();
-        const currentContent = uriMetadata.content as Content[] | undefined;
-        const newContent = currentContent
-          ? currentContent.concat(input.content)
-          : input.content;
-        newContent.sort((a, b) => b.date - a.date);
+        let currentContent = uriMetadata.content as Content[] | undefined;
+        currentContent =
+          currentContent?.filter((x) => x.id != input.content.id) || [];
+        const newContent = currentContent.concat([input.content]);
+        newContent.sort((a, b) => b.updatedAt - a.updatedAt);
 
         let fieldsToUpdate = new Map<string, string>();
 
