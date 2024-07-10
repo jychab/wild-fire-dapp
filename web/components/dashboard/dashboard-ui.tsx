@@ -28,6 +28,7 @@ import {
   useGetMintMetadata,
   useGetMintTransferFeeConfig,
   useGetTokenDetails,
+  useSwapDetails,
   useSwapMint,
 } from './dashboard-data-access';
 
@@ -81,7 +82,7 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
         />
         <div className="flex flex-col flex-1 w-full h-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b w-full h-full">
+          <div className="border-base-200 rounded border-x border-b w-full h-full md:p-4">
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}
@@ -290,6 +291,9 @@ const Profile: FC<ProfileProps> = ({
   const swapToken = useSwapMint({
     mint: metaData ? metaData.metaData.mint : null,
   });
+  const { data: swapDetails } = useSwapDetails({
+    mint: metaData ? metaData.metaData.mint : null,
+  });
   return (
     <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
       <div className="w-32 h-32 lg:w-40 lg:h-40">
@@ -316,8 +320,16 @@ const Profile: FC<ProfileProps> = ({
           <span className="">{metaData?.metaData.symbol}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div
+          data-tip={`${
+            swapDetails
+              ? `Purchase 0.001 SOL worth of ${metaData?.metaData.name}`
+              : 'The creator has not enabled this feature yet'
+          }`}
+          className=" tooltip tooltip-secondary flex items-center gap-2"
+        >
           <button
+            disabled={!swapDetails}
             onClick={() =>
               metaData &&
               swapToken.mutateAsync({

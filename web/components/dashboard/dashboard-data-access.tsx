@@ -19,6 +19,7 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
+  fetchSwapPoolDetails,
   initializePool,
   program,
   swapBaseInput,
@@ -203,6 +204,17 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
 export enum SwapType {
   BasedInput,
   BasedOutput,
+}
+
+export function useSwapDetails({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: ['get-swap-details', { endpoint: connection.rpcEndpoint, mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      return fetchSwapPoolDetails(connection, mint);
+    },
+  });
 }
 
 export function useSwapMint({ mint }: { mint: PublicKey | null }) {

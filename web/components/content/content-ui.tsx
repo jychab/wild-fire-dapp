@@ -46,7 +46,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
 }) => {
   return (
     <div
-      className={`grid bg-base-300 sm:bg-transparent gap-4 grid-cols-1 ${
+      className={`grid sm:bg-transparent gap-2 grid-cols-1 ${
         multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
       }`}
     >
@@ -81,7 +81,7 @@ export const PostCard = ({
   });
   const router = useRouter();
   return (
-    <div className="flex flex-col gap-2 bg-base-300 rounded w-full">
+    <div className="flex flex-col md:border gap-2 bg-base-100 rounded w-full">
       {showMintDetails && (
         <div className="flex gap-2 px-4 pt-2 items-center w-full">
           <Link
@@ -245,7 +245,7 @@ export const BlinksCard: FC<{
   try {
     const url = new URL(content.uri as string);
     return (
-      <div className="flex flex-col gap-2 bg-base-300 rounded w-full">
+      <div className="flex flex-col md:border gap-2 bg-base-100 rounded w-full">
         {showMintDetails && (
           <div className="flex gap-2 px-4 pt-2 items-center w-full">
             <Link

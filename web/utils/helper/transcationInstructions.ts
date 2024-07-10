@@ -527,6 +527,28 @@ export async function swapBaseOutput(
   return ixs;
 }
 
+export async function fetchSwapPoolDetails(
+  connection: Connection,
+  mint: PublicKey
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
+      ? [mint, NATIVE_MINT]
+      : [NATIVE_MINT, mint];
+
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+
+  return await raydiumProgram(connection).account.poolState.fetch(poolAddress);
+}
+
 export async function swapBaseInput(
   connection: Connection,
   payer: PublicKey,

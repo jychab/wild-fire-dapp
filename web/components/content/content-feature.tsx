@@ -20,7 +20,10 @@ export const ContentGridFeature: FC = () => {
     address: publicKey,
   });
   const tokenAccounts = whitelistedMint
-    ? allTokenAccounts?.items.concat(whitelistedMint)
+    ? allTokenAccounts?.items.find((x) => x.id == whitelistedMint.id) ==
+      undefined
+      ? allTokenAccounts?.items.concat(whitelistedMint)
+      : allTokenAccounts.items
     : allTokenAccounts?.items;
 
   const allMintMetadataQuery = useGetMultipleMintUriMetadata({
