@@ -3,7 +3,11 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
-import { useGetMintMetadata } from '../dashboard/dashboard-data-access';
+import { HASHFEED_MINT } from '../const';
+import {
+  useGetMintMetadata,
+  useGetTokenDetails,
+} from '../dashboard/dashboard-data-access';
 import {
   useGetAllFungibleTokensFromOwner,
   useGetMultipleMintUriMetadata,
@@ -11,13 +15,17 @@ import {
 import { ContentGrid, ContentWithMetada, DisplayContent } from './content-ui';
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
+  const { data: whitelistedMint } = useGetTokenDetails({ mint: HASHFEED_MINT });
   const { data: allTokenAccounts } = useGetAllFungibleTokensFromOwner({
     address: publicKey,
   });
+  const tokenAccounts = whitelistedMint
+    ? allTokenAccounts?.items.concat(whitelistedMint)
+    : allTokenAccounts?.items;
 
   const allMintMetadataQuery = useGetMultipleMintUriMetadata({
-    mints: allTokenAccounts
-      ? allTokenAccounts.items
+    mints: tokenAccounts
+      ? tokenAccounts
           .filter((x) => x.content)
           .map((x) => {
             return { mint: new PublicKey(x.id), uri: x.content!.json_uri };
@@ -39,9 +47,12 @@ export const ContentGridFeature: FC = () => {
       });
     });
 
-  const flattenedContent = content.reduce((acc, val) => acc!.concat(val!), []);
+  const flattenedContent = content.reduce(
+    (acc, val) => acc!.concat(val!),
+    []
+  ) as ContentWithMetada[] | undefined;
 
-  return flattenedContent && <ContentGrid content={flattenedContent} />;
+  return <ContentGrid content={flattenedContent} />;
 };
 
 interface ContentFeatureProps {

@@ -95,7 +95,7 @@ export async function buildAndSendTransaction(
   ]);
   ixs.unshift(
     ComputeBudgetProgram.setComputeUnitPrice({
-      microLamports: Math.round(microLamports),
+      microLamports: Math.round(microLamports * 1.1),
     })
   );
   if (units) {
@@ -123,6 +123,7 @@ export async function buildAndSendTransaction(
     signedTx as VersionedTransaction,
     {
       maxRetries: 0,
+      skipPreflight: true,
     }
   );
   const result = await connection.confirmTransaction(

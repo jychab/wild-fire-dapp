@@ -96,10 +96,6 @@
           "signer": true
         },
         {
-          "name": "admin",
-          "signer": true
-        },
-        {
           "name": "authority"
         },
         {
@@ -129,10 +125,6 @@
         {
           "name": "payer",
           "writable": true,
-          "signer": true
-        },
-        {
-          "name": "admin",
           "signer": true
         },
         {
@@ -503,10 +495,6 @@
           "signer": true
         },
         {
-          "name": "admin",
-          "signer": true
-        },
-        {
           "name": "mint",
           "writable": true
         },
@@ -548,10 +536,6 @@
         {
           "name": "payer",
           "writable": true,
-          "signer": true
-        },
-        {
-          "name": "admin",
           "signer": true
         },
         {

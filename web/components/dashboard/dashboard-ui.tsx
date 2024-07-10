@@ -1,7 +1,13 @@
 'use client';
 
 import { DAS } from '@/utils/types/das';
-import { Mint, TransferFeeConfig } from '@solana/spl-token';
+import {
+  Mint,
+  NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  TransferFeeConfig,
+} from '@solana/spl-token';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -13,12 +19,16 @@ import { FC, useEffect, useMemo, useState } from 'react';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
+import { UploadBtn } from '../upload/upload-ui';
 import { Content } from '../upload/upload.data-access';
 import {
+  SwapType,
   useGetAllTokenAccountsFromMint,
   useGetMintDetails,
   useGetMintMetadata,
   useGetMintTransferFeeConfig,
+  useGetTokenDetails,
+  useSwapMint,
 } from './dashboard-data-access';
 
 export interface AuthorityData {
@@ -34,9 +44,9 @@ interface DashBoardProps {
 }
 
 enum TabsEnum {
-  CONTENT = 'Content',
+  POST = 'Posts',
   DETAILS = 'Details',
-  TRADE = 'Buy / Sell',
+  TRADE = 'Trade',
 }
 
 export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
@@ -59,37 +69,20 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
     mint: mintQuery,
   });
 
-  const [selected, setSelected] = useState<AuthorityData>();
-  const [selectedTab, setSelectedTab] = useState(TabsEnum.CONTENT);
-
-  useEffect(() => {
-    if (!selected && mintTokenData) {
-      setSelected(mintTokenData); // assume each user only has one account for now
-    }
-  }, [selected, mintTokenData]);
-
-  if (
-    !metaDataQuery ||
-    !mintTokenData ||
-    !transferFeeConfig ||
-    !allTokenAccounts ||
-    !mintQuery
-  ) {
-    return <div></div>;
-  }
+  const [selectedTab, setSelectedTab] = useState(TabsEnum.POST);
 
   return (
-    selected && (
-      <div className="flex flex-col h-full w-full items-center">
-        <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
-          <Profile
-            metaData={metaDataQuery}
-            allTokenAccounts={allTokenAccounts}
-            authorityData={mintTokenData}
-          />
-          <div className="flex flex-col w-full">
-            <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-            {selectedTab == TabsEnum.CONTENT && (
+    <div className="flex flex-col h-full w-full min-h-[600px] items-center">
+      <div className="flex flex-col gap-8 items-start w-full h-full max-w-7xl py-8">
+        <Profile
+          metaData={metaDataQuery}
+          allTokenAccounts={allTokenAccounts}
+          authorityData={mintTokenData}
+        />
+        <div className="flex flex-col flex-1 w-full h-full">
+          <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+          <div className="border-base-200 rounded border-x border-b w-full h-full">
+            {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}
             {selectedTab == TabsEnum.DETAILS && (
@@ -103,39 +96,45 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
           </div>
         </div>
       </div>
-    )
+    </div>
   );
 };
 
 interface ContentPanelProps {
-  metadata: {
-    metaData: TokenMetadata;
-    image: string;
-    description: string | undefined;
-    content: Content[] | undefined;
-  };
+  metadata:
+    | {
+        metaData: TokenMetadata;
+        image: string;
+        description: string | undefined;
+        content: Content[] | undefined;
+      }
+    | null
+    | undefined;
 }
 
 const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
-  return metadata.content ? (
-    <div className="sm:p-4 border-x border-b rounded border-base-200">
-      <ContentGrid
-        multiGrid={true}
-        showMintDetails={false}
-        editable={true}
-        content={metadata.content.map((x) => {
-          return {
-            ...x,
-            name: metadata.metaData.name,
-            symbol: metadata.metaData.symbol,
-            image: metadata.image,
-            mint: metadata.metaData.mint,
-          };
-        })}
-      />
-    </div>
+  return metadata && metadata.content ? (
+    <ContentGrid
+      multiGrid={true}
+      showMintDetails={false}
+      editable={true}
+      content={metadata.content.map((x) => {
+        return {
+          ...x,
+          name: metadata.metaData.name,
+          symbol: metadata.metaData.symbol,
+          image: metadata.image,
+          mint: metadata.metaData.mint,
+        };
+      })}
+    />
   ) : (
-    <div>No Content Found</div>
+    <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
+      Create your first post!
+      <div className="w-36">
+        <UploadBtn />
+      </div>
+    </div>
   );
 };
 
@@ -151,7 +150,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
   allTokenAccounts,
 }) => {
   return (
-    <div className="border-base-200 rounded border-x border-b">
+    <>
       <MainPanel
         transferFeeConfig={transferFeeConfig}
         authorityData={authorityData}
@@ -163,7 +162,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
         authorityData={authorityData}
       />
       <Activities allTokenAccounts={allTokenAccounts} mintQuery={mintQuery} />
-    </div>
+    </>
   );
 };
 
@@ -182,11 +181,11 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
         type="radio"
         role="tab"
         className={`tab font-semibold ${
-          selectedTab == TabsEnum.CONTENT ? 'tab-active' : ''
+          selectedTab == TabsEnum.POST ? 'tab-active' : ''
         }`}
-        checked={selectedTab == TabsEnum.CONTENT}
-        onChange={() => setSelectedTab(TabsEnum.CONTENT)}
-        aria-label={TabsEnum.CONTENT}
+        checked={selectedTab == TabsEnum.POST}
+        onChange={() => setSelectedTab(TabsEnum.POST)}
+        aria-label={TabsEnum.POST}
       />
       <input
         type="radio"
@@ -213,8 +212,8 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
 };
 
 interface ActivitiesProps {
-  allTokenAccounts: DAS.TokenAccounts[];
-  mintQuery: Mint;
+  allTokenAccounts: DAS.TokenAccounts[] | null | undefined;
+  mintQuery: Mint | null | undefined;
 }
 
 const Activities: FC<ActivitiesProps> = ({ allTokenAccounts, mintQuery }) => {
@@ -266,13 +265,16 @@ const Activities: FC<ActivitiesProps> = ({ allTokenAccounts, mintQuery }) => {
 };
 
 interface ProfileProps {
-  metaData: {
-    metaData: TokenMetadata;
-    image: any;
-    description: any;
-  };
-  allTokenAccounts: DAS.TokenAccounts[];
-  authorityData: AuthorityData;
+  metaData:
+    | {
+        metaData: TokenMetadata;
+        image: any;
+        description: any;
+      }
+    | null
+    | undefined;
+  allTokenAccounts: DAS.TokenAccounts[] | null | undefined;
+  authorityData: AuthorityData | null | undefined;
 }
 
 const Profile: FC<ProfileProps> = ({
@@ -282,10 +284,16 @@ const Profile: FC<ProfileProps> = ({
 }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
+  const { data: tokenDetails } = useGetTokenDetails({
+    mint: metaData?.metaData.mint || null,
+  });
+  const swapToken = useSwapMint({
+    mint: metaData ? metaData.metaData.mint : null,
+  });
   return (
     <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
       <div className="w-32 h-32 lg:w-40 lg:h-40">
-        {metaData.image && (
+        {metaData && metaData.image && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
@@ -302,23 +310,42 @@ const Profile: FC<ProfileProps> = ({
         <div className="flex flex-col">
           <div className="flex gap-2 items-center">
             <span className="text-2xl lg:text-3xl font-bold">
-              {metaData.metaData.name}
+              {metaData?.metaData.name}
             </span>
           </div>
-          <span className="">{metaData.metaData.symbol}</span>
+          <span className="">{metaData?.metaData.symbol}</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="btn btn-success btn-sm w-32">Subscribe</button>
-          {authorityData.mutable == 1 &&
+          <button
+            onClick={() =>
+              metaData &&
+              swapToken.mutateAsync({
+                type: SwapType.BasedInput,
+                amount: 0.001, // 0.001 SOL to subscribe ~$0.1
+                inputToken: NATIVE_MINT,
+                outputToken: metaData.metaData.mint,
+                inputTokenProgram: TOKEN_PROGRAM_ID,
+                inputTokenDecimal: 9,
+                outputTokenProgram: TOKEN_2022_PROGRAM_ID,
+                outputTokenDecimal: 0,
+              })
+            }
+            className="btn btn-success btn-sm w-32"
+          >
+            Subscribe
+          </button>
+          {authorityData &&
+            authorityData.mutable == 1 &&
             publicKey?.toBase58() == authorityData.admin.toBase58() && (
               <button
                 className="btn btn-outline btn-sm items-center"
-                onClick={() => {
+                onClick={() =>
+                  metaData &&
                   router.push(
                     `/mint/edit?mintId=${metaData.metaData.mint.toBase58()}`
-                  );
-                }}
+                  )
+                }
               >
                 <IconEdit />
                 Edit
@@ -326,15 +353,27 @@ const Profile: FC<ProfileProps> = ({
             )}
         </div>
 
-        <span>
-          {formatLargeNumber(
-            allTokenAccounts?.filter((x) => x.amount && x.amount > 0).length ||
-              0
-          ) + ' Followers'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span>
+            {formatLargeNumber(
+              allTokenAccounts?.filter((x) => x.amount && x.amount > 0)
+                .length || 0
+            ) + ' Followers'}
+          </span>
+          {tokenDetails?.token_info?.price_info?.price_per_token && (
+            <>
+              ||
+              <span>{`${
+                tokenDetails?.token_info?.price_info?.price_per_token
+                  ? '$' + tokenDetails?.token_info?.price_info?.price_per_token
+                  : ''
+              }`}</span>
+            </>
+          )}
+        </div>
 
         <span className="text-sm truncate font-normal">
-          {metaData.description}
+          {metaData?.description}
         </span>
       </div>
     </div>
@@ -342,8 +381,8 @@ const Profile: FC<ProfileProps> = ({
 };
 
 interface DetailsProps {
-  transferFeeConfig: TransferFeeConfig;
-  authorityData: AuthorityData;
+  transferFeeConfig: TransferFeeConfig | null | undefined;
+  authorityData: AuthorityData | null | undefined;
 }
 
 const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
@@ -364,18 +403,18 @@ const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
             <div className="stat-title text-sm md:text-base">Mint</div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${authorityData.mint.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData?.mint.toBase58()}`}
             >
-              {authorityData.mint.toBase58()}
+              {authorityData?.mint.toBase58()}
             </Link>
             <div className="stat-title text-sm md:text-base truncate">
               Authority
             </div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${authorityData.admin.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData?.admin.toBase58()}`}
             >
-              {authorityData.admin.toBase58()}
+              {authorityData?.admin.toBase58()}
             </Link>
           </div>
         </div>
@@ -384,54 +423,67 @@ const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
             <div className="stat-title text-sm md:text-base truncate">
               Transfer Fee
             </div>
-            <div className="stat-value text-base md:text-xl truncate font-normal">{`${
-              currentEpoch &&
-              transferFeeConfig.newerTransferFee.epoch <= currentEpoch
-                ? `${
-                    transferFeeConfig.newerTransferFee.transferFeeBasisPoints /
-                    100
-                  }%`
-                : `${
-                    transferFeeConfig.olderTransferFee.transferFeeBasisPoints /
-                    100
-                  }% (current) -> ${
-                    transferFeeConfig.newerTransferFee.transferFeeBasisPoints /
-                    100
-                  }% (upcoming)`
-            } `}</div>
-            {
-              <div className="stat-desc text-xs md:text-sm truncate font-normal">
-                {`Max Fee: ${
+            {transferFeeConfig ? (
+              <>
+                <div className="stat-value text-base md:text-xl truncate font-normal">{`${
                   currentEpoch &&
                   transferFeeConfig.newerTransferFee.epoch <= currentEpoch
-                    ? Number(transferFeeConfig.newerTransferFee.maximumFee) !=
-                      Number.MAX_SAFE_INTEGER
-                      ? formatLargeNumber(
-                          Number(transferFeeConfig.newerTransferFee.maximumFee)
-                        )
-                      : 'None'
+                    ? `${
+                        transferFeeConfig.newerTransferFee
+                          .transferFeeBasisPoints / 100
+                      }%`
                     : `${
-                        Number(transferFeeConfig.olderTransferFee.maximumFee) !=
-                        Number.MAX_SAFE_INTEGER
-                          ? formatLargeNumber(
-                              Number(
-                                transferFeeConfig.olderTransferFee.maximumFee
-                              )
-                            )
-                          : 'None'
-                      } -> ${
-                        Number(transferFeeConfig.newerTransferFee.maximumFee) !=
-                        Number.MAX_SAFE_INTEGER
+                        transferFeeConfig.olderTransferFee
+                          .transferFeeBasisPoints / 100
+                      }% (current) -> ${
+                        transferFeeConfig.newerTransferFee
+                          .transferFeeBasisPoints / 100
+                      }% (upcoming)`
+                } `}</div>
+                {
+                  <div className="stat-desc text-xs md:text-sm truncate font-normal">
+                    {`Max Fee: ${
+                      currentEpoch &&
+                      transferFeeConfig.newerTransferFee.epoch <= currentEpoch
+                        ? Number(
+                            transferFeeConfig.newerTransferFee.maximumFee
+                          ) != Number.MAX_SAFE_INTEGER
                           ? formatLargeNumber(
                               Number(
                                 transferFeeConfig.newerTransferFee.maximumFee
                               )
                             )
                           : 'None'
-                      }`
-                } `}
-              </div>
-            }
+                        : `${
+                            Number(
+                              transferFeeConfig.olderTransferFee.maximumFee
+                            ) != Number.MAX_SAFE_INTEGER
+                              ? formatLargeNumber(
+                                  Number(
+                                    transferFeeConfig.olderTransferFee
+                                      .maximumFee
+                                  )
+                                )
+                              : 'None'
+                          } -> ${
+                            Number(
+                              transferFeeConfig.newerTransferFee.maximumFee
+                            ) != Number.MAX_SAFE_INTEGER
+                              ? formatLargeNumber(
+                                  Number(
+                                    transferFeeConfig.newerTransferFee
+                                      .maximumFee
+                                  )
+                                )
+                              : 'None'
+                          }`
+                    } `}
+                  </div>
+                }
+              </>
+            ) : (
+              <div className="loading loading-dots"></div>
+            )}
           </div>
         </div>
         <div className="card bg-base-200 col-span-4 md:col-span-2 rounded">
@@ -439,9 +491,9 @@ const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
             <div className="stat-title text-sm md:text-base">Distributor</div>
             <Link
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-              href={`https://solana.fm/address/${authorityData.distributor.toBase58()}`}
+              href={`https://solana.fm/address/${authorityData?.distributor.toBase58()}`}
             >
-              {authorityData.distributor.toBase58()}
+              {authorityData?.distributor.toBase58()}
             </Link>
           </div>
         </div>
@@ -451,10 +503,10 @@ const Details: FC<DetailsProps> = ({ transferFeeConfig, authorityData }) => {
 };
 
 interface MainPanelProps {
-  transferFeeConfig: TransferFeeConfig;
-  authorityData: AuthorityData;
-  allTokenAccounts: DAS.TokenAccounts[];
-  mintQuery: Mint;
+  transferFeeConfig: TransferFeeConfig | null | undefined;
+  authorityData: AuthorityData | null | undefined;
+  allTokenAccounts: DAS.TokenAccounts[] | null | undefined;
+  mintQuery: Mint | null | undefined;
 }
 
 export const MainPanel: FC<MainPanelProps> = ({
@@ -464,7 +516,7 @@ export const MainPanel: FC<MainPanelProps> = ({
   mintQuery,
 }) => {
   const feesEarned = useMemo(() => {
-    if (allTokenAccounts && transferFeeConfig) {
+    if (allTokenAccounts && transferFeeConfig && authorityData) {
       const mintWithheldFees = Number(transferFeeConfig.withheldAmount);
       const tokenAccountWithheldFees = allTokenAccounts.reduce(
         (sum, x) =>
@@ -478,7 +530,7 @@ export const MainPanel: FC<MainPanelProps> = ({
           Number(authorityData.feesCollected),
         claimable: mintWithheldFees + tokenAccountWithheldFees,
       };
-    } else {
+    } else if (authorityData) {
       return {
         total: authorityData.feesCollected
           ? Number(authorityData.feesCollected)
@@ -497,9 +549,9 @@ export const MainPanel: FC<MainPanelProps> = ({
             <div className="stat gap-2 p-0">
               <div className="stat-title text-xs">Total Fees Generated</div>
               <span className="stat-value font-normal truncate">
-                {`${feesEarned.total}`}
+                {`${feesEarned?.total}`}
               </span>
-              <span className="stat-desc text-xs">{`(Claimable: $${feesEarned.claimable})`}</span>
+              <span className="stat-desc text-xs">{`(Claimable: $${feesEarned?.claimable})`}</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">

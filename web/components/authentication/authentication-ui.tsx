@@ -100,12 +100,14 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
               </Link>
             </li>
           )}
-          <li className="w-full">
-            <Link href={`/mint/create`}>
-              <IconUserPlus />
-              Create New Account
-            </Link>
-          </li>
+          {!metaDataQuery && (
+            <li className="w-full">
+              <Link href={`/mint/create`}>
+                <IconUserPlus />
+                Create New Account
+              </Link>
+            </li>
+          )}
           <li className="w-full">
             <Link href={`/content/create`}>
               <IconUpload />

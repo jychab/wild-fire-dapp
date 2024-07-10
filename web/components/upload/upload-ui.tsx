@@ -331,12 +331,16 @@ export const UploadPost: FC<{
   }, [files, caption]);
 
   const handleFilesAdd = (e: any) => {
-    if (files.length >= 4) {
-      toast.error('A maximum of 4 files can be added');
+    if (files.length >= 3) {
+      toast.error('A maximum of 3 files can be added in a post');
       return;
     }
     const selectedFile = e.target.files[0];
     if (selectedFile !== undefined) {
+      if (selectedFile.size > 1e8) {
+        toast.error('File size exceeded maximum allowed 100MB');
+        return;
+      }
       const url = URL.createObjectURL(selectedFile);
       const id = crypto.randomUUID();
       const file = (selectedFile as File).type.startsWith('image/')

@@ -117,10 +117,6 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'admin';
-          signer: true;
-        },
-        {
           name: 'authority';
         },
         {
@@ -150,10 +146,6 @@ export type WildFire = {
         {
           name: 'payer';
           writable: true;
-          signer: true;
-        },
-        {
-          name: 'admin';
           signer: true;
         },
         {
@@ -627,10 +619,6 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'admin';
-          signer: true;
-        },
-        {
           name: 'mint';
           writable: true;
         },
@@ -672,10 +660,6 @@ export type WildFire = {
         {
           name: 'payer';
           writable: true;
-          signer: true;
-        },
-        {
-          name: 'admin';
           signer: true;
         },
         {

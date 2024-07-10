@@ -1,10 +1,17 @@
+import { CONFIG } from '@/components/const';
 import { BN, Program } from '@coral-xyz/anchor';
 import {
   ExtensionType,
   LENGTH_SIZE,
+  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
   TYPE_SIZE,
   TokenAccountNotFoundError,
+  createAssociatedTokenAccountIdempotentInstruction,
+  createCloseAccountInstruction,
+  createSyncNativeInstruction,
+  getAccount,
   getAssociatedTokenAddressSync,
   getExtensionData,
   getNewAccountLenForExtensionLen,
@@ -12,8 +19,10 @@ import {
   updateTokenMetadata,
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
+import Idl2 from '../program/idl/raydium_cp_swap.json';
 import Idl from '../program/idl/wild_fire.json';
+import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';
 import { WildFire } from '../program/types/wild_fire';
 
 export const program = (connection: Connection) =>
@@ -21,46 +30,19 @@ export const program = (connection: Connection) =>
     connection,
   });
 
-// export interface WhirlPoolWallet<T extends Transaction | VersionedTransaction> {
-//   publicKey: PublicKey;
-//   signAllTransactions: (transactions: T[]) => Promise<T[]>;
-//   signTransaction: (transaction: T) => Promise<T>;
-// }
-
-// export const whirlPoolCtx = (
-//   connection: Connection,
-//   wallet: WhirlPoolWallet<any>
-// ) =>
-//   WhirlpoolContext.from(
-//     connection,
-//     wallet,
-//     new PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc')
-//   );
+export const raydiumProgram = (connection: Connection) =>
+  new Program<RaydiumCpSwap>(Idl2 as unknown as RaydiumCpSwap, { connection });
 
 export async function createMint(
   connection: Connection,
-  mintKeypair: Keypair,
-  mint: PublicKey,
-  mintLen: number,
   distributor: PublicKey,
   fees: number,
   maxFee: number | undefined,
-  admin: PublicKey,
   payer: PublicKey
 ) {
-  const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
-
-  const ix1 = SystemProgram.createAccount({
-    fromPubkey: payer,
-    newAccountPubkey: mint,
-    space: mintLen,
-    lamports,
-    programId: TOKEN_2022_PROGRAM_ID,
-  });
-  const ix2 = await program(connection)
+  const ix = await program(connection)
     .methods.createMint({
       decimal: 0,
-      admin: admin,
       distributor: distributor,
       transferFeeArgs: {
         feeBasisPts: fees,
@@ -68,13 +50,12 @@ export async function createMint(
       },
     })
     .accounts({
-      mint: mint,
+      admin: payer,
       payer: payer,
       program: program(connection).programId,
     })
-    .signers([mintKeypair])
     .instruction();
-  return [ix1, ix2];
+  return [ix];
 }
 
 export async function createMintMetadata(
@@ -88,10 +69,6 @@ export async function createMintMetadata(
   const additional_lamport = await connection.getMinimumBalanceForRentExemption(
     metadataExtension + metadataLen
   );
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), metaData.mint.toBuffer()],
-    program(connection).programId
-  );
   const ix = await program(connection)
     .methods.createMintMetadata(
       new BN(additional_lamport),
@@ -102,6 +79,7 @@ export async function createMintMetadata(
     .accounts({
       mint: metaData.mint,
       payer: payer,
+      admin: payer,
     })
     .instruction();
   return ix;
@@ -113,22 +91,12 @@ export async function issueMint(
   mint: PublicKey,
   payer: PublicKey
 ) {
-  const payerMintTokenAccount = getAssociatedTokenAddressSync(
-    mint,
-    payer,
-    true,
-    TOKEN_2022_PROGRAM_ID
-  );
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
-    program(connection).programId
-  );
-
   return await program(connection)
     .methods.issueMint(new BN(amount))
     .accounts({
       mint: mint,
       payer: payer,
+      admin: payer,
       program: program(connection).programId,
     })
     .instruction();
@@ -193,6 +161,7 @@ export async function changeAdmin(
     .accounts({
       payer: payer,
       authority: authority,
+      program: program(connection).programId,
     })
     .instruction();
 
@@ -322,65 +291,360 @@ export async function getAdditionalRentForUpdatedMetadata(
   return newRentExemptMinimum - info.lamports;
 }
 
-// export async function initializeWhirlPoolConfig(
-//   connection: Connection,
-//   wallet: WhirlPoolWallet<any>
-// ) {
-//   let whirlPoolContext = whirlPoolCtx(connection, wallet);
-//   let configKeypair = Keypair.generate();
-//   let config = configKeypair.publicKey;
-//   console.log(config.toBase58());
-//   let ix = initializeConfigIx(whirlPoolContext.program, {
-//     whirlpoolsConfigKeypair: configKeypair,
-//     feeAuthority: wallet.publicKey,
-//     collectProtocolFeesAuthority: wallet.publicKey,
-//     rewardEmissionsSuperAuthority: wallet.publicKey,
-//     defaultProtocolFeeRate: 2500,
-//     funder: wallet.publicKey,
-//   });
-//   await buildAndSendTransaction(
-//     connection,
-//     ix.instructions,
-//     wallet.publicKey,
-//     wallet.signTransaction
-//   );
+export function u16ToBytes(num: number) {
+  const arr = new ArrayBuffer(2);
+  const view = new DataView(arr);
+  view.setUint16(0, num, false);
+  return new Uint8Array(arr);
+}
 
-//   ix = initializeConfigExtensionIx(whirlPoolContext.program, {
-//     whirlpoolsConfig: config,
-//     whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(
-//       whirlPoolContext.program.programId,
-//       config
-//     ),
-//     funder: wallet.publicKey,
-//     feeAuthority: wallet.publicKey,
-//   });
-//   await buildAndSendTransaction(
-//     connection,
-//     ix.instructions,
-//     wallet.publicKey,
-//     wallet.signTransaction
-//   );
-//   ix = initializeTokenBadgeIx(whirlPoolContext.program, {
-//     whirlpoolsConfig: config,
-//     whirlpoolsConfigExtension: PDAUtil.getConfigExtension(
-//       whirlPoolContext.program.programId,
-//       config
-//     ).publicKey,
-//     tokenBadgeAuthority: wallet.publicKey,
-//     tokenMint: NATIVE_MINT,
-//     tokenBadgePda: PDAUtil.getTokenBadge(
-//       whirlPoolContext.program.programId,
-//       config,
-//       NATIVE_MINT
-//     ),
-//     funder: wallet.publicKey,
-//   });
-//   await buildAndSendTransaction(
-//     connection,
-//     ix.instructions,
-//     wallet.publicKey,
-//     wallet.signTransaction
-//   );
+export async function createConfig(connection: Connection, owner: PublicKey) {
+  return await raydiumProgram(connection)
+    .methods.createAmmConfig(0, new BN(10000), new BN(100000), new BN(50000))
+    .accounts({
+      owner: owner,
+    })
+    .instruction();
+}
 
-//   return ix;
-// }
+export async function initializePool(
+  connection: Connection,
+  mint: PublicKey,
+  payer: PublicKey,
+  mintAmount: number,
+  solAmount: number
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
+      ? [mint, NATIVE_MINT]
+      : [NATIVE_MINT, mint];
+  const [token0Amount, token1Amount] =
+    NATIVE_MINT.toBase58() == tokenMint0.toBase58()
+      ? [solAmount, mintAmount]
+      : [mintAmount, solAmount];
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+  const [lpMintAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_lp_mint'), poolAddress.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+  const creatorLpToken = getAssociatedTokenAddressSync(lpMintAddress, payer);
+
+  const [token0Program, token1Program] =
+    NATIVE_MINT.toBase58() == tokenMint0.toBase58()
+      ? [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]
+      : [TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID];
+
+  const ix = [];
+
+  const creatorToken0 = getAssociatedTokenAddressSync(
+    tokenMint0,
+    payer,
+    false,
+    token0Program
+  );
+
+  const creatorToken1 = getAssociatedTokenAddressSync(
+    tokenMint1,
+    payer,
+    false,
+    token1Program
+  );
+  const creatorNativeMintTokenAccount = getAssociatedTokenAddressSync(
+    NATIVE_MINT,
+    payer
+  );
+  try {
+    await getAccount(connection, creatorNativeMintTokenAccount);
+  } catch (e) {
+    ix.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        creatorNativeMintTokenAccount,
+        payer,
+        NATIVE_MINT
+      )
+    );
+  }
+
+  ix.push(
+    SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: creatorNativeMintTokenAccount,
+      lamports: solAmount,
+    })
+  );
+
+  ix.push(createSyncNativeInstruction(creatorNativeMintTokenAccount));
+
+  ix.push(
+    await raydiumProgram(connection)
+      .methods.initialize(new BN(token0Amount), new BN(token1Amount), new BN(0))
+      .accounts({
+        creatorLpToken: creatorLpToken,
+        creator: payer,
+        ammConfig: CONFIG,
+        token0Mint: tokenMint0,
+        token1Mint: tokenMint1,
+        creatorToken0: creatorToken0,
+        creatorToken1: creatorToken1,
+        token0Program: token0Program,
+        token1Program: token1Program,
+      })
+      .instruction()
+  );
+  return ix;
+}
+
+export async function swapBaseOutput(
+  connection: Connection,
+  payer: PublicKey,
+  amount_out_less_fee: number,
+  inputToken: PublicKey,
+  inputTokenProgram: PublicKey,
+  outputToken: PublicKey,
+  outputTokenProgram: PublicKey,
+  outputTokenDecimal: number
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(inputToken.toBuffer(), outputToken.toBuffer()) < 0
+      ? [inputToken, outputToken]
+      : [outputToken, inputToken];
+
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+
+  const [inputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const [outputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const ixs = [];
+  const inputTokenAccount = getAssociatedTokenAddressSync(
+    inputToken,
+    payer,
+    false,
+    inputTokenProgram
+  );
+  try {
+    await getAccount(connection, inputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        inputTokenAccount,
+        payer,
+        inputToken,
+        inputTokenProgram
+      )
+    );
+  }
+  const outputTokenAccount = getAssociatedTokenAddressSync(
+    outputToken,
+    payer,
+    false,
+    outputTokenProgram
+  );
+  try {
+    await getAccount(connection, outputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        outputTokenAccount,
+        payer,
+        outputToken,
+        outputTokenProgram
+      )
+    );
+  }
+  if (inputToken == NATIVE_MINT) {
+    const payerAccount = await connection.getAccountInfo(payer);
+    ixs.push(
+      SystemProgram.transfer({
+        toPubkey: inputTokenAccount,
+        fromPubkey: payer,
+        lamports: payerAccount!.lamports * 0.5,
+      })
+    );
+    ixs.push(createSyncNativeInstruction(inputTokenAccount));
+  }
+  const [observationAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('observation'), poolAddress.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  ixs.push(
+    await raydiumProgram(connection)
+      .methods.swapBaseOutput(
+        new BN(Number.MAX_SAFE_INTEGER),
+        new BN(amount_out_less_fee * 10 ** outputTokenDecimal)
+      )
+      .accounts({
+        payer: payer,
+        ammConfig: CONFIG,
+        poolState: poolAddress,
+        inputTokenAccount,
+        outputTokenAccount,
+        inputVault,
+        outputVault,
+        inputTokenProgram: inputTokenProgram,
+        outputTokenProgram: outputTokenProgram,
+        inputTokenMint: inputToken,
+        outputTokenMint: outputToken,
+        observationState: observationAddress,
+      })
+      .instruction()
+  );
+
+  ixs.push(
+    createCloseAccountInstruction(
+      getAssociatedTokenAddressSync(NATIVE_MINT, payer),
+      payer,
+      payer
+    )
+  );
+
+  return ixs;
+}
+
+export async function swapBaseInput(
+  connection: Connection,
+  payer: PublicKey,
+  amount_in: number,
+  inputToken: PublicKey,
+  inputTokenProgram: PublicKey,
+  inputTokenDecimal: number,
+  outputToken: PublicKey,
+  outputTokenProgram: PublicKey
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(inputToken.toBuffer(), outputToken.toBuffer()) < 0
+      ? [inputToken, outputToken]
+      : [outputToken, inputToken];
+
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+
+  const [inputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const [outputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const ixs = [];
+  const inputTokenAccount = getAssociatedTokenAddressSync(
+    inputToken,
+    payer,
+    false,
+    inputTokenProgram
+  );
+  try {
+    await getAccount(connection, inputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        inputTokenAccount,
+        payer,
+        inputToken,
+        inputTokenProgram
+      )
+    );
+  }
+  const outputTokenAccount = getAssociatedTokenAddressSync(
+    outputToken,
+    payer,
+    false,
+    outputTokenProgram
+  );
+  try {
+    await getAccount(connection, outputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        outputTokenAccount,
+        payer,
+        outputToken,
+        outputTokenProgram
+      )
+    );
+  }
+  if (inputToken == NATIVE_MINT) {
+    ixs.push(
+      SystemProgram.transfer({
+        toPubkey: inputTokenAccount,
+        fromPubkey: payer,
+        lamports: amount_in * 10 ** inputTokenDecimal,
+      })
+    );
+    ixs.push(createSyncNativeInstruction(inputTokenAccount));
+  }
+  const [observationAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('observation'), poolAddress.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  ixs.push(
+    await raydiumProgram(connection)
+      .methods.swapBaseInput(
+        new BN(amount_in * 10 ** inputTokenDecimal),
+        new BN(0)
+      )
+      .accounts({
+        payer: payer,
+        ammConfig: CONFIG,
+        poolState: poolAddress,
+        inputTokenAccount,
+        outputTokenAccount,
+        inputVault,
+        outputVault,
+        inputTokenProgram: inputTokenProgram,
+        outputTokenProgram: outputTokenProgram,
+        inputTokenMint: inputToken,
+        outputTokenMint: outputToken,
+        observationState: observationAddress,
+      })
+      .instruction()
+  );
+
+  ixs.push(
+    createCloseAccountInstruction(
+      getAssociatedTokenAddressSync(NATIVE_MINT, payer),
+      payer,
+      payer
+    )
+  );
+  return ixs;
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { proxify } from '@/utils/helper/proxy';
+import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import {
   Mint,
@@ -9,10 +10,21 @@ import {
   getTokenMetadata,
   getTransferFeeConfig,
 } from '@solana/spl-token';
-import { useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
-import { useQuery } from '@tanstack/react-query';
-import { program } from '../../utils/helper/transcationInstructions';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import {
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  TransactionSignature,
+} from '@solana/web3.js';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import {
+  initializePool,
+  program,
+  swapBaseInput,
+  swapBaseOutput,
+} from '../../utils/helper/transcationInstructions';
+import { useTransactionToast } from '../ui/ui-layout';
 import { Content } from '../upload/upload.data-access';
 import { AuthorityData } from './dashboard-ui';
 
@@ -159,5 +171,168 @@ export function useGetAllTokenAccountsFromMint({ mint }: { mint: PublicKey }) {
       return Array.from(allTokenAccounts);
     },
     staleTime: 1000 * 5 * 60,
+  });
+}
+
+export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      const response = await fetch(connection.rpcEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '',
+          method: 'getAsset',
+          params: {
+            id: mint.toBase58(),
+          },
+        }),
+      });
+      const data = (await response.json()).result as DAS.GetAssetResponse;
+      return data;
+    },
+  });
+}
+
+export enum SwapType {
+  BasedInput,
+  BasedOutput,
+}
+
+export function useSwapMint({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+
+  return useMutation({
+    mutationKey: [
+      'swap-mint',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async ({
+      type,
+      amount,
+      inputToken,
+      inputTokenDecimal,
+      inputTokenProgram,
+      outputToken,
+      outputTokenProgram,
+      outputTokenDecimal,
+    }: {
+      type: SwapType;
+      amount: number;
+      inputToken: PublicKey;
+      inputTokenProgram: PublicKey;
+      inputTokenDecimal: number;
+      outputToken: PublicKey;
+      outputTokenProgram: PublicKey;
+      outputTokenDecimal: number;
+    }) => {
+      if (!mint) return;
+      let signature: TransactionSignature = '';
+      try {
+        let ixs;
+        if (type == SwapType.BasedOutput) {
+          ixs = await swapBaseOutput(
+            connection,
+            wallet.publicKey!,
+            amount,
+            inputToken,
+            inputTokenProgram,
+            outputToken,
+            outputTokenProgram,
+            outputTokenDecimal
+          );
+        } else {
+          ixs = await swapBaseInput(
+            connection,
+            wallet.publicKey!,
+            amount,
+            inputToken,
+            inputTokenProgram,
+            inputTokenDecimal,
+            outputToken,
+            outputTokenProgram
+          );
+        }
+
+        signature = await buildAndSendTransaction(
+          connection,
+          ixs,
+          wallet.publicKey!,
+          wallet.signTransaction!,
+          'confirmed'
+        );
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error}` + signature);
+        return;
+      }
+    },
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${error}`);
+    },
+  });
+}
+
+export function useInitializePool({ mint }: { mint: PublicKey }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+
+  return useMutation({
+    mutationKey: [
+      'initialize-pool',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async () => {
+      let signature: TransactionSignature = '';
+      try {
+        const ixs = await initializePool(
+          connection,
+          mint,
+          wallet.publicKey!,
+          LAMPORTS_PER_SOL * 0.7,
+          LAMPORTS_PER_SOL * 0.1
+        );
+
+        signature = await buildAndSendTransaction(
+          connection,
+          ixs,
+          wallet.publicKey!,
+          wallet.signTransaction!,
+          'confirmed'
+        );
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error}` + signature);
+        return;
+      }
+    },
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${error}`);
+    },
   });
 }

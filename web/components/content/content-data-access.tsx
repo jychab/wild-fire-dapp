@@ -36,7 +36,7 @@ export function useGetAllFungibleTokensFromOwner({
       { endpoint: connection.rpcEndpoint, address },
     ],
     queryFn: async () => {
-      if (!address) return;
+      if (!address) return null;
 
       const response = await fetch(connection.rpcEndpoint, {
         method: 'POST',

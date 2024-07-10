@@ -1,20 +1,25 @@
 'use client';
 
-import { ExtensionType, getMintLen } from '@solana/spl-token';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Keypair, PublicKey, TransactionSignature } from '@solana/web3.js';
-import { useMutation } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import {
   getDistributor,
   uploadMedia,
   uploadMetadata,
-} from '../../utils/firebase/functions';
+} from '@/utils/firebase/functions';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import {
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  TransactionSignature,
+} from '@solana/web3.js';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   createMint,
   createMintMetadata,
+  initializePool,
   issueMint,
+  program,
 } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
 
@@ -25,6 +30,10 @@ interface CreateMintArgs {
   description: string;
   transferFee: number;
   maxTransferFee?: number;
+  liquidityPoolSettings?: {
+    solAmount: number;
+    mintAmount: number;
+  };
 }
 
 export function useCreateMint({ address }: { address: string | null }) {
@@ -43,8 +52,10 @@ export function useCreateMint({ address }: { address: string | null }) {
     mutationFn: async (input: CreateMintArgs) => {
       let signature: TransactionSignature = '';
       try {
-        const mintKeypair = Keypair.generate();
-        const mint = mintKeypair.publicKey;
+        const [mint] = PublicKey.findProgramAddressSync(
+          [Buffer.from('mint'), wallet.publicKey!.toBuffer()],
+          program(connection).programId
+        );
         const distributor = await getDistributor(mint.toBase58());
         toast('Uploading image metadata...');
         const imageUrl = await uploadMedia(input.picture, mint);
@@ -56,19 +67,12 @@ export function useCreateMint({ address }: { address: string | null }) {
           image: imageUrl,
         };
         const uri = await uploadMetadata(JSON.stringify(payload), mint);
-        const mintLen = getMintLen([
-          ExtensionType.TransferFeeConfig,
-          ExtensionType.MetadataPointer,
-        ]);
+
         let ix = await createMint(
           connection,
-          mintKeypair,
-          mint,
-          mintLen,
           new PublicKey(distributor),
           input.transferFee,
           input.maxTransferFee,
-          wallet.publicKey!,
           wallet.publicKey!
         );
         ix.push(
@@ -85,16 +89,26 @@ export function useCreateMint({ address }: { address: string | null }) {
           )
         );
         ix.push(
-          await issueMint(connection, 1000000000, mint, wallet.publicKey!)
+          await issueMint(connection, LAMPORTS_PER_SOL, mint, wallet.publicKey!)
         );
+        if (input.liquidityPoolSettings) {
+          ix = ix.concat(
+            await initializePool(
+              connection,
+              mint,
+              wallet.publicKey!,
+              input.liquidityPoolSettings.mintAmount,
+              input.liquidityPoolSettings.solAmount
+            )
+          );
+        }
 
         signature = await buildAndSendTransaction(
           connection,
           ix,
           wallet.publicKey!,
           wallet.signTransaction!,
-          'confirmed',
-          [mintKeypair]
+          'confirmed'
         );
         return signature;
       } catch (error: unknown) {

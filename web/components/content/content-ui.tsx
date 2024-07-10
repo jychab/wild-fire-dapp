@@ -16,7 +16,7 @@ import { BlinkContent, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
 interface ContentGridProps {
-  content: ContentWithMetada[];
+  content: ContentWithMetada[] | undefined;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -45,22 +45,22 @@ export const ContentGrid: FC<ContentGridProps> = ({
   multiGrid = false,
 }) => {
   return (
-    content && (
-      <div
-        className={`grid bg-base-300 sm:bg-transparent gap-4 grid-cols-1 ${
-          multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
-        }`}
-      >
-        {content.map((x) => (
+    <div
+      className={`grid bg-base-300 sm:bg-transparent gap-4 grid-cols-1 ${
+        multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
+      }`}
+    >
+      {content &&
+        content.map((x) => (
           <DisplayContent
+            key={x.id}
             content={x}
             showMintDetails={showMintDetails}
             editable={editable}
             multiGrid={multiGrid}
           />
         ))}
-      </div>
-    )
+    </div>
   );
 };
 
@@ -314,7 +314,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
           editable={editable}
           multiGrid={multiGrid}
         />
-      )}{' '}
+      )}
       {content.type == ContentType.POST && (
         <PostCard
           key={content.id}
