@@ -19,12 +19,7 @@ export const ThemeComponent: FC = ({}) => {
     }
   }, [theme]);
   return (
-    <label className="swap swap-rotate justify-start">
-      <input
-        type="checkbox"
-        onClick={toggleTheme}
-        className="theme-controller"
-      />
+    <button onClick={toggleTheme} className="w-full">
       {theme === 'light' && (
         <svg
           className="fill-current w-6 h-6"
@@ -44,7 +39,7 @@ export const ThemeComponent: FC = ({}) => {
         </svg>
       )}
       {'Dark / Light'}
-    </label>
+    </button>
   );
 };
 
