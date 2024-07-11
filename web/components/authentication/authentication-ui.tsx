@@ -63,72 +63,74 @@ interface ProfileButtonProps {
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { publicKey, disconnect } = useWallet();
   return (
-    <button
-      type="button"
-      className="dropdown dropdown-end dropdown-bottom relative w-10 h-10"
-      id="user-menu-button"
-    >
-      {metaDataQuery ? (
-        <Image
-          src={metaDataQuery.image}
-          priority={true}
-          className={`object-cover rounded-full`}
-          fill={true}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          alt={'profile pic'}
-        />
-      ) : (
-        <IconUserCircle size={32} />
-      )}
-      <div className="dropdown-content menu bg-base-300 rounded-box z-[1] shadow">
-        <div tabIndex={0} className="p-4 text-left">
-          <span className="block text-sm truncate w-40 cursor-default">
+    <div className="dropdown dropdown-end dropdown-bottom">
+      <div
+        tabIndex={0}
+        role="button"
+        id="user-menu-button"
+        className="relative w-10 h-10 justify-center items-center flex"
+      >
+        {metaDataQuery ? (
+          <Image
+            src={metaDataQuery.image}
+            priority={true}
+            className={`object-cover rounded-full`}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            alt={'profile pic'}
+          />
+        ) : (
+          <IconUserCircle size={32} />
+        )}
+      </div>
+      <ul
+        tabIndex={0}
+        className="dropdown-content menu bg-base-300 rounded-box z-[1] shadow"
+      >
+        <li className="text-left">
+          <span className="block text-sm truncate w-44 ">
             {publicKey ? publicKey.toString() : ''}
           </span>
-          <span className="block text-sm truncate cursor-default">
-            {'mainnet-beta'}
-          </span>
-        </div>
-        <ul tabIndex={0} className="flex flex-col">
-          {metaDataQuery && (
-            <li className="w-full">
-              <Link
-                href={`/dashboard?mintId=${metaDataQuery.metaData.mint.toBase58()}`}
-              >
-                <IconUser />
-                Profile
-              </Link>
-            </li>
-          )}
-          {!metaDataQuery && (
-            <li className="w-full">
-              <Link href={`/mint/create`}>
-                <IconUserPlus />
-                Create New Account
-              </Link>
-            </li>
-          )}
+          <span className="block text-sm truncate ">{'mainnet-beta'}</span>
+        </li>
+        {metaDataQuery && (
           <li className="w-full">
-            <Link href={`/content/create`}>
-              <IconUpload />
-              Upload
+            <Link
+              href={`/dashboard?mintId=${metaDataQuery.metaData.mint.toBase58()}`}
+            >
+              <IconUser />
+              Profile
             </Link>
           </li>
-          <li className="w-full">
-            <ThemeComponent />
+        )}
+        {!metaDataQuery && (
+          <li className="w-full justify-between">
+            <Link href={`/mint/create`}>
+              <IconUserPlus />
+              Create New Account
+            </Link>
           </li>
-          <li className="w-full">
-            <div
-              onClick={async () => {
-                await disconnect();
-              }}
-            >
-              <IconLogout />
-              Log Out
-            </div>
-          </li>
-        </ul>
-      </div>
-    </button>
+        )}
+        <li className="w-full">
+          <Link href={`/content/create`}>
+            <IconUpload />
+            Upload
+          </Link>
+        </li>
+        <li className="w-full">
+          <ThemeComponent />
+        </li>
+        <li className="w-full">
+          <div
+            onClick={async () => {
+              await disconnect();
+            }}
+          >
+            <IconLogout />
+            Log Out
+          </div>
+        </li>
+      </ul>
+    </div>
   );
 };

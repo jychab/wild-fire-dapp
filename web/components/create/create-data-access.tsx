@@ -61,6 +61,7 @@ export function useCreateMint({ address }: { address: string | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program(connection).programId
         );
+        const distributor = await getDistributor(mint.toBase58());
         toast('Uploading image metadata...');
         const imageUrl = await uploadMedia(input.picture, mint);
         toast('Uploading text metadata...');
@@ -74,7 +75,6 @@ export function useCreateMint({ address }: { address: string | null }) {
         let ix = [];
         let tx;
         if (input.liquidityPoolSettings) {
-          const distributor = await getDistributor(mint.toBase58());
           ix.push(
             await createMint(
               connection,
