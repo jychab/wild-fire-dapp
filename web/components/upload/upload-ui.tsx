@@ -201,7 +201,6 @@ export const UploadContent: FC<{
                   } as PostContent,
                 });
               }
-              router.push(`/dashboard?mintId=${mintId ?? data[0].mint}`);
             } catch (e) {
               console.log(e);
             }

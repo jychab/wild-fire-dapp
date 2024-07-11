@@ -311,7 +311,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               fee: parseFloat(fee) * 100,
               maxFee: maxFee != '' ? parseInt(maxFee) : undefined,
             });
-            router.push(`/dashboard?mintId=${mintId}`);
           }}
           className="btn btn-primary btn-sm w-full rounded"
         >

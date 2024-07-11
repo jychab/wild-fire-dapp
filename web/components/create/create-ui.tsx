@@ -195,7 +195,6 @@ export const CreatePanel: FC = () => {
                       }
                     : undefined,
                 });
-                router.push('/dashboard');
               } catch (e) {
                 console.log(e);
               }

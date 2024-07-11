@@ -24,6 +24,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
@@ -42,6 +43,7 @@ interface CreateMintArgs {
 
 export function useCreateMint({ address }: { address: string | null }) {
   const { connection } = useConnection();
+  const router = useRouter();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
 
@@ -167,15 +169,16 @@ export function useCreateMint({ address }: { address: string | null }) {
           publicKey: wallet.publicKey,
           signTransaction: wallet.signTransaction,
         });
-        return signature;
+        return { signature, mint };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;
       }
     },
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
+    onSuccess: (result) => {
+      if (result) {
+        transactionToast(result.signature);
+        router.push(`/dashboard?mintId=${result.mint.toBase58()}`);
       }
     },
     onError: (error) => {

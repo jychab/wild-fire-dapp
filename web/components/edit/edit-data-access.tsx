@@ -11,6 +11,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import {
   updateMetadataSponsored,
@@ -114,6 +115,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationKey: [
@@ -241,6 +243,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
+        router.push(`/dashboard?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
             queryKey: [

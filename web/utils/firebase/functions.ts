@@ -16,7 +16,14 @@ export async function getDistributorSponsored(metadata: TokenMetadata) {
     functions,
     'getDistributorSponsored'
   );
-  const result = await getDistributorSponsored({ metadata });
+
+  const result = await getDistributorSponsored({
+    metadata: {
+      ...metadata,
+      mint: metadata.mint.toBase58(),
+      updateAuthority: metadata.updateAuthority?.toBase58(),
+    },
+  });
   return result.data as { partialTx?: string; distributor: string };
 }
 
