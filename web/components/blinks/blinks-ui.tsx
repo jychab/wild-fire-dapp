@@ -510,9 +510,9 @@ export const ActionLayout = ({
               {websiteUrl && (
                 <Link
                   href={websiteUrl}
-                  target="_blank"
                   className="link font-bold flex gap-2 items-center truncate"
                   rel="noopener noreferrer"
+                  target="_blank"
                 >
                   {!websiteText && <IconLink size={16} />}
                   {websiteText ?? websiteUrl}

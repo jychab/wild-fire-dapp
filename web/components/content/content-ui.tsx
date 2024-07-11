@@ -152,7 +152,9 @@ export const PostCard = ({
             <div className="flex justify-between">
               <div className="flex gap-2 text-sm items-end">
                 <Link
-                  href={`/dashboard?mintId=${content.mint.toBase58()}`}
+                  href={`/content?mintId=${content.mint.toBase58()}&id=${
+                    content.id
+                  }`}
                   className="link"
                 >
                   {content.name}
@@ -160,7 +162,7 @@ export const PostCard = ({
                 <IconShieldCheckFilled />
               </div>
               {editable && (
-                <div className="dropdown dropdown-end">
+                <div className="dropdown dropdown-end ">
                   <div tabIndex={0} role="button">
                     <IconDotsVertical size={18} />
                   </div>
@@ -245,7 +247,7 @@ export const BlinksCard: FC<{
   try {
     const url = new URL(content.uri as string);
     return (
-      <div className="flex flex-col md:border gap-2 bg-base-100 rounded w-full">
+      <div className="flex flex-col md:border gap-2 rounded w-full">
         {showMintDetails && (
           <div className="flex gap-2 px-4 pt-2 items-center w-full">
             <Link

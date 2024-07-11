@@ -1,18 +1,9 @@
-import { formatLargeNumber } from '@/utils/helper/format';
-import { NATIVE_MINT } from '@solana/spl-token';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import {
-  IconCurrencySolana,
-  IconPhotoPlus,
-  IconPlus,
-  IconWallet,
-} from '@tabler/icons-react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
 import { useCreateMint } from './create-data-access';
 
 export const CreateAccountBtn: FC = () => {
@@ -33,8 +24,7 @@ export const CreatePanel: FC = () => {
   const [handle, setHandle] = useState('');
   const [description, setDescription] = useState('');
   const [enableTrading, setEnableTrading] = useState(false);
-  const [mintAmount, setMintAmount] = useState(LAMPORTS_PER_SOL * 0.5);
-  const [solAmount, setSolAmount] = useState(LAMPORTS_PER_SOL);
+
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   const handlePictureChange = (e: any) => {
@@ -137,45 +127,6 @@ export const CreatePanel: FC = () => {
           ></textarea>
         </div>
 
-        <div tabIndex={0} className="collapse collapse-plus ">
-          <input type="checkbox" className="peer" />
-          <div className="collapse-title border-b border-base-content">
-            Advanced Configuration
-          </div>
-          <div className="collapse-content">
-            <div className="flex flex-col gap-4 py-4 items-start w-full">
-              <div className="flex items-center gap-4">
-                <span>Enable Monetization</span>
-                <input
-                  type="checkbox"
-                  className="toggle"
-                  checked={enableTrading}
-                  onChange={(e) => setEnableTrading(e.target.checked)}
-                />
-              </div>
-              {!enableTrading && (
-                <div className="py-2 px-4 card bg-warning text-warning-content text-sm text-start w-full">
-                  Activating this feature will make your token available for
-                  public trading. This option can also be enabled later.
-                </div>
-              )}
-              {enableTrading && (
-                <div className="card w-full">
-                  <LiquidityPoolPanel
-                    mintAmount={mintAmount}
-                    setMintAmount={setMintAmount}
-                    solAmount={solAmount}
-                    setSolAmount={setSolAmount}
-                    name={name}
-                    handle={handle}
-                    tempImageUrl={tempImageUrl}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {publicKey ? (
           <button
             disabled={!valid || createMutation.isPending}
@@ -187,12 +138,6 @@ export const CreatePanel: FC = () => {
                   picture: picture!,
                   description: description,
                   transferFee: 10,
-                  liquidityPoolSettings: enableTrading
-                    ? {
-                        solAmount: solAmount,
-                        mintAmount: mintAmount,
-                      }
-                    : undefined,
                 });
               } catch (e) {
                 console.log(e);
@@ -223,162 +168,6 @@ export const CreatePanel: FC = () => {
             />
           </div>
         )}
-      </div>
-    </div>
-  );
-};
-
-const LiquidityPoolPanel: FC<{
-  mintAmount: number;
-  solAmount: number;
-  setMintAmount: (value: number) => void;
-
-  setSolAmount: (value: number) => void;
-  tempImageUrl: string | null;
-  name: string;
-  handle: string;
-}> = ({
-  tempImageUrl,
-  name,
-  handle,
-  mintAmount,
-  solAmount,
-  setMintAmount,
-  setSolAmount,
-}) => {
-  const { publicKey } = useWallet();
-  const { connection } = useConnection();
-  const [currentAmountOfSol, setCurrentAmountOfSol] = useState<
-    number | undefined
-  >();
-  useEffect(() => {
-    if (publicKey) {
-      connection
-        .getAccountInfo(publicKey)
-        .then((result) => setCurrentAmountOfSol(result?.lamports));
-    }
-  }, [publicKey]);
-
-  const { data: solDetails } = useGetTokenDetails({ mint: NATIVE_MINT });
-
-  return (
-    <div className="flex flex-col gap-2 w-full">
-      <div
-        data-tip="To enable your token for trading, you need to first create a
-        liquidity pool. This allows for anyone to buy or sell your token freely,
-        while you earn trading fees on each transaction."
-        className="tooltip card bg-warning text-warning-content p-4 text-xs text-center"
-      >
-        Choose the amount of SOL and tokens to create your initial liquidity
-        pool.
-      </div>
-      <label>
-        <div className="label">
-          <span className="label-text">Base Token</span>
-          <div className="label-text-alt flex items-end gap-2">
-            <IconWallet size={14} />
-            <span>{`${((currentAmountOfSol || 0) / LAMPORTS_PER_SOL).toFixed(
-              3
-            )} SOL`}</span>
-            <button
-              onClick={() =>
-                currentAmountOfSol && setSolAmount(currentAmountOfSol / 2)
-              }
-              className="badge badge-xs badge-outline badge-secondary p-2 "
-            >
-              Half
-            </button>
-            <button
-              onClick={() =>
-                currentAmountOfSol && setSolAmount(currentAmountOfSol)
-              }
-              className="badge badge-xs badge-outline badge-secondary p-2 "
-            >
-              Max
-            </button>
-          </div>
-        </div>
-        <div className="input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
-          <button className="btn btn-secondary rounded-lg gap-1 px-2 flex items-center">
-            <IconCurrencySolana />
-            SOL
-          </button>
-          <input
-            type="number"
-            className="w-full text-right"
-            placeholder="0.00"
-            value={solAmount / LAMPORTS_PER_SOL}
-            onChange={(e) =>
-              setSolAmount(parseFloat(e.target.value) * LAMPORTS_PER_SOL)
-            }
-          />
-        </div>
-      </label>
-      <div className="flex items-center">
-        <div className="divider w-1/2"></div>
-        <button className="btn btn-square rounded-full px-2 btn-primary btn-sm">
-          <IconPlus />
-        </button>
-        <div className="divider w-1/2"></div>
-      </div>
-      <label>
-        <div className="label">
-          <span className="label-text">Quote Token</span>
-          <div className="label-text-alt flex items-center gap-2">
-            <IconWallet size={14} />
-            <span>{`${formatLargeNumber(LAMPORTS_PER_SOL)} ${handle}`}</span>
-            <button
-              onClick={() => setMintAmount(LAMPORTS_PER_SOL / 2)}
-              className="badge badge-xs badge-outline badge-secondary p-2 "
-            >
-              Half
-            </button>
-            <button
-              onClick={() => setMintAmount(LAMPORTS_PER_SOL)}
-              className="badge badge-xs badge-outline badge-secondary p-2 "
-            >
-              Max
-            </button>
-          </div>
-        </div>
-        <div
-          data-tip="All tokens are created with an initial supply of 1B with 0 decimal"
-          className="tooltip input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg"
-        >
-          <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
-            {tempImageUrl && (
-              <div className="w-8 h-8 relative">
-                <Image
-                  className={`rounded-full object-cover`}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  src={tempImageUrl}
-                  alt={''}
-                />
-              </div>
-            )}
-            <span className="text-base truncate w-fit pl-1 text-left">
-              {name}
-            </span>
-          </button>
-          <input
-            type="number"
-            className="w-full text-right"
-            placeholder="0.00"
-            value={mintAmount}
-            onChange={(e) => setMintAmount(parseFloat(e.target.value))}
-          />
-        </div>
-      </label>
-      <div className="flex flex-col gap-2 items-end justify-center pt-4">
-        <span className="text-xs">{`Starting Token Price: $${(
-          (solAmount / mintAmount / LAMPORTS_PER_SOL) *
-          (solDetails?.token_info?.price_info?.price_per_token || 1)
-        ).toPrecision(6)} `}</span>
-        <span className="text-xs">{`Starting Token MarketCap: $${(
-          (solAmount / LAMPORTS_PER_SOL) *
-          (solDetails?.token_info?.price_info?.price_per_token || 1)
-        ).toFixed(2)} `}</span>
       </div>
     </div>
   );

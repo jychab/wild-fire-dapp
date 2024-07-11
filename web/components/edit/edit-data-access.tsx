@@ -85,7 +85,7 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
         return Promise.all([
           client.invalidateQueries({
             queryKey: [
-              'get-mint-metadata',
+              'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
@@ -247,7 +247,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         return Promise.all([
           client.invalidateQueries({
             queryKey: [
-              'get-mint-metadata',
+              'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),

@@ -7,15 +7,10 @@ import {
   Mint,
   TOKEN_2022_PROGRAM_ID,
   getMint,
-  getTokenMetadata,
   getTransferFeeConfig,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  TransactionSignature,
-} from '@solana/web3.js';
+import { PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
@@ -26,7 +21,7 @@ import {
   swapBaseOutput,
 } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
-import { Content } from '../upload/upload.data-access';
+import { UploadContent } from '../upload/upload.data-access';
 import { AuthorityData } from './dashboard-ui';
 
 export function useGetMintTransferFeeConfig({
@@ -45,38 +40,20 @@ export function useGetMintTransferFeeConfig({
   });
 }
 
-export function useGetMintDetails({ mint }: { mint: PublicKey | undefined }) {
+export function useGetMintDetails({
+  mint,
+  tokenProgram = TOKEN_2022_PROGRAM_ID,
+}: {
+  mint: PublicKey | undefined;
+  tokenProgram?: PublicKey;
+}) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
       'get-mint-details',
       { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
     ],
-    queryFn: () =>
-      mint && getMint(connection, mint, undefined, TOKEN_2022_PROGRAM_ID),
-    enabled: !!mint,
-  });
-}
-
-export function useGetMintMetadata({ mint }: { mint: PublicKey | undefined }) {
-  const { connection } = useConnection();
-  return useQuery({
-    queryKey: ['get-mint-metadata', { endpoint: connection.rpcEndpoint, mint }],
-    queryFn: () =>
-      mint &&
-      getTokenMetadata(connection, mint).then(async (details) => {
-        if (!details) return null;
-        const uriMetadata = await (await fetch(proxify(details.uri))).json();
-        const imageUrl = uriMetadata.image;
-        const description = uriMetadata.description;
-        const content = uriMetadata.content;
-        return {
-          metaData: details,
-          image: imageUrl as string,
-          description: description as string | undefined,
-          content: content as Content[] | undefined,
-        };
-      }),
+    queryFn: () => mint && getMint(connection, mint, undefined, tokenProgram),
     enabled: !!mint,
   });
 }
@@ -113,65 +90,21 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
             return null;
           }
         }),
+    enabled: !!address,
   });
 }
 
-export function useGetAllTokenAccountsFromMint({ mint }: { mint: PublicKey }) {
+export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
-      'get-all-token-accounts-from-mint',
+      'get-largest-token-accounts-from-mint',
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
-      let allTokenAccounts = new Set<DAS.TokenAccounts>();
-      let cursor;
-
-      while (true) {
-        let params: {
-          limit: number;
-          mint: string;
-          cursor?: any;
-          options: any;
-        } = {
-          limit: 1000,
-          mint: mint.toBase58(),
-          options: {
-            showZeroBalance: true,
-          },
-        };
-
-        if (cursor != undefined) {
-          params.cursor = cursor;
-        }
-
-        const response = await fetch(connection.rpcEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: '',
-            method: 'getTokenAccounts',
-            params: params,
-          }),
-        });
-        const data = (await response.json())
-          .result as DAS.GetTokenAccountsResponse;
-
-        if (!data || !data.token_accounts || data.token_accounts.length == 0) {
-          break;
-        }
-
-        data.token_accounts.forEach((account) => {
-          allTokenAccounts.add(account);
-        });
-        cursor = data.cursor;
-      }
-      return Array.from(allTokenAccounts);
+      return connection.getTokenLargestAccounts(mint, 'confirmed');
     },
-    staleTime: 1000 * 5 * 60,
+    staleTime: 1000 * 60 * 10, //10mins
   });
 }
 
@@ -195,9 +128,23 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
           },
         }),
       });
-      const data = (await response.json()).result as DAS.GetAssetResponse;
-      return data;
+      const data = (await response.json()).result;
+      try {
+        const uriMetadata = await (
+          await fetch(proxify(data.content!.json_uri))
+        ).json();
+        const imageUrl = uriMetadata.image as string;
+        const description = uriMetadata.description as string;
+        const content = uriMetadata.content as UploadContent[] | undefined;
+        return {
+          ...data,
+          jsonUriData: { imageUrl, description, content },
+        } as DAS.GetAssetResponse;
+      } catch (e) {
+        return data as DAS.GetAssetResponse;
+      }
     },
+    enabled: !!mint,
   });
 }
 
@@ -214,6 +161,7 @@ export function useSwapDetails({ mint }: { mint: PublicKey | null }) {
       if (!mint) return null;
       return fetchSwapPoolDetails(connection, mint);
     },
+    enabled: !!mint,
   });
 }
 
@@ -300,7 +248,7 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useInitializePool({ mint }: { mint: PublicKey }) {
+export function useInitializePool({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
@@ -313,16 +261,22 @@ export function useInitializePool({ mint }: { mint: PublicKey }) {
         mint,
       },
     ],
-    mutationFn: async () => {
-      if (!wallet.publicKey || !wallet.signTransaction) return;
+    mutationFn: async ({
+      mintAmount,
+      solAmount,
+    }: {
+      mintAmount: number;
+      solAmount: number;
+    }) => {
+      if (!wallet.publicKey || !wallet.signTransaction || !mint) return;
       let signature: TransactionSignature = '';
       try {
         const ixs = await initializePool(
           connection,
           mint,
           wallet.publicKey,
-          LAMPORTS_PER_SOL * 0.7,
-          LAMPORTS_PER_SOL * 0.1
+          mintAmount,
+          solAmount
         );
 
         signature = await buildAndSendTransaction({

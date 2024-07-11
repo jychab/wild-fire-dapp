@@ -22,7 +22,7 @@ import {
 } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
-import { Content } from '../upload/upload.data-access';
+import { UploadContent } from '../upload/upload.data-access';
 
 export function useGetAllFungibleTokensFromOwner({
   address,
@@ -90,7 +90,7 @@ export function useGetMultipleMintUriMetadata({
             symbol: symbol as string,
             image: imageUrl as string,
             description: description as string | undefined,
-            content: content as Content[] | undefined,
+            content: content as UploadContent[] | undefined,
           };
         } catch (e) {
           return null;
@@ -125,7 +125,9 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
         const uriMetadata = await (
           await fetch(proxify(details.uri, true))
         ).json();
-        const currentContent = uriMetadata.content as Content[] | undefined;
+        const currentContent = uriMetadata.content as
+          | UploadContent[]
+          | undefined;
         if (!currentContent) return;
         const newContent = currentContent.filter((x) => x.id != id);
         newContent.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -183,7 +185,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
         return Promise.all([
           client.invalidateQueries({
             queryKey: [
-              'get-mint-metadata',
+              'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),

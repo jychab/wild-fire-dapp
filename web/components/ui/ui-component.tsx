@@ -49,6 +49,8 @@ export const SocialComponent: FC = () => {
       <h6 className="footer-title">Social</h6>
       <nav className="grid md:grid-cols-3 gap-4 ">
         <Link
+          rel="noopener noreferrer"
+          target="_blank"
           aria-disabled
           href={'/twitter'}
           tabIndex={-1}
@@ -58,6 +60,8 @@ export const SocialComponent: FC = () => {
           <span>Twitter</span>
         </Link>
         <Link
+          rel="noopener noreferrer"
+          target="_blank"
           aria-disabled
           tabIndex={-1}
           href={'/telegram'}
@@ -67,6 +71,8 @@ export const SocialComponent: FC = () => {
           <span>Telegram</span>
         </Link>
         <Link
+          rel="noopener noreferrer"
+          target="_blank"
           aria-disabled
           tabIndex={-1}
           href={'https://github.com/'}

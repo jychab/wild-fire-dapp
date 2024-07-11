@@ -292,7 +292,7 @@ export function useTransactionToast() {
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm md:text-base"
-          href={`https://solana.fm/tx/${signature}`}
+          href={`https://solscan.io/tx/${signature}`}
         >
           View Transaction
         </Link>

@@ -1,5 +1,4 @@
 import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
-import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconLogout,
@@ -11,17 +10,18 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, ReactNode } from 'react';
+import { DAS } from '../../utils/types/das';
 import {
-  useGetMintMetadata,
   useGetToken,
+  useGetTokenDetails,
 } from '../dashboard/dashboard-data-access';
 import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
-  const { data: metaDataQuery } = useGetMintMetadata({
-    mint: data ? data[0]?.mint : undefined,
+  const { data: metaDataQuery } = useGetTokenDetails({
+    mint: data ? data[0]?.mint : null,
   });
 
   return (
@@ -50,14 +50,7 @@ export const AuthenticationBtn: FC<AuthenticationBtnProps> = ({
 };
 
 interface ProfileButtonProps {
-  metaDataQuery:
-    | {
-        metaData: TokenMetadata;
-        image: any;
-        description: any;
-      }
-    | null
-    | undefined;
+  metaDataQuery: DAS.GetAssetResponse | null | undefined;
 }
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
@@ -72,7 +65,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       >
         {metaDataQuery ? (
           <Image
-            src={metaDataQuery.image}
+            src={metaDataQuery.jsonUriData!.imageUrl}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}
@@ -95,9 +88,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         </li>
         {metaDataQuery && (
           <li className="w-full">
-            <Link
-              href={`/dashboard?mintId=${metaDataQuery.metaData.mint.toBase58()}`}
-            >
+            <Link href={`/dashboard?mintId=${metaDataQuery.id}`}>
               <IconUser />
               Profile
             </Link>

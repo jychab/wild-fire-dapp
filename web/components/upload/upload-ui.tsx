@@ -4,7 +4,6 @@ import { uploadMedia } from '@/utils/firebase/functions';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
-  IconCheck,
   IconChevronDown,
   IconPhoto,
   IconPlus,
@@ -14,37 +13,30 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Dispatch,
-  FC,
-  SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { Blinks } from '../blinks/blinks-ui';
 import { CreateAccountBtn } from '../create/create-ui';
 import {
-  useGetMintMetadata,
   useGetToken,
+  useGetTokenDetails,
 } from '../dashboard/dashboard-data-access';
-import { AuthorityData } from '../dashboard/dashboard-ui';
 import {
   BlinkContent,
-  Content,
   PostContent,
+  UploadContent,
   VideoContent,
   useUploadMutation,
 } from './upload.data-access';
 
-export const UploadBtn: FC = () => {
+export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   const router = useRouter();
   return (
     <button
-      onClick={() => router.push('/content/create')}
+      onClick={() =>
+        router.push(`/content/create${mintId ? `?mintId=${mintId}` : ''}`)
+      }
       className="btn btn-sm btn-outline "
     >
       <IconPlus />
@@ -54,8 +46,8 @@ export const UploadBtn: FC = () => {
 };
 
 export enum ContentType {
-  POST = 'POST',
   BLINKS = 'BLINKS',
+  POST = 'POST',
 }
 
 interface UploadProps {
@@ -65,25 +57,43 @@ interface UploadProps {
 
 export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   const [content, setContent] = useState<
-    Content | { file: UploadFileTypes[]; caption: string }
+    UploadContent | { file: UploadFileTypes[]; caption: string }
   >();
 
-  const { data: metadataQuery } = useGetMintMetadata({
-    mint: mintId ? new PublicKey(mintId) : undefined,
+  const [contentType, setContentType] = useState(
+    mintId && id ? ContentType.POST : ContentType.BLINKS
+  );
+  const { publicKey } = useWallet();
+
+  const { data } = useGetToken({ address: publicKey });
+
+  const { data: metadataQuery } = useGetTokenDetails({
+    mint: data ? new PublicKey(data[0].mint) : null,
   });
 
-  const [contentType, setContentType] = useState(ContentType.POST);
-  const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
+  if (data && mintId && data[0].mint.toBase58() != mintId) {
+    return (
+      <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">
+        <span>
+          The requested mint wasn't created through this platform. However, your
+          content can still be read if you adhere to the following metadata
+          standards. Click here for a guide on how to do this.
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8 my-4 items-center w-full p-4">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        {mintId ? 'Edit a Post' : 'Create a New Post'}
+        {id ? 'Edit a Post' : 'Create a New Post'}
       </span>
       <div className="flex flex-col gap-4 items-center max-w-md w-full">
         <div className="flex gap-4 w-full items-center">
-          <span className="whitespace-nowrap font-semibold">Content Type:</span>
-          <div className="dropdown w-full ">
+          <span className="whitespace-nowrap w-1/3 font-semibold">
+            Content Type:
+          </span>
+          <div className="dropdown w-2/3">
             <div
               tabIndex={0}
               role="button"
@@ -106,10 +116,14 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
         </div>
         {contentType == ContentType.BLINKS && (
           <UploadBlinks
-            setContent={setContent}
+            id={id}
+            mint={metadataQuery?.id}
             content={
-              !content && metadataQuery && metadataQuery.content
-                ? (metadataQuery.content.find(
+              !content &&
+              metadataQuery &&
+              metadataQuery.jsonUriData &&
+              metadataQuery.jsonUriData.content
+                ? (metadataQuery.jsonUriData.content.find(
                     (x) => x.id == id && x.type == ContentType.BLINKS
                   ) as BlinkContent) || undefined
                 : (content as BlinkContent)
@@ -118,47 +132,45 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
         )}
         {contentType == ContentType.POST && (
           <UploadPost
-            setContent={setContent}
+            id={id}
+            mint={metadataQuery?.id}
             content={
-              !content && metadataQuery && metadataQuery.content
-                ? (metadataQuery.content.find(
+              !content &&
+              metadataQuery &&
+              metadataQuery.jsonUriData &&
+              metadataQuery.jsonUriData.content
+                ? (metadataQuery.jsonUriData.content.find(
                     (x) => x.id == id && x.type == ContentType.POST
                   ) as PostContent) || undefined
                 : (content as PostContent)
             }
           />
         )}
-        <UploadContent
-          id={id}
-          mintId={mintId}
-          content={content}
-          publicKey={publicKey}
-          data={data}
-          contentType={contentType}
-        />
       </div>
     </div>
   );
 };
 
-export const UploadContent: FC<{
+export const UploadContentBtn: FC<{
   id?: string;
-  mintId?: string;
+  mint?: string;
   contentType: ContentType;
-  content: Content | { file: UploadFileTypes[]; caption: string } | undefined;
-  publicKey: PublicKey | null;
-  data: AuthorityData[] | null | undefined;
-}> = ({ mintId, content, data, publicKey, contentType, id }) => {
+  content:
+    | UploadContent
+    | { file: UploadFileTypes[]; caption: string }
+    | undefined;
+}> = ({ mint, content, contentType, id }) => {
+  const { publicKey } = useWallet();
   const uploadMutation = useUploadMutation({
-    mint: mintId ? new PublicKey(mintId) : data ? data[0].mint : null,
+    mint: mint ? new PublicKey(mint) : null,
   });
   return (
     <div className="w-full">
-      {publicKey && data && (
+      {publicKey && mint && (
         <button
           disabled={!content || uploadMutation.isPending}
           onClick={async () => {
-            if (!content) return;
+            if (!content || !mint) return;
             try {
               if (contentType == ContentType.BLINKS) {
                 const blinkContent = content as BlinkContent;
@@ -173,6 +185,10 @@ export const UploadContent: FC<{
                   file: UploadFileTypes[];
                   caption: string;
                 };
+                if (postContent.file.length == 0) {
+                  toast.error('No files found');
+                  return;
+                }
                 await uploadMutation.mutateAsync({
                   content: {
                     createdAt: Math.round(Date.now() / 1000),
@@ -183,7 +199,7 @@ export const UploadContent: FC<{
                     carousel: await Promise.all(
                       postContent.file.map(async (x) => {
                         const mediaUrl = x.file
-                          ? await uploadMedia(x.file, data[0].mint)
+                          ? await uploadMedia(x.file, new PublicKey(mint))
                           : x.url;
                         if (x.fileType.startsWith('image/')) {
                           return {
@@ -219,7 +235,7 @@ export const UploadContent: FC<{
           )}
         </button>
       )}
-      {publicKey && !data && <CreateAccountBtn />}
+      {publicKey && !mint && <CreateAccountBtn />}
       {!publicKey && (
         <div className="w-full">
           <AuthenticationBtn
@@ -246,12 +262,9 @@ interface UploadFileTypes {
 
 export const UploadPost: FC<{
   content: PostContent | undefined;
-  setContent: Dispatch<
-    SetStateAction<
-      Content | { file: UploadFileTypes[]; caption: string } | undefined
-    >
-  >;
-}> = ({ content, setContent }) => {
+  mint?: string;
+  id?: string;
+}> = ({ content, mint, id }) => {
   const [files, setFiles] = useState<UploadFileTypes[]>([]);
   const [caption, setCaption] = useState('');
   const router = useRouter();
@@ -329,12 +342,6 @@ export const UploadPost: FC<{
       });
     }
   };
-
-  useEffect(() => {
-    if (((files.length > 0 || caption != '') && !content) || content) {
-      setContent({ file: files, caption: caption });
-    }
-  }, [files, caption]);
 
   const handleFilesAdd = (e: any) => {
     if (files.length >= 3) {
@@ -514,26 +521,29 @@ export const UploadPost: FC<{
           onChange={handleCaptionChange}
         />
       </div>
+      <UploadContentBtn
+        id={id}
+        mint={mint}
+        content={{ file: files, caption: caption }}
+        contentType={ContentType.POST}
+      />
     </div>
   );
 };
 
 interface UploadComponentProps {
   content: BlinkContent | undefined;
-  setContent: Dispatch<
-    SetStateAction<
-      Content | { file: UploadFileTypes[]; caption: string } | undefined
-    >
-  >;
+  id?: string;
+  mint?: string;
 }
 
 export const UploadBlinks: FC<UploadComponentProps> = ({
+  id,
+  mint,
   content,
-  setContent,
 }) => {
   const [uri, setUri] = useState('');
   const [uriLoaded, setUriLoaded] = useState(false);
-  const [added, setAdded] = useState(false);
   useEffect(() => {
     if (!uriLoaded && uri == '' && content && content.uri != '') {
       setUri(content.uri);
@@ -549,6 +559,16 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
     }
   }, [uri]);
 
+  const blinkContent: BlinkContent | undefined = validUrl
+    ? {
+        uri: validUrl.toString(),
+        type: ContentType.BLINKS,
+        createdAt: Math.round(Date.now() / 1000),
+        updatedAt: Math.round(Date.now() / 1000),
+        id: crypto.randomUUID(),
+      }
+    : undefined;
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center gap-4">
@@ -559,31 +579,18 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
           value={uri?.toString()}
           onChange={(e) => setUri(e.target.value)}
         />
-        <button
-          onClick={() => {
-            if (validUrl) {
-              const blinkContent: BlinkContent = {
-                uri: validUrl.toString(),
-                type: ContentType.BLINKS,
-                createdAt: Math.round(Date.now() / 1000),
-                updatedAt: Math.round(Date.now() / 1000),
-                id: crypto.randomUUID(),
-              };
-              setContent(blinkContent);
-              setAdded(true);
-            }
-          }}
-          className="btn btn-square btn-outline btn-sm rounded-full"
-        >
-          {added ? <IconCheck /> : <IconPlus />}
-        </button>
       </div>
-
       {validUrl && (
         <div className="bg-base-300 rounded">
           <Blinks actionUrl={validUrl} />
         </div>
       )}
+      <UploadContentBtn
+        id={id}
+        mint={mint}
+        content={blinkContent}
+        contentType={ContentType.BLINKS}
+      />
     </div>
   );
 };

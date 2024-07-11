@@ -1,3 +1,4 @@
+import { UploadContent } from '@/components/upload/upload.data-access';
 import {
   AssetSortBy,
   AssetSortDirection,
@@ -121,6 +122,11 @@ export declare namespace DAS {
     burnt: boolean;
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
+    jsonUriData?: {
+      imageUrl: string;
+      description: string;
+      content: UploadContent[] | undefined;
+    };
   };
   type GetRwaAssetResponse = {
     items: FullRwaAccount;

@@ -484,7 +484,7 @@ export declare enum RoyaltyModel {
   FANOUT = 'fanout',
   SINGLE = 'single',
 }
-export declare enum Scope {
+export enum Scope {
   FULL = 'full',
   ROYALTY = 'royalty',
   METADATA = 'metadata',

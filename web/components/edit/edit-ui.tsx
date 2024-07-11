@@ -3,13 +3,12 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   useGetMintDetails,
-  useGetMintMetadata,
   useGetMintTransferFeeConfig,
+  useGetTokenDetails,
 } from '../dashboard/dashboard-data-access';
 import {
   useCloseAccount,
@@ -38,7 +37,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   const { data: mintTokenData } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
-  const { data: metaData } = useGetMintMetadata({
+  const { data: metaData } = useGetTokenDetails({
     mint: new PublicKey(mintId),
   });
 
@@ -58,19 +57,19 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
-    if (metaData && !metaDataLoaded) {
-      setTempImageUrl(metaData.image);
+    if (metaData && !metaDataLoaded && metaData.jsonUriData) {
+      setTempImageUrl(metaData.jsonUriData.imageUrl);
 
-      setName(metaData.metaData.name);
+      setName(metaData.content?.metadata.name || '');
 
-      setSymbol(metaData.metaData.symbol);
+      setSymbol(metaData.content?.metadata.symbol || '');
 
       if (
         description == '' &&
-        metaData.description &&
-        metaData.description != ''
+        metaData.jsonUriData &&
+        metaData.jsonUriData.description != ''
       ) {
-        setDescription(metaData.description);
+        setDescription(metaData.jsonUriData.description);
       }
       setMetadataLoaded(true);
     }
@@ -120,7 +119,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     setDescription(e.target.value);
   };
 
-  const router = useRouter();
   return (
     <div className="flex flex-col gap-8 my-4 items-center max-w-2xl w-full p-4">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
@@ -217,73 +215,78 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             onChange={handleDescriptionChange}
           ></textarea>
         </div>
-        <div className="grid grid-cols-4 w-full gap-4 items-center ">
-          <span className="text-sm">Authority</span>
-          <input
-            disabled={mintTokenData?.mutable == 0}
-            type="text"
-            placeholder="authority"
-            className="col-span-3 input input-bordered w-full text-sm rounded"
-            value={admin}
-            onChange={(e) => setAdmin(e.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-4 w-full items-center gap-4">
-          <span className="text-sm ">Transfer Fee</span>
-          <label
-            className="col-span-3 input input-bordered flex items-center w-fit text-sm gap-2"
-            data-tip="High fees might discourage users from using your token"
-          >
-            <input
-              disabled={mintTokenData?.mutable == 0}
-              value={fee}
-              onChange={(e) => {
-                setFee(e.target.value);
-              }}
-              type="number"
-              className="w-6 text-right"
-              placeholder=""
-            />
-            %
-          </label>
-          <span className="text-sm">Max Transfer Fee</span>
-          <div className="col-span-3 flex flex-col items-start gap-2">
-            <div className="flex items-center text-sm gap-4 w-full">
-              {showMaxFee && (
-                <label
-                  className="tooltip input input-bordered flex items-center w-full"
-                  data-tip="Users will not be charged beyond this amount"
-                >
-                  <input
-                    disabled={mintTokenData?.mutable == 0}
-                    value={maxFee}
-                    onChange={(e) => {
-                      setMaxFee(e.target.value);
-                    }}
-                    type="number"
-                    min={0}
-                    className="w-full"
-                    placeholder=""
-                  />
-                  <span className="stat-desc">token</span>
-                </label>
-              )}
+        <div tabIndex={0} className="collapse collapse-plus">
+          <input type="checkbox" className="peer" />
+          <div className="collapse-title border-b border-base-content">
+            Advanced Configuration
+          </div>
+          <div className="collapse-content flex flex-col gap-4 py-4">
+            <div className="grid grid-cols-4 w-full gap-4 items-center ">
+              <span className="text-sm">Authority</span>
               <input
                 disabled={mintTokenData?.mutable == 0}
-                type="checkbox"
-                className="toggle toggle-primary"
-                onChange={() => {
-                  if (showMaxFee) {
-                    setMaxFee('');
-                  }
-                  setShowMaxFee(!showMaxFee);
-                }}
-                checked={showMaxFee}
+                type="text"
+                placeholder="authority"
+                className="col-span-3 input input-bordered w-full text-sm rounded"
+                value={admin}
+                onChange={(e) => setAdmin(e.target.value)}
               />
+            </div>
+            <div className="grid grid-cols-4 w-full items-center gap-4">
+              <span className="text-sm ">Transfer Fee</span>
+              <label className="col-span-3 input input-bordered flex items-center w-fit text-sm gap-2">
+                <input
+                  min={0.1}
+                  disabled={mintTokenData?.mutable == 0}
+                  value={fee}
+                  onChange={(e) => {
+                    setFee(e.target.value);
+                  }}
+                  type="number"
+                  className="w-6 text-right"
+                  placeholder=""
+                />
+                %
+              </label>
+              <span className="text-sm">Max Transfer Fee</span>
+              <div className="col-span-3 flex flex-col items-start gap-2">
+                <div className="flex items-center text-sm gap-4 w-full">
+                  {showMaxFee && (
+                    <label
+                      className="tooltip input input-bordered flex items-center w-full"
+                      data-tip="Users will not be charged beyond this amount"
+                    >
+                      <input
+                        disabled={mintTokenData?.mutable == 0}
+                        value={maxFee}
+                        onChange={(e) => {
+                          setMaxFee(e.target.value);
+                        }}
+                        type="number"
+                        min={0}
+                        className="w-full"
+                        placeholder=""
+                      />
+                      <span className="stat-desc">token</span>
+                    </label>
+                  )}
+                  <input
+                    disabled={mintTokenData?.mutable == 0}
+                    type="checkbox"
+                    className="toggle toggle-primary"
+                    onChange={() => {
+                      if (showMaxFee) {
+                        setMaxFee('');
+                      }
+                      setShowMaxFee(!showMaxFee);
+                    }}
+                    checked={showMaxFee}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
         <button
           disabled={!publicKey || editMutation.isPending}
           onClick={async () => {
@@ -295,6 +298,10 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               !transferFeeConfig
             ) {
               toast.error('Unable to fetch current mint metadata.');
+              return;
+            }
+            if (parseFloat(fee) < 0.1) {
+              toast.error('Transfer Fee needs to be at least 0.1%.');
               return;
             }
             await editMutation.mutateAsync({

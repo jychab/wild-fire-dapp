@@ -4,10 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
 import { HASHFEED_MINT } from '../const';
-import {
-  useGetMintMetadata,
-  useGetTokenDetails,
-} from '../dashboard/dashboard-data-access';
+import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
 import {
   useGetAllFungibleTokensFromOwner,
   useGetMultipleMintUriMetadata,
@@ -64,17 +61,17 @@ interface ContentFeatureProps {
 }
 
 export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
-  const { data: metadataQuery } = useGetMintMetadata({
-    mint: mintId ? new PublicKey(mintId) : undefined,
+  const { data: metadataQuery } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
   });
 
   const content = metadataQuery
     ? {
-        ...(metadataQuery.content!.find((x) => x.id == id) || {}),
-        name: metadataQuery.metaData.name,
-        symbol: metadataQuery.metaData.symbol,
-        image: metadataQuery.image,
-        mint: metadataQuery.metaData.mint,
+        ...(metadataQuery.jsonUriData.content!.find((x) => x.id == id) || {}),
+        name: metadataQuery.content?.metadata.name,
+        symbol: metadataQuery.content?.metadata.symbol,
+        image: metadataQuery.jsonUriData.imageUrl,
+        mint: new PublicKey(metadataQuery.id),
       }
     : undefined;
   return (

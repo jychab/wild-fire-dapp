@@ -1,6 +1,8 @@
 'use client';
 
+import { Scope } from '@/utils/enums/das';
 import { proxify } from '@/utils/helper/proxy';
+import { DAS } from '@/utils/types/das';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -10,7 +12,7 @@ import {
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
@@ -25,7 +27,7 @@ import {
 import { useTransactionToast } from '../ui/ui-layout';
 import { ContentType } from './upload-ui';
 
-export type Content = BlinkContent | PostContent;
+export type UploadContent = BlinkContent | PostContent;
 
 export interface BaseContent {
   type: ContentType;
@@ -56,7 +58,7 @@ export interface VideoContent {
 }
 
 interface UploadArgs {
-  content: Content;
+  content: UploadContent;
 }
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -85,7 +87,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         const uriMetadata = await (
           await fetch(proxify(details.uri, true))
         ).json();
-        let currentContent = uriMetadata.content as Content[] | undefined;
+        let currentContent = uriMetadata.content as UploadContent[] | undefined;
         currentContent =
           currentContent?.filter((x) => x.id != input.content.id) || [];
         const newContent = currentContent.concat([input.content]);
@@ -161,7 +163,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         return Promise.all([
           client.invalidateQueries({
             queryKey: [
-              'get-mint-metadata',
+              'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
@@ -171,5 +173,51 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
     onError: (error) => {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
+  });
+}
+
+export function useGetAuthorisedMintInYourWallet({
+  address,
+}: {
+  address: PublicKey | null;
+}) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-list-of-authorised-mints-from-wallet',
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    queryFn: async () => {
+      if (!address) return null;
+      const response = await fetch(connection.rpcEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '',
+          method: 'searchAssets',
+          params: {
+            tokenType: 'fungible',
+            ownerAddress: address.toBase58(),
+            page: 1, // Starts at 1
+            limit: 1000,
+            displayOptions: {
+              showZeroBalance: false,
+            },
+          },
+        }),
+      });
+      const data = (await response.json()).result as DAS.GetAssetResponseList;
+      return data.items.filter(
+        (x) =>
+          x.authorities?.find(
+            (x) =>
+              x.scopes.includes(Scope.FULL) || x.scopes.includes(Scope.METADATA)
+          )?.address == address.toBase58()
+      );
+    },
+    enabled: !!address,
   });
 }
