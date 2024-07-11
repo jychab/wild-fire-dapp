@@ -117,7 +117,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async (id: string) => {
       let signature: TransactionSignature = '';
-      let tx: TransactionInstruction[] = [];
+      let ixs: TransactionInstruction[] = [];
       try {
         if (!wallet.publicKey || !mint || !id) return;
         const details = await getTokenMetadata(connection, mint);
@@ -140,7 +140,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           fieldsToUpdate
         );
         if (lamports > 0) {
-          tx.push(
+          ixs.push(
             SystemProgram.transfer({
               fromPubkey: wallet.publicKey,
               toPubkey: mint,
@@ -149,7 +149,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           );
         }
         for (let x of fieldsToUpdate) {
-          tx.push(
+          ixs.push(
             await updateMetadata(
               connection,
               wallet.publicKey!,
@@ -160,14 +160,13 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           );
         }
 
-        if (tx.length == 0) return;
-        signature = await buildAndSendTransaction(
+        if (ixs.length == 0) return;
+        signature = await buildAndSendTransaction({
           connection,
-          tx,
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          ixs,
+          publicKey: wallet.publicKey!,
+          signTransaction: wallet.signTransaction!,
+        });
 
         return signature;
       } catch (error: unknown) {

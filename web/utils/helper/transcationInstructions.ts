@@ -55,7 +55,7 @@ export async function createMint(
       program: program(connection).programId,
     })
     .instruction();
-  return [ix];
+  return ix;
 }
 
 export async function createMintMetadata(
@@ -118,27 +118,6 @@ export async function changeTransferFee(
     .accounts({
       payer: payer,
       mint: mint,
-      authority: authority,
-    })
-    .instruction();
-
-  return ix;
-}
-
-export async function changeDistributor(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey,
-  newDistributor: PublicKey
-) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
-    program(connection).programId
-  );
-  const ix = await program(connection)
-    .methods.changeDistributor(newDistributor)
-    .accounts({
-      payer: payer,
       authority: authority,
     })
     .instruction();
@@ -237,6 +216,7 @@ export async function updateMetadata(
     .methods.updateMintMetadata(field, value)
     .accounts({
       mint: mint,
+      admin: payer,
       payer: payer,
     })
     .instruction();

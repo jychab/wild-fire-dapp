@@ -249,14 +249,14 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
       outputTokenProgram: PublicKey;
       outputTokenDecimal: number;
     }) => {
-      if (!mint) return;
+      if (!mint || !wallet.publicKey || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       try {
         let ixs;
         if (type == SwapType.BasedOutput) {
           ixs = await swapBaseOutput(
             connection,
-            wallet.publicKey!,
+            wallet.publicKey,
             amount,
             inputToken,
             inputTokenProgram,
@@ -267,7 +267,7 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
         } else {
           ixs = await swapBaseInput(
             connection,
-            wallet.publicKey!,
+            wallet.publicKey,
             amount,
             inputToken,
             inputTokenProgram,
@@ -277,13 +277,12 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
           );
         }
 
-        signature = await buildAndSendTransaction(
+        signature = await buildAndSendTransaction({
           connection,
           ixs,
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
@@ -315,23 +314,23 @@ export function useInitializePool({ mint }: { mint: PublicKey }) {
       },
     ],
     mutationFn: async () => {
+      if (!wallet.publicKey || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       try {
         const ixs = await initializePool(
           connection,
           mint,
-          wallet.publicKey!,
+          wallet.publicKey,
           LAMPORTS_PER_SOL * 0.7,
           LAMPORTS_PER_SOL * 0.1
         );
 
-        signature = await buildAndSendTransaction(
+        signature = await buildAndSendTransaction({
           connection,
           ixs,
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);

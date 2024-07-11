@@ -78,45 +78,62 @@ export async function getSimulationUnits(
   }
   return simulation.value.unitsConsumed;
 }
-export async function buildAndSendTransaction(
-  connection: Connection,
-  ixs: TransactionInstruction[],
-  publicKey: PublicKey,
+export async function buildAndSendTransaction({
+  connection,
+  publicKey,
+  signTransaction,
+  ixs,
+  partialSignedTx,
+  commitment = 'confirmed',
+  signers,
+}: {
+  connection: Connection;
+  publicKey: PublicKey;
   signTransaction: <T extends VersionedTransaction | Transaction>(
     transaction: T
-  ) => Promise<T>,
-  commitment: Commitment = 'confirmed',
-  signers?: Signer[]
-): Promise<string> {
-  const [microLamports, units, recentBlockhash] = await Promise.all([
-    getPriorityFeeEstimate('High', ixs, publicKey, connection),
-    getSimulationUnits(connection, ixs, publicKey, []),
-    connection.getLatestBlockhash({ commitment: 'confirmed' }),
-  ]);
-  ixs.unshift(
-    ComputeBudgetProgram.setComputeUnitPrice({
-      microLamports: Math.round(microLamports * 1.1),
-    })
-  );
-  if (units) {
-    // probably should add some margin of error to units
+  ) => Promise<T>;
+  ixs?: TransactionInstruction[];
+  partialSignedTx?: VersionedTransaction | Transaction;
+  commitment?: Commitment;
+  signers?: Signer[];
+}): Promise<string> {
+  let tx = partialSignedTx;
+  const recentBlockhash = await connection.getLatestBlockhash({
+    commitment: 'confirmed',
+  });
+  if (ixs && ixs.length > 0) {
+    const [microLamports, units] = await Promise.all([
+      getPriorityFeeEstimate('High', ixs, publicKey, connection),
+      getSimulationUnits(connection, ixs, publicKey, []),
+    ]);
     ixs.unshift(
-      ComputeBudgetProgram.setComputeUnitLimit({
-        units: Math.max(Math.round(units * 1.1), 5000),
+      ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: Math.round(microLamports * 1.1),
       })
     );
-    console.log(`Compute Units: ${Math.max(Math.round(units * 1.1), 5000)}`);
+    if (units) {
+      // probably should add some margin of error to units
+      ixs.unshift(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: Math.max(Math.round(units * 1.1), 5000),
+        })
+      );
+      console.log(`Compute Units: ${Math.max(Math.round(units * 1.1), 5000)}`);
+    }
+    console.log(`Blockhash: ${recentBlockhash.blockhash}`);
+    tx = new VersionedTransaction(
+      new TransactionMessage({
+        instructions: ixs,
+        recentBlockhash: recentBlockhash.blockhash,
+        payerKey: publicKey,
+      }).compileToV0Message()
+    );
+    if (signers) {
+      tx.sign(signers);
+    }
   }
-  console.log(`Blockhash: ${recentBlockhash.blockhash}`);
-  let tx = new VersionedTransaction(
-    new TransactionMessage({
-      instructions: ixs,
-      recentBlockhash: recentBlockhash.blockhash,
-      payerKey: publicKey,
-    }).compileToV0Message()
-  );
-  if (signers) {
-    tx.sign(signers);
+  if (!tx) {
+    throw new Error('Undefined Transaction');
   }
   const signedTx = await signTransaction(tx);
   const txId = await connection.sendTransaction(

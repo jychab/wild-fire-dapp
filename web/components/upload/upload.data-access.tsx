@@ -67,12 +67,11 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       },
     ],
     mutationFn: async (input: UploadArgs) => {
+      if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
 
-      let tx: TransactionInstruction[] = [];
+      let ixs: TransactionInstruction[] = [];
       try {
-        if (!wallet.publicKey || !mint) return;
-
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
         const uriMetadata = await (await fetch(proxify(details.uri))).json();
@@ -97,7 +96,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           fieldsToUpdate
         );
         if (lamports > 0) {
-          tx.push(
+          ixs.push(
             SystemProgram.transfer({
               fromPubkey: wallet.publicKey,
               toPubkey: mint,
@@ -106,7 +105,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           );
         }
         for (let x of fieldsToUpdate) {
-          tx.push(
+          ixs.push(
             await updateMetadata(
               connection,
               wallet.publicKey!,
@@ -117,14 +116,13 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           );
         }
 
-        if (tx.length == 0) return;
-        signature = await buildAndSendTransaction(
+        if (ixs.length == 0) return;
+        signature = await buildAndSendTransaction({
           connection,
-          tx,
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          ixs,
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
 
         return signature;
       } catch (error: unknown) {

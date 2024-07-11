@@ -312,6 +312,7 @@ export const execute = async (
       });
       return;
     }
+
     const transaction = VersionedTransaction.deserialize(
       Buffer.from(tx.transaction, 'base64')
     );

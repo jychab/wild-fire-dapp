@@ -7,10 +7,15 @@ import {
   SystemProgram,
   TransactionInstruction,
   TransactionSignature,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { uploadMedia, uploadMetadata } from '../../utils/firebase/functions';
+import {
+  updateMetadataSponsored,
+  uploadMedia,
+  uploadMetadata,
+} from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   changeAdmin,
@@ -58,16 +63,15 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
     mutationFn: async () => {
       let signature: TransactionSignature = '';
       try {
-        if (!wallet.publicKey || !mint) return;
+        if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
         const ix = await closeFeeAccount(connection, wallet.publicKey, mint);
 
-        signature = await buildAndSendTransaction(
+        signature = await buildAndSendTransaction({
           connection,
-          [ix],
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          ixs: [ix],
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
 
         return signature;
       } catch (error: unknown) {
@@ -124,10 +128,30 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     mutationFn: async (input: EditMintArgs) => {
       let signature: TransactionSignature = '';
 
-      let tx: TransactionInstruction[] = [];
+      let ixs: TransactionInstruction[] = [];
+      let tx;
       try {
-        if (!wallet.publicKey || !mint) return;
-
+        if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
+        if (input.previous.admin.toString() != input.admin.toString()) {
+          ixs.push(
+            await changeAdmin(connection, wallet.publicKey, mint, input.admin)
+          );
+        }
+        if (
+          input.previous.transferFeeBasisPoints != input.fee ||
+          Number(input.previous.maximumFee) !=
+            (input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER)
+        ) {
+          ixs.push(
+            await changeTransferFee(
+              connection,
+              wallet.publicKey,
+              mint,
+              input.fee,
+              input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER
+            )
+          );
+        }
         let fieldsToUpdate = new Map<string, string>();
         if (input.previous.metaData.name !== input.name) {
           fieldsToUpdate.set('name', input.name);
@@ -135,7 +159,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         if (input.previous.metaData.symbol !== input.symbol) {
           fieldsToUpdate.set('symbol', input.symbol);
         }
-
         if (
           input.picture ||
           input.description != input.previous.description ||
@@ -155,60 +178,55 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           };
           const uri = await uploadMetadata(JSON.stringify(payload), mint);
           fieldsToUpdate.set('uri', uri);
-          const lamports = await getAdditionalRentForUpdatedMetadata(
-            connection,
-            mint,
-            fieldsToUpdate
-          );
-          if (lamports > 0) {
-            tx.push(
-              SystemProgram.transfer({
-                fromPubkey: wallet.publicKey,
-                toPubkey: mint,
-                lamports: lamports,
-              })
+
+          if (ixs.length == 0) {
+            const partialTx = await updateMetadataSponsored(
+              mint.toBase58(),
+              fieldsToUpdate
             );
+            if (partialTx) {
+              tx = VersionedTransaction.deserialize(
+                Buffer.from(partialTx, 'base64')
+              );
+            }
           }
-          for (let x of fieldsToUpdate) {
-            tx.push(
-              await updateMetadata(
-                connection,
-                wallet.publicKey!,
-                mint,
-                x[0],
-                x[1]
-              )
-            );
-          }
-        }
-        if (input.previous.admin.toString() != input.admin.toString()) {
-          tx.push(
-            await changeAdmin(connection, wallet.publicKey, mint, input.admin)
-          );
-        }
-        if (
-          input.previous.transferFeeBasisPoints != input.fee ||
-          Number(input.previous.maximumFee) !=
-            (input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER)
-        ) {
-          tx.push(
-            await changeTransferFee(
+          if (!tx) {
+            const lamports = await getAdditionalRentForUpdatedMetadata(
               connection,
-              wallet.publicKey,
               mint,
-              input.fee,
-              input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER
-            )
-          );
+              fieldsToUpdate
+            );
+            if (lamports > 0) {
+              ixs.push(
+                SystemProgram.transfer({
+                  fromPubkey: wallet.publicKey,
+                  toPubkey: mint,
+                  lamports: lamports,
+                })
+              );
+            }
+            for (let x of fieldsToUpdate) {
+              ixs.push(
+                await updateMetadata(
+                  connection,
+                  wallet.publicKey,
+                  mint,
+                  x[0],
+                  x[1]
+                )
+              );
+            }
+          }
         }
-        if (tx.length == 0) return;
-        signature = await buildAndSendTransaction(
+
+        if (!tx && ixs.length == 0) return;
+        signature = await buildAndSendTransaction({
           connection,
-          tx,
-          wallet.publicKey!,
-          wallet.signTransaction!,
-          'confirmed'
-        );
+          ixs,
+          partialSignedTx: tx,
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
 
         return signature;
       } catch (error: unknown) {

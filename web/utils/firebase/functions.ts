@@ -1,3 +1,4 @@
+import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { httpsCallable } from 'firebase/functions';
@@ -8,6 +9,21 @@ export async function getDistributor(mint: string) {
   const getDistributor = httpsCallable(functions, 'getDistributor');
   const result = await getDistributor({ mint });
   return result.data as string;
+}
+
+export async function getDistributorSponsored(metadata: TokenMetadata) {
+  const getDistributor = httpsCallable(functions, 'getDistributorSponsored');
+  const result = await getDistributor({ metadata });
+  return result.data as { partialTx?: string; distributor: string };
+}
+
+export async function updateMetadataSponsored(
+  mint: string,
+  fieldsToUpdate: Map<string, string>
+) {
+  const getDistributor = httpsCallable(functions, 'updateMetadataSponsored');
+  const result = await getDistributor({ mint, fieldsToUpdate });
+  return result.data as string | undefined;
 }
 
 export async function withdrawFundsFromDistributor(
