@@ -1,3 +1,5 @@
+'use client';
+
 import { proxify } from '@/utils/helper/proxy';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -9,7 +11,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   updateMetadataSponsored,

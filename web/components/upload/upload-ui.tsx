@@ -1,3 +1,5 @@
+'use client';
+
 import { uploadMedia } from '@/utils/firebase/functions';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -150,7 +152,6 @@ export const UploadContent: FC<{
   const uploadMutation = useUploadMutation({
     mint: mintId ? new PublicKey(mintId) : data ? data[0].mint : null,
   });
-  const router = useRouter();
   return (
     <div className="w-full">
       {publicKey && data && (
