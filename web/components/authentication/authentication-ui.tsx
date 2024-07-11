@@ -104,7 +104,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
           </li>
         )}
         {!metaDataQuery && (
-          <li className="w-full justify-between">
+          <li className="w-full">
             <Link href={`/mint/create`}>
               <IconUserPlus />
               Create New Account

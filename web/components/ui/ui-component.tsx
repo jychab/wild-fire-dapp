@@ -19,7 +19,7 @@ export const ThemeComponent: FC = ({}) => {
     }
   }, [theme]);
   return (
-    <label className="swap swap-rotate items-center justify-start">
+    <label className="swap swap-rotate justify-start">
       <input
         type="checkbox"
         onClick={toggleTheme}

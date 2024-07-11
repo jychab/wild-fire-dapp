@@ -68,16 +68,16 @@ export const CreatePanel: FC = () => {
 
   const router = useRouter();
   return (
-    <div className="flex flex-col gap-8 my-4 items-center justify-center p-4">
+    <div className="flex flex-col gap-4 items-center justify-center">
       <span className="text-2xl md:text-3xl lg:text-4xl text-center">
         Create your account
       </span>
-      <span className="text-sm lg:text-base text-center">
+      <span className="text-sm lg:text-base text-center px-4">
         Add a profile picture, name and handle. You can always edit it later.
       </span>
-      <div className="p-4 flex flex-col gap-4 items-start w-full border border-base-content rounded bg-base-200">
-        <span>Create your account</span>
-        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center border-t border-base-content">
+      <div className="p-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
+        <span className="hidden md:block">Create your account</span>
+        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center md:border-t md:border-base-content">
           <div className="w-32 h-32 lg:w-40 lg:h-40">
             <label
               htmlFor="dropzone-file"
@@ -112,13 +112,13 @@ export const CreatePanel: FC = () => {
               type="text"
               placeholder="Display Name"
               value={name}
-              className="input input-bordered w-full max-w-xs text-sm rounded"
+              className="input input-bordered w-full text-sm rounded"
               onChange={handleNameChange}
             />
             <input
               type="text"
               placeholder="@handle"
-              className="input input-bordered w-full max-w-xs text-sm rounded"
+              className="input input-bordered w-full text-sm rounded"
               value={handle}
               onChange={handleHandleChange}
             />
@@ -145,7 +145,7 @@ export const CreatePanel: FC = () => {
           <div className="collapse-content">
             <div className="flex flex-col gap-4 py-4 items-start w-full">
               <div className="flex items-center gap-4">
-                <span>Enable Monetization?</span>
+                <span>Enable Monetization</span>
                 <input
                   type="checkbox"
                   className="toggle"
@@ -154,10 +154,9 @@ export const CreatePanel: FC = () => {
                 />
               </div>
               {!enableTrading && (
-                <div className="card text-sm text-center w-full p-4">
-                  Enabling this feature will list your token on a decentralized
-                  exchange for public trading. Once activated, you can begin
-                  earning trading fees.
+                <div className="py-2 px-4 card bg-warning text-warning-content text-sm text-start w-full">
+                  Activating this feature will make your token available for
+                  public trading. This option can also be enabled later.
                 </div>
               )}
               {enableTrading && (
@@ -265,12 +264,13 @@ const LiquidityPoolPanel: FC<{
   return (
     <div className="flex flex-col gap-2 w-full">
       <div
-        data-tip="To launch your token on a decentralized exchange, you need to create a
+        data-tip="To enable your token for trading, you need to first create a
         liquidity pool. This allows for anyone to buy or sell your token freely,
         while you earn trading fees on each transaction."
         className="tooltip card bg-warning text-warning-content p-4 text-xs text-center"
       >
-        Choose the amount of SOL and tokens to create your liquidity pool.
+        Choose the amount of SOL and tokens to create your initial liquidity
+        pool.
       </div>
       <label>
         <div className="label">
@@ -341,7 +341,10 @@ const LiquidityPoolPanel: FC<{
             </button>
           </div>
         </div>
-        <div className="input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
+        <div
+          data-tip="All tokens are created with an initial supply of 1B with 0 decimal"
+          className="tooltip input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg"
+        >
           <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
             {tempImageUrl && (
               <div className="w-8 h-8 relative">
