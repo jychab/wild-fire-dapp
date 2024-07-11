@@ -6,10 +6,14 @@ import {
   SystemProgram,
   TransactionInstruction,
   TransactionSignature,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { uploadMetadata } from '../../utils/firebase/functions';
+import {
+  updateMetadataSponsored,
+  uploadMetadata,
+} from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   getAdditionalRentForUpdatedMetadata,
@@ -69,57 +73,72 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
     mutationFn: async (input: UploadArgs) => {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
-
       let ixs: TransactionInstruction[] = [];
+      let tx;
       try {
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
-        const uriMetadata = await (await fetch(proxify(details.uri))).json();
+        const uriMetadata = await (
+          await fetch(proxify(details.uri, true))
+        ).json();
         let currentContent = uriMetadata.content as Content[] | undefined;
         currentContent =
           currentContent?.filter((x) => x.id != input.content.id) || [];
         const newContent = currentContent.concat([input.content]);
         newContent.sort((a, b) => b.updatedAt - a.updatedAt);
 
-        let fieldsToUpdate = new Map<string, string>();
-
+        let fieldsToUpdate: [string, string][] = [];
         toast('Uploading metadata...');
         const payload = {
           ...uriMetadata,
           content: newContent,
         };
         const uri = await uploadMetadata(JSON.stringify(payload), mint);
-        fieldsToUpdate.set('uri', uri);
-        const lamports = await getAdditionalRentForUpdatedMetadata(
-          connection,
-          mint,
+        fieldsToUpdate.push(['uri', uri]);
+
+        const partialTx = await updateMetadataSponsored(
+          mint.toBase58(),
           fieldsToUpdate
         );
-        if (lamports > 0) {
-          ixs.push(
-            SystemProgram.transfer({
-              fromPubkey: wallet.publicKey,
-              toPubkey: mint,
-              lamports: lamports,
-            })
-          );
-        }
-        for (let x of fieldsToUpdate) {
-          ixs.push(
-            await updateMetadata(
-              connection,
-              wallet.publicKey!,
-              mint,
-              x[0],
-              x[1]
-            )
+        if (partialTx) {
+          tx = VersionedTransaction.deserialize(
+            Buffer.from(partialTx, 'base64')
           );
         }
 
-        if (ixs.length == 0) return;
+        if (!tx) {
+          const lamports = await getAdditionalRentForUpdatedMetadata(
+            connection,
+            mint,
+            fieldsToUpdate
+          );
+          if (lamports > 0) {
+            ixs.push(
+              SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: mint,
+                lamports: lamports,
+              })
+            );
+          }
+          for (let x of fieldsToUpdate) {
+            ixs.push(
+              await updateMetadata(
+                connection,
+                wallet.publicKey!,
+                mint,
+                x[0],
+                x[1]
+              )
+            );
+          }
+        }
+
+        if (!tx && ixs.length == 0) return;
         signature = await buildAndSendTransaction({
           connection,
           ixs,
+          partialSignedTx: tx,
           publicKey: wallet.publicKey,
           signTransaction: wallet.signTransaction,
         });

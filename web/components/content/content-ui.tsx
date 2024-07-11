@@ -208,7 +208,7 @@ export const PostCard = ({
             </p>
           </div>
           <div className="flex flex-col gap-2 pt-2">
-            {content.caption != '' && content.caption.length > 200 && (
+            {content.caption != '' && (
               <span
                 onClick={() => {
                   if (!multiGrid) {

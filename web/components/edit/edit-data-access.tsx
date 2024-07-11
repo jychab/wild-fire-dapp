@@ -1,6 +1,7 @@
 'use client';
 
-import { TokenMetadata } from '@solana/spl-token-metadata';
+import { proxify } from '@/utils/helper/proxy';
+import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
@@ -40,9 +41,6 @@ interface EditMintArgs {
     maximumFee: bigint;
     transferFeeBasisPoints: number;
     admin: PublicKey;
-    metaData: TokenMetadata;
-    image: string;
-    description: string | undefined;
   };
 }
 
@@ -126,12 +124,11 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       },
     ],
     mutationFn: async (input: EditMintArgs) => {
+      if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
-
       let ixs: TransactionInstruction[] = [];
       let tx;
       try {
-        if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
         if (input.previous.admin.toString() != input.admin.toString()) {
           ixs.push(
             await changeAdmin(connection, wallet.publicKey, mint, input.admin)
@@ -152,17 +149,22 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             )
           );
         }
-        let fieldsToUpdate = new Map<string, string>();
-        if (input.previous.metaData.name !== input.name) {
-          fieldsToUpdate.set('name', input.name);
+        const details = await getTokenMetadata(connection, mint);
+        if (!details) return;
+        const uriMetadata = await (
+          await fetch(proxify(details.uri, true))
+        ).json();
+        let fieldsToUpdate: [string, string][] = [];
+        if (uriMetadata.name !== input.name) {
+          fieldsToUpdate.push(['name', input.name]);
         }
-        if (input.previous.metaData.symbol !== input.symbol) {
-          fieldsToUpdate.set('symbol', input.symbol);
+        if (uriMetadata.symbol !== input.symbol) {
+          fieldsToUpdate.push(['symbol', input.symbol]);
         }
         if (
           input.picture ||
-          input.description != input.previous.description ||
-          fieldsToUpdate.size != 0
+          input.description != uriMetadata.description ||
+          fieldsToUpdate.length != 0
         ) {
           let imageUrl;
           if (input.picture) {
@@ -171,13 +173,14 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           }
           toast('Uploading text metadata...');
           const payload = {
+            ...uriMetadata,
             name: input.name,
             symbol: input.symbol,
             description: input.description,
-            image: imageUrl ? imageUrl : input.previous.image,
+            image: imageUrl ? imageUrl : uriMetadata.image,
           };
           const uri = await uploadMetadata(JSON.stringify(payload), mint);
-          fieldsToUpdate.set('uri', uri);
+          fieldsToUpdate.push(['uri', uri]);
 
           if (ixs.length == 0) {
             const partialTx = await updateMetadataSponsored(

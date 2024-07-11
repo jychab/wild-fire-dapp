@@ -210,8 +210,9 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             <span className="label-text">Description (optional)</span>
           </div>
           <textarea
+            maxLength={200}
             placeholder="Write your description..."
-            className="textarea textarea-bordered textarea-sm w-full"
+            className="textarea textarea-bordered textarea-sm w-full h-24 leading-normal overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
           ></textarea>

@@ -289,6 +289,8 @@ export function useTransactionToast() {
         </svg>
         <div className="hidden md:block text-base">Transaction Sent!</div>
         <Link
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-sm md:text-base"
           href={`https://solana.fm/tx/${signature}`}
         >

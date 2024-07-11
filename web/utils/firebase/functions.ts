@@ -12,18 +12,40 @@ export async function getDistributor(mint: string) {
 }
 
 export async function getDistributorSponsored(metadata: TokenMetadata) {
-  const getDistributor = httpsCallable(functions, 'getDistributorSponsored');
-  const result = await getDistributor({ metadata });
+  const getDistributorSponsored = httpsCallable(
+    functions,
+    'getDistributorSponsored'
+  );
+  const result = await getDistributorSponsored({ metadata });
   return result.data as { partialTx?: string; distributor: string };
 }
 
 export async function updateMetadataSponsored(
   mint: string,
-  fieldsToUpdate: Map<string, string>
+  fieldsToUpdate: [string, string][]
 ) {
-  const getDistributor = httpsCallable(functions, 'updateMetadataSponsored');
-  const result = await getDistributor({ mint, fieldsToUpdate });
+  const updateMetadataSponsored = httpsCallable(
+    functions,
+    'updateMetadataSponsored'
+  );
+  const result = await updateMetadataSponsored({
+    mint,
+    fieldsToUpdate: JSON.stringify(fieldsToUpdate),
+  });
   return result.data as string | undefined;
+}
+
+export async function sendGift(
+  mint: PublicKey,
+  destination: PublicKey,
+  amount: number
+) {
+  const sendGift = httpsCallable(functions, 'sendGift');
+  await sendGift({
+    mint: mint.toBase58(),
+    destination: destination.toBase58(),
+    amount,
+  });
 }
 
 export async function withdrawFundsFromDistributor(

@@ -129,8 +129,9 @@ export const CreatePanel: FC = () => {
             <span className="label-text">Description (optional)</span>
           </div>
           <textarea
+            maxLength={200}
             placeholder="Write your description..."
-            className="textarea textarea-bordered textarea-sm w-full"
+            className="textarea textarea-bordered textarea-sm leading-normal h-24 w-full overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
           ></textarea>

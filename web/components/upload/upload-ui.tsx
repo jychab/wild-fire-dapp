@@ -2,6 +2,7 @@ import { uploadMedia } from '@/utils/firebase/functions';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
+  IconCheck,
   IconChevronDown,
   IconPhoto,
   IconPlus,
@@ -255,9 +256,12 @@ export const UploadPost: FC<{
   const [caption, setCaption] = useState('');
   const router = useRouter();
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const [filesLoaded, setFilesLoaded] = useState(false);
+  const [captionLoaded, setCaptionLoaded] = useState(false);
 
   useEffect(() => {
     if (
+      !filesLoaded &&
       files.length == 0 &&
       content &&
       content.carousel &&
@@ -282,10 +286,12 @@ export const UploadPost: FC<{
           }
         })
       );
+      setFilesLoaded(true);
     }
 
-    if (caption == '' && content && content.caption != '') {
+    if (!captionLoaded && caption == '' && content && content.caption != '') {
       setCaption(content.caption);
+      setCaptionLoaded(true);
     }
   }, [files, content, caption]);
 
@@ -501,11 +507,12 @@ export const UploadPost: FC<{
       </div>
       <div className="flex w-full">
         <textarea
+          maxLength={200}
           placeholder="Insert your caption here..."
-          className="textarea textarea-bordered textarea-sm w-full"
+          className="textarea textarea-bordered leading-normal textarea-sm w-full h-24 overflow-hidden"
           value={caption}
           onChange={handleCaptionChange}
-        ></textarea>
+        />
       </div>
     </div>
   );
@@ -525,36 +532,53 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
   setContent,
 }) => {
   const [uri, setUri] = useState('');
+  const [uriLoaded, setUriLoaded] = useState(false);
+  const [added, setAdded] = useState(false);
   useEffect(() => {
-    if (uri == '' && content && content.uri != '') {
+    if (!uriLoaded && uri == '' && content && content.uri != '') {
       setUri(content.uri);
+      setUriLoaded(true);
     }
   }, [content, uri]);
   const validUrl = useMemo(() => {
     try {
       const result = new URL(uri);
-      const blinkContent: BlinkContent = {
-        uri: result.toString(),
-        type: ContentType.BLINKS,
-        createdAt: Math.round(Date.now() / 1000),
-        updatedAt: Math.round(Date.now() / 1000),
-        id: crypto.randomUUID(),
-      };
-      setContent(blinkContent);
       return result;
     } catch (e) {
       return null;
     }
   }, [uri]);
+
   return (
     <div className="flex flex-col gap-4 w-full">
-      <input
-        type="url"
-        placeholder="Add Blink Url"
-        className="input input-bordered w-full"
-        value={uri?.toString()}
-        onChange={(e) => setUri(e.target.value)}
-      />
+      <div className="flex items-center gap-4">
+        <input
+          type="url"
+          placeholder="Add Blink Url"
+          className="input input-bordered w-full"
+          value={uri?.toString()}
+          onChange={(e) => setUri(e.target.value)}
+        />
+        <button
+          onClick={() => {
+            if (validUrl) {
+              const blinkContent: BlinkContent = {
+                uri: validUrl.toString(),
+                type: ContentType.BLINKS,
+                createdAt: Math.round(Date.now() / 1000),
+                updatedAt: Math.round(Date.now() / 1000),
+                id: crypto.randomUUID(),
+              };
+              setContent(blinkContent);
+              setAdded(true);
+            }
+          }}
+          className="btn btn-square btn-outline btn-sm rounded-full"
+        >
+          {added ? <IconCheck /> : <IconPlus />}
+        </button>
+      </div>
+
       {validUrl && (
         <div className="bg-base-300 rounded">
           <Blinks actionUrl={validUrl} />

@@ -225,7 +225,7 @@ export async function updateMetadata(
 export async function getAdditionalRentForUpdatedMetadata(
   connection: Connection,
   address: PublicKey,
-  fieldsToUpdate: Map<string, string>,
+  fieldsToUpdate: [string, string][],
   programId = TOKEN_2022_PROGRAM_ID
 ): Promise<number> {
   const info = await connection.getAccountInfo(address);

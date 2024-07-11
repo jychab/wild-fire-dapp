@@ -122,18 +122,20 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
         if (!wallet.publicKey || !mint || !id) return;
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
-        const uriMetadata = await (await fetch(proxify(details.uri))).json();
+        const uriMetadata = await (
+          await fetch(proxify(details.uri, true))
+        ).json();
         const currentContent = uriMetadata.content as Content[] | undefined;
         if (!currentContent) return;
         const newContent = currentContent.filter((x) => x.id != id);
         newContent.sort((a, b) => b.updatedAt - a.updatedAt);
-        let fieldsToUpdate = new Map<string, string>();
+        let fieldsToUpdate: [string, string][] = [];
         const payload = {
           ...uriMetadata,
           content: newContent,
         };
         const uri = await uploadMetadata(JSON.stringify(payload), mint);
-        fieldsToUpdate.set('uri', uri);
+        fieldsToUpdate.push(['uri', uri]);
         const lamports = await getAdditionalRentForUpdatedMetadata(
           connection,
           mint,
