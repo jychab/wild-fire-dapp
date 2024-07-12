@@ -95,6 +95,7 @@ export async function uploadMetadata(
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',
+    cacheControl: 'no-cache',
   });
   return 'https://' + payloadRef.bucket + '/' + path;
 }
@@ -102,6 +103,6 @@ export async function uploadMetadata(
 export async function uploadMedia(picture: File, mint: PublicKey, id?: string) {
   const path = `${mint.toBase58()}/media/${id ? id : crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
-  await uploadBytes(imageRef, picture);
+  await uploadBytes(imageRef, picture, { cacheControl: 'no-cache' });
   return 'https://' + imageRef.bucket + '/' + path;
 }
