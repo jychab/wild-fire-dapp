@@ -131,17 +131,13 @@ export const CreatePanel: FC = () => {
           <button
             disabled={!valid || createMutation.isPending}
             onClick={async () => {
-              try {
-                await createMutation.mutateAsync({
-                  name: name,
-                  symbol: handle,
-                  picture: picture!,
-                  description: description,
-                  transferFee: 10,
-                });
-              } catch (e) {
-                console.log(e);
-              }
+              await createMutation.mutateAsync({
+                name: name,
+                symbol: handle,
+                picture: picture!,
+                description: description,
+                transferFee: 10,
+              });
             }}
             className="btn btn-primary w-full rounded"
           >

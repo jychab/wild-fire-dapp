@@ -121,17 +121,19 @@ interface ContentPanelProps {
 }
 
 const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
-  return metadata && metadata.jsonUriData && metadata.jsonUriData.content ? (
+  return metadata &&
+    metadata.additionalInfoData &&
+    metadata.additionalInfoData.content ? (
     <ContentGrid
       multiGrid={true}
       showMintDetails={false}
       editable={true}
-      content={metadata.jsonUriData?.content?.map((x) => {
+      content={metadata.additionalInfoData?.content?.map((x) => {
         return {
           ...x,
           name: metadata.content!.metadata.name,
           symbol: metadata.content!.metadata.symbol,
-          image: metadata.jsonUriData!.imageUrl,
+          image: metadata.additionalInfoData!.imageUrl,
           mint: new PublicKey(metadata.id),
         };
       })}
@@ -301,14 +303,14 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
   return (
     <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
       <div className="w-32 h-32 lg:w-40 lg:h-40">
-        {metaData && metaData.jsonUriData && (
+        {metaData && metaData.additionalInfoData && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metaData.jsonUriData.imageUrl}
+              src={metaData.additionalInfoData.imageUrl}
               alt={''}
             />
           </div>
@@ -394,7 +396,7 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
         </div>
 
         <span className="text-sm truncate font-normal">
-          {metaData?.jsonUriData?.description}
+          {metaData?.additionalInfoData?.description}
         </span>
       </div>
     </div>
@@ -765,13 +767,13 @@ const LiquidityPoolPanel: FC<{
           </div>
           <div className=" input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
             <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
-              {metadata?.jsonUriData?.imageUrl && (
+              {metadata?.additionalInfoData?.imageUrl && (
                 <div className="w-8 h-8 relative">
                   <Image
                     className={`rounded-full object-cover`}
                     fill={true}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    src={metadata?.jsonUriData?.imageUrl}
+                    src={metadata?.additionalInfoData?.imageUrl}
                     alt={''}
                   />
                 </div>

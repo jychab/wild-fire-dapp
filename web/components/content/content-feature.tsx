@@ -25,11 +25,9 @@ export const ContentGridFeature: FC = () => {
 
   const allMintMetadataQuery = useGetMultipleMintUriMetadata({
     mints: tokenAccounts
-      ? tokenAccounts
-          .filter((x) => x.content)
-          .map((x) => {
-            return { mint: new PublicKey(x.id), uri: x.content!.json_uri };
-          })
+      ? tokenAccounts.map((x) => {
+          return { mint: new PublicKey(x.id), asset: x };
+        })
       : [],
   });
 
@@ -67,13 +65,15 @@ export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
 
   const content =
     metadataQuery &&
-    metadataQuery.jsonUriData &&
-    metadataQuery.jsonUriData.content
+    metadataQuery.additionalInfoData &&
+    metadataQuery.additionalInfoData.content
       ? {
-          ...(metadataQuery.jsonUriData.content.find((x) => x.id == id) || []),
+          ...(metadataQuery.additionalInfoData.content.find(
+            (x) => x.id == id
+          ) || []),
           name: metadataQuery.content?.metadata.name,
           symbol: metadataQuery.content?.metadata.symbol,
-          image: metadataQuery.jsonUriData.imageUrl,
+          image: metadataQuery.additionalInfoData.imageUrl,
           mint: new PublicKey(metadataQuery.id),
         }
       : undefined;

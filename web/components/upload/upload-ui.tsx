@@ -121,9 +121,9 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
             content={
               !content &&
               metadataQuery &&
-              metadataQuery.jsonUriData &&
-              metadataQuery.jsonUriData.content
-                ? (metadataQuery.jsonUriData.content.find(
+              metadataQuery.additionalInfoData &&
+              metadataQuery.additionalInfoData.content
+                ? (metadataQuery.additionalInfoData.content.find(
                     (x) => x.id == id && x.type == ContentType.BLINKS
                   ) as BlinkContent) || undefined
                 : (content as BlinkContent)
@@ -137,9 +137,9 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
             content={
               !content &&
               metadataQuery &&
-              metadataQuery.jsonUriData &&
-              metadataQuery.jsonUriData.content
-                ? (metadataQuery.jsonUriData.content.find(
+              metadataQuery.additionalInfoData &&
+              metadataQuery.additionalInfoData.content
+                ? (metadataQuery.additionalInfoData.content.find(
                     (x) => x.id == id && x.type == ContentType.POST
                   ) as PostContent) || undefined
                 : (content as PostContent)
@@ -171,55 +171,52 @@ export const UploadContentBtn: FC<{
           disabled={!content || uploadMutation.isPending}
           onClick={async () => {
             if (!content || !mint) return;
-            try {
-              if (contentType == ContentType.BLINKS) {
-                const blinkContent = content as BlinkContent;
-                if (id) {
-                  blinkContent.id = id;
-                }
-                await uploadMutation.mutateAsync({
-                  content: blinkContent,
-                });
-              } else {
-                let postContent = content as {
-                  file: UploadFileTypes[];
-                  caption: string;
-                };
-                if (postContent.file.length == 0) {
-                  toast.error('No files found');
-                  return;
-                }
-                await uploadMutation.mutateAsync({
-                  content: {
-                    createdAt: Math.round(Date.now() / 1000),
-                    updatedAt: Math.round(Date.now() / 1000),
-                    id: id ? id : crypto.randomUUID(),
-                    type: ContentType.POST,
-                    caption: postContent.caption,
-                    carousel: await Promise.all(
-                      postContent.file.map(async (x) => {
-                        const mediaUrl = x.file
-                          ? await uploadMedia(x.file, new PublicKey(mint))
-                          : x.url;
-                        if (x.fileType.startsWith('image/')) {
-                          return {
-                            uri: mediaUrl,
-                            fileType: x.fileType,
-                          };
-                        } else {
-                          return {
-                            uri: mediaUrl,
-                            fileType: x.fileType,
-                            duration: x.duration,
-                          };
-                        }
-                      })
-                    ),
-                  } as PostContent,
-                });
+
+            if (contentType == ContentType.BLINKS) {
+              const blinkContent = content as BlinkContent;
+              if (id) {
+                blinkContent.id = id;
               }
-            } catch (e) {
-              console.log(e);
+              await uploadMutation.mutateAsync({
+                content: blinkContent,
+              });
+            } else {
+              let postContent = content as {
+                file: UploadFileTypes[];
+                caption: string;
+              };
+              if (postContent.file.length == 0) {
+                toast.error('No files found');
+                return;
+              }
+              await uploadMutation.mutateAsync({
+                content: {
+                  createdAt: Math.round(Date.now() / 1000),
+                  updatedAt: Math.round(Date.now() / 1000),
+                  id: id ? id : crypto.randomUUID(),
+                  type: ContentType.POST,
+                  caption: postContent.caption,
+                  carousel: await Promise.all(
+                    postContent.file.map(async (x) => {
+                      const mediaUrl = x.file
+                        ? await uploadMedia(x.file, new PublicKey(mint))
+                        : x.url;
+                      if (x.fileType.startsWith('image/')) {
+                        return {
+                          uri: mediaUrl,
+                          fileType: x.fileType,
+                        };
+                      } else {
+                        return {
+                          uri: mediaUrl,
+                          fileType: x.fileType,
+                          duration: x.duration,
+                        };
+                      }
+                    })
+                  ),
+                } as PostContent,
+              });
             }
           }}
           className="btn btn-primary w-full"

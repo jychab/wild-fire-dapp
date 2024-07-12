@@ -63,9 +63,9 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         id="user-menu-button"
         className="relative w-10 h-10 justify-center items-center flex"
       >
-        {metaDataQuery ? (
+        {metaDataQuery && metaDataQuery.additionalInfoData ? (
           <Image
-            src={metaDataQuery.jsonUriData!.imageUrl}
+            src={metaDataQuery.additionalInfoData?.imageUrl}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}

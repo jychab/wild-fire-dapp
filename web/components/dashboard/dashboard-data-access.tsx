@@ -108,10 +108,19 @@ export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
   });
 }
 
-export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
+export function useGetTokenDetails({
+  mint,
+  skipCache = false,
+}: {
+  mint: PublicKey | null;
+  skipCache?: boolean;
+}) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
+    queryKey: [
+      'get-token-details',
+      { endpoint: connection.rpcEndpoint, mint, skipCache },
+    ],
     queryFn: async () => {
       if (!mint) return null;
       const response = await fetch(connection.rpcEndpoint, {
@@ -128,20 +137,27 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
           },
         }),
       });
-      const data = (await response.json()).result;
+      const data = (await response.json()).result as DAS.GetAssetResponse;
       try {
-        const uriMetadata = await (
-          await fetch(proxify(data.content!.json_uri))
-        ).json();
-        const imageUrl = uriMetadata.image as string;
-        const description = uriMetadata.description as string;
-        const content = uriMetadata.content as UploadContent[] | undefined;
+        const imageUrl = data.content?.links?.image;
+        const description = data.content?.metadata.description;
+        let content;
+        const hashFeedUri =
+          data.mint_extensions?.metadata?.additional_metadata.find(
+            (x) => x[0] == 'hashfeed'
+          )?.[1];
+        if (hashFeedUri) {
+          const uriMetadata = await (
+            await fetch(proxify(hashFeedUri, skipCache))
+          ).json();
+          content = uriMetadata.content as UploadContent[] | undefined;
+        }
         return {
           ...data,
-          jsonUriData: { imageUrl, description, content },
+          additionalInfoData: { imageUrl, description, content },
         } as DAS.GetAssetResponse;
       } catch (e) {
-        return data as DAS.GetAssetResponse;
+        return data;
       }
     },
     enabled: !!mint,

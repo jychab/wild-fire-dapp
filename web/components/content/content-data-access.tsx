@@ -1,19 +1,9 @@
 import { uploadMetadata } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
-import {
-  getAdditionalRentForUpdatedMetadata,
-  updateMetadata,
-} from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  PublicKey,
-  SystemProgram,
-  TransactionInstruction,
-  TransactionSignature,
-} from '@solana/web3.js';
+import { PublicKey, TransactionSignature } from '@solana/web3.js';
 import {
   useMutation,
   useQueries,
@@ -67,30 +57,37 @@ export function useGetAllFungibleTokensFromOwner({
 export function useGetMultipleMintUriMetadata({
   mints,
 }: {
-  mints: { mint: PublicKey; uri: string }[];
+  mints: { mint: PublicKey; asset: DAS.GetAssetResponse }[];
 }) {
   const { connection } = useConnection();
-  const queries = mints.map((mint) => {
+  const queries = mints.map(({ mint, asset }) => {
     return {
       queryKey: [
-        'get-mint-uri-metadata',
-        { endpoint: connection.rpcEndpoint, mint: mint.mint, uri: mint.uri },
+        'get-content-from-mint',
+        { endpoint: connection.rpcEndpoint, mint: mint },
       ],
       queryFn: async () => {
         try {
-          const uriMetadata = await (await fetch(proxify(mint.uri))).json();
-          const name = uriMetadata.name;
-          const symbol = uriMetadata.symbol;
-          const imageUrl = uriMetadata.image;
-          const description = uriMetadata.description;
-          const content = uriMetadata.content;
+          const hashFeedUri =
+            asset.mint_extensions?.metadata?.additional_metadata.find(
+              (x) => x[0] == 'hashfeed'
+            )?.[1];
+          if (!hashFeedUri) {
+            return null;
+          }
+          const uriMetadata = await (await fetch(proxify(hashFeedUri))).json();
+          const name = asset.content?.metadata.name;
+          const symbol = asset.content?.metadata.symbol;
+          const imageUrl = asset.content?.links?.image;
+          const description = asset.content?.metadata.description;
+          const content = uriMetadata.content as UploadContent[] | undefined;
           return {
-            mint: mint.mint,
-            name: name as string,
-            symbol: symbol as string,
-            image: imageUrl as string,
-            description: description as string | undefined,
-            content: content as UploadContent[] | undefined,
+            mint: mint,
+            name: name,
+            symbol: symbol,
+            image: imageUrl,
+            description: description,
+            content: content,
           };
         } catch (e) {
           return null;
@@ -116,62 +113,36 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
       },
     ],
     mutationFn: async (id: string) => {
+      if (!wallet.publicKey || !mint || !id) return;
       let signature: TransactionSignature = '';
-      let ixs: TransactionInstruction[] = [];
       try {
-        if (!wallet.publicKey || !mint || !id) return;
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
-        const uriMetadata = await (
-          await fetch(proxify(details.uri, true))
-        ).json();
-        const currentContent = uriMetadata.content as
-          | UploadContent[]
-          | undefined;
-        if (!currentContent) return;
-        const newContent = currentContent.filter((x) => x.id != id);
-        newContent.sort((a, b) => b.updatedAt - a.updatedAt);
-        let fieldsToUpdate: [string, string][] = [];
-        const payload = {
-          ...uriMetadata,
-          content: newContent,
-        };
-        const uri = await uploadMetadata(JSON.stringify(payload), mint);
-        fieldsToUpdate.push(['uri', uri]);
-        const lamports = await getAdditionalRentForUpdatedMetadata(
-          connection,
-          mint,
-          fieldsToUpdate
-        );
-        if (lamports > 0) {
-          ixs.push(
-            SystemProgram.transfer({
-              fromPubkey: wallet.publicKey,
-              toPubkey: mint,
-              lamports: lamports,
-            })
-          );
-        }
-        for (let x of fieldsToUpdate) {
-          ixs.push(
-            await updateMetadata(
-              connection,
-              wallet.publicKey!,
-              mint,
-              x[0],
-              x[1]
+        const hashFeedContent = details.additionalMetadata.find(
+          (x) => x[0] == 'hashfeed'
+        )?.[1];
+
+        if (hashFeedContent) {
+          const uriMetadata = await (
+            await fetch(
+              proxify(
+                hashFeedContent, // content uri
+                true
+              )
             )
-          );
+          ).json();
+          let currentContent = uriMetadata.content as
+            | UploadContent[]
+            | undefined;
+          if (!currentContent) return;
+          const newContent = currentContent.filter((x) => x.id != id);
+          newContent.sort((a, b) => b.updatedAt - a.updatedAt);
+          const payload = {
+            ...uriMetadata,
+            content: newContent,
+          };
+          await uploadMetadata(JSON.stringify(payload), mint, 'content');
         }
-
-        if (ixs.length == 0) return;
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs,
-          publicKey: wallet.publicKey!,
-          signTransaction: wallet.signTransaction!,
-        });
-
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
@@ -187,6 +158,12 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
             queryKey: [
               'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
+            ],
+          }),
+          client.refetchQueries({
+            queryKey: [
+              'get-token-details',
+              { endpoint: connection.rpcEndpoint, mint, skipCache: true },
             ],
           }),
         ]);

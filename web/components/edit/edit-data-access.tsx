@@ -89,6 +89,12 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
+          client.refetchQueries({
+            queryKey: [
+              'get-token-details',
+              { endpoint: connection.rpcEndpoint, mint, skipCache: true },
+            ],
+          }),
           client.invalidateQueries({
             queryKey: [
               'get-token',
@@ -249,6 +255,12 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             queryKey: [
               'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
+            ],
+          }),
+          client.refetchQueries({
+            queryKey: [
+              'get-token-details',
+              { endpoint: connection.rpcEndpoint, mint, skipCache: true },
             ],
           }),
           client.invalidateQueries({

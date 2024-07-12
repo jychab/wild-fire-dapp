@@ -86,8 +86,12 @@ export function createLoginMessage(sessionKey: string) {
   return `Sign Message to Log In! \n\nSession Key: ${sessionKey}}`;
 }
 
-export async function uploadMetadata(payload: string, mint: PublicKey) {
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
+export async function uploadMetadata(
+  payload: string,
+  mint: PublicKey,
+  id?: string
+) {
+  const path = `${mint.toBase58()}/uri/${id ? id : crypto.randomUUID()}`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',
@@ -95,8 +99,8 @@ export async function uploadMetadata(payload: string, mint: PublicKey) {
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 
-export async function uploadMedia(picture: File, mint: PublicKey) {
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}`;
+export async function uploadMedia(picture: File, mint: PublicKey, id?: string) {
+  const path = `${mint.toBase58()}/media/${id ? id : crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture);
   return 'https://' + imageRef.bucket + '/' + path;

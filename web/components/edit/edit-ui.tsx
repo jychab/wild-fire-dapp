@@ -57,8 +57,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
-    if (metaData && !metaDataLoaded && metaData.jsonUriData) {
-      setTempImageUrl(metaData.jsonUriData.imageUrl);
+    if (metaData && !metaDataLoaded && metaData.additionalInfoData) {
+      setTempImageUrl(metaData.additionalInfoData.imageUrl);
 
       setName(metaData.content?.metadata.name || '');
 
@@ -66,10 +66,10 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
       if (
         description == '' &&
-        metaData.jsonUriData &&
-        metaData.jsonUriData.description != ''
+        metaData.additionalInfoData &&
+        metaData.additionalInfoData.description != ''
       ) {
-        setDescription(metaData.jsonUriData.description);
+        setDescription(metaData.additionalInfoData.description);
       }
       setMetadataLoaded(true);
     }

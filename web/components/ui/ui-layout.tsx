@@ -287,15 +287,17 @@ export function useTransactionToast() {
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <div className="hidden md:block text-base">Transaction Sent!</div>
-        <Link
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm md:text-base"
-          href={`https://solscan.io/tx/${signature}`}
-        >
-          View Transaction
-        </Link>
+        <div className="hidden md:block text-base">Transaction Success!</div>
+        {signature != 'Success' && (
+          <Link
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm md:text-base"
+            href={`https://solscan.io/tx/${signature}`}
+          >
+            View Transaction
+          </Link>
+        )}
       </div>
     );
   };

@@ -72,13 +72,20 @@ export function useCreateMint({ address }: { address: string | null }) {
           image: imageUrl,
         };
         const uri = await uploadMetadata(JSON.stringify(payload), mint);
+        const hashFeedContent = await uploadMetadata(
+          JSON.stringify({
+            content: [],
+          }),
+          mint,
+          'content'
+        );
         let ix = [];
         let tx;
         const metadata: TokenMetadata = {
           name: input.name,
           symbol: input.symbol,
           uri: uri,
-          additionalMetadata: [],
+          additionalMetadata: [['hashfeed', hashFeedContent]],
           mint: mint,
         };
         const { partialTx } = await getDistributorSponsored(metadata);

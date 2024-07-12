@@ -122,7 +122,7 @@ export declare namespace DAS {
     burnt: boolean;
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
-    jsonUriData?: {
+    additionalInfoData?: {
       imageUrl: string;
       description: string;
       content: UploadContent[] | undefined;
@@ -396,7 +396,7 @@ export declare namespace DAS {
     name: string;
     symbol: string;
     uri: string;
-    additionalMetadata: AdditionalMetadata;
+    additional_metadata: [string, string][];
   }
   interface AdditionalMetadata {
     key: string;
