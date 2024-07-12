@@ -122,11 +122,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   return (
     <div className="flex flex-col gap-8 my-4 items-center max-w-2xl w-full p-4">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        Edit Settings
+        Edit Profile Settings
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full border border-base-content rounded bg-base-200">
         <div className="flex w-full justify-between items-center">
-          <span>Details</span>
+          <span>Profile</span>
           {mintQuery && Number(mintQuery.supply) == 0 && (
             <button
               onClick={() => closeMutation.mutateAsync()}
@@ -218,11 +218,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
         <div tabIndex={0} className="collapse collapse-plus">
           <input type="checkbox" className="peer" />
           <div className="collapse-title border-b border-base-content">
-            Advanced Configuration
+            Show Advanced Settings
           </div>
           <div className="collapse-content flex flex-col gap-4 py-4">
             <div className="grid grid-cols-4 w-full gap-4 items-center ">
-              <span className="text-sm">Authority</span>
+              <span className="text-sm">Change Authority</span>
               <input
                 disabled={mintTokenData?.mutable == 0}
                 type="text"
@@ -231,9 +231,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 value={admin}
                 onChange={(e) => setAdmin(e.target.value)}
               />
-            </div>
-            <div className="grid grid-cols-4 w-full items-center gap-4">
-              <span className="text-sm ">Transfer Fee</span>
+              <span className="text-sm">Edit Transfer Fee</span>
               <label className="col-span-3 input input-bordered flex items-center w-fit text-sm gap-2">
                 <input
                   min={0.1}
@@ -248,7 +246,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 />
                 %
               </label>
-              <span className="text-sm">Max Transfer Fee</span>
+              <span className="text-sm">Set Max Transfer Fee</span>
               <div className="col-span-3 flex flex-col items-start gap-2">
                 <div className="flex items-center text-sm gap-4 w-full">
                   {showMaxFee && (

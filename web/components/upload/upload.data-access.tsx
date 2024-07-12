@@ -10,11 +10,15 @@ import {
   SystemProgram,
   TransactionInstruction,
   TransactionSignature,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { uploadMetadata } from '../../utils/firebase/functions';
+import {
+  updateMetadataSponsored,
+  uploadMetadata,
+} from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   getAdditionalRentForUpdatedMetadata,
@@ -114,34 +118,45 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         if (!hashFeedContent) {
           let ixs: TransactionInstruction[] = [];
           let fieldsToUpdate: [string, string][] = [];
+          let tx;
           fieldsToUpdate.push(['hashfeed', uri]);
-
-          const lamports = await getAdditionalRentForUpdatedMetadata(
-            connection,
-            mint,
+          const partialTx = await updateMetadataSponsored(
+            mint.toBase58(),
             fieldsToUpdate
           );
-          if (lamports > 0) {
-            ixs.push(
-              SystemProgram.transfer({
-                fromPubkey: wallet.publicKey,
-                toPubkey: mint,
-                lamports: lamports,
-              })
+          if (partialTx) {
+            tx = VersionedTransaction.deserialize(
+              Buffer.from(partialTx, 'base64')
             );
           }
-          for (let x of fieldsToUpdate) {
-            ixs.push(
-              await updateMetadata(
-                connection,
-                wallet.publicKey!,
-                mint,
-                x[0],
-                x[1]
-              )
+          if (!tx) {
+            const lamports = await getAdditionalRentForUpdatedMetadata(
+              connection,
+              mint,
+              fieldsToUpdate
             );
+            if (lamports > 0) {
+              ixs.push(
+                SystemProgram.transfer({
+                  fromPubkey: wallet.publicKey,
+                  toPubkey: mint,
+                  lamports: lamports,
+                })
+              );
+            }
+            for (let x of fieldsToUpdate) {
+              ixs.push(
+                await updateMetadata(
+                  connection,
+                  wallet.publicKey!,
+                  mint,
+                  x[0],
+                  x[1]
+                )
+              );
+            }
           }
-          if (ixs.length == 0) return;
+          if (!tx && ixs.length == 0) return;
           signature = await buildAndSendTransaction({
             connection,
             ixs,

@@ -46,7 +46,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
 }) => {
   return (
     <div
-      className={`grid sm:bg-transparent gap-2 grid-cols-1 ${
+      className={`grid grid-cols-1 sm:gap-2 ${
         multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
       }`}
     >
@@ -81,7 +81,7 @@ export const PostCard = ({
   });
   const router = useRouter();
   return (
-    <div className="flex flex-col md:border gap-2 bg-base-100 rounded w-full">
+    <div className="flex flex-col sm:border gap-2 bg-base-100 rounded w-full">
       {showMintDetails && (
         <div className="flex gap-2 px-4 pt-2 items-center w-full">
           <Link
@@ -114,12 +114,12 @@ export const PostCard = ({
         </div>
       )}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-        <div className="carousel w-full bg-neutral">
+        <div className="carousel w-full aspect-square h-auto bg-neutral">
           {content.carousel.map((file) => (
             <div
               id={file.uri}
               key={file.uri}
-              className="carousel-item relative items-center flex aspect-square w-full"
+              className="carousel-item relative items-center h-auto flex aspect-square w-full"
             >
               {file.fileType.startsWith('image/') && (
                 <Image
@@ -147,7 +147,9 @@ export const PostCard = ({
             </div>
           ))}
         </div>
-        <div className={`px-4 pb-4 pt-2 flex flex-col w-full justify-between`}>
+        <div
+          className={`px-4 pb-4 pt-2 flex flex-col flex-1 w-full justify-between`}
+        >
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
               <div className="flex gap-2 text-sm items-end">
@@ -251,7 +253,7 @@ export const BlinksCard: FC<{
   try {
     const url = new URL(content.uri as string);
     return (
-      <div className="flex flex-col md:border gap-2 rounded w-full">
+      <div className="flex flex-col sm:border gap-2 rounded w-full">
         {showMintDetails && (
           <div className="flex gap-2 px-4 pt-2 items-center w-full">
             <Link

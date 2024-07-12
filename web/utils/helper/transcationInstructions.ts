@@ -390,8 +390,7 @@ export async function swapBaseOutput(
   inputToken: PublicKey,
   inputTokenProgram: PublicKey,
   outputToken: PublicKey,
-  outputTokenProgram: PublicKey,
-  outputTokenDecimal: number
+  outputTokenProgram: PublicKey
 ) {
   const [tokenMint0, tokenMint1] =
     Buffer.compare(inputToken.toBuffer(), outputToken.toBuffer()) < 0
@@ -477,7 +476,7 @@ export async function swapBaseOutput(
     await raydiumProgram(connection)
       .methods.swapBaseOutput(
         new BN(Number.MAX_SAFE_INTEGER),
-        new BN(amount_out_less_fee * 10 ** outputTokenDecimal)
+        new BN(amount_out_less_fee)
       )
       .accounts({
         payer: payer,
@@ -529,13 +528,81 @@ export async function fetchSwapPoolDetails(
   return await raydiumProgram(connection).account.poolState.fetch(poolAddress);
 }
 
+export async function fetchSwapPrice(
+  connection: Connection,
+  mint: PublicKey,
+  mintFee: number,
+  solFee: number
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
+      ? [mint, NATIVE_MINT]
+      : [NATIVE_MINT, mint];
+
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+  const [mintVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), mint.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const [solVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), NATIVE_MINT.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  const mintAmount =
+    (await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID))
+      .amount - BigInt(mintFee);
+  const solAmount =
+    (await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID))
+      .amount - BigInt(solFee);
+
+  return { mintAmount, solAmount };
+}
+
+export async function fetchSwapPoolOracle(
+  connection: Connection,
+  mint: PublicKey
+) {
+  const [tokenMint0, tokenMint1] =
+    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
+      ? [mint, NATIVE_MINT]
+      : [NATIVE_MINT, mint];
+
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('pool'),
+      CONFIG.toBuffer(),
+      tokenMint0.toBuffer(),
+      tokenMint1.toBuffer(),
+    ],
+    raydiumProgram(connection).programId
+  );
+
+  const [observationAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('observation'), poolAddress.toBuffer()],
+    raydiumProgram(connection).programId
+  );
+
+  return await raydiumProgram(connection).account.observationState.fetch(
+    observationAddress
+  );
+}
+
 export async function swapBaseInput(
   connection: Connection,
   payer: PublicKey,
   amount_in: number,
   inputToken: PublicKey,
   inputTokenProgram: PublicKey,
-  inputTokenDecimal: number,
   outputToken: PublicKey,
   outputTokenProgram: PublicKey
 ) {
@@ -608,7 +675,7 @@ export async function swapBaseInput(
       SystemProgram.transfer({
         toPubkey: inputTokenAccount,
         fromPubkey: payer,
-        lamports: amount_in * 10 ** inputTokenDecimal,
+        lamports: amount_in,
       })
     );
     ixs.push(createSyncNativeInstruction(inputTokenAccount));
@@ -620,10 +687,7 @@ export async function swapBaseInput(
 
   ixs.push(
     await raydiumProgram(connection)
-      .methods.swapBaseInput(
-        new BN(amount_in * 10 ** inputTokenDecimal),
-        new BN(0)
-      )
+      .methods.swapBaseInput(new BN(amount_in), new BN(0))
       .accounts({
         payer: payer,
         ammConfig: CONFIG,

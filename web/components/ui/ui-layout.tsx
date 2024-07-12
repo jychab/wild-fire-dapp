@@ -273,7 +273,7 @@ export function ellipsify(str = '', len = 4) {
 export function useTransactionToast() {
   return (signature: string) => {
     toast.custom(
-      <div role="alert" className="alert alert-success max-w-xs">
+      <div role="alert" className="alert alert-success text-center max-w-sm">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-6 w-6 shrink-0 stroke-current"
@@ -287,7 +287,7 @@ export function useTransactionToast() {
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <div className="hidden md:block text-base">Transaction Success!</div>
+        <div className="hidden md:block text-base">Success!</div>
         {signature != 'Success' && (
           <Link
             target="_blank"

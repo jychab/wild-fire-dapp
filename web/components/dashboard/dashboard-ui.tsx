@@ -2,8 +2,6 @@
 
 import { DAS } from '@/utils/types/das';
 import {
-  getAccount,
-  getAssociatedTokenAddressSync,
   Mint,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
@@ -17,13 +15,7 @@ import {
   RpcResponseAndContext,
   TokenAccountBalancePair,
 } from '@solana/web3.js';
-import {
-  IconCurrencySolana,
-  IconEdit,
-  IconExclamationCircle,
-  IconPlus,
-  IconWallet,
-} from '@tabler/icons-react';
+import { IconEdit, IconExclamationCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -32,16 +24,18 @@ import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { UploadBtn } from '../upload/upload-ui';
 import {
   SwapType,
+  useSwapDetails,
+  useSwapMint,
+} from '../trading/trading-data-access';
+import { TradingPanel } from '../trading/trading.ui';
+import { UploadBtn } from '../upload/upload-ui';
+import {
   useGetLargestAccountFromMint,
   useGetMintDetails,
   useGetMintTransferFeeConfig,
   useGetTokenDetails,
-  useInitializePool,
-  useSwapDetails,
-  useSwapMint,
 } from './dashboard-data-access';
 
 export interface AuthorityData {
@@ -98,7 +92,7 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
               <ContentPanel metadata={metaDataQuery} />
             )}
             {selectedTab == TabsEnum.TRADE && (
-              <LiquidityPoolPanel metadata={metaDataQuery} />
+              <TradingPanel metadata={metaDataQuery} />
             )}
             {selectedTab == TabsEnum.DETAILS && (
               <DetailsPanel
@@ -123,7 +117,8 @@ interface ContentPanelProps {
 const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
   return metadata &&
     metadata.additionalInfoData &&
-    metadata.additionalInfoData.content ? (
+    metadata.additionalInfoData.content &&
+    metadata.additionalInfoData.content.length > 0 ? (
     <ContentGrid
       multiGrid={true}
       showMintDetails={false}
@@ -341,13 +336,11 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
                 metaData &&
                   swapToken.mutateAsync({
                     type: SwapType.BasedInput,
-                    amount: 0.001, // 0.001 SOL to subscribe ~$0.1
+                    amount: 0.001 * LAMPORTS_PER_SOL, // 0.001 SOL to subscribe ~$0.1
                     inputToken: NATIVE_MINT,
                     outputToken: new PublicKey(metaData.id),
                     inputTokenProgram: TOKEN_PROGRAM_ID,
-                    inputTokenDecimal: 9,
                     outputTokenProgram: TOKEN_2022_PROGRAM_ID,
-                    outputTokenDecimal: 0,
                   });
               }
             }}
@@ -454,20 +447,22 @@ const Details: FC<DetailsProps> = ({
               target="_blank"
               className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
               href={`https://solscan.io/address/${
-                metadata?.authorities?.find(
-                  (x) =>
-                    x.scopes.includes(Scope.METADATA) ||
-                    x.scopes.includes(Scope.FULL)
-                )?.address
+                authorityData
+                  ? authorityData.admin
+                  : metadata?.authorities?.find(
+                      (x) =>
+                        x.scopes.includes(Scope.METADATA) ||
+                        x.scopes.includes(Scope.FULL)
+                    )?.address
               }`}
             >
-              {
-                metadata?.authorities?.find(
-                  (x) =>
-                    x.scopes.includes(Scope.METADATA) ||
-                    x.scopes.includes(Scope.FULL)
-                )?.address
-              }
+              {authorityData
+                ? authorityData.admin.toBase58()
+                : metadata?.authorities?.find(
+                    (x) =>
+                      x.scopes.includes(Scope.METADATA) ||
+                      x.scopes.includes(Scope.FULL)
+                  )?.address}
             </Link>
           </div>
         </div>
@@ -541,7 +536,12 @@ const Details: FC<DetailsProps> = ({
         </div>
         <div className="card bg-base-200 col-span-4 md:col-span-2 rounded">
           <div className="stat gap-2">
-            <div className="stat-title text-sm md:text-base">Distributor</div>
+            <div
+              data-tip="A wallet assigned to help your manage tx fees."
+              className="tooltip lg:w-fit stat-title text-sm md:text-base flex items-center gap-1"
+            >
+              Distributor
+            </div>
             {authorityData ? (
               <Link
                 rel="noopener noreferrer"
@@ -630,197 +630,6 @@ export const MainPanel: FC<MainPanelProps> = ({ authorityData, mintQuery }) => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const LiquidityPoolPanel: FC<{
-  metadata: DAS.GetAssetResponse | null | undefined;
-}> = ({ metadata }) => {
-  const [mintAmount, setMintAmount] = useState(0);
-  const [solAmount, setSolAmount] = useState(0);
-  const { publicKey } = useWallet();
-  const { connection } = useConnection();
-  const [currentAmountOfSol, setCurrentAmountOfSol] = useState<
-    number | undefined
-  >();
-  const [currentAmountOfMint, setCurrentAmountOfMint] = useState<
-    number | undefined
-  >();
-  const initializePoolMutation = useInitializePool({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-  useEffect(() => {
-    if (publicKey && metadata && connection) {
-      connection
-        .getAccountInfo(publicKey)
-        .then((result) => setCurrentAmountOfSol(result?.lamports))
-        .catch((e) => console.error(e));
-      getAccount(
-        connection,
-        getAssociatedTokenAddressSync(
-          new PublicKey(metadata.id),
-          publicKey,
-          false,
-          TOKEN_2022_PROGRAM_ID
-        ),
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      )
-        .then((result) => setCurrentAmountOfMint(Number(result.amount)))
-        .catch((e) => console.error(e));
-    }
-  }, [publicKey]);
-
-  const { data: solDetails } = useGetTokenDetails({ mint: NATIVE_MINT });
-
-  return (
-    <div className="flex flex-col gap-4 w-full h-full items-center p-4">
-      <div className="hero py-4 ">
-        <div className="hero-content flex flex-col text-center max-w-xl">
-          <span className="text-3xl lg:text-4xl ">
-            Earn trading fees by setting up your own liquidity pool
-          </span>
-          <span className="text-sm">
-            Determine the amount of SOL and Mint tokens to provide, as this will
-            influence your initial token price.
-          </span>
-        </div>
-      </div>
-
-      <div className="max-w-xl w-full flex flex-col gap-4 border border-base-content p-4 rounded">
-        <label>
-          <div className="label">
-            <span className="label-text">Base Token</span>
-            <div className="label-text-alt flex items-end gap-2">
-              <IconWallet size={14} />
-              <span>{`${((currentAmountOfSol || 0) / LAMPORTS_PER_SOL).toFixed(
-                3
-              )} SOL`}</span>
-              <button
-                onClick={() =>
-                  currentAmountOfSol && setSolAmount(currentAmountOfSol / 2)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Half
-              </button>
-              <button
-                onClick={() =>
-                  currentAmountOfSol && setSolAmount(currentAmountOfSol)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Max
-              </button>
-            </div>
-          </div>
-          <div className="input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
-            <button className="btn btn-secondary rounded-lg gap-1 px-2 flex items-center">
-              <IconCurrencySolana />
-              SOL
-            </button>
-            <input
-              type="number"
-              className="w-full text-right"
-              placeholder="0.00"
-              value={solAmount / LAMPORTS_PER_SOL}
-              onChange={(e) =>
-                setSolAmount(parseFloat(e.target.value) * LAMPORTS_PER_SOL)
-              }
-            />
-          </div>
-        </label>
-        <div className="flex items-center">
-          <div className="divider w-1/2"></div>
-          <button className="btn btn-square rounded-full px-2 btn-primary btn-sm">
-            <IconPlus />
-          </button>
-          <div className="divider w-1/2"></div>
-        </div>
-        <label>
-          <div className="label">
-            <span className="label-text">Quote Token</span>
-            <div className="label-text-alt flex items-center gap-2">
-              <IconWallet size={14} />
-              <span>{`${formatLargeNumber(currentAmountOfMint || 0)} ${
-                metadata?.content?.metadata.symbol
-              }`}</span>
-              <button
-                onClick={() =>
-                  currentAmountOfMint && setMintAmount(currentAmountOfMint / 2)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Half
-              </button>
-              <button
-                onClick={() =>
-                  currentAmountOfMint && setMintAmount(currentAmountOfMint)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Max
-              </button>
-            </div>
-          </div>
-          <div className=" input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
-            <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
-              {metadata?.additionalInfoData?.imageUrl && (
-                <div className="w-8 h-8 relative">
-                  <Image
-                    className={`rounded-full object-cover`}
-                    fill={true}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    src={metadata?.additionalInfoData?.imageUrl}
-                    alt={''}
-                  />
-                </div>
-              )}
-              <span className="text-base truncate w-fit pl-1 text-left">
-                {metadata?.content?.metadata.name}
-              </span>
-            </button>
-            <input
-              type="number"
-              className="w-full text-right"
-              placeholder="0.00"
-              value={mintAmount}
-              onChange={(e) => setMintAmount(parseFloat(e.target.value))}
-            />
-          </div>
-        </label>
-        <div className="flex flex-col gap-2 items-end justify-center pt-4">
-          <span className="text-sm">{`Initial Token Price: $${(
-            (solAmount / mintAmount / LAMPORTS_PER_SOL) *
-            (solDetails?.token_info?.price_info?.price_per_token || 1)
-          ).toPrecision(6)} `}</span>
-          <span className="text-sm">{`Initial Token MarketCap: $${(
-            (solAmount / LAMPORTS_PER_SOL) *
-            (solDetails?.token_info?.price_info?.price_per_token || 1)
-          ).toFixed(2)} `}</span>
-        </div>
-        <button
-          disabled={
-            solAmount == 0 ||
-            mintAmount == 0 ||
-            initializePoolMutation.isPending
-          }
-          onClick={async () =>
-            initializePoolMutation.mutateAsync({
-              solAmount: solAmount * LAMPORTS_PER_SOL,
-              mintAmount,
-            })
-          }
-          className="btn btn-primary w-full rounded"
-        >
-          {initializePoolMutation.isPending ? (
-            <div className="loading loading-spinner"></div>
-          ) : (
-            <span>Initialize Liquidity Pool</span>
-          )}
-        </button>
       </div>
     </div>
   );
