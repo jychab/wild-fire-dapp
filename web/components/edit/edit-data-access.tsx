@@ -1,6 +1,7 @@
 'use client';
 
 import { proxify } from '@/utils/helper/proxy';
+import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -194,9 +195,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               fieldsToUpdate
             );
             if (partialTx) {
-              tx = VersionedTransaction.deserialize(
-                Buffer.from(partialTx, 'base64')
-              );
+              tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
             }
           }
           if (!tx) {

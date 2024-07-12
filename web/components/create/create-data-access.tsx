@@ -14,6 +14,7 @@ import {
   issueMint,
   program,
 } from '@/utils/helper/transcationInstructions';
+import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -112,9 +113,7 @@ export function useCreateMint({ address }: { address: string | null }) {
             })
           );
         } else {
-          tx = VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          );
+          tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
         }
         signature = await buildAndSendTransaction({
           connection: connection,
