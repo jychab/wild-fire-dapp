@@ -3,7 +3,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
-import { HASHFEED_MINT } from '../const';
+import { HASHFEED_MINT } from '../../utils/consts';
 import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
 import {
   useGetAllFungibleTokensFromOwner,

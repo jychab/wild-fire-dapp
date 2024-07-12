@@ -1,4 +1,3 @@
-import { CONFIG } from '@/components/const';
 import { BN, Program } from '@coral-xyz/anchor';
 import {
   ExtensionType,
@@ -20,6 +19,7 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
+import { CONFIG } from '../consts';
 import Idl2 from '../program/idl/raydium_cp_swap.json';
 import Idl from '../program/idl/wild_fire.json';
 import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';

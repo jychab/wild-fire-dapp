@@ -1,5 +1,6 @@
 'use client';
 
+import { ONE_BILLION } from '@/utils/consts';
 import {
   getDistributor,
   getDistributorSponsored,
@@ -18,6 +19,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   LAMPORTS_PER_SOL,
   PublicKey,
+  SystemProgram,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -57,7 +59,9 @@ export function useCreateMint({ address }: { address: string | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program(connection).programId
         );
-        await getDistributor(mint.toBase58());
+        const distributor = new PublicKey(
+          await getDistributor(mint.toBase58())
+        );
         toast('Uploading image metadata...');
         const imageUrl = await uploadMedia(input.picture, mint);
         toast('Uploading text metadata...');
@@ -77,14 +81,12 @@ export function useCreateMint({ address }: { address: string | null }) {
           additionalMetadata: [],
           mint: mint,
         };
-        const { partialTx, distributor } = await getDistributorSponsored(
-          metadata
-        );
+        const { partialTx } = await getDistributorSponsored(metadata);
         if (!partialTx) {
           ix.push(
             await createMint(
               connection,
-              new PublicKey(distributor),
+              distributor,
               input.transferFee,
               input.maxTransferFee,
               wallet.publicKey
@@ -94,12 +96,14 @@ export function useCreateMint({ address }: { address: string | null }) {
             await createMintMetadata(connection, metadata, wallet.publicKey)
           );
           ix.push(
-            await issueMint(
-              connection,
-              LAMPORTS_PER_SOL,
-              mint,
-              wallet.publicKey
-            )
+            await issueMint(connection, ONE_BILLION, mint, wallet.publicKey)
+          );
+          ix.push(
+            SystemProgram.transfer({
+              fromPubkey: wallet.publicKey,
+              toPubkey: distributor,
+              lamports: LAMPORTS_PER_SOL * 0.01, // withdrawable
+            })
           );
         } else {
           tx = VersionedTransaction.deserialize(
