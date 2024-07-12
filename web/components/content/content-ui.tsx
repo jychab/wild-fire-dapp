@@ -114,7 +114,7 @@ export const PostCard = ({
         </div>
       )}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-        <div className="carousel w-full bg-base-content">
+        <div className="carousel w-full bg-neutral">
           {content.carousel.map((file) => (
             <div
               id={file.uri}
@@ -152,9 +152,7 @@ export const PostCard = ({
             <div className="flex justify-between">
               <div className="flex gap-2 text-sm items-end">
                 <Link
-                  href={`/content?mintId=${content.mint.toBase58()}&id=${
-                    content.id
-                  }`}
+                  href={`/dashboard?mintId=${content.mint.toBase58()}`}
                   className="link"
                 >
                   {content.name}
@@ -210,24 +208,26 @@ export const PostCard = ({
             </p>
           </div>
           <div className="flex flex-col gap-2 pt-2">
-            {content.caption != '' && (
-              <span
-                onClick={() => {
-                  if (!multiGrid) {
-                    setShowMore(!showMore);
-                  } else {
-                    router.push(
-                      `/content?mintId=${content.mint.toBase58()}&id=${
-                        content.id
-                      }`
-                    );
-                  }
-                }}
-                className="text-xs stat-desc link link-hover"
-              >
-                {showMore ? 'Hide' : 'Show More'}
-              </span>
-            )}
+            {content.caption != '' &&
+              (content.caption.length > 100 ||
+                content.caption.includes('\n')) && (
+                <span
+                  onClick={() => {
+                    if (!multiGrid) {
+                      setShowMore(!showMore);
+                    } else {
+                      router.push(
+                        `/content?mintId=${content.mint.toBase58()}&id=${
+                          content.id
+                        }`
+                      );
+                    }
+                  }}
+                  className="text-xs stat-desc link link-hover"
+                >
+                  {showMore ? 'Hide' : 'Show More'}
+                </span>
+              )}
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt)}
             </span>
