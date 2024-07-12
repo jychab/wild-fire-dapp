@@ -537,7 +537,11 @@ export const ActionLayout = ({
             {editable && additionalMetadata && (
               <div className="dropdown dropdown-end">
                 <div tabIndex={0} role="button">
-                  <IconDotsVertical size={18} />
+                  {removeContentMutation.isPending ? (
+                    <div className="loading loading-spinner loading-sm" />
+                  ) : (
+                    <IconDotsVertical size={18} />
+                  )}
                 </div>
                 <ul
                   tabIndex={0}

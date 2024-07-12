@@ -3,14 +3,13 @@ import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, TransactionSignature } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import {
   useMutation,
   useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 import { UploadContent } from '../upload/upload.data-access';
 
@@ -114,7 +113,6 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async (id: string) => {
       if (!wallet.publicKey || !mint || !id) return;
-      let signature: TransactionSignature = '';
       try {
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
@@ -143,9 +141,9 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           };
           await uploadMetadata(JSON.stringify(payload), mint, 'content');
         }
-        return signature;
+        return 'Success';
       } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error}` + signature);
+        // toast.error(`Transaction failed! ${error}` + signature);
         return;
       }
     },

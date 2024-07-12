@@ -62,9 +62,8 @@ export function useCreateMint({ address }: { address: string | null }) {
         const distributor = new PublicKey(
           await getDistributor(mint.toBase58())
         );
-        toast('Uploading image metadata...');
         const imageUrl = await uploadMedia(input.picture, mint);
-        toast('Uploading text metadata...');
+
         const payload = {
           name: input.name,
           symbol: input.symbol,

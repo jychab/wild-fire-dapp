@@ -91,7 +91,7 @@ export async function uploadMetadata(
   mint: PublicKey,
   id?: string
 ) {
-  const path = `${mint.toBase58()}/uri/${id ? id : crypto.randomUUID()}`;
+  const path = `${mint.toBase58()}/uri/${id ? id : crypto.randomUUID()}.json`; //important to include file extension so cloudflare won't cache this
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',
@@ -100,8 +100,8 @@ export async function uploadMetadata(
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 
-export async function uploadMedia(picture: File, mint: PublicKey, id?: string) {
-  const path = `${mint.toBase58()}/media/${id ? id : crypto.randomUUID()}`;
+export async function uploadMedia(picture: File, mint: PublicKey) {
+  const path = `${mint.toBase58()}/media/${crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture, { cacheControl: 'no-cache' });
   return 'https://' + imageRef.bucket + '/' + path;

@@ -273,7 +273,7 @@ export function ellipsify(str = '', len = 4) {
 export function useTransactionToast() {
   return (signature: string) => {
     toast.custom(
-      <div role="alert" className="alert alert-success max-w-sm">
+      <div role="alert" className="alert alert-success max-w-xs">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-6 w-6 shrink-0 stroke-current"

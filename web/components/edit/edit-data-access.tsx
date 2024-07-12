@@ -176,10 +176,8 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         ) {
           let imageUrl;
           if (input.picture) {
-            toast('Uploading image metadata...');
             imageUrl = await uploadMedia(input.picture, mint);
           }
-          toast('Uploading text metadata...');
           const payload = {
             ...uriMetadata,
             name: input.name,

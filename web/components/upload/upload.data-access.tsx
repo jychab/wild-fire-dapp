@@ -100,7 +100,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           currentContent?.filter((x) => x.id != input.content.id) || [];
         const newContent = currentContent.concat([input.content]);
         newContent.sort((a, b) => b.updatedAt - a.updatedAt);
-        toast('Uploading metadata...');
+
         const payload = {
           ...hashFeedMetadata,
           content: newContent,
@@ -141,7 +141,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
               )
             );
           }
-
           if (ixs.length == 0) return;
           signature = await buildAndSendTransaction({
             connection,

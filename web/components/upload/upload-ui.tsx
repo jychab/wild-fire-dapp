@@ -164,14 +164,15 @@ export const UploadContentBtn: FC<{
   const uploadMutation = useUploadMutation({
     mint: mint ? new PublicKey(mint) : null,
   });
+  const [loading, setLoading] = useState(false);
   return (
     <div className="w-full">
       {publicKey && mint && (
         <button
-          disabled={!content || uploadMutation.isPending}
+          disabled={!content || loading}
           onClick={async () => {
             if (!content || !mint) return;
-
+            setLoading(true);
             if (contentType == ContentType.BLINKS) {
               const blinkContent = content as BlinkContent;
               if (id) {
@@ -185,43 +186,45 @@ export const UploadContentBtn: FC<{
                 file: UploadFileTypes[];
                 caption: string;
               };
-              if (postContent.file.length == 0) {
-                toast.error('No files found');
-                return;
+              const carousel = await Promise.all(
+                postContent.file.map(async (x) => {
+                  const mediaUrl = x.file
+                    ? await uploadMedia(x.file, new PublicKey(mint))
+                    : x.url;
+                  if (x.fileType.startsWith('image/')) {
+                    return {
+                      uri: mediaUrl,
+                      fileType: x.fileType,
+                    };
+                  } else {
+                    return {
+                      uri: mediaUrl,
+                      fileType: x.fileType,
+                      duration: x.duration,
+                    };
+                  }
+                })
+              );
+              if (carousel.length > 0) {
+                await uploadMutation.mutateAsync({
+                  content: {
+                    createdAt: Math.round(Date.now() / 1000),
+                    updatedAt: Math.round(Date.now() / 1000),
+                    id: id ? id : crypto.randomUUID(),
+                    type: ContentType.POST,
+                    caption: postContent.caption,
+                    carousel: carousel,
+                  } as PostContent,
+                });
+              } else {
+                toast.error('No Files Found');
               }
-              await uploadMutation.mutateAsync({
-                content: {
-                  createdAt: Math.round(Date.now() / 1000),
-                  updatedAt: Math.round(Date.now() / 1000),
-                  id: id ? id : crypto.randomUUID(),
-                  type: ContentType.POST,
-                  caption: postContent.caption,
-                  carousel: await Promise.all(
-                    postContent.file.map(async (x) => {
-                      const mediaUrl = x.file
-                        ? await uploadMedia(x.file, new PublicKey(mint))
-                        : x.url;
-                      if (x.fileType.startsWith('image/')) {
-                        return {
-                          uri: mediaUrl,
-                          fileType: x.fileType,
-                        };
-                      } else {
-                        return {
-                          uri: mediaUrl,
-                          fileType: x.fileType,
-                          duration: x.duration,
-                        };
-                      }
-                    })
-                  ),
-                } as PostContent,
-              });
             }
+            setLoading(false);
           }}
           className="btn btn-primary w-full"
         >
-          {uploadMutation.isPending ? (
+          {loading ? (
             <div className="loading loading-spinner loading-sm" />
           ) : contentType == ContentType.BLINKS ? (
             'Upload Blink'
