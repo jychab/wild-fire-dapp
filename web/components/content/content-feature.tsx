@@ -65,22 +65,25 @@ export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
     mint: mintId ? new PublicKey(mintId) : null,
   });
 
-  const content = metadataQuery
-    ? {
-        ...(metadataQuery.jsonUriData.content!.find((x) => x.id == id) || {}),
-        name: metadataQuery.content?.metadata.name,
-        symbol: metadataQuery.content?.metadata.symbol,
-        image: metadataQuery.jsonUriData.imageUrl,
-        mint: new PublicKey(metadataQuery.id),
-      }
-    : undefined;
-  return (
-    content && (
-      <div className="flex flex-col py-[32px] w-full items-center">
-        <div className="max-w-xl w-full">
-          <DisplayContent content={content as ContentWithMetada} />
-        </div>
+  const content =
+    metadataQuery &&
+    metadataQuery.jsonUriData &&
+    metadataQuery.jsonUriData.content
+      ? {
+          ...(metadataQuery.jsonUriData.content.find((x) => x.id == id) || []),
+          name: metadataQuery.content?.metadata.name,
+          symbol: metadataQuery.content?.metadata.symbol,
+          image: metadataQuery.jsonUriData.imageUrl,
+          mint: new PublicKey(metadataQuery.id),
+        }
+      : undefined;
+  return content ? (
+    <div className="flex flex-col py-[32px] w-full items-center">
+      <div className="max-w-xl w-full">
+        <DisplayContent content={content as ContentWithMetada} />
       </div>
-    )
+    </div>
+  ) : (
+    <div>No Content Found</div>
   );
 };
