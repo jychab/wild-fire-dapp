@@ -19,19 +19,14 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
-import { CONFIG } from '../consts';
-import Idl2 from '../program/idl/raydium_cp_swap.json';
+import { CONFIG, OFF_SET } from '../consts';
 import Idl from '../program/idl/wild_fire.json';
-import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';
 import { WildFire } from '../program/types/wild_fire';
 
 export const program = (connection: Connection) =>
   new Program<WildFire>(Idl as unknown as WildFire, {
     connection,
   });
-
-export const raydiumProgram = (connection: Connection) =>
-  new Program<RaydiumCpSwap>(Idl2 as unknown as RaydiumCpSwap, { connection });
 
 export async function createMint(
   connection: Connection,
@@ -74,7 +69,9 @@ export async function createMintMetadata(
       new BN(additional_lamport),
       metaData.name,
       metaData.symbol,
-      metaData.uri
+      metaData.uri,
+      metaData.additionalMetadata[0][0],
+      metaData.additionalMetadata[0][1]
     )
     .accounts({
       mint: metaData.mint,
@@ -85,19 +82,25 @@ export async function createMintMetadata(
   return ix;
 }
 
-export async function issueMint(
+export async function initializeMint(
   connection: Connection,
-  amount: number,
+  amountCurve: number,
+  amountCreator: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
   return await program(connection)
-    .methods.issueMint(new BN(amount))
+    .methods.initializeMint(
+      new BN(amountCurve),
+      new BN(amountCreator),
+      new BN(OFF_SET)
+    )
     .accounts({
       mint: mint,
       payer: payer,
       admin: payer,
       program: program(connection).programId,
+      ammConfig: CONFIG,
     })
     .instruction();
 }
@@ -168,7 +171,7 @@ export async function setToImmutable(
   return ix;
 }
 
-export async function closeFeeAccount(
+export async function closeAuthorityAccount(
   connection: Connection,
   payer: PublicKey,
   mint: PublicKey
@@ -216,8 +219,8 @@ export async function updateMetadata(
     .methods.updateMintMetadata(field, value)
     .accounts({
       mint: mint,
-      admin: payer,
       payer: payer,
+      admin: payer,
     })
     .instruction();
 }
@@ -279,145 +282,53 @@ export function u16ToBytes(num: number) {
 }
 
 export async function createConfig(connection: Connection, owner: PublicKey) {
-  return await raydiumProgram(connection)
-    .methods.createAmmConfig(0, new BN(10000), new BN(100000), new BN(50000))
+  return await program(connection)
+    .methods.createAmmConfig(0, new BN(20_000), new BN(250_000))
     .accounts({
       owner: owner,
     })
     .instruction();
 }
 
-export async function initializePool(
+export async function swapBaseOutput(
   connection: Connection,
   mint: PublicKey,
   payer: PublicKey,
-  mintAmount: number,
-  solAmount: number
-) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
-      ? [mint, NATIVE_MINT]
-      : [NATIVE_MINT, mint];
-  const [token0Amount, token1Amount] =
-    NATIVE_MINT.toBase58() == tokenMint0.toBase58()
-      ? [solAmount, mintAmount]
-      : [mintAmount, solAmount];
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
-  );
-  const [lpMintAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_lp_mint'), poolAddress.toBuffer()],
-    raydiumProgram(connection).programId
-  );
-  const creatorLpToken = getAssociatedTokenAddressSync(lpMintAddress, payer);
-
-  const [token0Program, token1Program] =
-    NATIVE_MINT.toBase58() == tokenMint0.toBase58()
-      ? [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]
-      : [TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID];
-
-  const ix = [];
-
-  const creatorToken0 = getAssociatedTokenAddressSync(
-    tokenMint0,
-    payer,
-    false,
-    token0Program
-  );
-
-  const creatorToken1 = getAssociatedTokenAddressSync(
-    tokenMint1,
-    payer,
-    false,
-    token1Program
-  );
-  const creatorNativeMintTokenAccount = getAssociatedTokenAddressSync(
-    NATIVE_MINT,
-    payer
-  );
-  try {
-    await getAccount(connection, creatorNativeMintTokenAccount);
-  } catch (e) {
-    ix.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        creatorNativeMintTokenAccount,
-        payer,
-        NATIVE_MINT
-      )
-    );
-  }
-
-  ix.push(
-    SystemProgram.transfer({
-      fromPubkey: payer,
-      toPubkey: creatorNativeMintTokenAccount,
-      lamports: solAmount,
-    })
-  );
-
-  ix.push(createSyncNativeInstruction(creatorNativeMintTokenAccount));
-
-  ix.push(
-    await raydiumProgram(connection)
-      .methods.initialize(new BN(token0Amount), new BN(token1Amount), new BN(0))
-      .accounts({
-        creatorLpToken: creatorLpToken,
-        creator: payer,
-        ammConfig: CONFIG,
-        token0Mint: tokenMint0,
-        token1Mint: tokenMint1,
-        creatorToken0: creatorToken0,
-        creatorToken1: creatorToken1,
-        token0Program: token0Program,
-        token1Program: token1Program,
-      })
-      .instruction()
-  );
-  return ix;
-}
-
-export async function swapBaseOutput(
-  connection: Connection,
-  payer: PublicKey,
+  max_amount_in: number,
   amount_out_less_fee: number,
   inputToken: PublicKey,
   inputTokenProgram: PublicKey,
   outputToken: PublicKey,
   outputTokenProgram: PublicKey
 ) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(inputToken.toBuffer(), outputToken.toBuffer()) < 0
-      ? [inputToken, outputToken]
-      : [outputToken, inputToken];
-
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
-  );
-
-  const [inputVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
-    raydiumProgram(connection).programId
-  );
-
-  const [outputVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
-    raydiumProgram(connection).programId
-  );
-
   const ixs = [];
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    program(connection).programId
+  );
+  const [observationAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('observation'), poolAddress.toBuffer()],
+    program(connection).programId
+  );
+
+  const [observationState, poolAccount] = await Promise.all([
+    program(connection).account.observationState.fetchNullable(
+      observationAddress
+    ),
+    program(connection).account.poolState.fetchNullable(poolAddress),
+  ]);
+  if (observationState == null || poolAccount == null) {
+    ixs.push(
+      await program(connection)
+        .methods.createOracle()
+        .accounts({
+          poolState: poolAddress,
+          program: program(connection).programId,
+        })
+        .instruction()
+    );
+  }
+
   const inputTokenAccount = getAssociatedTokenAddressSync(
     inputToken,
     payer,
@@ -457,35 +368,37 @@ export async function swapBaseOutput(
     );
   }
   if (inputToken == NATIVE_MINT) {
-    const payerAccount = await connection.getAccountInfo(payer);
     ixs.push(
       SystemProgram.transfer({
-        toPubkey: inputTokenAccount,
         fromPubkey: payer,
-        lamports: payerAccount!.lamports * 0.5,
+        toPubkey: inputTokenAccount,
+        lamports: max_amount_in,
       })
     );
     ixs.push(createSyncNativeInstruction(inputTokenAccount));
   }
-  const [observationAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('observation'), poolAddress.toBuffer()],
-    raydiumProgram(connection).programId
-  );
 
   ixs.push(
-    await raydiumProgram(connection)
-      .methods.swapBaseOutput(
-        new BN(Number.MAX_SAFE_INTEGER),
-        new BN(amount_out_less_fee)
-      )
+    await program(connection)
+      .methods.swapBaseInput(new BN(max_amount_in), new BN(amount_out_less_fee))
       .accounts({
         payer: payer,
         ammConfig: CONFIG,
         poolState: poolAddress,
         inputTokenAccount,
         outputTokenAccount,
-        inputVault,
-        outputVault,
+        inputVault: getAssociatedTokenAddressSync(
+          inputToken,
+          poolAddress,
+          true,
+          inputTokenProgram
+        ),
+        outputVault: getAssociatedTokenAddressSync(
+          outputToken,
+          poolAddress,
+          true,
+          outputTokenProgram
+        ),
         inputTokenProgram: inputTokenProgram,
         outputTokenProgram: outputTokenProgram,
         inputTokenMint: inputToken,
@@ -510,52 +423,35 @@ export async function fetchSwapPoolDetails(
   connection: Connection,
   mint: PublicKey
 ) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
-      ? [mint, NATIVE_MINT]
-      : [NATIVE_MINT, mint];
-
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
+    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    program(connection).programId
   );
 
-  return await raydiumProgram(connection).account.poolState.fetch(poolAddress);
+  return await program(connection).account.poolState.fetch(poolAddress);
 }
 
-export async function fetchSwapPrice(
+export async function fetchSwapVaultAmount(
   connection: Connection,
   mint: PublicKey,
   mintFee: number,
   solFee: number
 ) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
-      ? [mint, NATIVE_MINT]
-      : [NATIVE_MINT, mint];
-
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
+    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    program(connection).programId
   );
-  const [mintVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), mint.toBuffer()],
-    raydiumProgram(connection).programId
+  const mintVault = getAssociatedTokenAddressSync(
+    mint,
+    poolAddress,
+    true,
+    TOKEN_2022_PROGRAM_ID
   );
 
-  const [solVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), NATIVE_MINT.toBuffer()],
-    raydiumProgram(connection).programId
+  const solVault = getAssociatedTokenAddressSync(
+    NATIVE_MINT,
+    poolAddress,
+    true
   );
 
   const mintAmount =
@@ -563,7 +459,9 @@ export async function fetchSwapPrice(
       .amount - BigInt(mintFee);
   const solAmount =
     (await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID))
-      .amount - BigInt(solFee);
+      .amount -
+    BigInt(solFee) +
+    BigInt(OFF_SET);
 
   return { mintAmount, solAmount };
 }
@@ -572,66 +470,61 @@ export async function fetchSwapPoolOracle(
   connection: Connection,
   mint: PublicKey
 ) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(mint.toBuffer(), NATIVE_MINT.toBuffer()) < 0
-      ? [mint, NATIVE_MINT]
-      : [NATIVE_MINT, mint];
-
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
+    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    program(connection).programId
   );
 
   const [observationAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from('observation'), poolAddress.toBuffer()],
-    raydiumProgram(connection).programId
+    program(connection).programId
   );
 
-  return await raydiumProgram(connection).account.observationState.fetch(
+  return await program(connection).account.observationState.fetch(
     observationAddress
   );
 }
 
 export async function swapBaseInput(
   connection: Connection,
+  mint: PublicKey,
   payer: PublicKey,
   amount_in: number,
+  min_amount_out: number,
   inputToken: PublicKey,
   inputTokenProgram: PublicKey,
   outputToken: PublicKey,
   outputTokenProgram: PublicKey
 ) {
-  const [tokenMint0, tokenMint1] =
-    Buffer.compare(inputToken.toBuffer(), outputToken.toBuffer()) < 0
-      ? [inputToken, outputToken]
-      : [outputToken, inputToken];
-
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pool'),
-      CONFIG.toBuffer(),
-      tokenMint0.toBuffer(),
-      tokenMint1.toBuffer(),
-    ],
-    raydiumProgram(connection).programId
-  );
-
-  const [inputVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
-    raydiumProgram(connection).programId
-  );
-
-  const [outputVault] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
-    raydiumProgram(connection).programId
-  );
-
   const ixs = [];
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    program(connection).programId
+  );
+  const [observationAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('observation'), poolAddress.toBuffer()],
+    program(connection).programId
+  );
+
+  const [observationState, poolAccount] = await Promise.all([
+    program(connection).account.observationState.fetchNullable(
+      observationAddress
+    ),
+    program(connection).account.poolState.fetchNullable(poolAddress),
+  ]);
+  if (observationState == null || poolAccount == null) {
+    ixs.push(
+      await program(connection)
+        .methods.createOracle()
+        .accounts({
+          payer: payer,
+          poolState: poolAddress,
+          program: program(connection).programId,
+        })
+        .instruction()
+    );
+  }
+
   const inputTokenAccount = getAssociatedTokenAddressSync(
     inputToken,
     payer,
@@ -673,29 +566,35 @@ export async function swapBaseInput(
   if (inputToken == NATIVE_MINT) {
     ixs.push(
       SystemProgram.transfer({
-        toPubkey: inputTokenAccount,
         fromPubkey: payer,
+        toPubkey: inputTokenAccount,
         lamports: amount_in,
       })
     );
     ixs.push(createSyncNativeInstruction(inputTokenAccount));
   }
-  const [observationAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('observation'), poolAddress.toBuffer()],
-    raydiumProgram(connection).programId
-  );
 
   ixs.push(
-    await raydiumProgram(connection)
-      .methods.swapBaseInput(new BN(amount_in), new BN(0))
+    await program(connection)
+      .methods.swapBaseInput(new BN(amount_in), new BN(min_amount_out))
       .accounts({
         payer: payer,
         ammConfig: CONFIG,
         poolState: poolAddress,
         inputTokenAccount,
         outputTokenAccount,
-        inputVault,
-        outputVault,
+        inputVault: getAssociatedTokenAddressSync(
+          inputToken,
+          poolAddress,
+          true,
+          inputTokenProgram
+        ),
+        outputVault: getAssociatedTokenAddressSync(
+          outputToken,
+          poolAddress,
+          true,
+          outputTokenProgram
+        ),
         inputTokenProgram: inputTokenProgram,
         outputTokenProgram: outputTokenProgram,
         inputTokenMint: inputToken,

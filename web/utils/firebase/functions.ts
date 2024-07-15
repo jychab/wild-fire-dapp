@@ -27,21 +27,6 @@ export async function getDistributorSponsored(metadata: TokenMetadata) {
   return result.data as { partialTx?: string; distributor: string };
 }
 
-export async function updateMetadataSponsored(
-  mint: string,
-  fieldsToUpdate: [string, string][]
-) {
-  const updateMetadataSponsored = httpsCallable(
-    functions,
-    'updateMetadataSponsored'
-  );
-  const result = await updateMetadataSponsored({
-    mint,
-    fieldsToUpdate: JSON.stringify(fieldsToUpdate),
-  });
-  return result.data as string | undefined;
-}
-
 export async function sendGift(
   mint: PublicKey,
   destination: PublicKey,
@@ -89,9 +74,9 @@ export function createLoginMessage(sessionKey: string) {
 export async function uploadMetadata(
   payload: string,
   mint: PublicKey,
-  id?: string
+  id: string
 ) {
-  const path = `${mint.toBase58()}/uri/${id ? id : crypto.randomUUID()}.json`; //important to include file extension so cloudflare won't cache this
+  const path = `${mint.toBase58()}/${id}.json`; //important to include file extension so cloudflare won't cache this
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',
@@ -103,6 +88,6 @@ export async function uploadMetadata(
 export async function uploadMedia(picture: File, mint: PublicKey) {
   const path = `${mint.toBase58()}/media/${crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
-  await uploadBytes(imageRef, picture, { cacheControl: 'no-cache' });
+  await uploadBytes(imageRef, picture);
   return 'https://' + imageRef.bucket + '/' + path;
 }

@@ -59,11 +59,11 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 120,
+              dataSize: 112,
             },
             {
               memcmp: {
-                offset: 88,
+                offset: 80,
                 bytes: address.toBase58(),
               },
             },

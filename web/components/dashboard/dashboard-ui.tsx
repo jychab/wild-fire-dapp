@@ -336,7 +336,8 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
                 metaData &&
                   swapToken.mutateAsync({
                     type: SwapType.BasedInput,
-                    amount: 0.001 * LAMPORTS_PER_SOL, // 0.001 SOL to subscribe ~$0.1
+                    amount_in: 0.001 * LAMPORTS_PER_SOL, // 0.001 SOL to subscribe ~$0.1
+                    min_amount_out: 0,
                     inputToken: NATIVE_MINT,
                     outputToken: new PublicKey(metaData.id),
                     inputTokenProgram: TOKEN_PROGRAM_ID,

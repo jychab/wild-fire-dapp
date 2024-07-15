@@ -139,7 +139,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
             ...uriMetadata,
             content: newContent,
           };
-          await uploadMetadata(JSON.stringify(payload), mint, 'content');
+          await uploadMetadata(JSON.stringify(payload), mint, 'hashfeed');
         }
         return 'Success';
       } catch (error: unknown) {

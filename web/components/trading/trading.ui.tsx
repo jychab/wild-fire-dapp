@@ -1,4 +1,3 @@
-import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import {
   calculateFee,
@@ -13,7 +12,6 @@ import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   IconArrowsUpDown,
   IconCurrencySolana,
-  IconPlus,
   IconWallet,
 } from '@tabler/icons-react';
 import Image from 'next/image';
@@ -21,13 +19,12 @@ import { FC, useState } from 'react';
 import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
 import {
   SwapType,
+  useFetchSwapVaultAmount,
   useGetAddressInfo,
   useGetTokenAccountInfo,
-  useInitializePool,
   useSwapDetails,
   useSwapMint,
   useSwapOracle,
-  useSwapPrice,
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
@@ -50,10 +47,12 @@ export const TradingPanel: FC<{
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const { data: swapPrice } = useSwapPrice({
+  const { data: swapPrice } = useFetchSwapVaultAmount({
     mint: metadata ? new PublicKey(metadata.id) : null,
-    mintFee: swapDetails?.fundFeesToken0 + swapDetails?.protocolFeesToken1,
-    solFee: swapDetails?.fundFeesToken1 + swapDetails?.protocolFeesToken1,
+    mintFee:
+      swapDetails?.creatorFeesTokenMint + swapDetails?.protocolFeesTokenMint,
+    solFee:
+      swapDetails?.creatorFeesTokenWsol + swapDetails?.protocolFeesTokenWsol,
   });
 
   const swapMutation = useSwapMint({
@@ -286,7 +285,8 @@ export const TradingPanel: FC<{
                 metadata &&
                 swapMutation.mutateAsync({
                   type: SwapType.BasedInput,
-                  amount: parseInt(inputAmount),
+                  amount_in: parseInt(inputAmount),
+                  min_amount_out: 0,
                   inputToken: buy ? NATIVE_MINT : new PublicKey(metadata.id),
                   inputTokenProgram: buy
                     ? TOKEN_PROGRAM_ID
@@ -310,174 +310,8 @@ export const TradingPanel: FC<{
           </div>
         </>
       ) : (
-        <LiquidityPoolPanel
-          metadata={metadata}
-          currentAmountOfSol={walletInfo?.lamports}
-          currentAmountOfMint={Number(tokenInfo?.amount)}
-          solDetails={solDetails}
-        />
+        <div>No Pool Address Found.</div>
       )}
     </div>
-  );
-};
-
-export const LiquidityPoolPanel: FC<{
-  metadata: DAS.GetAssetResponse | null | undefined;
-  currentAmountOfSol: number | undefined;
-  currentAmountOfMint: number | undefined;
-  solDetails: DAS.GetAssetResponse | null | undefined;
-}> = ({ metadata, currentAmountOfMint, currentAmountOfSol, solDetails }) => {
-  const [mintAmount, setMintAmount] = useState(0);
-  const [solAmount, setSolAmount] = useState(0);
-  const initializePoolMutation = useInitializePool({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-  return (
-    <>
-      <div className="hero py-4 ">
-        <div className="hero-content flex flex-col text-center max-w-lg">
-          <span className="text-3xl lg:text-4xl ">
-            Earn trading fees by setting up your own liquidity pool
-          </span>
-          <span className="text-sm">
-            Determine the amount of SOL and Mint tokens to provide, as this will
-            influence your initial token price.
-          </span>
-        </div>
-      </div>
-      <div className="max-w-lg w-full flex flex-col gap-4 border border-base-content p-4 rounded">
-        <label>
-          <div className="label">
-            <span className="label-text">Base Token</span>
-            <div className="label-text-alt flex items-end gap-2">
-              <IconWallet size={14} />
-              <span>{`${((currentAmountOfSol || 0) / LAMPORTS_PER_SOL).toFixed(
-                3
-              )} SOL`}</span>
-              <button
-                onClick={() =>
-                  currentAmountOfSol && setSolAmount(currentAmountOfSol / 2)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Half
-              </button>
-              <button
-                onClick={() =>
-                  currentAmountOfSol && setSolAmount(currentAmountOfSol)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Max
-              </button>
-            </div>
-          </div>
-          <div className="input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
-            <button className="btn btn-secondary rounded-lg gap-1 px-2 flex items-center">
-              <IconCurrencySolana />
-              SOL
-            </button>
-            <input
-              type="number"
-              className="w-full text-right"
-              placeholder="0.00"
-              value={solAmount / LAMPORTS_PER_SOL}
-              onChange={(e) =>
-                setSolAmount(parseFloat(e.target.value) * LAMPORTS_PER_SOL)
-              }
-            />
-          </div>
-        </label>
-        <div className="flex items-center">
-          <div className="divider w-1/2"></div>
-          <button className="btn btn-square rounded-full px-2 btn-primary btn-sm">
-            <IconPlus />
-          </button>
-          <div className="divider w-1/2"></div>
-        </div>
-        <label>
-          <div className="label">
-            <span className="label-text">Quote Token</span>
-            <div className="label-text-alt flex items-center gap-2">
-              <IconWallet size={14} />
-              <span>{`${formatLargeNumber(currentAmountOfMint || 0)} ${
-                metadata?.content?.metadata.symbol
-              }`}</span>
-              <button
-                onClick={() =>
-                  currentAmountOfMint && setMintAmount(currentAmountOfMint / 2)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Half
-              </button>
-              <button
-                onClick={() =>
-                  currentAmountOfMint && setMintAmount(currentAmountOfMint)
-                }
-                className="badge badge-xs badge-outline badge-secondary p-2 "
-              >
-                Max
-              </button>
-            </div>
-          </div>
-          <div className=" input input-bordered border-base-content flex items-center gap-2 input-lg rounded-lg">
-            <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
-              {metadata?.additionalInfoData?.imageUrl && (
-                <div className="w-8 h-8 relative">
-                  <Image
-                    className={`rounded-full object-cover`}
-                    fill={true}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    src={metadata?.additionalInfoData?.imageUrl}
-                    alt={''}
-                  />
-                </div>
-              )}
-              <span className="text-base truncate w-fit pl-1 text-left">
-                {metadata?.content?.metadata.name}
-              </span>
-            </button>
-            <input
-              type="number"
-              className="w-full text-right"
-              placeholder="0.00"
-              value={mintAmount}
-              onChange={(e) => setMintAmount(parseFloat(e.target.value))}
-            />
-          </div>
-        </label>
-        <div className="flex flex-col gap-2 items-end justify-center pt-4">
-          <span className="text-sm">{`Initial Token Price: $${(
-            (solAmount / mintAmount / LAMPORTS_PER_SOL) *
-            (solDetails?.token_info?.price_info?.price_per_token || 1)
-          ).toPrecision(6)} `}</span>
-          <span className="text-sm">{`Initial Token MarketCap: $${(
-            (solAmount / LAMPORTS_PER_SOL) *
-            (solDetails?.token_info?.price_info?.price_per_token || 1)
-          ).toFixed(2)} `}</span>
-        </div>
-        <button
-          disabled={
-            solAmount == 0 ||
-            mintAmount == 0 ||
-            initializePoolMutation.isPending
-          }
-          onClick={async () =>
-            initializePoolMutation.mutateAsync({
-              solAmount: solAmount * LAMPORTS_PER_SOL,
-              mintAmount,
-            })
-          }
-          className="btn btn-primary w-full rounded"
-        >
-          {initializePoolMutation.isPending ? (
-            <div className="loading loading-spinner"></div>
-          ) : (
-            <span>Initialize Liquidity Pool</span>
-          )}
-        </button>
-      </div>
-    </>
   );
 };

@@ -11,7 +11,7 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createMint,
   createMintMetadata,
-  issueMint,
+  initializeMint,
   program,
 } from '@/utils/helper/transcationInstructions';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
@@ -60,6 +60,7 @@ export function useCreateMint({ address }: { address: string | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program(connection).programId
         );
+
         const distributor = new PublicKey(
           await getDistributor(mint.toBase58())
         );
@@ -71,16 +72,18 @@ export function useCreateMint({ address }: { address: string | null }) {
           description: input.description,
           image: imageUrl,
         };
-        const uri = await uploadMetadata(JSON.stringify(payload), mint);
+        const uri = await uploadMetadata(
+          JSON.stringify(payload),
+          mint,
+          crypto.randomUUID()
+        );
         const hashFeedContent = await uploadMetadata(
           JSON.stringify({
             content: [],
           }),
           mint,
-          'content'
+          'hashfeed'
         );
-        let ix = [];
-        let tx;
         const metadata: TokenMetadata = {
           name: input.name,
           symbol: input.symbol,
@@ -88,8 +91,11 @@ export function useCreateMint({ address }: { address: string | null }) {
           additionalMetadata: [['hashfeed', hashFeedContent]],
           mint: mint,
         };
-        const { partialTx } = await getDistributorSponsored(metadata);
+        const { partialTx: partialTx } = await getDistributorSponsored(
+          metadata
+        );
         if (!partialTx) {
+          const ix = [];
           ix.push(
             await createMint(
               connection,
@@ -103,25 +109,37 @@ export function useCreateMint({ address }: { address: string | null }) {
             await createMintMetadata(connection, metadata, wallet.publicKey)
           );
           ix.push(
-            await issueMint(connection, ONE_BILLION, mint, wallet.publicKey)
+            await initializeMint(
+              connection,
+              ONE_BILLION * 0.99,
+              ONE_BILLION * 0.01,
+              mint,
+              wallet.publicKey
+            )
           );
           ix.push(
             SystemProgram.transfer({
               fromPubkey: wallet.publicKey,
               toPubkey: distributor,
-              lamports: LAMPORTS_PER_SOL * 0.01, // withdrawable
+              lamports: LAMPORTS_PER_SOL * 0.001,
             })
           );
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            ixs: ix,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
         } else {
-          tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
+          let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            partialSignedTx: tx,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
         }
-        signature = await buildAndSendTransaction({
-          connection: connection,
-          partialSignedTx: tx,
-          ixs: ix,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
+
         return { signature, mint };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);

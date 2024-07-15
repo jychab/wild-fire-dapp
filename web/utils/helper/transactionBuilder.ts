@@ -11,6 +11,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
+import { ADDRESS_LOOKUP_TABLE } from '../consts';
 
 async function getPriorityFeeEstimate(
   priorityLevel: string,
@@ -102,9 +103,10 @@ export async function buildAndSendTransaction({
     commitment: 'confirmed',
   });
   if (ixs && ixs.length > 0) {
-    const [microLamports, units] = await Promise.all([
+    const [microLamports, units, lookupTables] = await Promise.all([
       getPriorityFeeEstimate('High', ixs, publicKey, connection),
       getSimulationUnits(connection, ixs, publicKey, []),
+      (await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)).value,
     ]);
     ixs.unshift(
       ComputeBudgetProgram.setComputeUnitPrice({
@@ -126,7 +128,7 @@ export async function buildAndSendTransaction({
         instructions: ixs,
         recentBlockhash: recentBlockhash.blockhash,
         payerKey: publicKey,
-      }).compileToV0Message()
+      }).compileToV0Message(lookupTables ? [lookupTables] : [])
     );
     if (signers) {
       tx.sign(signers);
@@ -136,6 +138,22 @@ export async function buildAndSendTransaction({
     throw new Error('Undefined Transaction');
   }
   const signedTx = await signTransaction(tx);
+  const txId = await sendAndConfirmTransaction(
+    connection,
+    signedTx,
+    recentBlockhash.blockhash,
+    recentBlockhash.lastValidBlockHeight,
+    commitment
+  );
+  return txId;
+}
+export async function sendAndConfirmTransaction(
+  connection: Connection,
+  signedTx: Transaction | VersionedTransaction,
+  blockhash: string,
+  lastValidBlockHeight: number,
+  commitment: Commitment | undefined
+) {
   const txId = await connection.sendTransaction(
     signedTx as VersionedTransaction,
     {
@@ -146,8 +164,8 @@ export async function buildAndSendTransaction({
   const result = await connection.confirmTransaction(
     {
       signature: txId,
-      blockhash: recentBlockhash.blockhash,
-      lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+      blockhash: blockhash,
+      lastValidBlockHeight: lastValidBlockHeight,
     },
     commitment
   );

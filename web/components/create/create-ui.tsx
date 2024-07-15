@@ -102,12 +102,14 @@ export const CreatePanel: FC = () => {
               type="text"
               placeholder="Display Name"
               value={name}
+              maxLength={20}
               className="input input-bordered w-full text-sm rounded"
               onChange={handleNameChange}
             />
             <input
               type="text"
               placeholder="@handle"
+              maxLength={20}
               className="input input-bordered w-full text-sm rounded"
               value={handle}
               onChange={handleHandleChange}

@@ -1,7 +1,6 @@
 'use client';
 
 import { proxify } from '@/utils/helper/proxy';
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -9,21 +8,16 @@ import {
   SystemProgram,
   TransactionInstruction,
   TransactionSignature,
-  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import {
-  updateMetadataSponsored,
-  uploadMedia,
-  uploadMetadata,
-} from '../../utils/firebase/functions';
+import { uploadMedia, uploadMetadata } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   changeAdmin,
   changeTransferFee,
-  closeFeeAccount,
+  closeAuthorityAccount,
   getAdditionalRentForUpdatedMetadata,
   program,
   updateMetadata,
@@ -64,7 +58,11 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
       let signature: TransactionSignature = '';
       try {
         if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
-        const ix = await closeFeeAccount(connection, wallet.publicKey, mint);
+        const ix = await closeAuthorityAccount(
+          connection,
+          wallet.publicKey,
+          mint
+        );
 
         signature = await buildAndSendTransaction({
           connection,
@@ -136,7 +134,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       let ixs: TransactionInstruction[] = [];
-      let tx;
       try {
         if (input.previous.admin.toString() != input.admin.toString()) {
           ixs.push(
@@ -186,52 +183,44 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             description: input.description,
             image: imageUrl ? imageUrl : uriMetadata.image,
           };
-          const uri = await uploadMetadata(JSON.stringify(payload), mint);
+          const uri = await uploadMetadata(
+            JSON.stringify(payload),
+            mint,
+            crypto.randomUUID()
+          );
           fieldsToUpdate.push(['uri', uri]);
 
-          if (ixs.length == 0) {
-            const partialTx = await updateMetadataSponsored(
-              mint.toBase58(),
-              fieldsToUpdate
+          const lamports = await getAdditionalRentForUpdatedMetadata(
+            connection,
+            mint,
+            fieldsToUpdate
+          );
+          if (lamports > 0) {
+            ixs.push(
+              SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: mint,
+                lamports: lamports,
+              })
             );
-            if (partialTx) {
-              tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
-            }
           }
-          if (!tx) {
-            const lamports = await getAdditionalRentForUpdatedMetadata(
-              connection,
-              mint,
-              fieldsToUpdate
+          for (let x of fieldsToUpdate) {
+            ixs.push(
+              await updateMetadata(
+                connection,
+                wallet.publicKey,
+                mint,
+                x[0],
+                x[1]
+              )
             );
-            if (lamports > 0) {
-              ixs.push(
-                SystemProgram.transfer({
-                  fromPubkey: wallet.publicKey,
-                  toPubkey: mint,
-                  lamports: lamports,
-                })
-              );
-            }
-            for (let x of fieldsToUpdate) {
-              ixs.push(
-                await updateMetadata(
-                  connection,
-                  wallet.publicKey,
-                  mint,
-                  x[0],
-                  x[1]
-                )
-              );
-            }
           }
         }
 
-        if (!tx && ixs.length == 0) return;
+        if (ixs.length == 0) return;
         signature = await buildAndSendTransaction({
           connection,
           ixs,
-          partialSignedTx: tx,
           publicKey: wallet.publicKey,
           signTransaction: wallet.signTransaction,
         });
@@ -291,11 +280,11 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 120,
+              dataSize: 112,
             },
             {
               memcmp: {
-                offset: 24,
+                offset: 16,
                 bytes: mint.toBase58(),
               },
             },

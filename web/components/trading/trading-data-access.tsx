@@ -2,8 +2,7 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   fetchSwapPoolDetails,
   fetchSwapPoolOracle,
-  fetchSwapPrice,
-  initializePool,
+  fetchSwapVaultAmount,
   swapBaseInput,
   swapBaseOutput,
 } from '@/utils/helper/transcationInstructions';
@@ -67,7 +66,7 @@ export function useSwapDetails({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useSwapPrice({
+export function useFetchSwapVaultAmount({
   mint,
   mintFee,
   solFee,
@@ -78,11 +77,14 @@ export function useSwapPrice({
 }) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-swap-price', { endpoint: connection.rpcEndpoint, mint }],
+    queryKey: [
+      'get-swap-vault-amount',
+      { endpoint: connection.rpcEndpoint, mint },
+    ],
     queryFn: async () => {
       if (!mint || !mintFee || !solFee) return null;
 
-      return fetchSwapPrice(connection, mint, mintFee, solFee);
+      return fetchSwapVaultAmount(connection, mint, mintFee, solFee);
     },
     enabled: !!mint && !!mintFee && !!solFee,
   });
@@ -115,14 +117,20 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async ({
       type,
-      amount,
+      amount_in,
+      amount_out,
+      max_amount_in,
+      min_amount_out,
       inputToken,
       inputTokenProgram,
       outputToken,
       outputTokenProgram,
     }: {
       type: SwapType;
-      amount: number;
+      amount_in?: number;
+      max_amount_in?: number;
+      amount_out?: number;
+      min_amount_out?: number;
       inputToken: PublicKey;
       inputTokenProgram: PublicKey;
       outputToken: PublicKey;
@@ -132,82 +140,40 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
       let signature: TransactionSignature = '';
       try {
         let ixs;
-        if (type == SwapType.BasedOutput) {
+        if (
+          type == SwapType.BasedOutput &&
+          max_amount_in != undefined &&
+          amount_out
+        ) {
           ixs = await swapBaseOutput(
             connection,
+            mint,
             wallet.publicKey,
-            amount,
+            max_amount_in,
+            amount_out,
             inputToken,
             inputTokenProgram,
             outputToken,
             outputTokenProgram
           );
-        } else {
+        } else if (
+          type == SwapType.BasedInput &&
+          amount_in &&
+          min_amount_out != undefined
+        ) {
           ixs = await swapBaseInput(
             connection,
+            mint,
             wallet.publicKey,
-            amount,
+            amount_in,
+            min_amount_out,
             inputToken,
             inputTokenProgram,
             outputToken,
             outputTokenProgram
           );
         }
-
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
-        return signature;
-      } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error}` + signature);
-        return;
-      }
-    },
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
-      }
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${error}`);
-    },
-  });
-}
-
-export function useInitializePool({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
-  const transactionToast = useTransactionToast();
-  const wallet = useWallet();
-
-  return useMutation({
-    mutationKey: [
-      'initialize-pool',
-      {
-        endpoint: connection.rpcEndpoint,
-        mint,
-      },
-    ],
-    mutationFn: async ({
-      mintAmount,
-      solAmount,
-    }: {
-      mintAmount: number;
-      solAmount: number;
-    }) => {
-      if (!wallet.publicKey || !wallet.signTransaction || !mint) return;
-      let signature: TransactionSignature = '';
-      try {
-        const ixs = await initializePool(
-          connection,
-          mint,
-          wallet.publicKey,
-          mintAmount,
-          solAmount
-        );
-
+        if (!ixs) return;
         signature = await buildAndSendTransaction({
           connection,
           ixs,
