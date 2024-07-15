@@ -82,11 +82,10 @@ export function useFetchSwapVaultAmount({
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
-      if (!mint || !mintFee || !solFee) return null;
-
+      if (!mint || mintFee == undefined || solFee == undefined) return null;
       return fetchSwapVaultAmount(connection, mint, mintFee, solFee);
     },
-    enabled: !!mint && !!mintFee && !!solFee,
+    enabled: !!mint && mintFee != undefined && solFee != undefined,
   });
 }
 

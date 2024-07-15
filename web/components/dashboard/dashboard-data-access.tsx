@@ -59,11 +59,11 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 112,
+              dataSize: 216,
             },
             {
               memcmp: {
-                offset: 80,
+                offset: 40,
                 bytes: address.toBase58(),
               },
             },
@@ -73,7 +73,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
           if (result.length > 0) {
             return result.map((acc) => {
               return program(connection).coder.accounts.decode(
-                'authority',
+                'poolState',
                 acc.account.data
               ) as AuthorityData;
             });

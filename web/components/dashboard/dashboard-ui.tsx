@@ -42,7 +42,6 @@ export interface AuthorityData {
   mint: PublicKey;
   admin: PublicKey;
   distributor: PublicKey;
-  feesCollected: number;
   mutable: number;
 }
 
@@ -347,7 +346,11 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
             }}
             className="btn btn-success btn-sm w-32"
           >
-            Subscribe
+            {swapToken.isPending ? (
+              <div className="loading loading-spinner" />
+            ) : (
+              <span>Subscribe</span>
+            )}
           </button>
           {authorityData &&
             publicKey &&
@@ -581,7 +584,7 @@ export const MainPanel: FC<MainPanelProps> = ({ authorityData, mintQuery }) => {
             <div className="stat gap-2 p-0">
               <div className="stat-title text-xs">Total Fees Collected</div>
               <span className="stat-value font-normal truncate">
-                {`${authorityData?.feesCollected || '0'}`}
+                {`${'0'}`}
               </span>
             </div>
           </div>

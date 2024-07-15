@@ -7,7 +7,7 @@ import {
   TOKEN_PROGRAM_ID,
   TransferFee,
 } from '@solana/spl-token';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   IconArrowsUpDown,
@@ -16,7 +16,6 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useState } from 'react';
-import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
 import {
   SwapType,
   useFetchSwapVaultAmount,
@@ -31,7 +30,6 @@ export const TradingPanel: FC<{
   metadata: DAS.GetAssetResponse | null | undefined;
 }> = ({ metadata }) => {
   const { publicKey } = useWallet();
-  const { connection } = useConnection();
 
   const [buy, setBuy] = useState(true);
 
@@ -39,20 +37,22 @@ export const TradingPanel: FC<{
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const { data: solDetails } = useGetTokenDetails({
-    mint: NATIVE_MINT,
-  });
-
   const { data: swapOracle } = useSwapOracle({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
+  const accumulatedMintFee =
+    Number(swapDetails?.creatorFeesTokenMint || 0) +
+    Number(swapDetails?.protocolFeesTokenMint || 0);
+
+  const accumulatedWsolFee =
+    Number(swapDetails?.creatorFeesTokenWsol || 0) +
+    Number(swapDetails?.protocolFeesTokenWsol || 0);
+
   const { data: swapPrice } = useFetchSwapVaultAmount({
     mint: metadata ? new PublicKey(metadata.id) : null,
-    mintFee:
-      swapDetails?.creatorFeesTokenMint + swapDetails?.protocolFeesTokenMint,
-    solFee:
-      swapDetails?.creatorFeesTokenWsol + swapDetails?.protocolFeesTokenWsol,
+    mintFee: accumulatedMintFee,
+    solFee: accumulatedWsolFee,
   });
 
   const swapMutation = useSwapMint({
@@ -99,7 +99,7 @@ export const TradingPanel: FC<{
           currentTransferFeeConfig.transfer_fee_basis_points
         ),
       };
-      const amountAfterTradingFees = BigInt(Math.round(amount * 0.99));
+      const amountAfterTradingFees = BigInt(Math.round(amount * 0.98));
       const amountAfterFees = buy
         ? amountAfterTradingFees
         : amountAfterTradingFees -
@@ -132,7 +132,7 @@ export const TradingPanel: FC<{
           currentTransferFeeConfig.transfer_fee_basis_points
         ),
       };
-      const amountAfterTradingFees = BigInt(Math.round(amount * 0.99));
+      const amountAfterTradingFees = BigInt(Math.round(amount * 0.98));
       const amountAfterFees = buy
         ? amountAfterTradingFees -
           calculateFee(transferFee, amountAfterTradingFees)
@@ -166,7 +166,7 @@ export const TradingPanel: FC<{
         className="w-full text-right"
         placeholder="0.00"
         value={
-          buy ? Number(inputAmount) : Number(outputAmount) / LAMPORTS_PER_SOL
+          (buy ? Number(inputAmount) : Number(outputAmount)) / LAMPORTS_PER_SOL
         }
         onChange={(e) => {
           let amount = parseFloat(e.target.value) * LAMPORTS_PER_SOL;

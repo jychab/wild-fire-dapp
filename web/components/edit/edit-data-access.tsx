@@ -280,11 +280,11 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 112,
+              dataSize: 216,
             },
             {
               memcmp: {
-                offset: 16,
+                offset: 72,
                 bytes: mint.toBase58(),
               },
             },
@@ -293,7 +293,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
         .then((result) => {
           if (result.length > 0) {
             return program(connection).coder.accounts.decode(
-              'authority',
+              'poolState',
               result[0].account.data
             ) as AuthorityData;
           } else {

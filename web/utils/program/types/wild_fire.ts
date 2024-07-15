@@ -23,7 +23,7 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
         },
         {
@@ -96,7 +96,7 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
         }
       ];
@@ -117,7 +117,7 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
         },
         {
           name: 'mint';
@@ -149,7 +149,7 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
         },
         {
@@ -471,13 +471,13 @@ export type WildFire = {
           };
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -564,12 +564,12 @@ export type WildFire = {
           writable: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -770,12 +770,12 @@ export type WildFire = {
           name: 'mint';
         },
         {
-          name: 'authority';
+          name: 'poolState';
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -785,7 +785,7 @@ export type WildFire = {
           };
         },
         {
-          name: 'authorityMintTokenAccount';
+          name: 'distributorMintTokenAccount';
           writable: true;
         },
         {
@@ -918,27 +918,6 @@ export type WildFire = {
           docs: ['Which config the pool belongs to.'];
         },
         {
-          name: 'poolState';
-          docs: ['Initialize an account to store the pool state'];
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [112, 111, 111, 108];
-              },
-              {
-                kind: 'account';
-                path: 'ammConfig';
-              },
-              {
-                kind: 'account';
-                path: 'mint';
-              }
-            ];
-          };
-        },
-        {
           name: 'mint';
           writable: true;
         },
@@ -1057,13 +1036,13 @@ export type WildFire = {
           };
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -1150,12 +1129,12 @@ export type WildFire = {
           writable: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -1190,7 +1169,7 @@ export type WildFire = {
           signer: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           writable: true;
         },
         {
@@ -1440,12 +1419,12 @@ export type WildFire = {
           writable: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -1518,12 +1497,12 @@ export type WildFire = {
           writable: true;
         },
         {
-          name: 'authority';
+          name: 'poolState';
           pda: {
             seeds: [
               {
                 kind: 'const';
-                value: [97, 117, 116, 104, 111, 114, 105, 116, 121];
+                value: [112, 111, 111, 108];
               },
               {
                 kind: 'account';
@@ -1533,13 +1512,13 @@ export type WildFire = {
           };
         },
         {
-          name: 'authorityMintTokenAccount';
+          name: 'distributorMintTokenAccount';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'account';
-                path: 'authority';
+                path: 'payer';
               },
               {
                 kind: 'account';
@@ -1643,10 +1622,6 @@ export type WildFire = {
       discriminator: [218, 244, 33, 104, 203, 203, 43, 111];
     },
     {
-      name: 'authority';
-      discriminator: [36, 108, 254, 18, 167, 144, 27, 36];
-    },
-    {
       name: 'observationState';
       discriminator: [122, 174, 197, 53, 129, 9, 165, 132];
     },
@@ -1689,7 +1664,7 @@ export type WildFire = {
     {
       code: 6000;
       name: 'incorrectMint';
-      msg: 'Mint account is different from the one defined in the authority';
+      msg: "Mint account doesn't match";
     },
     {
       code: 6001;
@@ -1785,44 +1760,6 @@ export type WildFire = {
             type: {
               array: ['u64', 16];
             };
-          }
-        ];
-      };
-    },
-    {
-      name: 'authority';
-      serialization: 'bytemuck';
-      repr: {
-        kind: 'c';
-      };
-      type: {
-        kind: 'struct';
-        fields: [
-          {
-            name: 'bump';
-            type: 'u8';
-          },
-          {
-            name: 'mutable';
-            type: 'u8';
-          },
-          {
-            name: 'padding';
-            type: {
-              array: ['u8', 6];
-            };
-          },
-          {
-            name: 'mint';
-            type: 'pubkey';
-          },
-          {
-            name: 'distributor';
-            type: 'pubkey';
-          },
-          {
-            name: 'admin';
-            type: 'pubkey';
           }
         ];
       };
@@ -2059,13 +1996,13 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'poolCreator';
+            name: 'admin';
             docs: ['pool creator'];
             type: 'pubkey';
           },
           {
             name: 'mint';
-            docs: ['Mint information for token A'];
+            docs: ['Mint information'];
             type: 'pubkey';
           },
           {
@@ -2074,9 +2011,16 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
+            name: 'distributor';
+            docs: [
+              'distributor to handle the withdrawing and distirbuting of transfer fees'
+            ];
+            type: 'pubkey';
+          },
+          {
             name: 'padding';
             type: {
-              array: ['u8', 14];
+              array: ['u8', 5];
             };
           },
           {
@@ -2091,6 +2035,11 @@ export type WildFire = {
               'bit1, 1: disable withdraw(vaule is 2), 0: normal',
               'bit2, 1: disable swap(vaule is 4), 0: normal'
             ];
+            type: 'u8';
+          },
+          {
+            name: 'mutable';
+            docs: ['state to check if token mint metadata is editable'];
             type: 'u8';
           },
           {

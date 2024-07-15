@@ -112,8 +112,8 @@ export async function changeTransferFee(
   feeBasisPts: number,
   maxFee: number
 ) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
+  const [poolState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const ix = await program(connection)
@@ -121,7 +121,7 @@ export async function changeTransferFee(
     .accounts({
       payer: payer,
       mint: mint,
-      authority: authority,
+      poolState,
     })
     .instruction();
 
@@ -134,15 +134,15 @@ export async function changeAdmin(
   mint: PublicKey,
   newAdmin: PublicKey
 ) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
+  const [poolState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const ix = await program(connection)
     .methods.changeAdmin(newAdmin)
     .accounts({
       payer: payer,
-      authority: authority,
+      poolState,
       program: program(connection).programId,
     })
     .instruction();
@@ -155,15 +155,15 @@ export async function setToImmutable(
   payer: PublicKey,
   mint: PublicKey
 ) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
+  const [poolState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const ix = await program(connection)
     .methods.setToImmutable()
     .accounts({
       payer: payer,
-      authority: authority,
+      poolState,
       mint: mint,
     })
     .instruction();
@@ -176,8 +176,8 @@ export async function closeAuthorityAccount(
   payer: PublicKey,
   mint: PublicKey
 ) {
-  const [authority] = PublicKey.findProgramAddressSync(
-    [Buffer.from('authority'), mint.toBuffer()],
+  const [poolState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
 
@@ -185,7 +185,7 @@ export async function closeAuthorityAccount(
     .methods.closeAccount()
     .accounts({
       payer: payer,
-      authority: authority,
+      poolState,
       mint: mint,
     })
     .instruction();
@@ -303,7 +303,7 @@ export async function swapBaseOutput(
 ) {
   const ixs = [];
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const [observationAddress] = PublicKey.findProgramAddressSync(
@@ -424,7 +424,7 @@ export async function fetchSwapPoolDetails(
   mint: PublicKey
 ) {
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
 
@@ -438,7 +438,7 @@ export async function fetchSwapVaultAmount(
   solFee: number
 ) {
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const mintVault = getAssociatedTokenAddressSync(
@@ -454,14 +454,16 @@ export async function fetchSwapVaultAmount(
     true
   );
 
-  const mintAmount =
+  let mintAmount =
     (await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID))
       .amount - BigInt(mintFee);
-  const solAmount =
-    (await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID))
-      .amount -
-    BigInt(solFee) +
-    BigInt(OFF_SET);
+
+  let solAmount = BigInt(OFF_SET);
+  try {
+    solAmount +=
+      (await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID))
+        .amount - BigInt(solFee);
+  } catch (e) {}
 
   return { mintAmount, solAmount };
 }
@@ -471,7 +473,7 @@ export async function fetchSwapPoolOracle(
   mint: PublicKey
 ) {
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
 
@@ -498,7 +500,7 @@ export async function swapBaseInput(
 ) {
   const ixs = [];
   const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), CONFIG.toBuffer(), mint.toBuffer()],
+    [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
   const [observationAddress] = PublicKey.findProgramAddressSync(
