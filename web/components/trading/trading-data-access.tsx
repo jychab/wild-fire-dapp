@@ -66,15 +66,7 @@ export function useSwapDetails({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useFetchSwapVaultAmount({
-  mint,
-  mintFee,
-  solFee,
-}: {
-  mint: PublicKey | null;
-  mintFee: number | undefined;
-  solFee: number | undefined;
-}) {
+export function useFetchSwapVaultAmount({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
@@ -82,10 +74,10 @@ export function useFetchSwapVaultAmount({
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
-      if (!mint || mintFee == undefined || solFee == undefined) return null;
-      return fetchSwapVaultAmount(connection, mint, mintFee, solFee);
+      if (!mint) return null;
+      return fetchSwapVaultAmount(connection, mint);
     },
-    enabled: !!mint && mintFee != undefined && solFee != undefined,
+    enabled: !!mint,
   });
 }
 

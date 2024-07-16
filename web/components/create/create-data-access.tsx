@@ -111,8 +111,8 @@ export function useCreateMint({ address }: { address: string | null }) {
           ix.push(
             await initializeMint(
               connection,
-              ONE_BILLION * 0.99,
-              ONE_BILLION * 0.01,
+              ONE_BILLION,
+              LAMPORTS_PER_SOL * 0.001,
               mint,
               wallet.publicKey
             )

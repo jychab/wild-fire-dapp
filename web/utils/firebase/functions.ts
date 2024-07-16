@@ -40,20 +40,6 @@ export async function sendGift(
   });
 }
 
-export async function withdrawFundsFromDistributor(
-  mint: string,
-  amount: number
-) {
-  const withdrawFundsFromDistributor = httpsCallable(
-    functions,
-    'withdrawFundsFromDistributor'
-  );
-  const result = await withdrawFundsFromDistributor({
-    mint: mint,
-    amount,
-  });
-}
-
 export async function verifyAndGetToken(
   publicKey: PublicKey,
   output: Uint8Array

@@ -87,6 +87,44 @@
       ]
     },
     {
+      "name": "change_pool_config",
+      "discriminator": [209, 105, 144, 240, 5, 149, 98, 243],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true,
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
+        },
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "amm_config",
+          "docs": ["Amm config account to be changed"]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
+                  114, 105, 116, 121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "change_transfer_fee",
       "discriminator": [80, 16, 175, 186, 185, 22, 46, 194],
       "accounts": [
@@ -115,6 +153,28 @@
         {
           "name": "max_fee",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "change_verified_status",
+      "discriminator": [84, 158, 113, 105, 220, 157, 204, 173],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true,
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
+        },
+        {
+          "name": "pool_state",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "verified",
+          "type": "bool"
         }
       ]
     },
@@ -153,7 +213,7 @@
         },
         {
           "name": "protocol_owner",
-          "address": "B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "pool_state",
@@ -306,7 +366,7 @@
           "docs": ["Address to be set as protocol owner."],
           "writable": true,
           "signer": true,
-          "address": "B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "amm_config",
@@ -541,65 +601,8 @@
           }
         },
         {
-          "name": "token_wsol_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_state"
-              },
-              {
-                "kind": "account",
-                "path": "token_program"
-              },
-              {
-                "kind": "account",
-                "path": "wsol"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
-              ]
-            }
-          }
-        },
-        {
-          "name": "wsol",
-          "address": "So11111111111111111111111111111111111111112"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": []
@@ -753,21 +756,21 @@
           }
         },
         {
-          "name": "admin_mint_token_account",
+          "name": "token_wsol_vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "admin"
+                "path": "pool_state"
               },
               {
                 "kind": "account",
-                "path": "token_program_mint"
+                "path": "token_program"
               },
               {
                 "kind": "account",
-                "path": "mint"
+                "path": "wsol"
               }
             ],
             "program": {
@@ -779,6 +782,14 @@
               ]
             }
           }
+        },
+        {
+          "name": "wsol",
+          "address": "So11111111111111111111111111111111111111112"
+        },
+        {
+          "name": "admin_mint_token_account",
+          "writable": true
         },
         {
           "name": "pool_state",
@@ -832,11 +843,11 @@
       ],
       "args": [
         {
-          "name": "amount_curve",
+          "name": "amount",
           "type": "u64"
         },
         {
-          "name": "amount_creator",
+          "name": "initial_purchase",
           "type": "u64"
         },
         {
@@ -1116,7 +1127,7 @@
           "name": "owner",
           "docs": ["The amm config owner or admin"],
           "signer": true,
-          "address": "B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "amm_config",
@@ -1203,7 +1214,7 @@
         {
           "name": "authority",
           "signer": true,
-          "address": "B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "pool_state",
@@ -1714,8 +1725,12 @@
           {
             "name": "padding",
             "type": {
-              "array": ["u8", 5]
+              "array": ["u8", 4]
             }
+          },
+          {
+            "name": "verified",
+            "type": "u8"
           },
           {
             "name": "bump",

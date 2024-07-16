@@ -1,9 +1,9 @@
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import { PublicKey } from '@solana/web3.js';
 import {
+  IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
-  IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -28,6 +28,7 @@ export interface AdditionalMetadata {
   image: string;
   mint: PublicKey;
   updatedAt: number;
+  verified?: boolean;
 }
 
 export type ContentWithMetada =
@@ -82,37 +83,7 @@ export const PostCard = ({
   const router = useRouter();
   return (
     <div className="flex flex-col sm:border gap-2 bg-base-100 rounded w-full">
-      {showMintDetails && (
-        <div className="flex gap-2 px-4 pt-2 items-center w-full">
-          <Link
-            className="relative w-8 h-8 rounded-full"
-            href={`/dashboard?mintId=${content.mint.toBase58()}`}
-          >
-            <Image
-              src={content.image}
-              priority={true}
-              className={`object-cover rounded-full`}
-              fill={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              alt={'mint'}
-            />
-          </Link>
-          <div className="flex flex-col">
-            <Link
-              className="text-sm link link-hover"
-              href={`/dashboard?mintId=${content.mint.toBase58()}`}
-            >
-              {content.name}
-            </Link>
-            <Link
-              className="text-xs link link-hover"
-              href={`/dashboard?mintId=${content.mint.toBase58()}`}
-            >
-              {content.symbol}
-            </Link>
-          </div>
-        </div>
-      )}
+      {showMintDetails && <UserProfile content={content} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
         <div className="carousel w-full aspect-square h-auto bg-neutral">
           {content.carousel.map((file) => (
@@ -159,7 +130,6 @@ export const PostCard = ({
                 >
                   {content.name}
                 </Link>
-                <IconShieldCheckFilled />
               </div>
               {editable && (
                 <div className="dropdown dropdown-end ">
@@ -254,37 +224,7 @@ export const BlinksCard: FC<{
     const url = new URL(content.uri as string);
     return (
       <div className="flex flex-col sm:border gap-2 rounded w-full">
-        {showMintDetails && (
-          <div className="flex gap-2 px-4 pt-2 items-center w-full">
-            <Link
-              className="relative w-8 h-8 rounded-full"
-              href={`/dashboard?mintId=${content.mint.toBase58()}`}
-            >
-              <Image
-                src={content.image}
-                priority={true}
-                className={`object-cover rounded-full`}
-                fill={true}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                alt={'mint'}
-              />
-            </Link>
-            <div className="flex flex-col">
-              <Link
-                className="text-sm link link-hover"
-                href={`/dashboard?mintId=${content.mint.toBase58()}`}
-              >
-                {content.name}
-              </Link>
-              <Link
-                className="text-xs link link-hover"
-                href={`/dashboard?mintId=${content.mint.toBase58()}`}
-              >
-                {content.symbol}
-              </Link>
-            </div>
-          </div>
-        )}
+        {showMintDetails && <UserProfile content={content} />}
         <Blinks
           multiGrid={multiGrid}
           actionUrl={url}
@@ -333,5 +273,42 @@ export const DisplayContent: FC<DisplayContentProps> = ({
         />
       )}
     </>
+  );
+};
+
+export const UserProfile: FC<{
+  content: PostContentWithMetadata | BlinkContentWithMetadata;
+}> = ({ content }) => {
+  return (
+    <div className="flex gap-2 px-4 pt-2 items-center w-full">
+      <Link
+        className="relative w-8 h-8 rounded-full"
+        href={`/dashboard?mintId=${content.mint.toBase58()}`}
+      >
+        <Image
+          src={content.image}
+          priority={true}
+          className={`object-cover rounded-full`}
+          fill={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt={'mint'}
+        />
+      </Link>
+      <div className="flex flex-col">
+        <Link
+          className="text-sm link link-hover flex gap-1 items-center"
+          href={`/dashboard?mintId=${content.mint.toBase58()}`}
+        >
+          {content.name}
+          <IconDiscountCheckFilled size={18} className="fill-success" />
+        </Link>
+        <Link
+          className="text-xs link link-hover"
+          href={`/dashboard?mintId=${content.mint.toBase58()}`}
+        >
+          {content.symbol}
+        </Link>
+      </div>
+    </div>
   );
 };

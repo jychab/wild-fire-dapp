@@ -1,3 +1,4 @@
+import { OFF_SET } from '@/utils/consts';
 import { DAS } from '@/utils/types/das';
 import {
   calculateFee,
@@ -42,17 +43,15 @@ export const TradingPanel: FC<{
   });
 
   const accumulatedMintFee =
-    Number(swapDetails?.creatorFeesTokenMint || 0) +
-    Number(swapDetails?.protocolFeesTokenMint || 0);
+    BigInt(swapDetails?.creatorFeesTokenMint || 0) +
+    BigInt(swapDetails?.protocolFeesTokenMint || 0);
 
   const accumulatedWsolFee =
-    Number(swapDetails?.creatorFeesTokenWsol || 0) +
-    Number(swapDetails?.protocolFeesTokenWsol || 0);
+    BigInt(swapDetails?.creatorFeesTokenWsol || 0) +
+    BigInt(swapDetails?.protocolFeesTokenWsol || 0);
 
   const { data: swapPrice } = useFetchSwapVaultAmount({
     mint: metadata ? new PublicKey(metadata.id) : null,
-    mintFee: accumulatedMintFee,
-    solFee: accumulatedWsolFee,
   });
 
   const swapMutation = useSwapMint({
@@ -92,6 +91,10 @@ export const TradingPanel: FC<{
     const currentTransferFeeConfig =
       metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
     if (swapPrice && currentTransferFeeConfig) {
+      const mintAmount = swapPrice.mintAmount - accumulatedMintFee;
+      const solAmount =
+        swapPrice.solAmount + BigInt(OFF_SET) - accumulatedWsolFee;
+
       const transferFee: TransferFee = {
         epoch: BigInt(currentTransferFeeConfig.epoch),
         maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
@@ -106,14 +109,13 @@ export const TradingPanel: FC<{
           calculateFee(transferFee, BigInt(amountAfterTradingFees));
 
       const outputAmount = buy
-        ? (amountAfterFees * swapPrice.mintAmount) /
-          (swapPrice.solAmount + amountAfterFees)
-        : (amountAfterFees * swapPrice.solAmount) /
-          (swapPrice.mintAmount + amountAfterFees);
+        ? (amountAfterFees * mintAmount) / (solAmount + amountAfterFees)
+        : (amountAfterFees * solAmount) / (mintAmount + amountAfterFees);
 
       const outputAmountAfterFee = buy
         ? outputAmount - calculateFee(transferFee, outputAmount)
         : outputAmount;
+
       setOutputAmount(outputAmountAfterFee.toString());
     }
   };
@@ -125,6 +127,9 @@ export const TradingPanel: FC<{
     const currentTransferFeeConfig =
       metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
     if (swapPrice && currentTransferFeeConfig) {
+      const mintAmount = swapPrice.mintAmount - accumulatedMintFee;
+      const solAmount =
+        swapPrice.solAmount + BigInt(OFF_SET) - accumulatedWsolFee;
       const transferFee: TransferFee = {
         epoch: BigInt(currentTransferFeeConfig.epoch),
         maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
@@ -139,14 +144,8 @@ export const TradingPanel: FC<{
         : amountAfterTradingFees;
 
       const outputAmount = buy
-        ? ceilN(
-            amountAfterFees * swapPrice.solAmount,
-            swapPrice.mintAmount - amountAfterFees
-          )
-        : ceilN(
-            amountAfterFees * swapPrice.mintAmount,
-            swapPrice.solAmount - amountAfterFees
-          );
+        ? ceilN(amountAfterFees * solAmount, mintAmount - amountAfterFees)
+        : ceilN(amountAfterFees * mintAmount, solAmount - amountAfterFees);
       const outputAmountAfterFee = buy
         ? outputAmount
         : outputAmount - calculateFee(transferFee, BigInt(outputAmount));

@@ -84,15 +84,15 @@ export async function createMintMetadata(
 
 export async function initializeMint(
   connection: Connection,
-  amountCurve: number,
-  amountCreator: number,
+  amount: number,
+  initialPurchase: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
   return await program(connection)
     .methods.initializeMint(
-      new BN(amountCurve),
-      new BN(amountCreator),
+      new BN(amount),
+      new BN(initialPurchase),
       new BN(OFF_SET)
     )
     .accounts({
@@ -101,6 +101,12 @@ export async function initializeMint(
       admin: payer,
       program: program(connection).programId,
       ammConfig: CONFIG,
+      adminMintTokenAccount: getAssociatedTokenAddressSync(
+        mint,
+        payer,
+        false,
+        TOKEN_2022_PROGRAM_ID
+      ),
     })
     .instruction();
 }
@@ -323,7 +329,6 @@ export async function swapBaseOutput(
         .methods.createOracle()
         .accounts({
           poolState: poolAddress,
-          program: program(connection).programId,
         })
         .instruction()
     );
@@ -433,9 +438,7 @@ export async function fetchSwapPoolDetails(
 
 export async function fetchSwapVaultAmount(
   connection: Connection,
-  mint: PublicKey,
-  mintFee: number,
-  solFee: number
+  mint: PublicKey
 ) {
   const [poolAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from('pool'), mint.toBuffer()],
@@ -454,15 +457,15 @@ export async function fetchSwapVaultAmount(
     true
   );
 
-  let mintAmount =
-    (await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID))
-      .amount - BigInt(mintFee);
+  let mintAmount = (
+    await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID)
+  ).amount;
 
-  let solAmount = BigInt(OFF_SET);
+  let solAmount = BigInt(0);
   try {
-    solAmount +=
-      (await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID))
-        .amount - BigInt(solFee);
+    solAmount = (
+      await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID)
+    ).amount;
   } catch (e) {}
 
   return { mintAmount, solAmount };
@@ -521,7 +524,6 @@ export async function swapBaseInput(
         .accounts({
           payer: payer,
           poolState: poolAddress,
-          program: program(connection).programId,
         })
         .instruction()
     );

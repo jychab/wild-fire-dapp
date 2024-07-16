@@ -108,6 +108,59 @@ export type WildFire = {
       ];
     },
     {
+      name: 'changePoolConfig';
+      discriminator: [209, 105, 144, 240, 5, 149, 98, 243];
+      accounts: [
+        {
+          name: 'payer';
+          writable: true;
+          signer: true;
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
+        },
+        {
+          name: 'poolState';
+          writable: true;
+        },
+        {
+          name: 'ammConfig';
+          docs: ['Amm config account to be changed'];
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
+        }
+      ];
+      args: [];
+    },
+    {
       name: 'changeTransferFee';
       discriminator: [80, 16, 175, 186, 185, 22, 46, 194];
       accounts: [
@@ -136,6 +189,28 @@ export type WildFire = {
         {
           name: 'maxFee';
           type: 'u64';
+        }
+      ];
+    },
+    {
+      name: 'changeVerifiedStatus';
+      discriminator: [84, 158, 113, 105, 220, 157, 204, 173];
+      accounts: [
+        {
+          name: 'payer';
+          writable: true;
+          signer: true;
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
+        },
+        {
+          name: 'poolState';
+          writable: true;
+        }
+      ];
+      args: [
+        {
+          name: 'verified';
+          type: 'bool';
         }
       ];
     },
@@ -174,7 +249,7 @@ export type WildFire = {
         },
         {
           name: 'protocolOwner';
-          address: 'B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'poolState';
@@ -400,7 +475,7 @@ export type WildFire = {
           docs: ['Address to be set as protocol owner.'];
           writable: true;
           signer: true;
-          address: 'B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'ammConfig';
@@ -650,109 +725,8 @@ export type WildFire = {
           };
         },
         {
-          name: 'tokenWsolVault';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'account';
-                path: 'poolState';
-              },
-              {
-                kind: 'account';
-                path: 'tokenProgram';
-              },
-              {
-                kind: 'account';
-                path: 'wsol';
-              }
-            ];
-            program: {
-              kind: 'const';
-              value: [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ];
-            };
-          };
-        },
-        {
-          name: 'wsol';
-          address: 'So11111111111111111111111111111111111111112';
-        },
-        {
-          name: 'tokenProgram';
-          address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-        },
-        {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
-        },
-        {
-          name: 'associatedTokenProgram';
-          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [];
@@ -979,21 +953,21 @@ export type WildFire = {
           };
         },
         {
-          name: 'adminMintTokenAccount';
+          name: 'tokenWsolVault';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'account';
-                path: 'admin';
+                path: 'poolState';
               },
               {
                 kind: 'account';
-                path: 'tokenProgramMint';
+                path: 'tokenProgram';
               },
               {
                 kind: 'account';
-                path: 'mint';
+                path: 'wsol';
               }
             ];
             program: {
@@ -1034,6 +1008,14 @@ export type WildFire = {
               ];
             };
           };
+        },
+        {
+          name: 'wsol';
+          address: 'So11111111111111111111111111111111111111112';
+        },
+        {
+          name: 'adminMintTokenAccount';
+          writable: true;
         },
         {
           name: 'poolState';
@@ -1102,11 +1084,11 @@ export type WildFire = {
       ];
       args: [
         {
-          name: 'amountCurve';
+          name: 'amount';
           type: 'u64';
         },
         {
-          name: 'amountCreator';
+          name: 'initialPurchase';
           type: 'u64';
         },
         {
@@ -1382,7 +1364,7 @@ export type WildFire = {
           name: 'owner';
           docs: ['The amm config owner or admin'];
           signer: true;
-          address: 'B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'ammConfig';
@@ -1469,7 +1451,7 @@ export type WildFire = {
         {
           name: 'authority';
           signer: true;
-          address: 'B2cpfZh6DkG31WGxWKfzKvXPAq5zE2DzUUPT452DbSjY';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'poolState';
@@ -2020,8 +2002,12 @@ export type WildFire = {
           {
             name: 'padding';
             type: {
-              array: ['u8', 5];
+              array: ['u8', 4];
             };
+          },
+          {
+            name: 'verified';
+            type: 'u8';
           },
           {
             name: 'bump';
