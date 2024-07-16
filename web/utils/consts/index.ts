@@ -5,7 +5,7 @@ export const CONFIG = new PublicKey(
 );
 
 export const HASHFEED_MINT = new PublicKey(
-  'BwrsLUtCdcVds8thgBpygZu8AVmadw6A9ii5MDP9AwQ'
+  '4jGm9BWY6vX2ppcjP7szpCq9jfb2QbX6h5qbJ8bTJYJp'
 );
 
 export const ONE_BILLION = 1_000_000_000;
