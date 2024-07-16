@@ -2,6 +2,7 @@
 
 import { DAS } from '@/utils/types/das';
 import {
+  getAssociatedTokenAddressSync,
   Mint,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
@@ -15,7 +16,7 @@ import {
   RpcResponseAndContext,
   TokenAccountBalancePair,
 } from '@solana/web3.js';
-import { IconEdit, IconExclamationCircle } from '@tabler/icons-react';
+import { IconDiscountCheck, IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,6 +27,9 @@ import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
   SwapType,
+  useFetchSwapPrice,
+  useGetAddressInfo,
+  useGetTokenAccountInfo,
   useSwapDetails,
   useSwapMint,
 } from '../trading/trading-data-access';
@@ -36,7 +40,7 @@ import {
   useGetMintDetails,
   useGetMintTransferFeeConfig,
   useGetTokenDetails,
-} from './dashboard-data-access';
+} from './profile-data-access';
 
 export interface AuthorityData {
   mint: PublicKey;
@@ -45,17 +49,16 @@ export interface AuthorityData {
   mutable: number;
 }
 
-interface DashBoardProps {
-  mintId: string;
-}
-
 enum TabsEnum {
   POST = 'Posts',
   DETAILS = 'Details',
   TRADE = 'Trade',
 }
 
-export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
+export const ProfilePage: FC<{
+  mintId: string;
+  tab: string | null;
+}> = ({ mintId, tab }) => {
   const { data: mintTokenData } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
@@ -78,12 +81,18 @@ export const DashBoard: FC<DashBoardProps> = ({ mintId }) => {
     mint: mintQuery,
   });
 
-  const [selectedTab, setSelectedTab] = useState(TabsEnum.POST);
+  const [selectedTab, setSelectedTab] = useState(
+    tab
+      ? Object.entries(TabsEnum).find(
+          (x) => x[0].toLowerCase() == tab.toLowerCase()
+        )?.[1] || TabsEnum.POST
+      : TabsEnum.POST
+  );
 
   return (
     <div className="flex flex-col h-full w-full min-h-[1000px] items-center">
       <div className="flex flex-col gap-8 items-start w-full h-full max-w-7xl py-8">
-        <Profile metaData={metaDataQuery} authorityData={mintTokenData} />
+        <Profile metadata={metaDataQuery} authorityData={mintTokenData} />
         <div className="flex flex-col flex-1 w-full h-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
           <div className="border-base-200 rounded border-x border-b w-full h-full md:p-4">
@@ -157,7 +166,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
   return (
     <>
       <MainPanel
-        transferFeeConfig={transferFeeConfig}
+        metadata={metadata}
         authorityData={authorityData}
         mintQuery={mintQuery}
       />
@@ -233,78 +242,102 @@ const Activities: FC<ActivitiesProps> = ({
   return (
     <div className="p-4 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Activities</span>
-      <div className="rounded bg-base-200 col-span-2 p-4">
-        <span className="card-title text-base">Top 20 Holders List</span>
-        {largestTokenAccount && mintQuery && (
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Wallet</th>
-                  <th>Quantity</th>
-                  <th>Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {largestTokenAccount.value.map((x, index) => (
-                  <tr key={x.address.toBase58()}>
-                    <th>{index + 1}</th>
-                    <td className="max-w-xs truncate hover:text-info">
-                      <Link
-                        rel="noopener noreferrer"
-                        target="_blank"
-                        href={`https://solscan.io/address/${x.address.toBase58()}`}
-                      >
-                        {x.address.toBase58()}
-                      </Link>
-                    </td>
-                    <td className="">{formatLargeNumber(x.uiAmount!)}</td>
-                    <td className="">
-                      {`${(Number(mintQuery.supply) != 0
-                        ? (x.uiAmount! / Number(mintQuery.supply)) * 100
-                        : 0
-                      ).toFixed(2)}%`}
-                    </td>
+      <div className="grid grid-cols-4 gap-2">
+        <div className="rounded bg-base-200 col-span-4 md:col-span-2 p-4">
+          <span className="card-title text-base">Top 20 Holders List</span>
+          {largestTokenAccount && mintQuery && (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Wallet</th>
+                    <th>Quantity</th>
+                    <th>Percentage</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {largestTokenAccount.value.map((x, index) => (
+                    <tr key={x.address.toBase58()}>
+                      <th>{index + 1}</th>
+                      <td className="max-w-xs truncate hover:text-info">
+                        <Link
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          href={`https://solscan.io/address/${x.address.toBase58()}`}
+                        >
+                          {x.address.toBase58()}
+                        </Link>
+                      </td>
+                      <td className="">{formatLargeNumber(x.uiAmount!)}</td>
+                      <td className="">
+                        {`${(Number(mintQuery.supply) != 0
+                          ? (x.uiAmount! / Number(mintQuery.supply)) * 100
+                          : 0
+                        ).toFixed(2)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div className="card bg-base-200 col-span-4 md:col-span-2 p-4 rounded gap-4">
+          <div className="card-title text-base">Holder Metrics</div>
+        </div>
       </div>
     </div>
   );
 };
 
 interface ProfileProps {
-  metaData: DAS.GetAssetResponse | null | undefined;
+  metadata: DAS.GetAssetResponse | null | undefined;
   authorityData: AuthorityData | null | undefined;
 }
 
-const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
+const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: tokenDetails } = useGetTokenDetails({
-    mint: metaData ? new PublicKey(metaData.id) : null,
+    mint: metadata ? new PublicKey(metadata.id) : null,
   });
   const swapToken = useSwapMint({
-    mint: metaData ? new PublicKey(metaData.id) : null,
+    mint: metadata ? new PublicKey(metadata.id) : null,
   });
   const { data: swapDetails } = useSwapDetails({
-    mint: metaData ? new PublicKey(metaData.id) : null,
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+
+  const { data: swapPrice } = useFetchSwapPrice({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+    swapDetails: swapDetails,
+  });
+
+  const { data: solDetails } = useGetTokenDetails({ mint: NATIVE_MINT });
+
+  const { data: tokenInfo } = useGetTokenAccountInfo({
+    address:
+      metadata && publicKey
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(metadata!.id),
+            publicKey,
+            false,
+            new PublicKey(metadata.token_info!.token_program!)
+          )
+        : null,
   });
   return (
     <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
       <div className="w-32 h-32 lg:w-40 lg:h-40">
-        {metaData && metaData.additionalInfoData && (
+        {metadata && metadata.additionalInfoData && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metaData.additionalInfoData.imageUrl}
+              src={metadata.additionalInfoData.imageUrl}
               alt={''}
             />
           </div>
@@ -314,31 +347,24 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
         <div className="flex flex-col">
           <div className="flex gap-2 items-center">
             <span className="text-2xl lg:text-3xl font-bold">
-              {metaData?.content?.metadata.name}
+              {metadata?.content?.metadata.name}
             </span>
           </div>
-          <span className="">{metaData?.content?.metadata.symbol}</span>
+          <span className="">{metadata?.content?.metadata.symbol}</span>
         </div>
 
-        <div
-          data-tip={`${
-            swapDetails
-              ? `Purchase 0.001 SOL worth of ${metaData?.content?.metadata.name}`
-              : 'Feature will be unlocked once a liquidity pool is initialized.'
-          }`}
-          className=" tooltip tooltip-secondary flex items-center gap-2"
-        >
+        <div className="flex items-center gap-2">
           <button
-            disabled={!swapDetails}
+            disabled={!swapDetails || (!!tokenInfo && tokenInfo.amount > 0)}
             onClick={() => {
               if (swapDetails) {
-                metaData &&
+                metadata &&
                   swapToken.mutateAsync({
-                    type: SwapType.BasedInput,
-                    amount_in: 0.001 * LAMPORTS_PER_SOL, // 0.001 SOL to subscribe ~$0.1
-                    min_amount_out: 0,
+                    type: SwapType.BasedOutput,
+                    max_amount_in: 0.01 * LAMPORTS_PER_SOL, // 0.01 SOL to subscribe ~$1
+                    amount_out: 1,
                     inputToken: NATIVE_MINT,
-                    outputToken: new PublicKey(metaData.id),
+                    outputToken: new PublicKey(metadata.id),
                     inputTokenProgram: TOKEN_PROGRAM_ID,
                     outputTokenProgram: TOKEN_2022_PROGRAM_ID,
                   });
@@ -349,14 +375,21 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
             {swapToken.isPending ? (
               <div className="loading loading-spinner" />
             ) : (
-              <span>Subscribe</span>
+              <div
+                data-tip={
+                  'Feature will be unlocked once a liquidity pool is initialized.'
+                }
+                className={`${!swapDetails ? 'tooltip tooltip-secondary' : ''}`}
+              >
+                {tokenInfo && tokenInfo.amount > 0 ? 'Subscribed' : 'Subscribe'}
+              </div>
             )}
           </button>
           {authorityData &&
             publicKey &&
             authorityData.mutable == 1 &&
             (publicKey.toBase58() == authorityData.admin.toBase58() ||
-              metaData?.authorities?.find(
+              metadata?.authorities?.find(
                 (x) =>
                   x.scopes.includes(Scope.METADATA) ||
                   x.scopes.includes(Scope.FULL)
@@ -364,7 +397,7 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
               <button
                 className="btn btn-outline btn-sm items-center"
                 onClick={() =>
-                  metaData && router.push(`/mint/edit?mintId=${metaData.id}`)
+                  metadata && router.push(`/mint/edit?mintId=${metadata.id}`)
                 }
               >
                 <IconEdit />
@@ -380,20 +413,26 @@ const Profile: FC<ProfileProps> = ({ metaData, authorityData }) => {
                 .length || 0
             ) + ' Followers'} */}
           </span>
-          {tokenDetails?.token_info?.price_info?.price_per_token && (
-            <>
-              ||
-              <span>{`${
-                tokenDetails?.token_info?.price_info?.price_per_token
-                  ? '$' + tokenDetails?.token_info?.price_info?.price_per_token
-                  : ''
-              }`}</span>
-            </>
-          )}
+          {tokenDetails?.token_info?.price_info?.price_per_token ||
+            (swapPrice && (
+              <>
+                ||
+                <span>{`$${
+                  tokenDetails?.token_info?.price_info?.price_per_token
+                    ? tokenDetails?.token_info?.price_info?.price_per_token
+                    : (
+                        (Number(swapPrice.price) *
+                          (solDetails?.token_info?.price_info
+                            ?.price_per_token || 1)) /
+                        LAMPORTS_PER_SOL
+                      ).toPrecision(3)
+                }`}</span>
+              </>
+            ))}
         </div>
 
         <span className="text-sm truncate font-normal">
-          {metaData?.additionalInfoData?.description}
+          {metadata?.additionalInfoData?.description}
         </span>
       </div>
     </div>
@@ -413,7 +452,6 @@ const Details: FC<DetailsProps> = ({
 }) => {
   const { connection } = useConnection();
   const [currentEpoch, setCurrentEpoch] = useState<number>();
-  const [distributorLamports, setDistributorLamports] = useState<number>();
 
   useEffect(() => {
     if (!currentEpoch && connection) {
@@ -421,19 +459,11 @@ const Details: FC<DetailsProps> = ({
     }
   }, [connection, currentEpoch]);
 
-  useEffect(() => {
-    if (authorityData && connection) {
-      connection
-        .getAccountInfo(authorityData?.distributor)
-        .then((x) => setDistributorLamports(x?.lamports));
-    }
-  }, [connection, authorityData]);
-
   return (
     <div className="bg-base-100 px-4 gap-4 w-full">
       <div className="grid grid-cols-4 gap-2 ">
-        <div className="card rounded bg-base-200 col-span-4">
-          <div className="stat gap-2">
+        <div className="card rounded bg-base-200 col-span-4 md:col-span-2">
+          <div className="stat gap-2 w-fit">
             <div className="stat-title text-sm md:text-base">Mint</div>
             <Link
               rel="noopener noreferrer"
@@ -470,7 +500,7 @@ const Details: FC<DetailsProps> = ({
             </Link>
           </div>
         </div>
-        <div className="card bg-base-200 rounded col-span-4 md:col-span-2 ">
+        <div className="flex bg-base-200 items-center rounded col-span-4 md:col-span-2 ">
           <div className="stat gap-1">
             <div className="stat-title text-sm md:text-base truncate">
               Transfer Fee
@@ -538,54 +568,63 @@ const Details: FC<DetailsProps> = ({
             )}
           </div>
         </div>
-        <div className="card bg-base-200 col-span-4 md:col-span-2 rounded">
-          <div className="stat gap-2">
-            <div
-              data-tip="A wallet assigned to help your manage tx fees."
-              className="tooltip lg:w-fit stat-title text-sm md:text-base flex items-center gap-1"
-            >
-              Distributor
-            </div>
-            {authorityData ? (
-              <Link
-                rel="noopener noreferrer"
-                target="_blank"
-                className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
-                href={`https://solscan.io/address/${authorityData?.distributor.toBase58()}`}
-              >
-                {authorityData?.distributor.toBase58()}
-              </Link>
-            ) : (
-              <div>None</div>
-            )}
-            <div className="stat-desc">{`Amount: ${
-              (distributorLamports || 0) / LAMPORTS_PER_SOL
-            } Sol`}</div>
-          </div>
-        </div>
       </div>
     </div>
   );
 };
 
 interface MainPanelProps {
-  transferFeeConfig: TransferFeeConfig | null | undefined;
+  metadata: DAS.GetAssetResponse | null | undefined;
   authorityData: AuthorityData | null | undefined;
   mintQuery: Mint | null | undefined;
 }
 
-export const MainPanel: FC<MainPanelProps> = ({ authorityData, mintQuery }) => {
+export const MainPanel: FC<MainPanelProps> = ({
+  metadata,
+  authorityData,
+  mintQuery,
+}) => {
+  const { connection } = useConnection();
+  const { data } = useSwapDetails({ mint: authorityData?.mint || null });
+
+  const { data: walletInfo } = useGetAddressInfo({
+    address: authorityData?.distributor || null,
+  });
+  const { data: tokenInfo } = useGetTokenAccountInfo({
+    address:
+      metadata && authorityData
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(metadata!.id),
+            authorityData.distributor,
+            false,
+            new PublicKey(metadata.token_info!.token_program!)
+          )
+        : null,
+  });
   return (
-    <div className="p-4 bg-base-100 gap-4 card rounded w-full">
+    <div className="px-4 pt-4 pb-2 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Overview</span>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-4">
-          <div className="card rounded gap-4 bg-base-200 p-4">
-            <div className="stat gap-2 p-0">
-              <div className="stat-title text-xs">Total Fees Collected</div>
-              <span className="stat-value font-normal truncate">
-                {`${'0'}`}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2">
+          <div className="card rounded bg-base-200 p-4">
+            <div className="flex flex-col w-fit gap-2">
+              <div className="stat-title text-xs">Claimable Trading Fees</div>
+              <span className="stat-value font-normal text-lg truncate">
+                {`${Number(data?.creatorFeesTokenMint || 0)} ${
+                  metadata?.content?.metadata.symbol
+                } and ${
+                  Number(data?.creatorFeesTokenWsol || 0) / LAMPORTS_PER_SOL
+                } Sol`}
               </span>
+              <div className="flex gap-2 items-center text-sm">
+                <button className="btn btn-outline btn-sm">Claim</button>
+                <div
+                  data-tip="Trading fees are auto claimed whenever fees is higher than 0.01 Sol"
+                  className="tooltip tooltip-primary flex gap-1 items-end"
+                >
+                  Auto Claim <IconDiscountCheck />
+                </div>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -623,15 +662,26 @@ export const MainPanel: FC<MainPanelProps> = ({ authorityData, mintQuery }) => {
             </div>
           </div>
         </div>
-        <div className="card bg-base-200 p-4 rounded gap-4">
-          <div className="card-title">
-            Fee Distribution
-            <div
-              className="tooltip"
-              data-tip="Fees are automatically distributed once every 15min"
-            >
-              <IconExclamationCircle />
+        <div className="card bg-base-200 rounded">
+          <div className="stat gap-2 w-fit">
+            <div className="lg:w-fit stat-title text-sm md:text-base flex items-center gap-1">
+              Distributor
             </div>
+            {authorityData ? (
+              <Link
+                rel="noopener noreferrer"
+                target="_blank"
+                className="stat-value text-xs md:text-sm truncate font-normal hover:text-info"
+                href={`https://solscan.io/address/${authorityData?.distributor.toBase58()}`}
+              >
+                {authorityData?.distributor.toBase58()}
+              </Link>
+            ) : (
+              <div>None</div>
+            )}
+            <div className="stat-desc">{`Sol: ${
+              (walletInfo?.lamports || 0) / LAMPORTS_PER_SOL
+            }, Mint: ${tokenInfo?.amount || 0}`}</div>
           </div>
         </div>
       </div>

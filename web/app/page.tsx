@@ -12,7 +12,7 @@ export default function Page() {
 
   return publicKey ? (
     <div className="flex w-full items-center justify-center">
-      <div className="max-w-xl w-full h-full sm:p-4">
+      <div className="max-w-lg w-full h-full sm:p-4">
         <ContentGridFeature />
       </div>
     </div>

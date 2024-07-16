@@ -21,7 +21,7 @@ import { CreateAccountBtn } from '../create/create-ui';
 import {
   useGetToken,
   useGetTokenDetails,
-} from '../dashboard/dashboard-data-access';
+} from '../profile/profile-data-access';
 import {
   BlinkContent,
   PostContent,
@@ -86,34 +86,36 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   return (
     <div className="flex flex-col gap-8 my-4 items-center w-full p-4">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
-        {id ? 'Edit a Post' : 'Create a New Post'}
+        {id ? 'Edit Post' : 'Create a New Post'}
       </span>
       <div className="flex flex-col gap-4 items-center max-w-md w-full">
-        <div className="flex gap-4 w-full items-center">
-          <span className="whitespace-nowrap w-1/3 font-semibold">
-            Content Type:
-          </span>
-          <div className="dropdown w-2/3">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-sm w-full btn-outline flex justify-between"
-            >
-              {contentType}
-              <IconChevronDown />
+        {!(mintId && id) && (
+          <div className="flex gap-4 w-full items-center">
+            <span className="whitespace-nowrap w-1/3 font-semibold">
+              Content Type:
+            </span>
+            <div className="dropdown w-2/3">
+              <div
+                tabIndex={0}
+                role="button"
+                className="btn btn-sm w-full btn-outline flex justify-between"
+              >
+                {contentType}
+                <IconChevronDown />
+              </div>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu bg-base-100 rounded-box z-[1] w-full p-2 shadow"
+              >
+                {Object.entries(ContentType).map((x) => (
+                  <li onClick={() => setContentType(x[1])} key={x[0]}>
+                    <a>{x[0]}</a>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-base-100 rounded-box z-[1] w-full p-2 shadow"
-            >
-              {Object.entries(ContentType).map((x) => (
-                <li onClick={() => setContentType(x[1])} key={x[0]}>
-                  <a>{x[0]}</a>
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
+        )}
         {contentType == ContentType.BLINKS && (
           <UploadBlinks
             id={id}

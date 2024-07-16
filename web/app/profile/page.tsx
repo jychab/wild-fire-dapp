@@ -1,10 +1,11 @@
 'use client';
-import { DashboardFeature } from '@/components/dashboard/dashboard-feature';
+import { ProfileFeature } from '@/components/profile/profile-feature';
 import { useSearchParams } from 'next/navigation';
 
 export default function page() {
   const searchParams = useSearchParams();
   const mintId = searchParams.get('mintId');
-  return <DashboardFeature mintId={mintId} />;
+  const tab = searchParams.get('tab');
+  return <ProfileFeature mintId={mintId} tab={tab} />;
   // return <div></div>;
 }

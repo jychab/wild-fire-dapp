@@ -1,64 +1,62 @@
 'use client';
 
-import { useWallet } from '@solana/wallet-adapter-react';
+import usePaginatedData from '@/utils/hooks/pagination';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { FC } from 'react';
+import { FC, useCallback, useEffect } from 'react';
 import { HASHFEED_MINT } from '../../utils/consts';
-import { useGetTokenDetails } from '../dashboard/dashboard-data-access';
-import {
-  useGetAllFungibleTokensFromOwner,
-  useGetMultipleMintUriMetadata,
-} from './content-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
+import { fetchContentPage } from './content-data-access';
 import { ContentGrid, ContentWithMetada, DisplayContent } from './content-ui';
+
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
+  const { connection } = useConnection();
   const { data: whitelistedMint } = useGetTokenDetails({ mint: HASHFEED_MINT });
-  const { data: allTokenAccounts } = useGetAllFungibleTokensFromOwner({
-    address: publicKey,
-  });
-  const tokenAccounts = whitelistedMint
-    ? allTokenAccounts?.items.find((x) => x.id == whitelistedMint.id) ==
-      undefined
-      ? allTokenAccounts?.items.concat(whitelistedMint)
-      : allTokenAccounts.items
-    : allTokenAccounts?.items;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    usePaginatedData(
+      ['content', publicKey],
+      (pageParam) =>
+        fetchContentPage(
+          pageParam,
+          50,
+          publicKey!,
+          whitelistedMint,
+          connection
+        ),
+      50,
+      !!publicKey
+    );
+  const handleScroll = useCallback(() => {
+    if (
+      window.innerHeight + document.documentElement.scrollTop ===
+      document.documentElement.offsetHeight
+    ) {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allMintMetadataQuery = useGetMultipleMintUriMetadata({
-    mints: tokenAccounts
-      ? tokenAccounts.map((x) => {
-          return { mint: new PublicKey(x.id), asset: x };
-        })
-      : [],
-  });
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
 
-  const content = allMintMetadataQuery
-    .filter((x) => x.data && x.data.content != undefined)
-    .map((x) => {
-      return x.data!.content?.map((y) => {
-        return {
-          ...y,
-          name: x.data!.name,
-          symbol: x.data!.symbol,
-          image: x.data!.image,
-          mint: x.data!.mint,
-        };
-      });
-    });
-
-  const flattenedContent = content.reduce(
-    (acc, val) => acc!.concat(val!),
-    []
-  ) as ContentWithMetada[] | undefined;
-
-  return <ContentGrid content={flattenedContent} />;
+  return <ContentGrid content={data?.pages.flat() || []} />;
 };
 
-interface ContentFeatureProps {
+interface ContentCardFeatureProps {
   mintId: string;
   id: string;
 }
 
-export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
+export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
+  mintId,
+  id,
+}) => {
   const { data: metadataQuery } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
@@ -79,7 +77,7 @@ export const ContentFeature: FC<ContentFeatureProps> = ({ mintId, id }) => {
       : undefined;
   return content ? (
     <div className="flex flex-col py-[32px] w-full items-center">
-      <div className="max-w-xl w-full">
+      <div className="max-w-lg w-full">
         <DisplayContent content={content as ContentWithMetada} />
       </div>
     </div>

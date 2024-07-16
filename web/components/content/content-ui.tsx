@@ -4,6 +4,7 @@ import {
   IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
+  IconHeartFilled,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -82,10 +83,10 @@ export const PostCard = ({
   });
   const router = useRouter();
   return (
-    <div className="flex flex-col sm:border gap-2 bg-base-100 rounded w-full">
+    <div className="flex flex-col sm:border bg-base-100 rounded w-full">
       {showMintDetails && <UserProfile content={content} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-        <div className="carousel w-full aspect-square h-auto bg-neutral">
+        <div className="carousel w-full aspect-square h-auto bg-base-content">
           {content.carousel.map((file) => (
             <div
               id={file.uri}
@@ -122,14 +123,18 @@ export const PostCard = ({
           className={`px-4 pb-4 pt-2 flex flex-col flex-1 w-full justify-between`}
         >
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              <div className="flex gap-2 text-sm items-end">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-1 text-sm items-center">
                 <Link
-                  href={`/dashboard?mintId=${content.mint.toBase58()}`}
-                  className="link"
+                  href={`/profile?mintId=${content.mint.toBase58()}&tab=trade`}
+                  className="link link-hover font-semibold"
                 >
                   {content.name}
                 </Link>
+                <button className="">
+                  <IconHeartFilled size={18} className="fill-primary" />
+                </button>
+                <span className="text-xs">Liked By ...</span>
               </div>
               {editable && (
                 <div className="dropdown dropdown-end ">
@@ -142,7 +147,7 @@ export const PostCard = ({
                   </div>
                   <ul
                     tabIndex={0}
-                    className="dropdown-content menu bg-base-300 rounded-box z-[1] p-0 text-sm w-32"
+                    className="dropdown-content menu bg-base-300 rounded z-[1] p-0 text-sm w-32"
                   >
                     <li>
                       <Link
@@ -187,7 +192,7 @@ export const PostCard = ({
             {content.caption != '' &&
               (content.caption.length > 100 ||
                 content.caption.includes('\n')) && (
-                <span
+                <button
                   onClick={() => {
                     if (!multiGrid) {
                       setShowMore(!showMore);
@@ -199,10 +204,10 @@ export const PostCard = ({
                       );
                     }
                   }}
-                  className="text-xs stat-desc link link-hover"
+                  className="text-xs stat-desc link link-hover w-fit"
                 >
                   {showMore ? 'Hide' : 'Show More'}
-                </span>
+                </button>
               )}
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt)}
@@ -223,7 +228,7 @@ export const BlinksCard: FC<{
   try {
     const url = new URL(content.uri as string);
     return (
-      <div className="flex flex-col sm:border gap-2 rounded w-full">
+      <div className="flex flex-col sm:border rounded w-full">
         {showMintDetails && <UserProfile content={content} />}
         <Blinks
           multiGrid={multiGrid}
@@ -280,11 +285,11 @@ export const UserProfile: FC<{
   content: PostContentWithMetadata | BlinkContentWithMetadata;
 }> = ({ content }) => {
   return (
-    <div className="flex gap-2 px-4 pt-2 items-center w-full">
-      <Link
-        className="relative w-8 h-8 rounded-full"
-        href={`/dashboard?mintId=${content.mint.toBase58()}`}
-      >
+    <Link
+      href={`/profile?mintId=${content.mint.toBase58()}`}
+      className="link link-hover flex gap-2 px-4 py-2 items-center w-full"
+    >
+      <div className="relative w-8 h-8 rounded-full">
         <Image
           src={content.image}
           priority={true}
@@ -293,22 +298,14 @@ export const UserProfile: FC<{
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           alt={'mint'}
         />
-      </Link>
+      </div>
       <div className="flex flex-col">
-        <Link
-          className="text-sm link link-hover flex gap-1 items-center"
-          href={`/dashboard?mintId=${content.mint.toBase58()}`}
-        >
+        <div className="text-sm flex gap-1 items-center">
           {content.name}
           <IconDiscountCheckFilled size={18} className="fill-success" />
-        </Link>
-        <Link
-          className="text-xs link link-hover"
-          href={`/dashboard?mintId=${content.mint.toBase58()}`}
-        >
-          {content.symbol}
-        </Link>
+        </div>
+        <div className="text-xs">{content.symbol}</div>
       </div>
-    </div>
+    </Link>
   );
 };

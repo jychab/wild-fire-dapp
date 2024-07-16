@@ -129,7 +129,7 @@ export const Blinks: FC<BlinksProps> = ({
       multiGrid={multiGrid}
     />
   ) : (
-    <div className="w-full p-4 flex items-center justify-center h-64">
+    <div className="w-full p-4 flex items-center justify-center aspect-square w-full">
       <div className="loading loading-dots"></div>
     </div>
   );
@@ -506,11 +506,11 @@ export const ActionLayout = ({
       <div className={`px-4 pb-4 pt-2 flex flex-col w-full justify-between`}>
         <div className="flex flex-col gap-2">
           <div className="flex justify-between">
-            <div className="flex gap-2 text-sm items-end">
+            <div className="flex gap-1 text-sm items-center">
               {websiteUrl && (
                 <Link
                   href={websiteUrl}
-                  className="link font-bold flex gap-2 items-center truncate"
+                  className="link link-hover font-bold flex gap-2 items-center truncate"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -530,7 +530,7 @@ export const ActionLayout = ({
                 className="flex items-center"
               >
                 {type === 'malicious' && <IconAlertTriangleFilled />}
-                {type === 'trusted' && <IconShieldCheckFilled />}
+                {type === 'trusted' && <IconShieldCheckFilled size={18} />}
                 {type === 'unknown' && <IconHelpOctagonFilled />}
               </Link>
             </div>
@@ -545,7 +545,7 @@ export const ActionLayout = ({
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content menu bg-base-300 rounded-box z-[1] p-0 text-sm w-32"
+                  className="dropdown-content menu bg-base-300 rounded z-[1] p-0 text-sm w-32"
                 >
                   <li>
                     <button
@@ -589,7 +589,7 @@ export const ActionLayout = ({
           )}
         </div>
         <div className="flex flex-col gap-2 pt-2">
-          <span
+          <button
             onClick={() => {
               if (!multiGrid) {
                 setShowMore(!showMore);
@@ -601,10 +601,10 @@ export const ActionLayout = ({
                 );
               }
             }}
-            className="text-xs stat-desc link link-hover"
+            className="text-xs stat-desc link link-hover w-fit"
           >
             {showMore ? 'Hide' : 'Show More'}
-          </span>
+          </button>
           {additionalMetadata && (
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(additionalMetadata.updatedAt)}

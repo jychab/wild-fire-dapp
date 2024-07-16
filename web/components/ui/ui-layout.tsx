@@ -25,10 +25,7 @@ import { UploadBtn } from '../upload/upload-ui';
 import { SocialComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const links: { label: string; path: string }[] = [
-    // { label: 'Dashboard', path: '/dashboard' },
-    // { label: 'Create', path: '/create' },
-  ];
+  const links: { label: string; path: string }[] = [];
   const pathname = usePathname();
   const { publicKey, signMessage, disconnect } = useWallet();
   const isLoggingInRef = useRef(false);
@@ -129,15 +126,16 @@ export function UiLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex flex-1 mx-4 w-full mx-auto">
-            <Suspense
-              fallback={
-                <div className="text-center my-32">
+            <div className="w-full flex flex-col items-center">
+              <Suspense
+                fallback={
                   <span className="loading loading-spinner loading-lg"></span>
-                </div>
-              }
-            >
-              {children}
-            </Suspense>
+                }
+              >
+                {children}
+              </Suspense>
+            </div>
+
             <Toaster position="bottom-right" />
           </div>
         </div>

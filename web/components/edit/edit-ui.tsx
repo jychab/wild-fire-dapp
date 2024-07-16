@@ -9,7 +9,7 @@ import {
   useGetMintDetails,
   useGetMintTransferFeeConfig,
   useGetTokenDetails,
-} from '../dashboard/dashboard-data-access';
+} from '../profile/profile-data-access';
 import {
   useCloseAccount,
   useEditData,

@@ -2,7 +2,7 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   fetchSwapPoolDetails,
   fetchSwapPoolOracle,
-  fetchSwapVaultAmount,
+  fetchSwapPrice,
   swapBaseInput,
   swapBaseOutput,
 } from '@/utils/helper/transcationInstructions';
@@ -66,18 +66,30 @@ export function useSwapDetails({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useFetchSwapVaultAmount({ mint }: { mint: PublicKey | null }) {
+export function useFetchSwapPrice({
+  mint,
+  swapDetails,
+}: {
+  mint: PublicKey | null;
+  swapDetails:
+    | {
+        protocolFeesTokenMint: number;
+        protocolFeesTokenWsol: number;
+        creatorFeesTokenMint: number;
+        creatorFeesTokenWsol: number;
+        offset: number;
+      }
+    | undefined
+    | null;
+}) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'get-swap-vault-amount',
-      { endpoint: connection.rpcEndpoint, mint },
-    ],
+    queryKey: ['get-swap-price', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
-      if (!mint) return null;
-      return fetchSwapVaultAmount(connection, mint);
+      if (!mint || !swapDetails) return null;
+      return fetchSwapPrice(connection, mint, swapDetails);
     },
-    enabled: !!mint,
+    enabled: !!mint && !!swapDetails,
   });
 }
 

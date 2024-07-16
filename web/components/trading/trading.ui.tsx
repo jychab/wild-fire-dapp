@@ -1,4 +1,3 @@
-import { OFF_SET } from '@/utils/consts';
 import { DAS } from '@/utils/types/das';
 import {
   calculateFee,
@@ -19,7 +18,7 @@ import Image from 'next/image';
 import { FC, useState } from 'react';
 import {
   SwapType,
-  useFetchSwapVaultAmount,
+  useFetchSwapPrice,
   useGetAddressInfo,
   useGetTokenAccountInfo,
   useSwapDetails,
@@ -42,16 +41,9 @@ export const TradingPanel: FC<{
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const accumulatedMintFee =
-    BigInt(swapDetails?.creatorFeesTokenMint || 0) +
-    BigInt(swapDetails?.protocolFeesTokenMint || 0);
-
-  const accumulatedWsolFee =
-    BigInt(swapDetails?.creatorFeesTokenWsol || 0) +
-    BigInt(swapDetails?.protocolFeesTokenWsol || 0);
-
-  const { data: swapPrice } = useFetchSwapVaultAmount({
+  const { data: swapPrice } = useFetchSwapPrice({
     mint: metadata ? new PublicKey(metadata.id) : null,
+    swapDetails: swapDetails,
   });
 
   const swapMutation = useSwapMint({
@@ -91,10 +83,6 @@ export const TradingPanel: FC<{
     const currentTransferFeeConfig =
       metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
     if (swapPrice && currentTransferFeeConfig) {
-      const mintAmount = swapPrice.mintAmount - accumulatedMintFee;
-      const solAmount =
-        swapPrice.solAmount + BigInt(OFF_SET) - accumulatedWsolFee;
-
       const transferFee: TransferFee = {
         epoch: BigInt(currentTransferFeeConfig.epoch),
         maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
@@ -109,8 +97,10 @@ export const TradingPanel: FC<{
           calculateFee(transferFee, BigInt(amountAfterTradingFees));
 
       const outputAmount = buy
-        ? (amountAfterFees * mintAmount) / (solAmount + amountAfterFees)
-        : (amountAfterFees * solAmount) / (mintAmount + amountAfterFees);
+        ? (amountAfterFees * swapPrice.mintAmount) /
+          (swapPrice.solAmount + amountAfterFees)
+        : (amountAfterFees * swapPrice.solAmount) /
+          (swapPrice.mintAmount + amountAfterFees);
 
       const outputAmountAfterFee = buy
         ? outputAmount - calculateFee(transferFee, outputAmount)
@@ -127,9 +117,6 @@ export const TradingPanel: FC<{
     const currentTransferFeeConfig =
       metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
     if (swapPrice && currentTransferFeeConfig) {
-      const mintAmount = swapPrice.mintAmount - accumulatedMintFee;
-      const solAmount =
-        swapPrice.solAmount + BigInt(OFF_SET) - accumulatedWsolFee;
       const transferFee: TransferFee = {
         epoch: BigInt(currentTransferFeeConfig.epoch),
         maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
@@ -144,8 +131,14 @@ export const TradingPanel: FC<{
         : amountAfterTradingFees;
 
       const outputAmount = buy
-        ? ceilN(amountAfterFees * solAmount, mintAmount - amountAfterFees)
-        : ceilN(amountAfterFees * mintAmount, solAmount - amountAfterFees);
+        ? ceilN(
+            amountAfterFees * swapPrice.solAmount,
+            swapPrice.mintAmount - amountAfterFees
+          )
+        : ceilN(
+            amountAfterFees * swapPrice.mintAmount,
+            swapPrice.solAmount - amountAfterFees
+          );
       const outputAmountAfterFee = buy
         ? outputAmount
         : outputAmount - calculateFee(transferFee, BigInt(outputAmount));
@@ -156,7 +149,7 @@ export const TradingPanel: FC<{
 
   const SolButton = (
     <>
-      <button className="btn btn-secondary rounded-lg gap-1 px-2 flex items-center">
+      <button className="btn rounded-lg gap-1 px-2 flex items-center">
         <IconCurrencySolana />
         SOL
       </button>
@@ -177,7 +170,7 @@ export const TradingPanel: FC<{
 
   const MintButton = (
     <>
-      <button className="btn btn-secondary rounded-lg gap-1 px-2 items-center w-fit">
+      <button className="btn rounded-lg gap-1 px-2 items-center w-fit">
         {metadata?.additionalInfoData?.imageUrl && (
           <div className="w-8 h-8 relative">
             <Image

@@ -22,7 +22,7 @@ import {
   program,
   updateMetadata,
 } from '../../utils/helper/transcationInstructions';
-import { AuthorityData } from '../dashboard/dashboard-ui';
+import { AuthorityData } from '../profile/profile-ui';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -235,7 +235,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
-        router.push(`/dashboard?mintId=${mint?.toBase58()}`);
+        router.push(`/profile?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
             queryKey: [

@@ -157,7 +157,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
-        router.push(`/dashboard?mintId=${mint?.toBase58()}`);
+        router.push(`/profile?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
             queryKey: [

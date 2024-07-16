@@ -13,7 +13,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import { program } from '../../utils/helper/transcationInstructions';
 import { UploadContent } from '../upload/upload.data-access';
-import { AuthorityData } from './dashboard-ui';
+import { AuthorityData } from './profile-ui';
 
 export function useGetMintTransferFeeConfig({
   mint,

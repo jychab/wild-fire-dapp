@@ -328,6 +328,7 @@ export async function swapBaseOutput(
       await program(connection)
         .methods.createOracle()
         .accounts({
+          payer: payer,
           poolState: poolAddress,
         })
         .instruction()
@@ -385,7 +386,10 @@ export async function swapBaseOutput(
 
   ixs.push(
     await program(connection)
-      .methods.swapBaseInput(new BN(max_amount_in), new BN(amount_out_less_fee))
+      .methods.swapBaseOutput(
+        new BN(max_amount_in),
+        new BN(amount_out_less_fee)
+      )
       .accounts({
         payer: payer,
         ammConfig: CONFIG,
@@ -436,9 +440,16 @@ export async function fetchSwapPoolDetails(
   return await program(connection).account.poolState.fetch(poolAddress);
 }
 
-export async function fetchSwapVaultAmount(
+export async function fetchSwapPrice(
   connection: Connection,
-  mint: PublicKey
+  mint: PublicKey,
+  swapDetails: {
+    protocolFeesTokenMint: number;
+    protocolFeesTokenWsol: number;
+    creatorFeesTokenMint: number;
+    creatorFeesTokenWsol: number;
+    offset: number;
+  }
 ) {
   const [poolAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from('pool'), mint.toBuffer()],
@@ -460,15 +471,21 @@ export async function fetchSwapVaultAmount(
   let mintAmount = (
     await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID)
   ).amount;
+  mintAmount -=
+    BigInt(swapDetails.creatorFeesTokenMint) -
+    BigInt(swapDetails.protocolFeesTokenMint);
 
-  let solAmount = BigInt(0);
+  let solAmount = BigInt(swapDetails.offset);
   try {
-    solAmount = (
+    solAmount += (
       await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID)
     ).amount;
   } catch (e) {}
+  solAmount -=
+    BigInt(swapDetails.creatorFeesTokenWsol) -
+    BigInt(swapDetails.protocolFeesTokenWsol);
 
-  return { mintAmount, solAmount };
+  return { mintAmount, solAmount, price: solAmount / mintAmount };
 }
 
 export async function fetchSwapPoolOracle(

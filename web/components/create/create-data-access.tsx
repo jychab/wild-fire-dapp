@@ -149,7 +149,7 @@ export function useCreateMint({ address }: { address: string | null }) {
     onSuccess: (result) => {
       if (result) {
         transactionToast(result.signature);
-        router.push(`/dashboard?mintId=${result.mint.toBase58()}`);
+        router.push(`/profile?mintId=${result.mint.toBase58()}`);
       }
     },
     onError: (error) => {

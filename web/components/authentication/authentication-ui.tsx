@@ -14,7 +14,7 @@ import { DAS } from '../../utils/types/das';
 import {
   useGetToken,
   useGetTokenDetails,
-} from '../dashboard/dashboard-data-access';
+} from '../profile/profile-data-access';
 import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
@@ -88,7 +88,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         </li>
         {metaDataQuery && (
           <li className="w-full">
-            <Link href={`/dashboard?mintId=${metaDataQuery.id}`}>
+            <Link href={`/profile?mintId=${metaDataQuery.id}`}>
               <IconUser />
               Profile
             </Link>
