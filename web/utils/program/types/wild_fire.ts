@@ -1240,6 +1240,38 @@ export type WildFire = {
         {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -1328,6 +1360,38 @@ export type WildFire = {
         {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -2065,18 +2129,17 @@ export type WildFire = {
         kind: 'struct';
         fields: [
           {
-            name: 'poolId';
+            name: 'timestamp';
+            type: 'u64';
+          },
+          {
+            name: 'mint';
             type: 'pubkey';
           },
           {
-            name: 'inputVaultBefore';
+            name: 'price';
             docs: ['pool vault sub trade fees'];
-            type: 'u64';
-          },
-          {
-            name: 'outputVaultBefore';
-            docs: ['pool vault sub trade fees'];
-            type: 'u64';
+            type: 'u128';
           },
           {
             name: 'inputAmount';
@@ -2089,16 +2152,12 @@ export type WildFire = {
             type: 'u64';
           },
           {
-            name: 'inputTransferFee';
-            type: 'u64';
-          },
-          {
-            name: 'outputTransferFee';
-            type: 'u64';
-          },
-          {
-            name: 'baseInput';
+            name: 'buy';
             type: 'bool';
+          },
+          {
+            name: 'user';
+            type: 'pubkey';
           }
         ];
       };

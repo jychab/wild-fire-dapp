@@ -36,8 +36,9 @@ export interface AdditionalMetadata {
   likesCount?: number;
   likesUser?: string[];
   commentsCount?: number;
-
   updatedAt?: number;
+  price?: number;
+  last24hrPercentChange?: number;
   verified?: boolean;
 }
 
@@ -338,27 +339,29 @@ export const UserProfile: FC<{
   content: PostContentWithMetadata | BlinkContentWithMetadata;
 }> = ({ content }) => {
   return (
-    <Link
-      href={`/profile?mintId=${content.mint}`}
-      className="link link-hover flex gap-2 px-4 py-2 items-center w-full"
-    >
-      <div className="relative w-8 h-8 rounded-full">
-        <Image
-          src={content.image}
-          priority={true}
-          className={`object-cover rounded-full`}
-          fill={true}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          alt={'mint'}
-        />
-      </div>
-      <div className="flex flex-col">
-        <div className="text-sm flex gap-1 items-center">
-          {content.name}
-          <IconDiscountCheckFilled size={18} className="fill-secondary" />
+    <div className="flex w-full items-center px-4 py-2 ">
+      <Link
+        href={`/profile?mintId=${content.mint}`}
+        className="link link-hover flex items-center gap-2 "
+      >
+        <div className="relative w-8 h-8 rounded-full">
+          <Image
+            src={content.image}
+            priority={true}
+            className={`object-cover rounded-full`}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            alt={'mint'}
+          />
         </div>
-        <div className="text-xs">{content.symbol}</div>
-      </div>
-    </Link>
+        <div className="flex flex-col">
+          <div className="text-sm flex gap-1 items-center">
+            {content.name}
+            <IconDiscountCheckFilled size={18} className="fill-secondary" />
+          </div>
+          <div className="text-xs">{content.symbol}</div>
+        </div>
+      </Link>
+    </div>
   );
 };

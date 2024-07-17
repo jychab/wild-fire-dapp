@@ -413,6 +413,7 @@ export async function swapBaseOutput(
         inputTokenMint: inputToken,
         outputTokenMint: outputToken,
         observationState: observationAddress,
+        program: program(connection).programId,
       })
       .instruction()
   );
@@ -627,6 +628,7 @@ export async function swapBaseInput(
         inputTokenMint: inputToken,
         outputTokenMint: outputToken,
         observationState: observationAddress,
+        program: program(connection).programId,
       })
       .instruction()
   );
