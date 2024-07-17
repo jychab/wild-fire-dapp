@@ -4,7 +4,6 @@ import {
   IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
-  IconHeartFilled,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -28,7 +27,7 @@ export interface AdditionalMetadata {
   symbol: string;
   image: string;
   mint: PublicKey;
-  updatedAt: number;
+  updatedAt?: number;
   verified?: boolean;
 }
 
@@ -131,10 +130,10 @@ export const PostCard = ({
                 >
                   {content.name}
                 </Link>
-                <button className="">
+                {/* <button className="">
                   <IconHeartFilled size={18} className="fill-primary" />
                 </button>
-                <span className="text-xs">Liked By ...</span>
+                <span className="text-xs">Liked By ...</span> */}
               </div>
               {editable && (
                 <div className="dropdown dropdown-end ">
@@ -147,11 +146,11 @@ export const PostCard = ({
                   </div>
                   <ul
                     tabIndex={0}
-                    className="dropdown-content menu bg-base-300 rounded z-[1] p-0 text-sm w-32"
+                    className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
                   >
                     <li>
                       <Link
-                        className="btn btn-sm btn-outline border-none gap-2 items-center justify-start"
+                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                         href={`/content/edit?mintId=${content.mint.toBase58()}&id=${
                           content.id
                         }`}
@@ -166,7 +165,7 @@ export const PostCard = ({
                         onClick={() =>
                           removeContentMutation.mutateAsync(content.id)
                         }
-                        className="btn btn-sm btn-outline border-none gap-2 items-center justify-start"
+                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                       >
                         {removeContentMutation.isPending ? (
                           <div className="loading loading-spinner loading-sm" />
@@ -210,7 +209,7 @@ export const PostCard = ({
                 </button>
               )}
             <span className="text-xs stat-desc">
-              {convertUTCTimeToDayMonth(content.updatedAt)}
+              {convertUTCTimeToDayMonth(content.updatedAt || 0)}
             </span>
           </div>
         </div>
@@ -302,7 +301,7 @@ export const UserProfile: FC<{
       <div className="flex flex-col">
         <div className="text-sm flex gap-1 items-center">
           {content.name}
-          <IconDiscountCheckFilled size={18} className="fill-success" />
+          <IconDiscountCheckFilled size={18} className="fill-secondary" />
         </div>
         <div className="text-xs">{content.symbol}</div>
       </div>

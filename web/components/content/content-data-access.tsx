@@ -1,8 +1,7 @@
-import { uploadMetadata } from '@/utils/firebase/functions';
+import { deletePost } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
-import { getTokenMetadata } from '@solana/spl-token';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -74,7 +73,6 @@ export async function getMultipleMintUriMetadata({
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
-  const wallet = useWallet();
   const client = useQueryClient();
 
   return useMutation({
@@ -86,40 +84,9 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
       },
     ],
     mutationFn: async (id: string) => {
-      if (!wallet.publicKey || !mint || !id) return;
-      try {
-        const details = await getTokenMetadata(connection, mint);
-        if (!details) return;
-        const hashFeedContent = details.additionalMetadata.find(
-          (x) => x[0] == 'hashfeed'
-        )?.[1];
-
-        if (hashFeedContent) {
-          const uriMetadata = await (
-            await fetch(
-              proxify(
-                hashFeedContent, // content uri
-                true
-              )
-            )
-          ).json();
-          let currentContent = uriMetadata.content as
-            | UploadContent[]
-            | undefined;
-          if (!currentContent) return;
-          const newContent = currentContent.filter((x) => x.id != id);
-          newContent.sort((a, b) => b.updatedAt - a.updatedAt);
-          const payload = {
-            ...uriMetadata,
-            content: newContent,
-          };
-          await uploadMetadata(JSON.stringify(payload), mint, 'hashfeed');
-        }
-        return 'Success';
-      } catch (error: unknown) {
-        // toast.error(`Transaction failed! ${error}` + signature);
-        return;
-      }
+      if (!mint || !id) return;
+      await deletePost(mint.toBase58(), id);
+      return 'Success';
     },
 
     onSuccess: (signature) => {

@@ -90,9 +90,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
       <div className="drawer drawer-end flex flex-1">
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col w-full items-center">
-          <div className="w-full navbar shadow-lg border-b border-base-300 bg-base-200">
+          <div className="w-full navbar shadow-lg text-base-content bg-base-100 border-b border-base-300">
             <Link
-              className="flex px-4 items-center gap-1 w-[200px] max-w-1/3"
+              className="flex items-center gap-1 w-[200px] max-w-1/3"
               href="/"
             >
               <Image
@@ -102,7 +102,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 height={30}
                 priority={true}
               />
-              <span className="text-2xl font-bold uppercase">HashFeed</span>
+              <span className="text-xl font-bold uppercase">HashFeed</span>
             </Link>
             <div className="hidden md:flex w-full">
               <ul className="menu menu-horizontal gap-2">
@@ -118,7 +118,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 ))}
               </ul>
             </div>
-            <div className="navbar-end flex gap-2 items-center ">
+            <div className="navbar-end w-full flex gap-2 items-center">
               <div className="hidden sm:block">
                 <UploadBtn />
               </div>
@@ -126,7 +126,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex flex-1 mx-4 w-full mx-auto">
-            <div className="w-full flex flex-col items-center">
+            <div className="w-full bg-base-100 text-base-content flex flex-col items-center">
               <Suspense
                 fallback={
                   <span className="loading loading-spinner loading-lg"></span>
@@ -145,7 +145,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
             aria-label="close sidebar"
             className="drawer-overlay"
           />
-          <div className=" p-4 w-44 min-h-full bg-base-200 gap-4 flex flex-col justify-between">
+          <div className=" p-4 w-44 min-h-full bg-base-100 gap-4 flex flex-col justify-between">
             <div>
               <ul className="menu gap-2">
                 {links.map(({ label, path }) => (

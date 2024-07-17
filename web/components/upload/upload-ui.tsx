@@ -210,8 +210,6 @@ export const UploadContentBtn: FC<{
               if (carousel.length > 0) {
                 await uploadMutation.mutateAsync({
                   content: {
-                    createdAt: Math.round(Date.now() / 1000),
-                    updatedAt: Math.round(Date.now() / 1000),
                     id: id ? id : crypto.randomUUID(),
                     type: ContentType.POST,
                     caption: postContent.caption,
@@ -381,11 +379,11 @@ export const UploadPost: FC<{
     <div className="flex flex-col w-full gap-4">
       <div className="w-full relative pb-16">
         {files.length == 0 ? (
-          <div className="flex flex-col w-full h-full aspect-square items-center justify-center bg-base-300 z-0 rounded">
+          <div className="flex flex-col w-full h-full aspect-square items-center justify-center bg-base-100 border z-0 rounded">
             <span className="font-semibold">Add an Image / Video</span>
           </div>
         ) : (
-          <div className="carousel w-full bg-base-300 rounded">
+          <div className="carousel w-full bg-base-content rounded">
             {files.map((file) => (
               <div
                 id={file.id}
@@ -436,7 +434,7 @@ export const UploadPost: FC<{
             {files.map((file) => (
               <Link
                 key={file.id}
-                className="aspect-square w-14 h-14 relative rounded bg-base-300 flex items-center"
+                className="aspect-square w-14 h-14 relative rounded bg-base-content flex items-center"
                 href={`#${file.id}`}
               >
                 {file.fileType.startsWith('image') && (
@@ -473,13 +471,13 @@ export const UploadPost: FC<{
               <div
                 tabIndex={0}
                 role="button"
-                className="btn m-1 btn-outline rounded w-14 h-14"
+                className="btn btn-outline rounded w-14 h-14"
               >
                 <IconPlus />
               </div>
               <ul
                 tabIndex={0}
-                className="dropdown-content menu bg-base-200 rounded-box z-1 p-2 shadow"
+                className="dropdown-content menu bg-base-100 border rounded-box z-1 p-2 shadow"
               >
                 <li>
                   <label htmlFor="dropzone-file-image">
@@ -565,8 +563,6 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
     ? {
         uri: validUrl.toString(),
         type: ContentType.BLINKS,
-        createdAt: Math.round(Date.now() / 1000),
-        updatedAt: Math.round(Date.now() / 1000),
         id: crypto.randomUUID(),
       }
     : undefined;

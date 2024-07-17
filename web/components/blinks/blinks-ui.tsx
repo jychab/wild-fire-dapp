@@ -545,7 +545,7 @@ export const ActionLayout = ({
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content menu bg-base-300 rounded z-[1] p-0 text-sm w-32"
+                  className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
                 >
                   <li>
                     <button
@@ -553,7 +553,7 @@ export const ActionLayout = ({
                       onClick={() =>
                         removeContentMutation.mutateAsync(additionalMetadata.id)
                       }
-                      className="btn btn-sm btn-outline border-none gap-2 items-center justify-start"
+                      className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                     >
                       {removeContentMutation.isPending ? (
                         <div className="loading loading-spinner loading-sm" />
@@ -607,7 +607,7 @@ export const ActionLayout = ({
           </button>
           {additionalMetadata && (
             <span className="text-xs stat-desc">
-              {convertUTCTimeToDayMonth(additionalMetadata.updatedAt)}
+              {convertUTCTimeToDayMonth(additionalMetadata.updatedAt || 0)}
             </span>
           )}
         </div>

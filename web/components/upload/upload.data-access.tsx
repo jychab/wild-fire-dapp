@@ -1,7 +1,8 @@
 'use client';
 
 import { Scope } from '@/utils/enums/das';
-import { proxify } from '@/utils/helper/proxy';
+import { createOrEditPost } from '@/utils/firebase/functions';
+import { generateMintApiEndPoint } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -14,7 +15,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { uploadMetadata } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   getAdditionalRentForUpdatedMetadata,
@@ -27,8 +27,8 @@ export type UploadContent = BlinkContent | PostContent;
 
 export interface BaseContent {
   type: ContentType;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
   id: string;
 }
 export interface BlinkContent extends BaseContent {
@@ -38,6 +38,7 @@ export interface BlinkContent extends BaseContent {
 export interface PostContent extends BaseContent {
   carousel: Carousel[];
   caption: string;
+  uri?: string;
 }
 
 export type Carousel = ImageContent | VideoContent;
@@ -81,73 +82,51 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         const hashFeedContent = details.additionalMetadata.find(
           (x) => x[0] == 'hashfeed'
         )?.[1];
-        let hashFeedMetadata;
-        let currentContent;
-        if (hashFeedContent) {
-          hashFeedMetadata = await (
-            await fetch(
-              proxify(
-                hashFeedContent, // content uri
-                true
+        await createOrEditPost(mint.toBase58(), [input.content]);
+        if (
+          !hashFeedContent ||
+          hashFeedContent !== generateMintApiEndPoint(mint)
+        ) {
+          // create the additional metadata
+          let fieldsToUpdate: [string, string][] = [
+            ['hashfeed', generateMintApiEndPoint(mint)],
+          ];
+          let ixs: TransactionInstruction[] = [];
+          const lamports = await getAdditionalRentForUpdatedMetadata(
+            connection,
+            mint,
+            fieldsToUpdate
+          );
+          if (lamports > 0) {
+            ixs.push(
+              SystemProgram.transfer({
+                fromPubkey: wallet.publicKey,
+                toPubkey: mint,
+                lamports: lamports,
+              })
+            );
+          }
+          for (let x of fieldsToUpdate) {
+            ixs.push(
+              await updateMetadata(
+                connection,
+                wallet.publicKey!,
+                mint,
+                x[0],
+                x[1]
               )
-            )
-          ).json();
-          currentContent = hashFeedMetadata.content as
-            | UploadContent[]
-            | undefined;
-        }
-        currentContent =
-          currentContent?.filter((x) => x.id != input.content.id) || [];
-        const newContent = currentContent.concat([input.content]);
-        newContent.sort((a, b) => b.updatedAt - a.updatedAt);
-
-        const payload = {
-          ...hashFeedMetadata,
-          content: newContent,
-        };
-        const uri = await uploadMetadata(
-          JSON.stringify(payload),
-          mint,
-          'hashfeed'
-        );
-        if (hashFeedContent) {
+            );
+          }
+          if (ixs.length == 0) return;
+          signature = await buildAndSendTransaction({
+            connection,
+            ixs,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
+        } else {
           return 'Success';
         }
-        // create the additional metadata
-        let fieldsToUpdate: [string, string][] = [['hashfeed', uri]];
-        let ixs: TransactionInstruction[] = [];
-        const lamports = await getAdditionalRentForUpdatedMetadata(
-          connection,
-          mint,
-          fieldsToUpdate
-        );
-        if (lamports > 0) {
-          ixs.push(
-            SystemProgram.transfer({
-              fromPubkey: wallet.publicKey,
-              toPubkey: mint,
-              lamports: lamports,
-            })
-          );
-        }
-        for (let x of fieldsToUpdate) {
-          ixs.push(
-            await updateMetadata(
-              connection,
-              wallet.publicKey!,
-              mint,
-              x[0],
-              x[1]
-            )
-          );
-        }
-        if (ixs.length == 0) return;
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);

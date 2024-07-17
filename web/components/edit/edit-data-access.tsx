@@ -183,11 +183,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             description: input.description,
             image: imageUrl ? imageUrl : uriMetadata.image,
           };
-          const uri = await uploadMetadata(
-            JSON.stringify(payload),
-            mint,
-            crypto.randomUUID()
-          );
+          const uri = await uploadMetadata(JSON.stringify(payload), mint);
           fieldsToUpdate.push(['uri', uri]);
 
           const lamports = await getAdditionalRentForUpdatedMetadata(

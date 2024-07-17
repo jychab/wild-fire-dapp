@@ -7,6 +7,7 @@ import {
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
+import { generateMintApiEndPoint } from '@/utils/helper/proxy';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createMint,
@@ -72,23 +73,13 @@ export function useCreateMint({ address }: { address: string | null }) {
           description: input.description,
           image: imageUrl,
         };
-        const uri = await uploadMetadata(
-          JSON.stringify(payload),
-          mint,
-          crypto.randomUUID()
-        );
-        const hashFeedContent = await uploadMetadata(
-          JSON.stringify({
-            content: [],
-          }),
-          mint,
-          'hashfeed'
-        );
+        const uri = await uploadMetadata(JSON.stringify(payload), mint);
+
         const metadata: TokenMetadata = {
           name: input.name,
           symbol: input.symbol,
           uri: uri,
-          additionalMetadata: [['hashfeed', hashFeedContent]],
+          additionalMetadata: [['hashfeed', generateMintApiEndPoint(mint)]],
           mint: mint,
         };
         const { partialTx: partialTx } = await getDistributorSponsored(

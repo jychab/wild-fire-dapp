@@ -1,3 +1,5 @@
+import { PublicKey } from '@solana/web3.js';
+
 const proxyUrl = process.env.NEXT_PUBLIC_PROXY_ENDPOINT;
 
 export function proxify(url: string, skipCache?: boolean): URL {
@@ -11,4 +13,8 @@ export function proxify(url: string, skipCache?: boolean): URL {
     proxifiedUrl.searchParams.set('skipCache', 'true');
   }
   return proxifiedUrl;
+}
+
+export function generateMintApiEndPoint(mint: PublicKey) {
+  return `https://api.hashfeed.social/fetchMint?id=${mint.toBase58()}`;
 }

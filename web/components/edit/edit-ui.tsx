@@ -120,13 +120,13 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   };
 
   return (
-    <div className="flex flex-col gap-8 my-4 items-center max-w-2xl w-full p-4">
+    <div className="flex flex-col gap-8 my-4 items-center max-w-2xl w-full sm:p-4">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
         Edit Profile Settings
       </span>
-      <div className="p-4 flex flex-col gap-4 items-start w-full border border-base-content rounded bg-base-200">
+      <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded bg-base-100">
         <div className="flex w-full justify-between items-center">
-          <span>Profile</span>
+          <span className="hidden sm:block">Profile</span>
           {mintQuery && Number(mintQuery.supply) == 0 && (
             <button
               onClick={() => closeMutation.mutateAsync()}
@@ -140,7 +140,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             </button>
           )}
         </div>
-        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center border-t border-base-content">
+        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center sm:border-t sm:border-base-content">
           <div className="flex w-32 h-32 lg:w-40 lg:h-40 items-center justify-center">
             <label
               htmlFor="dropzone-file"

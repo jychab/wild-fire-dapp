@@ -1,9 +1,31 @@
+import { UploadContent } from '@/components/upload/upload.data-access';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import { functions, storage } from './firebase';
+
+export async function createOrEditPost(mint: string, content: UploadContent[]) {
+  const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
+  await createOrEditPost({ mint, content });
+}
+
+export async function deletePost(mint: string, postId: string) {
+  const deletePost = httpsCallable(functions, 'deletePost');
+  await deletePost({ mint, postId });
+}
+
+export async function createOrEditComment(
+  mint: string,
+  postId: string,
+  commentId: string,
+  text: string,
+  mentions: string[]
+) {
+  const createOrEditComment = httpsCallable(functions, 'createOrEditComment');
+  await createOrEditComment({ mint, postId, commentId, text, mentions });
+}
 
 export async function getDistributor(mint: string) {
   const getDistributor = httpsCallable(functions, 'getDistributor');
@@ -27,15 +49,19 @@ export async function getDistributorSponsored(metadata: TokenMetadata) {
   return result.data as { partialTx?: string; distributor: string };
 }
 
-export async function sendGift(
-  mint: PublicKey,
-  destination: PublicKey,
-  amount: number
+export async function sendLike(
+  mint: string,
+  postMint: string,
+  postId: string,
+  amount: number,
+  commentId?: string
 ) {
-  const sendGift = httpsCallable(functions, 'sendGift');
-  await sendGift({
-    mint: mint.toBase58(),
-    destination: destination.toBase58(),
+  const sendLike = httpsCallable(functions, 'sendLike');
+  await sendLike({
+    mint,
+    postMint,
+    postId,
+    commentId,
     amount,
   });
 }
@@ -57,16 +83,11 @@ export function createLoginMessage(sessionKey: string) {
   return `Sign Message to Log In! \n\nSession Key: ${sessionKey}}`;
 }
 
-export async function uploadMetadata(
-  payload: string,
-  mint: PublicKey,
-  id: string
-) {
-  const path = `${mint.toBase58()}/${id}.json`; //important to include file extension so cloudflare won't cache this
+export async function uploadMetadata(payload: string, mint: PublicKey) {
+  const path = `${mint.toBase58()}/${crypto.randomUUID()}.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',
-    cacheControl: 'no-cache',
   });
   return 'https://' + payloadRef.bucket + '/' + path;
 }
