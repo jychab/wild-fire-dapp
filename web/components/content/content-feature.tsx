@@ -64,6 +64,9 @@ export const ContentGridFeature: FC = () => {
             updatedContent[existingIndex] = newContent;
           } else {
             updatedContent.push(newContent);
+            updatedContent.sort(
+              (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+            );
           }
         });
 
@@ -92,18 +95,6 @@ export const ContentGridFeature: FC = () => {
 
     return () => unsubscribe();
   }, [ownerTokenDetails, postLimit, isLoading, handleSnapshotUpdate]);
-
-  // Infinite scroll handler
-  const handleScroll = useCallback(() => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
-      setPostLimit((prevLimit) => prevLimit + 20);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
 
   return <ContentGrid content={content} />;
 };

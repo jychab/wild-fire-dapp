@@ -158,11 +158,22 @@ export const TradingPanel: FC<{
         className="w-full text-right"
         placeholder="0.00"
         value={
-          (buy ? Number(inputAmount) : Number(outputAmount)) / LAMPORTS_PER_SOL
+          buy
+            ? inputAmount != ''
+              ? Number(inputAmount) / LAMPORTS_PER_SOL
+              : ''
+            : outputAmount != ''
+            ? Number(outputAmount) / LAMPORTS_PER_SOL
+            : ''
         }
         onChange={(e) => {
           let amount = parseFloat(e.target.value) * LAMPORTS_PER_SOL;
-          handleOutputAmountGivenInput(Number.isNaN(amount) ? 0 : amount);
+          if (Number.isNaN(amount)) {
+            setOutputAmount('');
+            setInputAmount('');
+          } else {
+            handleOutputAmountGivenInput(amount);
+          }
         }}
       />
     </>
@@ -193,7 +204,12 @@ export const TradingPanel: FC<{
         value={buy ? outputAmount : inputAmount}
         onChange={(e) => {
           let amount = parseFloat(e.target.value);
-          handleInputAmountGivenOutput(Number.isNaN(amount) ? 0 : amount);
+          if (Number.isNaN(amount)) {
+            setOutputAmount('');
+            setInputAmount('');
+          } else {
+            handleInputAmountGivenOutput(amount);
+          }
         }}
       />
     </>
