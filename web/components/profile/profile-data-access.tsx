@@ -99,19 +99,10 @@ export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
   });
 }
 
-export function useGetTokenDetails({
-  mint,
-  skipCache = false,
-}: {
-  mint: PublicKey | null;
-  skipCache?: boolean;
-}) {
+export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'get-token-details',
-      { endpoint: connection.rpcEndpoint, mint, skipCache },
-    ],
+    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
       if (!mint) return null;
       const response = await fetch(connection.rpcEndpoint, {
@@ -130,23 +121,20 @@ export function useGetTokenDetails({
       });
       const data = (await response.json()).result as DAS.GetAssetResponse;
       try {
-        const imageUrl = data.content?.links?.image;
-        const description = data.content?.metadata.description;
-        let content;
         const hashFeedUri =
           data.mint_extensions?.metadata?.additional_metadata.find(
             (x) => x[0] == 'hashfeed'
           )?.[1];
         if (hashFeedUri) {
-          const uriMetadata = await (
-            await fetch(proxify(hashFeedUri, skipCache))
-          ).json();
-          content = uriMetadata.content as UploadContent[] | undefined;
+          const uriMetadata = await (await fetch(proxify(hashFeedUri))).json();
+          let content = uriMetadata.content as UploadContent[] | undefined;
+          return {
+            ...data,
+            additionalInfoData: { content },
+          } as DAS.GetAssetResponse;
+        } else {
+          return data;
         }
-        return {
-          ...data,
-          additionalInfoData: { imageUrl, description, content },
-        } as DAS.GetAssetResponse;
       } catch (e) {
         return data;
       }

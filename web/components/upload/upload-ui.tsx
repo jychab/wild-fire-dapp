@@ -559,13 +559,15 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
     }
   }, [uri]);
 
-  const blinkContent: BlinkContent | undefined = validUrl
-    ? {
-        uri: validUrl.toString(),
-        type: ContentType.BLINKS,
-        id: crypto.randomUUID(),
-      }
-    : undefined;
+  const blinkContent: BlinkContent | undefined =
+    validUrl && mint
+      ? {
+          mint: mint,
+          uri: validUrl.toString(),
+          type: ContentType.BLINKS,
+          id: crypto.randomUUID(),
+        }
+      : undefined;
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -579,7 +581,7 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
         />
       </div>
       {validUrl && (
-        <div className="bg-base-300 rounded">
+        <div className="bg-base-100 rounded">
           <Blinks actionUrl={validUrl} />
         </div>
       )}

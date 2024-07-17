@@ -1,22 +1,28 @@
+import { sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
+  IconHeart,
+  IconHeartFilled,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
+import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
+import { useGetToken } from '../profile/profile-data-access';
 import { ContentType } from '../upload/upload-ui';
 import { BlinkContent, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
 interface ContentGridProps {
-  content: ContentWithMetada[] | undefined;
+  content: ContentWithMetadata[] | undefined;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -26,12 +32,16 @@ export interface AdditionalMetadata {
   name: string;
   symbol: string;
   image: string;
-  mint: PublicKey;
+  mint: string;
+  likesCount?: number;
+  likesUser?: string[];
+  commentsCount?: number;
+
   updatedAt?: number;
   verified?: boolean;
 }
 
-export type ContentWithMetada =
+export type ContentWithMetadata =
   | BlinkContentWithMetadata
   | PostContentWithMetadata;
 
@@ -45,22 +55,25 @@ export const ContentGrid: FC<ContentGridProps> = ({
   editable = false,
   multiGrid = false,
 }) => {
-  return (
+  return content ? (
     <div
       className={`grid grid-cols-1 sm:gap-2 ${
         multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
       }`}
     >
-      {content &&
-        content.map((x) => (
-          <DisplayContent
-            key={x.id}
-            content={x}
-            showMintDetails={showMintDetails}
-            editable={editable}
-            multiGrid={multiGrid}
-          />
-        ))}
+      {content.map((x) => (
+        <DisplayContent
+          key={x.id}
+          content={x}
+          showMintDetails={showMintDetails}
+          editable={editable}
+          multiGrid={multiGrid}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className=" w-full flex justify-center items-center h-64">
+      <div className="loading loading-dots loading-md" />
     </div>
   );
 };
@@ -76,9 +89,11 @@ export const PostCard = ({
   editable?: boolean;
   multiGrid?: boolean;
 }) => {
+  const { publicKey } = useWallet();
+  const { data } = useGetToken({ address: publicKey });
   const [showMore, setShowMore] = useState(false);
   const removeContentMutation = useRemoveContentMutation({
-    mint: editable ? content.mint : null,
+    mint: editable ? new PublicKey(content.mint) : null,
   });
   const router = useRouter();
   return (
@@ -123,20 +138,60 @@ export const PostCard = ({
         >
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <div className="flex gap-1 text-sm items-center">
+              <div className="flex gap-2 text-sm items-end">
                 <Link
-                  href={`/profile?mintId=${content.mint.toBase58()}&tab=trade`}
+                  href={`/profile?mintId=${content.mint}&tab=trade`}
                   className="link link-hover font-semibold"
                 >
                   {content.name}
                 </Link>
-                {/* <button className="">
-                  <IconHeartFilled size={18} className="fill-primary" />
-                </button>
-                <span className="text-xs">Liked By ...</span> */}
+                {!multiGrid && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={async () => {
+                        if (!data) {
+                          toast.error('You need to create an account first!');
+                        }
+                        if (data) {
+                          try {
+                            await sendLike(
+                              data[0].mint.toBase58(),
+                              content.mint,
+                              content.id,
+                              10
+                            );
+                          } catch (e) {
+                            console.log(e);
+                          }
+                        }
+                      }}
+                      className=""
+                    >
+                      {content.likesUser &&
+                      publicKey &&
+                      content.likesUser.includes(publicKey.toBase58()) ? (
+                        <IconHeartFilled size={20} className="fill-primary" />
+                      ) : (
+                        <IconHeart size={20} />
+                      )}
+                    </button>
+                    {content.likesCount && (
+                      <span className="text-xs stat-desc link link-hover">{`Liked by ${
+                        publicKey &&
+                        content?.likesUser?.includes(publicKey.toBase58())
+                          ? `you${
+                              content.likesCount > 1
+                                ? ' and ' + content.likesCount + ' users'
+                                : ''
+                            }`
+                          : content.likesCount + ' users'
+                      } `}</span>
+                    )}
+                  </div>
+                )}
               </div>
               {editable && (
-                <div className="dropdown dropdown-end ">
+                <div className="dropdown dropdown-left ">
                   <div tabIndex={0} role="button">
                     {removeContentMutation.isPending ? (
                       <div className="loading loading-spinner loading-sm" />
@@ -151,9 +206,7 @@ export const PostCard = ({
                     <li>
                       <Link
                         className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                        href={`/content/edit?mintId=${content.mint.toBase58()}&id=${
-                          content.id
-                        }`}
+                        href={`/content/edit?mintId=${content.mint}&id=${content.id}`}
                       >
                         <IconEdit size={18} />
                         Edit Post
@@ -187,27 +240,28 @@ export const PostCard = ({
               {content.caption}
             </p>
           </div>
-          <div className="flex flex-col gap-2 pt-2">
+          <div className="flex flex-col items-start gap-2 pt-2">
             {content.caption != '' &&
-              (content.caption.length > 100 ||
+              (content.caption.length > 10 ||
                 content.caption.includes('\n')) && (
                 <button
                   onClick={() => {
                     if (!multiGrid) {
-                      setShowMore(!showMore);
+                      setShowMore(true);
                     } else {
                       router.push(
-                        `/content?mintId=${content.mint.toBase58()}&id=${
-                          content.id
-                        }`
+                        `/content?mintId=${content.mint}&id=${content.id}`
                       );
                     }
                   }}
                   className="text-xs stat-desc link link-hover w-fit"
                 >
-                  {showMore ? 'Hide' : 'Show More'}
+                  {!showMore && 'Show More'}
                 </button>
               )}
+            {content.commentsCount && (
+              <button className="stat-desc link link-hover">{`View ${content.commentsCount} comments`}</button>
+            )}
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt || 0)}
             </span>
@@ -244,7 +298,7 @@ export const BlinksCard: FC<{
 };
 
 interface DisplayContentProps {
-  content: ContentWithMetada;
+  content: ContentWithMetadata;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -285,7 +339,7 @@ export const UserProfile: FC<{
 }> = ({ content }) => {
   return (
     <Link
-      href={`/profile?mintId=${content.mint.toBase58()}`}
+      href={`/profile?mintId=${content.mint}`}
       className="link link-hover flex gap-2 px-4 py-2 items-center w-full"
     >
       <div className="relative w-8 h-8 rounded-full">

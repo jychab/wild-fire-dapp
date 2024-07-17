@@ -467,13 +467,15 @@ export async function fetchSwapPrice(
     poolAddress,
     true
   );
-
-  let mintAmount = (
-    await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID)
-  ).amount;
-  mintAmount -=
-    BigInt(swapDetails.creatorFeesTokenMint) -
-    BigInt(swapDetails.protocolFeesTokenMint);
+  let mintAmount = BigInt(0);
+  try {
+    mintAmount += (
+      await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID)
+    ).amount;
+    mintAmount -=
+      BigInt(swapDetails.creatorFeesTokenMint) -
+      BigInt(swapDetails.protocolFeesTokenMint);
+  } catch (e) {}
 
   let solAmount = BigInt(swapDetails.offset);
   try {
@@ -485,7 +487,11 @@ export async function fetchSwapPrice(
     BigInt(swapDetails.creatorFeesTokenWsol) -
     BigInt(swapDetails.protocolFeesTokenWsol);
 
-  return { mintAmount, solAmount, price: solAmount / mintAmount };
+  return {
+    mintAmount,
+    solAmount,
+    price: mintAmount && solAmount ? solAmount / mintAmount : undefined,
+  };
 }
 
 export async function fetchSwapPoolOracle(

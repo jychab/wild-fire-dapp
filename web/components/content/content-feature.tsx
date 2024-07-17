@@ -1,51 +1,111 @@
 'use client';
 
-import usePaginatedData from '@/utils/hooks/pagination';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { db } from '@/utils/firebase/firebase';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { FC, useCallback, useEffect } from 'react';
-import { HASHFEED_MINT } from '../../utils/consts';
+import {
+  collectionGroup,
+  DocumentData,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  QuerySnapshot,
+  where,
+} from 'firebase/firestore';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { useGetTokenDetails } from '../profile/profile-data-access';
-import { fetchContentPage } from './content-data-access';
-import { ContentGrid, ContentWithMetada, DisplayContent } from './content-ui';
+import { UploadContent } from '../upload/upload.data-access';
+import { fetchOwnerTokenDetails as useFetchOwnerTokenDetails } from './content-data-access';
+import { ContentGrid, ContentWithMetadata, DisplayContent } from './content-ui';
 
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
-  const { connection } = useConnection();
-  const { data: whitelistedMint } = useGetTokenDetails({ mint: HASHFEED_MINT });
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePaginatedData(
-      ['content', publicKey],
-      (pageParam) =>
-        fetchContentPage(
-          pageParam,
-          50,
-          publicKey!,
-          whitelistedMint,
-          connection
-        ),
-      50,
-      !!publicKey
+  const [content, setContent] = useState<ContentWithMetadata[]>();
+  const [postLimit, setPostLimit] = useState(20);
+
+  const { data: ownerTokenDetails, isLoading } = useFetchOwnerTokenDetails({
+    address: publicKey,
+  });
+
+  const handleSnapshotUpdate = useCallback(
+    (snapshot: QuerySnapshot<DocumentData, DocumentData>) => {
+      if (!ownerTokenDetails) return;
+      setContent((prevContent) => {
+        const updatedContent = prevContent ? [...prevContent] : [];
+
+        snapshot.docChanges().forEach((change) => {
+          const postData = change.doc.data() as UploadContent;
+
+          const tokenDetails = ownerTokenDetails.find(
+            (x) => x.id === postData.mint
+          );
+
+          if (!tokenDetails?.content?.links?.image) return;
+
+          const newContent = {
+            ...tokenDetails,
+            ...postData,
+            name: tokenDetails.content.metadata.name,
+            symbol: tokenDetails.content.metadata.symbol,
+            image: tokenDetails.content.links.image,
+            mint: tokenDetails.id,
+          };
+
+          const existingIndex = updatedContent.findIndex(
+            (item) => item.id === newContent.id
+          );
+
+          if (change.type === 'removed') {
+            if (existingIndex > -1) {
+              updatedContent.splice(existingIndex, 1);
+            }
+          } else if (existingIndex > -1) {
+            updatedContent[existingIndex] = newContent;
+          } else {
+            updatedContent.push(newContent);
+          }
+        });
+
+        return updatedContent;
+      });
+    },
+    [ownerTokenDetails]
+  );
+
+  useEffect(() => {
+    if (!ownerTokenDetails || isLoading) return;
+
+    const q = query(
+      collectionGroup(db, 'Post'),
+      where('softDelete', '==', false),
+      where(
+        'mint',
+        'in',
+        ownerTokenDetails.map((x) => x.id)
+      ),
+      orderBy('createdAt', 'desc'),
+      limit(postLimit)
     );
+
+    const unsubscribe = onSnapshot(q, handleSnapshotUpdate);
+
+    return () => unsubscribe();
+  }, [ownerTokenDetails, postLimit, isLoading, handleSnapshotUpdate]);
+
+  // Infinite scroll handler
   const handleScroll = useCallback(() => {
-    if (
-      window.innerHeight + document.documentElement.scrollTop ===
-      document.documentElement.offsetHeight
-    ) {
-      if (hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+      setPostLimit((prevLimit) => prevLimit + 20);
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, []);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  return <ContentGrid content={data?.pages.flat() || []} />;
+  return <ContentGrid content={content} />;
 };
 
 interface ContentCardFeatureProps {
@@ -63,22 +123,23 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
 
   const content =
     metadataQuery &&
+    metadataQuery.content?.links?.image &&
     metadataQuery.additionalInfoData &&
     metadataQuery.additionalInfoData.content
       ? {
           ...(metadataQuery.additionalInfoData.content.find(
             (x) => x.id == id
           ) || []),
-          name: metadataQuery.content?.metadata.name,
-          symbol: metadataQuery.content?.metadata.symbol,
-          image: metadataQuery.additionalInfoData.imageUrl,
-          mint: new PublicKey(metadataQuery.id),
+          name: metadataQuery.content.metadata.name,
+          symbol: metadataQuery.content.metadata.symbol,
+          image: metadataQuery.content.links.image,
+          mint: metadataQuery.id,
         }
       : undefined;
   return content ? (
     <div className="flex flex-col py-[32px] w-full items-center">
       <div className="max-w-lg w-full">
-        <DisplayContent content={content as ContentWithMetada} />
+        <DisplayContent content={content as ContentWithMetadata} />
       </div>
     </div>
   ) : (

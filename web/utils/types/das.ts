@@ -123,8 +123,6 @@ export declare namespace DAS {
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
     additionalInfoData?: {
-      imageUrl: string;
-      description: string;
       content: UploadContent[] | undefined;
     };
   };

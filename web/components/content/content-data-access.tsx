@@ -1,12 +1,10 @@
+import { HASHFEED_MINT } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
-import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactionToast } from '../ui/ui-layout';
-import { UploadContent } from '../upload/upload.data-access';
-import { ContentWithMetada } from './content-ui';
 
 export async function getAllFungibleTokensFromOwner({
   address,
@@ -37,37 +35,29 @@ export async function getAllFungibleTokensFromOwner({
   return data;
 }
 
-export async function getMultipleMintUriMetadata({
-  mints,
+export async function getAsset({
+  mint,
+  connection,
 }: {
-  mints: DAS.GetAssetResponse[];
+  mint: PublicKey;
+  connection: Connection;
 }) {
-  const queries = await Promise.all(
-    mints.map(async (asset) => {
-      const hashFeedUri =
-        asset.mint_extensions?.metadata?.additional_metadata.find(
-          (x) => x[0] == 'hashfeed'
-        )?.[1];
-      if (!hashFeedUri) {
-        return null;
-      }
-      const uriMetadata = await (await fetch(proxify(hashFeedUri))).json();
-      const name = asset.content?.metadata.name;
-      const symbol = asset.content?.metadata.symbol;
-      const imageUrl = asset.content?.links?.image;
-      const description = asset.content?.metadata.description;
-      const content = uriMetadata.content as UploadContent[] | undefined;
-      return {
-        mint: new PublicKey(asset.id),
-        name: name,
-        symbol: symbol,
-        image: imageUrl,
-        description: description,
-        content: content,
-      };
-    })
-  );
-  return queries;
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: '',
+      method: 'getAsset',
+      params: {
+        id: mint.toBase58(),
+      },
+    }),
+  });
+  const data = (await response.json()).result as DAS.GetAssetResponse;
+  return data;
 }
 
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
@@ -102,7 +92,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           client.refetchQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, skipCache: true },
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
         ]);
@@ -113,57 +103,43 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
     },
   });
 }
-export const fetchContentPage = async (
-  pageParam: number,
-  pageLength: number,
-  publicKey: PublicKey,
-  whitelistedMint: DAS.GetAssetResponse | null | undefined,
-  connection: Connection
-): Promise<ContentWithMetada[]> => {
-  const allTokenAccounts = await getAllFungibleTokensFromOwner({
-    address: publicKey,
-    connection,
-  });
 
-  const tokenAccounts = whitelistedMint
-    ? allTokenAccounts?.items.find((x) => x.id === whitelistedMint.id) ==
-      undefined
-      ? allTokenAccounts?.items.concat(whitelistedMint)
-      : allTokenAccounts.items
-    : allTokenAccounts?.items;
-
-  const sortedTokenAccounts = tokenAccounts?.sort((a, b) => {
-    const priceComparison =
-      (b.token_info?.price_info?.price_per_token || 0) -
-      (a.token_info?.price_info?.price_per_token || 0);
-    if (priceComparison !== 0) return priceComparison;
-    return 0;
-  });
-
-  const mints =
-    sortedTokenAccounts?.slice(
-      pageParam * pageLength,
-      (pageParam + 1) * pageLength
-    ) || [];
-
-  const allMintMetadataQuery = await getMultipleMintUriMetadata({ mints });
-
-  const content = allMintMetadataQuery
-    .filter((x) => x && x.content !== undefined)
-    .map((x) => {
-      return x!.content?.map((y) => {
-        return {
-          ...y,
-          name: x!.name,
-          symbol: x!.symbol,
-          image: x!.image,
-          mint: x!.mint,
-        };
+export const fetchOwnerTokenDetails = ({
+  address,
+}: {
+  address: PublicKey | null;
+}) => {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-fetch-owner-token-details',
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    queryFn: async () => {
+      if (!address) return null;
+      const ownerTokenAccounts = await getAllFungibleTokensFromOwner({
+        address,
+        connection,
       });
-    });
+      const allTokenAccounts = ownerTokenAccounts?.items.find(
+        (x) => x.id === HASHFEED_MINT.toBase58()
+      )
+        ? ownerTokenAccounts.items
+        : ownerTokenAccounts?.items.concat(
+            await getAsset({ mint: HASHFEED_MINT, connection })
+          );
 
-  return content.reduce(
-    (acc, val) => acc!.concat(val!),
-    []
-  ) as ContentWithMetada[];
+      const allTokenAccountsWithPriceAndQuantity = await Promise.all(
+        allTokenAccounts.map(async (x) => {
+          return {
+            ...x,
+          };
+        })
+      );
+
+      return allTokenAccountsWithPriceAndQuantity;
+    },
+    enabled: !!address,
+    staleTime: 15 * 1000 * 60,
+  });
 };

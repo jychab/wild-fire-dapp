@@ -171,13 +171,13 @@ export const TradingPanel: FC<{
   const MintButton = (
     <>
       <button className="btn rounded-lg gap-1 px-2 items-center w-fit">
-        {metadata?.additionalInfoData?.imageUrl && (
+        {metadata?.content?.links?.image && (
           <div className="w-8 h-8 relative">
             <Image
               className={`rounded-full object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata?.additionalInfoData?.imageUrl}
+              src={metadata?.content?.links?.image}
               alt={''}
             />
           </div>

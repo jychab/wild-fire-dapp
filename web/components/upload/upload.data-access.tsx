@@ -29,6 +29,7 @@ export interface BaseContent {
   type: ContentType;
   createdAt?: number;
   updatedAt?: number;
+  mint: string;
   id: string;
 }
 export interface BlinkContent extends BaseContent {
@@ -147,7 +148,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           client.refetchQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, skipCache: true },
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
         ]);

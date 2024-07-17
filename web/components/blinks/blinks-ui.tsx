@@ -1,4 +1,5 @@
 import { ExecutionType } from '@/utils/enums/blinks';
+import { sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
   ACTIONS_REGISTRY_URL_ALL,
@@ -12,12 +13,14 @@ import {
   Source,
 } from '@/utils/types/blinks';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import {
   IconAlertTriangleFilled,
   IconCheck,
   IconDotsVertical,
+  IconHeart,
+  IconHeartFilled,
   IconHelpOctagonFilled,
-  IconLink,
   IconProgress,
   IconShieldCheckFilled,
   IconTrash,
@@ -27,6 +30,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 import { FC, ReactNode, useMemo, useState, type ChangeEvent } from 'react';
+import toast from 'react-hot-toast';
 import {
   Action,
   ActionComponent,
@@ -40,6 +44,7 @@ import {
 } from '../../utils/helper/blinks';
 import { useRemoveContentMutation } from '../content/content-data-access';
 import { AdditionalMetadata } from '../content/content-ui';
+import { useGetToken } from '../profile/profile-data-access';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -480,9 +485,14 @@ export const ActionLayout = ({
   error,
   success,
 }: LayoutProps) => {
+  const { publicKey } = useWallet();
+  const { data } = useGetToken({ address: publicKey });
   const [showMore, setShowMore] = useState(false);
   const removeContentMutation = useRemoveContentMutation({
-    mint: editable && additionalMetadata ? additionalMetadata.mint : null,
+    mint:
+      editable && additionalMetadata
+        ? new PublicKey(additionalMetadata.mint)
+        : null,
   });
   const router = useRouter();
   return (
@@ -506,36 +516,83 @@ export const ActionLayout = ({
       <div className={`px-4 pb-4 pt-2 flex flex-col w-full justify-between`}>
         <div className="flex flex-col gap-2">
           <div className="flex justify-between">
-            <div className="flex gap-1 text-sm items-center">
-              {websiteUrl && (
+            <div className="flex gap-2 text-sm items-center">
+              <div className="flex items-center gap-1">
                 <Link
-                  href={websiteUrl}
-                  className="link link-hover font-bold flex gap-2 items-center truncate"
-                  rel="noopener noreferrer"
+                  href="https://docs.dialect.to/documentation/actions/security"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
                 >
-                  {!websiteText && <IconLink size={16} />}
-                  {websiteText ?? websiteUrl}
+                  {type === 'malicious' && <IconAlertTriangleFilled />}
+                  {type === 'trusted' && <IconShieldCheckFilled size={18} />}
+                  {type === 'unknown' && <IconHelpOctagonFilled />}
                 </Link>
+                {websiteUrl && (
+                  <Link
+                    href={websiteUrl}
+                    className="link link-hover font-bold truncate"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {websiteText ?? websiteUrl}
+                  </Link>
+                )}
+              </div>
+
+              {!multiGrid && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={async () => {
+                      if (!data) {
+                        toast.error('You need to create an account first!');
+                      }
+                      if (data && additionalMetadata) {
+                        try {
+                          await sendLike(
+                            data[0].mint.toBase58(),
+                            additionalMetadata.mint,
+                            additionalMetadata.id,
+                            10
+                          );
+                        } catch (e) {
+                          console.log(e);
+                        }
+                      }
+                    }}
+                    className=""
+                  >
+                    {additionalMetadata?.likesUser &&
+                    publicKey &&
+                    additionalMetadata.likesUser.includes(
+                      publicKey.toBase58()
+                    ) ? (
+                      <IconHeartFilled size={20} className="fill-primary" />
+                    ) : (
+                      <IconHeart size={20} />
+                    )}
+                  </button>
+                  {additionalMetadata && additionalMetadata.likesCount && (
+                    <span className="text-xs stat-desc link link-hover">{`Liked by ${
+                      publicKey &&
+                      additionalMetadata?.likesUser?.includes(
+                        publicKey.toBase58()
+                      )
+                        ? `you${
+                            additionalMetadata.likesCount > 1
+                              ? ' and ' +
+                                additionalMetadata.likesCount +
+                                ' users'
+                              : ''
+                          }`
+                        : additionalMetadata.likesCount + ' users'
+                    } `}</span>
+                  )}
+                </div>
               )}
-              {websiteText && !websiteUrl && (
-                <span className="inline-flex items-center truncate">
-                  {websiteText}
-                </span>
-              )}
-              <Link
-                href="https://docs.dialect.to/documentation/actions/security"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center"
-              >
-                {type === 'malicious' && <IconAlertTriangleFilled />}
-                {type === 'trusted' && <IconShieldCheckFilled size={18} />}
-                {type === 'unknown' && <IconHelpOctagonFilled />}
-              </Link>
             </div>
             {editable && additionalMetadata && (
-              <div className="dropdown dropdown-end">
+              <div className="dropdown dropdown-left">
                 <div tabIndex={0} role="button">
                   {removeContentMutation.isPending ? (
                     <div className="loading loading-spinner loading-sm" />
@@ -592,18 +649,16 @@ export const ActionLayout = ({
           <button
             onClick={() => {
               if (!multiGrid) {
-                setShowMore(!showMore);
+                setShowMore(true);
               } else if (additionalMetadata) {
                 router.push(
-                  `/content?mintId=${additionalMetadata?.mint.toBase58()}&id=${
-                    additionalMetadata?.id
-                  }`
+                  `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
                 );
               }
             }}
             className="text-xs stat-desc link link-hover w-fit"
           >
-            {showMore ? 'Hide' : 'Show More'}
+            {!showMore && 'Show More'}
           </button>
           {additionalMetadata && (
             <span className="text-xs stat-desc">

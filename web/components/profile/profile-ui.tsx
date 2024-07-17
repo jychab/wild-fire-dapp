@@ -95,7 +95,7 @@ export const ProfilePage: FC<{
         <Profile metadata={metaDataQuery} authorityData={mintTokenData} />
         <div className="flex flex-col flex-1 w-full h-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b w-full h-full md:p-4">
+          <div className="border-base-200 rounded border-x border-b w-full sm:h-full md:p-4">
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}
@@ -123,31 +123,35 @@ interface ContentPanelProps {
 }
 
 const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
-  return metadata &&
-    metadata.additionalInfoData &&
-    metadata.additionalInfoData.content &&
-    metadata.additionalInfoData.content.length > 0 ? (
-    <ContentGrid
-      multiGrid={true}
-      showMintDetails={false}
-      editable={true}
-      content={metadata.additionalInfoData?.content?.map((x) => {
-        return {
-          ...x,
-          name: metadata.content!.metadata.name,
-          symbol: metadata.content!.metadata.symbol,
-          image: metadata.additionalInfoData!.imageUrl,
-          mint: new PublicKey(metadata.id),
-        };
-      })}
-    />
-  ) : (
-    <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
-      Create your first post!
-      <div className="w-36">
-        <UploadBtn mintId={metadata?.id} />
-      </div>
-    </div>
+  return (
+    <>
+      <ContentGrid
+        multiGrid={true}
+        showMintDetails={false}
+        editable={true}
+        content={
+          metadata?.additionalInfoData?.content
+            ? metadata.additionalInfoData.content.map((x) => {
+                return {
+                  ...x,
+                  name: metadata.content!.metadata.name,
+                  symbol: metadata.content!.metadata.symbol,
+                  image: metadata.content!.links!.image!,
+                  mint: metadata.id,
+                };
+              })
+            : undefined
+        }
+      />
+      {metadata?.additionalInfoData?.content?.length == 0 && (
+        <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
+          Create your first post!
+          <div className="w-36">
+            <UploadBtn mintId={metadata?.id} />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -330,14 +334,14 @@ const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
   return (
     <div className="flex flex-col lg:flex-row items-center p-4 gap-4 w-full bg-base-100">
       <div className="w-32 h-32 lg:w-40 lg:h-40">
-        {metadata && metadata.additionalInfoData && (
+        {metadata && metadata.content?.links?.image && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata.additionalInfoData.imageUrl}
+              src={metadata.content.links.image}
               alt={''}
             />
           </div>
@@ -432,7 +436,7 @@ const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
         </div>
 
         <span className="text-sm truncate font-normal">
-          {metadata?.additionalInfoData?.description}
+          {metadata?.content?.metadata?.description}
         </span>
       </div>
     </div>
