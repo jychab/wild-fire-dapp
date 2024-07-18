@@ -10,12 +10,7 @@ import {
   TransferFeeConfig,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  RpcResponseAndContext,
-  TokenAccountBalancePair,
-} from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { IconDiscountCheck, IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,7 +22,6 @@ import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
   SwapType,
-  useFetchSwapPrice,
   useGetAddressInfo,
   useGetTokenAccountInfo,
   useSwapDetails,
@@ -38,6 +32,7 @@ import { UploadBtn } from '../upload/upload-ui';
 import {
   useGetLargestAccountFromMint,
   useGetMintDetails,
+  useGetMintSummaryDetails,
   useGetMintTransferFeeConfig,
   useGetTokenDetails,
 } from './profile-data-access';
@@ -67,18 +62,23 @@ export const ProfilePage: FC<{
     mint: new PublicKey(mintId),
   });
 
+  const { data: largestFromMint } = useGetLargestAccountFromMint({
+    mint: new PublicKey(mintId),
+  });
+
   const { data: mintQuery } = useGetMintDetails({
     mint: new PublicKey(mintId),
     tokenProgram: metaDataQuery?.token_info?.token_program
       ? new PublicKey(metaDataQuery?.token_info?.token_program)
       : undefined,
   });
-  const { data: largestFromMint } = useGetLargestAccountFromMint({
-    mint: new PublicKey(mintId),
-  });
 
   const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
     mint: mintQuery,
+  });
+
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
+    mint: new PublicKey(mintId),
   });
 
   const [selectedTab, setSelectedTab] = useState(
@@ -92,7 +92,11 @@ export const ProfilePage: FC<{
   return (
     <div className="flex flex-col h-full w-full min-h-[1000px] items-center">
       <div className="flex flex-col gap-8 items-start w-full h-full max-w-7xl py-8">
-        <Profile metadata={metaDataQuery} authorityData={mintTokenData} />
+        <Profile
+          metadata={metaDataQuery}
+          authorityData={mintTokenData}
+          mintSummaryDetails={mintSummaryDetails}
+        />
         <div className="flex flex-col flex-1 w-full h-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
           <div className="border-base-200 rounded border-x border-b w-full sm:h-full md:p-4">
@@ -109,6 +113,7 @@ export const ProfilePage: FC<{
                 largestTokenAccount={largestFromMint}
                 mintQuery={mintQuery}
                 metadata={metaDataQuery}
+                mintSummaryDetails={mintSummaryDetails}
               />
             )}
           </div>
@@ -166,6 +171,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
   authorityData,
   metadata,
   largestTokenAccount,
+  mintSummaryDetails,
 }) => {
   return (
     <>
@@ -173,6 +179,7 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
         metadata={metadata}
         authorityData={authorityData}
         mintQuery={mintQuery}
+        mintSummaryDetails={mintSummaryDetails}
       />
       <Details
         transferFeeConfig={transferFeeConfig}
@@ -233,9 +240,7 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
 };
 
 interface ActivitiesProps {
-  largestTokenAccount:
-    | RpcResponseAndContext<TokenAccountBalancePair[]>
-    | undefined;
+  largestTokenAccount: any[] | undefined;
   mintQuery: Mint | null | undefined;
 }
 
@@ -247,7 +252,7 @@ const Activities: FC<ActivitiesProps> = ({
     <div className="p-4 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Activities</span>
       <div className="grid grid-cols-4 gap-2">
-        <div className="rounded bg-base-200 col-span-4 md:col-span-2 p-4">
+        <div className="rounded bg-base-200 col-span-4 p-4">
           <span className="card-title text-base">Top 20 Holders List</span>
           {largestTokenAccount && mintQuery && (
             <div className="overflow-x-auto">
@@ -255,22 +260,22 @@ const Activities: FC<ActivitiesProps> = ({
                 <thead>
                   <tr>
                     <th></th>
-                    <th>Wallet</th>
+                    <th>Owner</th>
                     <th>Quantity</th>
                     <th>Percentage</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {largestTokenAccount.value.map((x, index) => (
+                  {largestTokenAccount.map((x, index) => (
                     <tr key={x.address.toBase58()}>
                       <th>{index + 1}</th>
                       <td className="max-w-xs truncate hover:text-info">
                         <Link
                           rel="noopener noreferrer"
                           target="_blank"
-                          href={`https://solscan.io/address/${x.address.toBase58()}`}
+                          href={`https://solscan.io/address/${x.owner.toBase58()}`}
                         >
-                          {x.address.toBase58()}
+                          {x.owner.toBase58()}
                         </Link>
                       </td>
                       <td className="">{formatLargeNumber(x.uiAmount!)}</td>
@@ -287,20 +292,29 @@ const Activities: FC<ActivitiesProps> = ({
             </div>
           )}
         </div>
-        <div className="card bg-base-200 col-span-4 md:col-span-2 p-4 rounded gap-4">
-          <div className="card-title text-base">Holder Metrics</div>
-        </div>
       </div>
     </div>
   );
 };
 
 interface ProfileProps {
+  mintSummaryDetails:
+    | {
+        currentPrice: number;
+        currentHoldersCount: number;
+        holdersChange24hPercent: number;
+        priceChange24hPercent: number;
+      }
+    | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
   authorityData: AuthorityData | null | undefined;
 }
 
-const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
+const Profile: FC<ProfileProps> = ({
+  metadata,
+  authorityData,
+  mintSummaryDetails,
+}) => {
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: tokenDetails } = useGetTokenDetails({
@@ -311,11 +325,6 @@ const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
   });
   const { data: swapDetails } = useSwapDetails({
     mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-
-  const { data: swapPrice } = useFetchSwapPrice({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-    swapDetails: swapDetails,
   });
 
   const { data: solDetails } = useGetTokenDetails({ mint: NATIVE_MINT });
@@ -412,27 +421,26 @@ const Profile: FC<ProfileProps> = ({ metadata, authorityData }) => {
 
         <div className="flex items-center gap-2">
           <span>
-            {/* {formatLargeNumber(
-              largestFromMint?.filter((x) => x.amount && x.amount > 0)
-                .length || 0
-            ) + ' Followers'} */}
+            {formatLargeNumber(mintSummaryDetails?.currentHoldersCount || 0) +
+              ' Holders'}
           </span>
-          {tokenDetails?.token_info?.price_info?.price_per_token ||
-            (swapPrice && (
-              <>
-                ||
-                <span>{`$${
-                  tokenDetails?.token_info?.price_info?.price_per_token
-                    ? tokenDetails?.token_info?.price_info?.price_per_token
-                    : (
-                        (Number(swapPrice.price) *
-                          (solDetails?.token_info?.price_info
-                            ?.price_per_token || 1)) /
-                        LAMPORTS_PER_SOL
-                      ).toPrecision(3)
-                }`}</span>
-              </>
-            ))}
+
+          {(tokenDetails?.token_info?.price_info?.price_per_token ||
+            mintSummaryDetails) && (
+            <>
+              ||
+              <span>{`$${
+                tokenDetails?.token_info?.price_info?.price_per_token
+                  ? tokenDetails?.token_info?.price_info?.price_per_token
+                  : (
+                      ((mintSummaryDetails?.currentPrice || 0) *
+                        (solDetails?.token_info?.price_info?.price_per_token ||
+                          0)) /
+                      LAMPORTS_PER_SOL
+                    ).toPrecision(3)
+              }`}</span>
+            </>
+          )}
         </div>
 
         <span className="text-sm truncate font-normal">
@@ -578,19 +586,26 @@ const Details: FC<DetailsProps> = ({
 };
 
 interface MainPanelProps {
+  mintSummaryDetails:
+    | {
+        currentPrice: number;
+        currentHoldersCount: number;
+        holdersChange24hPercent: number;
+        priceChange24hPercent: number;
+      }
+    | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
   authorityData: AuthorityData | null | undefined;
   mintQuery: Mint | null | undefined;
 }
 
 export const MainPanel: FC<MainPanelProps> = ({
+  mintSummaryDetails,
   metadata,
   authorityData,
   mintQuery,
 }) => {
-  const { connection } = useConnection();
   const { data } = useSwapDetails({ mint: authorityData?.mint || null });
-
   const { data: walletInfo } = useGetAddressInfo({
     address: authorityData?.distributor || null,
   });
@@ -605,6 +620,7 @@ export const MainPanel: FC<MainPanelProps> = ({
           )
         : null,
   });
+
   return (
     <div className="px-4 pt-4 pb-2 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Overview</span>
@@ -620,13 +636,14 @@ export const MainPanel: FC<MainPanelProps> = ({
                   Number(data?.creatorFeesTokenWsol || 0) / LAMPORTS_PER_SOL
                 } Sol`}
               </span>
-              <div className="flex gap-2 items-center text-sm">
+              <div className="flex gap-4 items-center text-sm">
                 <button className="btn btn-outline btn-sm">Claim</button>
                 <div
-                  data-tip="Trading fees are auto claimed whenever fees is higher than 0.01 Sol"
-                  className="tooltip tooltip-primary flex gap-1 items-end"
+                  data-tip="When fees are above 0.01 SOL, it will be claimed automatically."
+                  className="badge badge-success py-3 rounded tooltip tooltip-bottom tooltip-info flex"
                 >
-                  Auto Claim <IconDiscountCheck />
+                  <IconDiscountCheck size={20} />
+                  <span>Auto Claim Enabled</span>
                 </div>
               </div>
             </div>
@@ -655,12 +672,11 @@ export const MainPanel: FC<MainPanelProps> = ({
               <div className="shadow text-right w-full">
                 <div className="stat gap-2">
                   <span className="stat-value font-normal truncate hover:text-info">
-                    {/* {allTokenAccounts
-                      ? allTokenAccounts.filter((x) => x.amount && x.amount > 0)
-                          .length
-                      : 0} */}
+                    {mintSummaryDetails
+                      ? mintSummaryDetails.currentHoldersCount
+                      : 0}
                   </span>
-                  <div className="stat-desc text-xs">total holders</div>
+                  <div className="stat-desc text-xs">holders</div>
                 </div>
               </div>
             </div>

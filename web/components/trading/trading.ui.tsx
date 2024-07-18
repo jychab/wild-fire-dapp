@@ -9,15 +9,12 @@ import {
 } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import {
-  IconArrowsUpDown,
-  IconCurrencySolana,
-  IconWallet,
-} from '@tabler/icons-react';
+import { IconArrowsUpDown, IconCurrencySolana } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useState } from 'react';
 import {
   SwapType,
+  useCreateOracle,
   useFetchSwapPrice,
   useGetAddressInfo,
   useGetTokenAccountInfo,
@@ -38,6 +35,10 @@ export const TradingPanel: FC<{
   });
 
   const { data: swapOracle } = useSwapOracle({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+
+  const createOracleMutation = useCreateOracle({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
@@ -172,7 +173,9 @@ export const TradingPanel: FC<{
             setOutputAmount('');
             setInputAmount('');
           } else {
-            handleOutputAmountGivenInput(amount);
+            buy
+              ? handleOutputAmountGivenInput(amount)
+              : handleInputAmountGivenOutput(amount);
           }
         }}
       />
@@ -208,7 +211,9 @@ export const TradingPanel: FC<{
             setOutputAmount('');
             setInputAmount('');
           } else {
-            handleInputAmountGivenOutput(amount);
+            buy
+              ? handleInputAmountGivenOutput(amount)
+              : handleOutputAmountGivenInput(amount);
           }
         }}
       />
@@ -228,11 +233,10 @@ export const TradingPanel: FC<{
               <div className="label">
                 <span className="label-text">You're Paying</span>
                 <div className="label-text-alt flex items-end gap-2">
-                  <IconWallet size={14} />
                   <span>{`${(buy
                     ? (inputToken || 0) / LAMPORTS_PER_SOL
-                    : inputToken
-                  )?.toPrecision(3)} ${
+                    : inputToken || 0
+                  )?.toPrecision(6)} ${
                     buy ? 'SOL' : metadata?.content?.metadata.symbol
                   }`}</span>
                   <button
@@ -270,10 +274,11 @@ export const TradingPanel: FC<{
             <label>
               <div className="label">
                 <span className="label-text">To Receive</span>
-                <div className="label-text-alt flex items-center gap-2">
-                  <IconWallet size={14} />
+                <div className="label-text-alt">
                   <span>{`${
-                    !buy ? (outputToken || 0) / LAMPORTS_PER_SOL : outputToken
+                    !buy
+                      ? (outputToken || 0) / LAMPORTS_PER_SOL
+                      : outputToken || 0
                   } ${
                     !buy ? 'SOL' : metadata?.content?.metadata.symbol
                   }`}</span>
@@ -285,34 +290,42 @@ export const TradingPanel: FC<{
             </label>
             <button
               disabled={
-                inputAmount == '' ||
-                outputAmount == '' ||
-                swapMutation.isPending
+                swapMutation.isPending || createOracleMutation.isPending
               }
-              onClick={() =>
-                metadata &&
-                swapMutation.mutateAsync({
-                  type: SwapType.BasedInput,
-                  amount_in: parseInt(inputAmount),
-                  min_amount_out: 0,
-                  inputToken: buy ? NATIVE_MINT : new PublicKey(metadata.id),
-                  inputTokenProgram: buy
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
-                  outputToken: buy ? new PublicKey(metadata.id) : NATIVE_MINT,
-                  outputTokenProgram: buy
-                    ? TOKEN_2022_PROGRAM_ID
-                    : TOKEN_PROGRAM_ID,
-                })
-              }
+              onClick={() => {
+                if (!metadata) return;
+                if (swapOracle) {
+                  swapMutation.mutateAsync({
+                    type: SwapType.BasedInput,
+                    amount_in: parseInt(inputAmount),
+                    min_amount_out: 0,
+                    inputToken: buy ? NATIVE_MINT : new PublicKey(metadata.id),
+                    inputTokenProgram: buy
+                      ? TOKEN_PROGRAM_ID
+                      : TOKEN_2022_PROGRAM_ID,
+                    outputToken: buy ? new PublicKey(metadata.id) : NATIVE_MINT,
+                    outputTokenProgram: buy
+                      ? TOKEN_2022_PROGRAM_ID
+                      : TOKEN_PROGRAM_ID,
+                  });
+                } else {
+                  createOracleMutation.mutateAsync();
+                }
+              }}
               className={`btn ${
                 buy ? 'btn-success' : 'btn-error'
               } w-full rounded`}
             >
-              {swapMutation.isPending ? (
+              {swapMutation.isPending || createOracleMutation.isPending ? (
                 <div className="loading loading-spinner" />
               ) : (
-                <span>{buy ? 'Buy' : 'Sell'}</span>
+                <span>
+                  {swapOracle
+                    ? buy
+                      ? 'Buy'
+                      : 'Sell'
+                    : 'Initialize trading account for 0.03 SOL'}
+                </span>
               )}
             </button>
           </div>

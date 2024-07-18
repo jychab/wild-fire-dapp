@@ -91,10 +91,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col w-full items-center">
           <div className="w-full navbar shadow-lg text-base-content bg-base-100 border-b border-base-300">
-            <Link
-              className="flex items-center gap-1 w-[200px] max-w-1/3"
-              href="/"
-            >
+            <Link className="flex items-end gap-1 w-[300px] max-w-1/4" href="/">
               <Image
                 src={logo}
                 alt={'logo'}

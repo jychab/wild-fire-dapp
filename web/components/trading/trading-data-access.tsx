@@ -1,5 +1,6 @@
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
+  createOracle,
   fetchSwapPoolDetails,
   fetchSwapPoolOracle,
   fetchSwapPrice,
@@ -9,7 +10,7 @@ import {
 import { getAccount, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, TransactionSignature } from '@solana/web3.js';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
@@ -28,7 +29,7 @@ export function useGetTokenAccountInfo({
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
-      'get-address-account-info',
+      'get-address-token-account-info',
       { endpoint: connection.rpcEndpoint, address },
     ],
     queryFn: async () => {
@@ -109,7 +110,7 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
-
+  const client = useQueryClient();
   return useMutation({
     mutationKey: [
       'swap-mint',
@@ -193,6 +194,71 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
       if (signature) {
         transactionToast(signature);
       }
+      return Promise.all([
+        client.invalidateQueries({
+          queryKey: [
+            'get-address-account-info',
+            { endpoint: connection.rpcEndpoint, address: wallet.publicKey! },
+          ],
+        }),
+        client.refetchQueries({
+          queryKey: [
+            'get-address-token-account-info',
+            { endpoint: connection.rpcEndpoint, address: wallet.publicKey! },
+          ],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${error}`);
+    },
+  });
+}
+
+export function useCreateOracle({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const wallet = useWallet();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationKey: [
+      'create-mint-oracle',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async () => {
+      if (!mint || !wallet.publicKey || !wallet.signTransaction) return;
+      let signature: TransactionSignature = '';
+      try {
+        const ix = await createOracle(connection, mint, wallet.publicKey);
+
+        signature = await buildAndSendTransaction({
+          connection,
+          ixs: [ix],
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error}` + signature);
+        return;
+      }
+    },
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+      }
+      return Promise.all([
+        client.invalidateQueries({
+          queryKey: [
+            'get-swap-oracle',
+            { endpoint: connection.rpcEndpoint, mint },
+          ],
+        }),
+      ]);
     },
     onError: (error) => {
       console.error(`Transaction failed! ${error}`);

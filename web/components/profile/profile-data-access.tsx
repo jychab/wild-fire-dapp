@@ -1,16 +1,19 @@
 'use client';
 
+import { db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import {
   Mint,
   TOKEN_2022_PROGRAM_ID,
+  getAccount,
   getMint,
   getTransferFeeConfig,
 } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
+import { doc, getDoc } from 'firebase/firestore';
 import { program } from '../../utils/helper/transcationInstructions';
 import { UploadContent } from '../upload/upload.data-access';
 import { AuthorityData } from './profile-ui';
@@ -45,6 +48,33 @@ export function useGetMintDetails({
       { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
     ],
     queryFn: () => mint && getMint(connection, mint, undefined, tokenProgram),
+    enabled: !!mint,
+  });
+}
+
+export function useGetMintSummaryDetails({
+  mint,
+}: {
+  mint: PublicKey | undefined;
+}) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-mint-summary-details',
+      { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
+    ],
+    queryFn: async () => {
+      if (!mint) return;
+      const result = await getDoc(
+        doc(db, `Mint/${mint.toBase58()}/TokenInfo/Summary`)
+      );
+      return result.data() as {
+        currentPrice: number;
+        currentHoldersCount: number;
+        holdersChange24hPercent: number;
+        priceChange24hPercent: number;
+      };
+    },
     enabled: !!mint,
   });
 }
@@ -93,13 +123,38 @@ export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
-      return connection.getTokenLargestAccounts(mint, 'confirmed');
+      const result = await connection.getTokenLargestAccounts(
+        mint,
+        'confirmed'
+      );
+      return Promise.all(
+        result.value.map(async (x) => {
+          const owner = (
+            await getAccount(
+              connection,
+              x.address,
+              undefined,
+              TOKEN_2022_PROGRAM_ID
+            )
+          )?.owner;
+          return {
+            ...x,
+            owner,
+          };
+        })
+      );
     },
     staleTime: 1000 * 60 * 10, //10mins
   });
 }
 
-export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
+export function useGetTokenDetails({
+  mint,
+  withContent = true,
+}: {
+  mint: PublicKey | null;
+  withContent?: boolean;
+}) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],

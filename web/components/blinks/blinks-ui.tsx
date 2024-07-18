@@ -1,5 +1,5 @@
 import { ExecutionType } from '@/utils/enums/blinks';
-import { sendLike } from '@/utils/firebase/functions';
+import { createOrEditComment, sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
   ACTIONS_REGISTRY_URL_ALL,
@@ -22,6 +22,7 @@ import {
   IconHeartFilled,
   IconHelpOctagonFilled,
   IconProgress,
+  IconSend,
   IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
@@ -494,6 +495,8 @@ export const ActionLayout = ({
         ? new PublicKey(additionalMetadata.mint)
         : null,
   });
+
+  const [comment, setComment] = useState('');
   const router = useRouter();
   return (
     <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
@@ -625,7 +628,7 @@ export const ActionLayout = ({
             )}
           </div>
           {showMore ? (
-            <>
+            <div className="flex flex-col pb-2 gap-2">
               <span className="font-semibold text-sm">{title}</span>
               <p className="text-xs whitespace-pre-wrap ">{description}</p>
               {disclaimer && <div className="mb-4">{disclaimer}</div>}
@@ -640,26 +643,68 @@ export const ActionLayout = ({
                   {error}
                 </span>
               )}
-            </>
+            </div>
           ) : (
-            <p className="text-xs truncate">{description}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs truncate">{description}</p>
+              <button
+                onClick={() => {
+                  if (!multiGrid) {
+                    setShowMore(true);
+                  } else if (additionalMetadata) {
+                    router.push(
+                      `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
+                    );
+                  }
+                }}
+                className="text-xs stat-desc link link-hover w-fit"
+              >
+                {!showMore && 'Show More'}
+              </button>
+            </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 pt-2">
-          <button
-            onClick={() => {
-              if (!multiGrid) {
-                setShowMore(true);
-              } else if (additionalMetadata) {
-                router.push(
-                  `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
-                );
-              }
-            }}
-            className="text-xs stat-desc link link-hover w-fit"
-          >
-            {!showMore && 'Show More'}
-          </button>
+        <div className="flex flex-col items-start gap-1 pt-2">
+          {additionalMetadata?.commentsCount && (
+            <button
+              onClick={() => {
+                if (multiGrid) {
+                  router.push(
+                    `/content?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`
+                  );
+                }
+              }}
+              className="stat-desc link link-hover"
+            >{`View ${additionalMetadata.commentsCount} comments`}</button>
+          )}
+          {!multiGrid && (
+            <label className="input rounded-full flex w-full input-xs items-center group p-0 focus-within:p-4">
+              <input
+                placeholder="Add a comment"
+                type="text"
+                className="w-full text-xs"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+              <button
+                onClick={async () => {
+                  if (additionalMetadata) {
+                    await createOrEditComment(
+                      additionalMetadata?.mint,
+                      additionalMetadata?.id,
+                      crypto.randomUUID(),
+                      comment,
+                      []
+                    );
+                  }
+                  setComment('');
+                }}
+                className="hidden group-focus-within:inline-flex btn btn-xs btn-ghost "
+              >
+                <IconSend />
+              </button>
+            </label>
+          )}
           {additionalMetadata && (
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(additionalMetadata.updatedAt || 0)}

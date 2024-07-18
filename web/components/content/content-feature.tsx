@@ -65,7 +65,9 @@ export const ContentGridFeature: FC = () => {
           } else {
             updatedContent.push(newContent);
             updatedContent.sort(
-              (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+              (a, b) =>
+                (b.price || 0) * (b.quantity || 0) -
+                (a.price || 0) * (a.quantity || 0)
             );
           }
         });

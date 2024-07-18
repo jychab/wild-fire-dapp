@@ -1,13 +1,15 @@
-import { sendLike } from '@/utils/firebase/functions';
+import { createOrEditComment, sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
+import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
   IconHeart,
   IconHeartFilled,
+  IconSend,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -16,7 +18,10 @@ import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
-import { useGetToken } from '../profile/profile-data-access';
+import {
+  useGetToken,
+  useGetTokenDetails,
+} from '../profile/profile-data-access';
 import { ContentType } from '../upload/upload-ui';
 import { BlinkContent, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -38,6 +43,7 @@ export interface AdditionalMetadata {
   commentsCount?: number;
   updatedAt?: number;
   price?: number;
+  quantity?: number;
   last24hrPercentChange?: number;
   verified?: boolean;
 }
@@ -96,6 +102,7 @@ export const PostCard = ({
   const removeContentMutation = useRemoveContentMutation({
     mint: editable ? new PublicKey(content.mint) : null,
   });
+  const [comment, setComment] = useState('');
   const router = useRouter();
   return (
     <div className="flex flex-col sm:border bg-base-100 rounded w-full">
@@ -166,7 +173,6 @@ export const PostCard = ({
                           }
                         }
                       }}
-                      className=""
                     >
                       {content.likesUser &&
                       publicKey &&
@@ -233,36 +239,76 @@ export const PostCard = ({
                 </div>
               )}
             </div>
-            <p
-              className={`text-xs ${
-                showMore ? 'whitespace-pre-wrap' : 'truncate'
-              }`}
-            >
-              {content.caption}
-            </p>
+            <div className="flex gap-2 items-center">
+              <p
+                className={`text-xs ${
+                  showMore ? 'whitespace-pre-wrap' : 'truncate'
+                }`}
+              >
+                {content.caption}
+              </p>
+              {content.caption != '' &&
+                (content.caption.length > 10 ||
+                  content.caption.includes('\n')) && (
+                  <button
+                    onClick={() => {
+                      if (!multiGrid) {
+                        setShowMore(true);
+                      } else {
+                        router.push(
+                          `/content?mintId=${content.mint}&id=${content.id}`
+                        );
+                      }
+                    }}
+                    className="text-xs stat-desc link link-hover w-fit"
+                  >
+                    {!showMore && 'Show More'}
+                  </button>
+                )}
+            </div>
           </div>
           <div className="flex flex-col items-start gap-2 pt-2">
-            {content.caption != '' &&
-              (content.caption.length > 10 ||
-                content.caption.includes('\n')) && (
+            {content.commentsCount && (
+              <button
+                onClick={() => {
+                  if (multiGrid) {
+                    router.push(
+                      `/content?mintId=${content.mint}&id=${content.id}`
+                    );
+                  }
+                }}
+                className="stat-desc link link-hover"
+              >{`View ${content.commentsCount} comments`}</button>
+            )}
+            {!multiGrid && (
+              <label className="input rounded-full flex w-full input-xs items-center group p-0 focus-within:p-4">
+                <input
+                  placeholder="Add a comment"
+                  type="text"
+                  className="w-full text-xs"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
                 <button
-                  onClick={() => {
-                    if (!multiGrid) {
-                      setShowMore(true);
-                    } else {
-                      router.push(
-                        `/content?mintId=${content.mint}&id=${content.id}`
+                  onClick={async () => {
+                    if (content) {
+                      await createOrEditComment(
+                        content?.mint,
+                        content?.id,
+                        crypto.randomUUID(),
+                        comment,
+                        []
                       );
                     }
+                    setComment('');
                   }}
-                  className="text-xs stat-desc link link-hover w-fit"
+                  className="hidden group-focus-within:inline-flex btn btn-xs btn-ghost "
                 >
-                  {!showMore && 'Show More'}
+                  <IconSend />
                 </button>
-              )}
-            {content.commentsCount && (
-              <button className="stat-desc link link-hover">{`View ${content.commentsCount} comments`}</button>
+              </label>
             )}
+
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt || 0)}
             </span>
@@ -338,8 +384,12 @@ export const DisplayContent: FC<DisplayContentProps> = ({
 export const UserProfile: FC<{
   content: PostContentWithMetadata | BlinkContentWithMetadata;
 }> = ({ content }) => {
+  const { data: solDetails } = useGetTokenDetails({
+    mint: NATIVE_MINT,
+    withContent: false,
+  });
   return (
-    <div className="flex w-full items-center px-4 py-2 ">
+    <div className="flex w-full items-center justify-between px-4 py-2 ">
       <Link
         href={`/profile?mintId=${content.mint}`}
         className="link link-hover flex items-center gap-2 "
@@ -362,6 +412,26 @@ export const UserProfile: FC<{
           <div className="text-xs">{content.symbol}</div>
         </div>
       </Link>
+      {content.price && solDetails?.token_info?.price_info?.price_per_token && (
+        <Link
+          className="flex flex-col gap-1 items-end"
+          href={`/profile?mintId=${content.mint}&tab=trade`}
+        >
+          <span className="text-sm">
+            $
+            {(
+              (content.price *
+                solDetails?.token_info?.price_info?.price_per_token) /
+              LAMPORTS_PER_SOL
+            ).toPrecision(3)}
+          </span>
+          <span className="text-xs text-success">
+            {content.last24hrPercentChange && content.last24hrPercentChange < 0
+              ? `-${content.last24hrPercentChange}%`
+              : `+${content.last24hrPercentChange}%`}
+          </span>
+        </Link>
+      )}
     </div>
   );
 };

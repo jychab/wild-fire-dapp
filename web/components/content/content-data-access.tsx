@@ -1,9 +1,11 @@
 import { HASHFEED_MINT } from '@/utils/consts';
+import { db } from '@/utils/firebase/firebase';
 import { deletePost } from '@/utils/firebase/functions';
 import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { doc, getDoc } from 'firebase/firestore';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export async function getAllFungibleTokensFromOwner({
@@ -57,6 +59,37 @@ export async function getAsset({
     }),
   });
   const data = (await response.json()).result as DAS.GetAssetResponse;
+  return data;
+}
+
+export async function getTokenBalancesFromOwner({
+  address,
+  connection,
+}: {
+  address: PublicKey;
+  connection: Connection;
+}) {
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'getTokenAccounts',
+      id: '',
+      params: {
+        page: 1,
+        limit: 100,
+        displayOptions: {
+          showZeroBalance: false,
+        },
+        owner: address.toBase58(),
+      },
+    }),
+  });
+  const data = (await response.json()).result as DAS.GetTokenAccountsResponse;
+
   return data;
 }
 
@@ -128,12 +161,37 @@ export const fetchOwnerTokenDetails = ({
         : ownerTokenAccounts?.items.concat(
             await getAsset({ mint: HASHFEED_MINT, connection })
           );
+      const ownerTokenBalances = await getTokenBalancesFromOwner({
+        address,
+        connection,
+      });
 
       const allTokenAccountsWithPriceAndQuantity = await Promise.all(
         allTokenAccounts.map(async (x) => {
-          return {
-            ...x,
-          };
+          try {
+            const tokenSummary = await getDoc(
+              doc(db, `Mint/${x.id}/TokenInfo/Summary`)
+            );
+            return {
+              ...x,
+              quantity:
+                ownerTokenBalances.token_accounts?.find((y) => y.mint == x.id)
+                  ?.amount || 0,
+              price: tokenSummary.exists()
+                ? tokenSummary.data().currentPrice
+                : 0,
+              last24hrPercentChange: tokenSummary.exists()
+                ? tokenSummary.data().priceChange24hPercent || 0
+                : 0,
+            };
+          } catch (e) {
+            return {
+              ...x,
+              quantity: 0,
+              price: 0,
+              last24hrPercentChange: 0,
+            };
+          }
         })
       );
 

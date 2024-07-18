@@ -18,7 +18,12 @@ import {
   updateTokenMetadata,
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
-import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+} from '@solana/web3.js';
 import { CONFIG, OFF_SET } from '../consts';
 import Idl from '../program/idl/wild_fire.json';
 import { WildFire } from '../program/types/wild_fire';
@@ -324,6 +329,9 @@ export async function swapBaseOutput(
     program(connection).account.poolState.fetchNullable(poolAddress),
   ]);
   if (observationState == null || poolAccount == null) {
+    if (max_amount_in < LAMPORTS_PER_SOL * 0.032) {
+      throw Error('Need at least 0.032 SOL for the first transaction');
+    }
     ixs.push(
       await program(connection)
         .methods.createOracle()
@@ -542,15 +550,7 @@ export async function swapBaseInput(
     program(connection).account.poolState.fetchNullable(poolAddress),
   ]);
   if (observationState == null || poolAccount == null) {
-    ixs.push(
-      await program(connection)
-        .methods.createOracle()
-        .accounts({
-          payer: payer,
-          poolState: poolAddress,
-        })
-        .instruction()
-    );
+    throw Error('Create an oracle account for ~0.03 SOL first!');
   }
 
   const inputTokenAccount = getAssociatedTokenAddressSync(
@@ -641,4 +641,20 @@ export async function swapBaseInput(
     )
   );
   return ixs;
+}
+
+export async function createOracle(
+  connection: Connection,
+  mint: PublicKey,
+  payer: PublicKey
+) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    program(connection).programId
+  );
+  const ix = await program(connection)
+    .methods.createOracle()
+    .accounts({ payer: payer, poolState: poolAddress })
+    .instruction();
+  return ix;
 }

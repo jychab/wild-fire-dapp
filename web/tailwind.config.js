@@ -31,15 +31,15 @@ module.exports = {
       },
       {
         dark: {
-          primary: '#ffffff',
-          secondary: '#ffffff',
-          accent: '#FE5757',
-          neutral: '#d1d5db',
-          'base-100': '#202020',
-          info: '#67e8f9',
+          primary: '#fb7185',
+          secondary: '#38bdf8',
+          accent: '#f4ef5e',
+          neutral: '#292524',
+          'base-100': '#292929',
+          info: '#d1d5db',
           success: '#4ade80',
-          warning: '#f59e0b',
-          error: '#ffff00',
+          warning: '#fbbf24',
+          error: '#ff0000',
         },
       },
     ], // false: only light + dark | true: all themes | array: specific themes like this ["light", "dark", "cupcake"]
