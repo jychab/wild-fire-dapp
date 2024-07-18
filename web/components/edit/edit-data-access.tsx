@@ -1,18 +1,25 @@
 'use client';
 
 import { proxify } from '@/utils/helper/proxy';
+import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   TransactionInstruction,
   TransactionSignature,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { uploadMedia, uploadMetadata } from '../../utils/firebase/functions';
+import {
+  getUpdateMetadataSponsored,
+  uploadMedia,
+  uploadMetadata,
+} from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   changeAdmin,
@@ -34,6 +41,7 @@ interface EditMintArgs {
   maxFee: number | undefined;
   admin: PublicKey;
   previous: {
+    distributor: PublicKey;
     maximumFee: bigint;
     transferFeeBasisPoints: number;
     admin: PublicKey;
@@ -134,6 +142,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       let ixs: TransactionInstruction[] = [];
+      let partialTx;
       try {
         if (input.previous.admin.toString() != input.admin.toString()) {
           ixs.push(
@@ -167,6 +176,49 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         if (uriMetadata.symbol !== input.symbol) {
           fieldsToUpdate.push(['symbol', input.symbol]);
         }
+        if (fieldsToUpdate.length > 0) {
+          if (ixs.length == 0) {
+            const distributor = await connection.getAccountInfo(
+              input.previous.distributor
+            );
+            if (
+              distributor &&
+              distributor.lamports > 0.0001 * LAMPORTS_PER_SOL
+            ) {
+              partialTx = await getUpdateMetadataSponsored(
+                mint.toBase58(),
+                fieldsToUpdate
+              );
+            }
+          }
+          if (!partialTx) {
+            const lamports = await getAdditionalRentForUpdatedMetadata(
+              connection,
+              mint,
+              fieldsToUpdate
+            );
+            if (lamports > 0) {
+              ixs.push(
+                SystemProgram.transfer({
+                  fromPubkey: wallet.publicKey,
+                  toPubkey: mint,
+                  lamports: lamports,
+                })
+              );
+            }
+            for (let x of fieldsToUpdate) {
+              ixs.push(
+                await updateMetadata(
+                  connection,
+                  wallet.publicKey,
+                  mint,
+                  x[0],
+                  x[1]
+                )
+              );
+            }
+          }
+        }
         if (
           input.picture ||
           input.description != uriMetadata.description ||
@@ -183,43 +235,28 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             description: input.description,
             image: imageUrl ? imageUrl : uriMetadata.image,
           };
-          const uri = await uploadMetadata(JSON.stringify(payload), mint);
-          fieldsToUpdate.push(['uri', uri]);
-
-          const lamports = await getAdditionalRentForUpdatedMetadata(
-            connection,
-            mint,
-            fieldsToUpdate
-          );
-          if (lamports > 0) {
-            ixs.push(
-              SystemProgram.transfer({
-                fromPubkey: wallet.publicKey,
-                toPubkey: mint,
-                lamports: lamports,
-              })
-            );
-          }
-          for (let x of fieldsToUpdate) {
-            ixs.push(
-              await updateMetadata(
-                connection,
-                wallet.publicKey,
-                mint,
-                x[0],
-                x[1]
-              )
-            );
-          }
+          await uploadMetadata(JSON.stringify(payload), mint);
         }
 
         if (ixs.length == 0) return;
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
+        if (partialTx) {
+          const partialSignedTx = VersionedTransaction.deserialize(
+            bs58.decode(partialTx)
+          );
+          signature = await buildAndSendTransaction({
+            connection,
+            partialSignedTx,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
+        } else {
+          signature = await buildAndSendTransaction({
+            connection,
+            ixs,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
+        }
 
         return signature;
       } catch (error: unknown) {
@@ -234,12 +271,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         router.push(`/profile?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
-          client.refetchQueries({
             queryKey: [
               'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
@@ -266,12 +297,13 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useGetMintToken({ mint }: { mint: PublicKey }) {
+export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
 
   return useQuery({
     queryKey: ['get-mint-token', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: () =>
+      mint &&
       connection
         .getProgramAccounts(program(connection).programId, {
           filters: [
@@ -296,5 +328,6 @@ export function useGetMintToken({ mint }: { mint: PublicKey }) {
             return null;
           }
         }),
+    enabled: !!mint,
   });
 }

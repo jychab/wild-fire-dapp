@@ -15,3 +15,7 @@ export const OFF_SET = 1_000_000_000_000;
 export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   'HBqRq1kwJP4nSHL633D3Q6zLXYcv9YDi1GvyG3VPwcMK'
 );
+
+export const FUND_FEE_WALLET = new PublicKey(
+  'Hc1vbMTbjDmj5QMazL5PUDZWRdpFakBedZvKJfzEp8B7'
+);

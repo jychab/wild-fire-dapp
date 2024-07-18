@@ -148,7 +148,7 @@ export const PostCard = ({
             <div className="flex justify-between items-center">
               <div className="flex gap-2 text-sm items-end">
                 <Link
-                  href={`/profile?mintId=${content.mint}&tab=trade`}
+                  href={`/profile?mintId=${content.mint}`}
                   className="link link-hover font-semibold"
                 >
                   {content.name}
@@ -267,7 +267,7 @@ export const PostCard = ({
                 )}
             </div>
           </div>
-          <div className="flex flex-col items-start gap-2 pt-2">
+          <div className="flex flex-col items-start gap-1 pt-2">
             {content.commentsCount && (
               <button
                 onClick={() => {
@@ -290,9 +290,9 @@ export const PostCard = ({
                   onChange={(e) => setComment(e.target.value)}
                 />
                 <button
-                  onClick={async () => {
-                    if (content) {
-                      await createOrEditComment(
+                  onClick={() => {
+                    if (content && comment) {
+                      createOrEditComment(
                         content?.mint,
                         content?.id,
                         crypto.randomUUID(),
@@ -308,7 +308,6 @@ export const PostCard = ({
                 </button>
               </label>
             )}
-
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt || 0)}
             </span>

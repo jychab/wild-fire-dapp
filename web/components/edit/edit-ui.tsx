@@ -2,6 +2,7 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
+import { IconUpload } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -151,22 +152,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                   alt={''}
                 />
               ) : (
-                <div className="flex flex-col w-full h-full border border-base-content items-center justify-center">
-                  <svg
-                    className="w-8 h-8 mb-4 text-gray-400"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 20 16"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
-                    />
-                  </svg>
+                <div className="flex flex-col gap-2 rounded-full w-full h-full border border-base-content items-center justify-center">
+                  <IconUpload />
                   <p className="text-sm text-center flex flex-col text-gray-400">
                     <span className="font-semibold">Click to upload</span>
                     <span>or drag and drop</span>

@@ -108,7 +108,7 @@ export const CreatePanel: FC = () => {
             />
             <input
               type="text"
-              placeholder="@handle"
+              placeholder="@username"
               maxLength={20}
               className="input input-bordered w-full text-sm rounded"
               value={handle}
@@ -118,17 +118,16 @@ export const CreatePanel: FC = () => {
         </div>
         <div className="flex flex-col w-full gap-2">
           <div className="label">
-            <span className="label-text">Description (optional)</span>
+            <span className="label-text">Bio (Optional)</span>
           </div>
           <textarea
             maxLength={200}
-            placeholder="Write your description..."
+            placeholder="Write a short introduction..."
             className="textarea textarea-bordered textarea-sm leading-normal h-24 w-full overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
           ></textarea>
         </div>
-
         {publicKey ? (
           <button
             disabled={!valid || createMutation.isPending}
@@ -138,7 +137,6 @@ export const CreatePanel: FC = () => {
                 symbol: handle,
                 picture: picture!,
                 description: description,
-                transferFee: 10,
               });
             }}
             className="btn btn-primary w-full rounded"

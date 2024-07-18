@@ -687,9 +687,9 @@ export const ActionLayout = ({
                 onChange={(e) => setComment(e.target.value)}
               />
               <button
-                onClick={async () => {
-                  if (additionalMetadata) {
-                    await createOrEditComment(
+                onClick={() => {
+                  if (additionalMetadata && comment) {
+                    createOrEditComment(
                       additionalMetadata?.mint,
                       additionalMetadata?.id,
                       crypto.randomUUID(),

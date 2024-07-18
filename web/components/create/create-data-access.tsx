@@ -1,8 +1,9 @@
 'use client';
 
-import { ONE_BILLION } from '@/utils/consts';
+import { FUND_FEE_WALLET, ONE_BILLION } from '@/utils/consts';
 import {
   getDistributor,
+  getDistributorSponsored,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
@@ -11,10 +12,10 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createMint,
   createMintMetadata,
-  createOracle,
   initializeMint,
   program,
 } from '@/utils/helper/transcationInstructions';
+import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -22,6 +23,7 @@ import {
   PublicKey,
   SystemProgram,
   TransactionSignature,
+  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -33,8 +35,6 @@ interface CreateMintArgs {
   symbol: string;
   picture: File;
   description: string;
-  transferFee: number;
-  maxTransferFee?: number;
 }
 
 export function useCreateMint({ address }: { address: string | null }) {
@@ -80,55 +80,57 @@ export function useCreateMint({ address }: { address: string | null }) {
           additionalMetadata: [['hashfeed', generateMintApiEndPoint(mint)]],
           mint: mint,
         };
-        // const { partialTx: partialTx } = await getDistributorSponsored(
-        //   metadata
-        // );
-        // if (!partialTx) {
-        const ix = [];
-        ix.push(
-          await createMint(
-            connection,
-            distributor,
-            input.transferFee,
-            input.maxTransferFee,
-            wallet.publicKey
-          )
-        );
-        ix.push(
-          await createMintMetadata(connection, metadata, wallet.publicKey)
-        );
-        ix.push(
-          await initializeMint(
-            connection,
-            ONE_BILLION,
-            LAMPORTS_PER_SOL * 0.001,
-            mint,
-            wallet.publicKey
-          )
-        );
-        ix.push(await createOracle(connection, mint, wallet.publicKey));
-        ix.push(
-          SystemProgram.transfer({
-            fromPubkey: wallet.publicKey,
-            toPubkey: distributor,
-            lamports: LAMPORTS_PER_SOL * 0.01,
-          })
-        );
-        signature = await buildAndSendTransaction({
-          connection: connection,
-          ixs: ix,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
-        // } else {
-        //   let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
-        //   signature = await buildAndSendTransaction({
-        //     connection: connection,
-        //     partialSignedTx: tx,
-        //     publicKey: wallet.publicKey,
-        //     signTransaction: wallet.signTransaction,
-        //   });
-        // }
+        const fundWallet = await connection.getAccountInfo(FUND_FEE_WALLET);
+
+        let partialTx;
+        if (fundWallet && fundWallet.lamports > 0.03 * LAMPORTS_PER_SOL) {
+          partialTx = (await getDistributorSponsored(metadata)).partialTx;
+        }
+        if (!partialTx) {
+          const ix = [];
+          ix.push(
+            await createMint(
+              connection,
+              distributor,
+              10,
+              undefined,
+              wallet.publicKey
+            )
+          );
+          ix.push(
+            await createMintMetadata(connection, metadata, wallet.publicKey)
+          );
+          ix.push(
+            await initializeMint(
+              connection,
+              ONE_BILLION * 0.8,
+              ONE_BILLION * 0.2,
+              mint,
+              wallet.publicKey
+            )
+          );
+          ix.push(
+            SystemProgram.transfer({
+              fromPubkey: wallet.publicKey,
+              toPubkey: distributor,
+              lamports: LAMPORTS_PER_SOL * 0.003,
+            })
+          );
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            ixs: ix,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
+        } else {
+          let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            partialSignedTx: tx,
+            publicKey: wallet.publicKey,
+            signTransaction: wallet.signTransaction,
+          });
+        }
 
         return { signature, mint };
       } catch (error: unknown) {

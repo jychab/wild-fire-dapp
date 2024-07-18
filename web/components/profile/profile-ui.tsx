@@ -7,7 +7,6 @@ import {
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  TransferFeeConfig,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -54,31 +53,12 @@ export const ProfilePage: FC<{
   mintId: string;
   tab: string | null;
 }> = ({ mintId, tab }) => {
-  const { data: mintTokenData } = useGetMintToken({
-    mint: new PublicKey(mintId),
-  });
-
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: new PublicKey(mintId),
   });
 
-  const { data: largestFromMint } = useGetLargestAccountFromMint({
-    mint: new PublicKey(mintId),
-  });
-
-  const { data: mintQuery } = useGetMintDetails({
-    mint: new PublicKey(mintId),
-    tokenProgram: metaDataQuery?.token_info?.token_program
-      ? new PublicKey(metaDataQuery?.token_info?.token_program)
-      : undefined,
-  });
-
-  const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
-    mint: mintQuery,
-  });
-
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: new PublicKey(mintId),
+    mint: metaDataQuery ? new PublicKey(mintId) : null,
   });
 
   const [selectedTab, setSelectedTab] = useState(
@@ -94,24 +74,24 @@ export const ProfilePage: FC<{
       <div className="flex flex-col gap-8 items-start w-full h-full max-w-7xl py-8">
         <Profile
           metadata={metaDataQuery}
-          authorityData={mintTokenData}
+          mintId={mintId}
           mintSummaryDetails={mintSummaryDetails}
         />
         <div className="flex flex-col flex-1 w-full h-full">
-          <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+          <Tabs
+            metadata={metaDataQuery}
+            selectedTab={selectedTab}
+            setSelectedTab={setSelectedTab}
+          />
           <div className="border-base-200 rounded border-x border-b w-full sm:h-full md:p-4">
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}
             {selectedTab == TabsEnum.TRADE && (
-              <TradingPanel metadata={metaDataQuery} />
+              <TradingPanel metadata={metaDataQuery} mintId={mintId} />
             )}
-            {selectedTab == TabsEnum.DETAILS && (
+            {selectedTab == TabsEnum.DETAILS && metaDataQuery && (
               <DetailsPanel
-                transferFeeConfig={transferFeeConfig}
-                authorityData={mintTokenData}
-                largestTokenAccount={largestFromMint}
-                mintQuery={mintQuery}
                 metadata={metaDataQuery}
                 mintSummaryDetails={mintSummaryDetails}
               />
@@ -160,19 +140,31 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
   );
 };
 
-interface DetailsPanelProps
-  extends MainPanelProps,
-    DetailsProps,
-    ActivitiesProps {}
+interface DetailsPanelProps {
+  metadata: DAS.GetAssetResponse | null | undefined;
+  mintSummaryDetails:
+    | {
+        currentPrice: number;
+        currentHoldersCount: number;
+        holdersChange24hPercent: number;
+        priceChange24hPercent: number;
+      }
+    | undefined;
+}
 
 const DetailsPanel: FC<DetailsPanelProps> = ({
-  transferFeeConfig,
-  mintQuery,
-  authorityData,
   metadata,
-  largestTokenAccount,
   mintSummaryDetails,
 }) => {
+  const { data: authorityData } = useGetMintToken({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+  const { data: mintQuery } = useGetMintDetails({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata?.token_info?.token_program)
+      : undefined,
+  });
   return (
     <>
       <MainPanel
@@ -182,14 +174,11 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
         mintSummaryDetails={mintSummaryDetails}
       />
       <Details
-        transferFeeConfig={transferFeeConfig}
+        mintQuery={mintQuery}
         authorityData={authorityData}
         metadata={metadata}
       />
-      <Activities
-        largestTokenAccount={largestTokenAccount}
-        mintQuery={mintQuery}
-      />
+      <Activities mintQuery={mintQuery} />
     </>
   );
 };
@@ -197,9 +186,10 @@ const DetailsPanel: FC<DetailsPanelProps> = ({
 interface TabsProps {
   selectedTab: TabsEnum;
   setSelectedTab: (value: TabsEnum) => void;
+  metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
+const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab, metadata }) => {
   return (
     <div
       role="tablist"
@@ -223,31 +213,32 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
         }`}
         checked={selectedTab == TabsEnum.TRADE}
         onChange={() => setSelectedTab(TabsEnum.TRADE)}
-        aria-label={TabsEnum.TRADE}
+        aria-label={`${TabsEnum.TRADE} ${!metadata ? '🔒' : ''}`}
       />
-      <input
-        type="radio"
-        role="tab"
-        className={`tab font-semibold ${
-          selectedTab == TabsEnum.DETAILS ? 'tab-active' : ''
-        }`}
-        aria-label={TabsEnum.DETAILS}
-        onChange={() => setSelectedTab(TabsEnum.DETAILS)}
-        checked={selectedTab == TabsEnum.DETAILS}
-      />
+      {metadata && (
+        <input
+          type="radio"
+          role="tab"
+          className={`tab font-semibold ${
+            selectedTab == TabsEnum.DETAILS ? 'tab-active' : ''
+          }`}
+          aria-label={TabsEnum.DETAILS}
+          onChange={() => setSelectedTab(TabsEnum.DETAILS)}
+          checked={selectedTab == TabsEnum.DETAILS}
+        />
+      )}
     </div>
   );
 };
 
 interface ActivitiesProps {
-  largestTokenAccount: any[] | undefined;
   mintQuery: Mint | null | undefined;
 }
 
-const Activities: FC<ActivitiesProps> = ({
-  largestTokenAccount,
-  mintQuery,
-}) => {
+const Activities: FC<ActivitiesProps> = ({ mintQuery }) => {
+  const { data: largestTokenAccount } = useGetLargestAccountFromMint({
+    mint: mintQuery ? new PublicKey(mintQuery.address) : null,
+  });
   return (
     <div className="p-4 bg-base-100 gap-4 card rounded w-full">
       <span className="card-title">Activities</span>
@@ -307,16 +298,19 @@ interface ProfileProps {
       }
     | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
-  authorityData: AuthorityData | null | undefined;
+  mintId: string;
 }
 
 const Profile: FC<ProfileProps> = ({
   metadata,
-  authorityData,
+  mintId,
   mintSummaryDetails,
 }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
+  const { data: authorityData } = useGetMintToken({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
   const { data: tokenDetails } = useGetTokenDetails({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
@@ -327,7 +321,9 @@ const Profile: FC<ProfileProps> = ({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const { data: solDetails } = useGetTokenDetails({ mint: NATIVE_MINT });
+  const { data: solDetails } = useGetTokenDetails({
+    mint: metadata ? NATIVE_MINT : null,
+  });
 
   const { data: tokenInfo } = useGetTokenAccountInfo({
     address:
@@ -350,7 +346,7 @@ const Profile: FC<ProfileProps> = ({
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata.content.links.image}
+              src={metadata?.content?.links?.image}
               alt={''}
             />
           </div>
@@ -366,38 +362,33 @@ const Profile: FC<ProfileProps> = ({
           <span className="">{metadata?.content?.metadata.symbol}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ">
           <button
             disabled={!swapDetails || (!!tokenInfo && tokenInfo.amount > 0)}
             onClick={() => {
-              if (swapDetails) {
-                metadata &&
-                  swapToken.mutateAsync({
-                    type: SwapType.BasedOutput,
-                    max_amount_in: 0.01 * LAMPORTS_PER_SOL, // 0.01 SOL to subscribe ~$1
-                    amount_out: 1,
-                    inputToken: NATIVE_MINT,
-                    outputToken: new PublicKey(metadata.id),
-                    inputTokenProgram: TOKEN_PROGRAM_ID,
-                    outputTokenProgram: TOKEN_2022_PROGRAM_ID,
-                  });
+              if (swapDetails && metadata) {
+                swapToken.mutateAsync({
+                  type: SwapType.BasedOutput,
+                  max_amount_in: 0.01 * LAMPORTS_PER_SOL, // 0.01 SOL to subscribe ~$1
+                  amount_out: 1,
+                  inputToken: NATIVE_MINT,
+                  outputToken: new PublicKey(metadata.id),
+                  inputTokenProgram: TOKEN_PROGRAM_ID,
+                  outputTokenProgram: TOKEN_2022_PROGRAM_ID,
+                });
               }
             }}
-            className="btn btn-success btn-sm w-32"
+            className="btn btn-success btn-sm w-32 "
           >
             {swapToken.isPending ? (
               <div className="loading loading-spinner" />
             ) : (
-              <div
-                data-tip={
-                  'Feature will be unlocked once a liquidity pool is initialized.'
-                }
-                className={`${!swapDetails ? 'tooltip tooltip-secondary' : ''}`}
-              >
+              <div>
                 {tokenInfo && tokenInfo.amount > 0 ? 'Subscribed' : 'Subscribe'}
               </div>
             )}
           </button>
+
           {authorityData &&
             publicKey &&
             authorityData.mutable == 1 &&
@@ -409,9 +400,7 @@ const Profile: FC<ProfileProps> = ({
               )?.address == publicKey.toBase58()) && (
               <button
                 className="btn btn-outline btn-sm items-center"
-                onClick={() =>
-                  metadata && router.push(`/mint/edit?mintId=${metadata.id}`)
-                }
+                onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
               >
                 <IconEdit />
                 Edit
@@ -420,10 +409,12 @@ const Profile: FC<ProfileProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span>
-            {formatLargeNumber(mintSummaryDetails?.currentHoldersCount || 0) +
-              ' Holders'}
-          </span>
+          {mintSummaryDetails && (
+            <span>
+              {formatLargeNumber(mintSummaryDetails?.currentHoldersCount || 0) +
+                ' Holders'}
+            </span>
+          )}
 
           {(tokenDetails?.token_info?.price_info?.price_per_token ||
             mintSummaryDetails) && (
@@ -452,18 +443,17 @@ const Profile: FC<ProfileProps> = ({
 };
 
 interface DetailsProps {
-  transferFeeConfig: TransferFeeConfig | null | undefined;
+  mintQuery: Mint | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
   authorityData: AuthorityData | null | undefined;
 }
 
-const Details: FC<DetailsProps> = ({
-  transferFeeConfig,
-  metadata,
-  authorityData,
-}) => {
+const Details: FC<DetailsProps> = ({ mintQuery, metadata, authorityData }) => {
   const { connection } = useConnection();
   const [currentEpoch, setCurrentEpoch] = useState<number>();
+  const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
+    mint: mintQuery,
+  });
 
   useEffect(() => {
     if (!currentEpoch && connection) {

@@ -89,15 +89,15 @@ export async function createMintMetadata(
 
 export async function initializeMint(
   connection: Connection,
-  amount: number,
-  initialPurchase: number,
+  amountToCurve: number,
+  amountToCreator: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
   return await program(connection)
     .methods.initializeMint(
-      new BN(amount),
-      new BN(initialPurchase),
+      new BN(amountToCurve),
+      new BN(amountToCreator),
       new BN(OFF_SET)
     )
     .accounts({
@@ -106,12 +106,6 @@ export async function initializeMint(
       admin: payer,
       program: program(connection).programId,
       ammConfig: CONFIG,
-      adminMintTokenAccount: getAssociatedTokenAddressSync(
-        mint,
-        payer,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      ),
     })
     .instruction();
 }
@@ -404,23 +398,10 @@ export async function swapBaseOutput(
         poolState: poolAddress,
         inputTokenAccount,
         outputTokenAccount,
-        inputVault: getAssociatedTokenAddressSync(
-          inputToken,
-          poolAddress,
-          true,
-          inputTokenProgram
-        ),
-        outputVault: getAssociatedTokenAddressSync(
-          outputToken,
-          poolAddress,
-          true,
-          outputTokenProgram
-        ),
         inputTokenProgram: inputTokenProgram,
         outputTokenProgram: outputTokenProgram,
         inputTokenMint: inputToken,
         outputTokenMint: outputToken,
-        observationState: observationAddress,
         program: program(connection).programId,
       })
       .instruction()
@@ -538,19 +519,13 @@ export async function swapBaseInput(
     [Buffer.from('pool'), mint.toBuffer()],
     program(connection).programId
   );
-  const [observationAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('observation'), poolAddress.toBuffer()],
-    program(connection).programId
+
+  const poolAccount = await program(connection).account.poolState.fetchNullable(
+    poolAddress
   );
 
-  const [observationState, poolAccount] = await Promise.all([
-    program(connection).account.observationState.fetchNullable(
-      observationAddress
-    ),
-    program(connection).account.poolState.fetchNullable(poolAddress),
-  ]);
-  if (observationState == null || poolAccount == null) {
-    throw Error('Create an oracle account for ~0.03 SOL first!');
+  if (poolAccount == null) {
+    throw Error('Pool Address Not Found');
   }
 
   const inputTokenAccount = getAssociatedTokenAddressSync(
@@ -611,23 +586,10 @@ export async function swapBaseInput(
         poolState: poolAddress,
         inputTokenAccount,
         outputTokenAccount,
-        inputVault: getAssociatedTokenAddressSync(
-          inputToken,
-          poolAddress,
-          true,
-          inputTokenProgram
-        ),
-        outputVault: getAssociatedTokenAddressSync(
-          outputToken,
-          poolAddress,
-          true,
-          outputTokenProgram
-        ),
         inputTokenProgram: inputTokenProgram,
         outputTokenProgram: outputTokenProgram,
         inputTokenMint: inputToken,
         outputTokenMint: outputToken,
-        observationState: observationAddress,
         program: program(connection).programId,
       })
       .instruction()
@@ -641,20 +603,4 @@ export async function swapBaseInput(
     )
   );
   return ixs;
-}
-
-export async function createOracle(
-  connection: Connection,
-  mint: PublicKey,
-  payer: PublicKey
-) {
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-  const ix = await program(connection)
-    .methods.createOracle()
-    .accounts({ payer: payer, poolState: poolAddress })
-    .instruction();
-  return ix;
 }

@@ -14,31 +14,22 @@ import Image from 'next/image';
 import { FC, useState } from 'react';
 import {
   SwapType,
-  useCreateOracle,
   useFetchSwapPrice,
   useGetAddressInfo,
   useGetTokenAccountInfo,
   useSwapDetails,
   useSwapMint,
-  useSwapOracle,
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
+  mintId: string;
   metadata: DAS.GetAssetResponse | null | undefined;
-}> = ({ metadata }) => {
+}> = ({ metadata, mintId }) => {
   const { publicKey } = useWallet();
 
   const [buy, setBuy] = useState(true);
 
   const { data: swapDetails, isLoading } = useSwapDetails({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-
-  const { data: swapOracle } = useSwapOracle({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-
-  const createOracleMutation = useCreateOracle({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
@@ -51,11 +42,13 @@ export const TradingPanel: FC<{
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const { data: walletInfo } = useGetAddressInfo({ address: publicKey });
+  const { data: walletInfo } = useGetAddressInfo({
+    address: swapDetails ? publicKey : null,
+  });
 
   const { data: tokenInfo } = useGetTokenAccountInfo({
     address:
-      metadata && publicKey
+      metadata && publicKey && swapDetails
         ? getAssociatedTokenAddressSync(
             new PublicKey(metadata!.id),
             publicKey,
@@ -289,50 +282,44 @@ export const TradingPanel: FC<{
               </div>
             </label>
             <button
-              disabled={
-                swapMutation.isPending || createOracleMutation.isPending
-              }
+              disabled={swapMutation.isPending}
               onClick={() => {
                 if (!metadata) return;
-                if (swapOracle) {
-                  swapMutation.mutateAsync({
-                    type: SwapType.BasedInput,
-                    amount_in: parseInt(inputAmount),
-                    min_amount_out: 0,
-                    inputToken: buy ? NATIVE_MINT : new PublicKey(metadata.id),
-                    inputTokenProgram: buy
-                      ? TOKEN_PROGRAM_ID
-                      : TOKEN_2022_PROGRAM_ID,
-                    outputToken: buy ? new PublicKey(metadata.id) : NATIVE_MINT,
-                    outputTokenProgram: buy
-                      ? TOKEN_2022_PROGRAM_ID
-                      : TOKEN_PROGRAM_ID,
-                  });
-                } else {
-                  createOracleMutation.mutateAsync();
-                }
+                swapMutation.mutateAsync({
+                  type: SwapType.BasedInput,
+                  amount_in: parseInt(inputAmount),
+                  min_amount_out: 0,
+                  inputToken: buy ? NATIVE_MINT : new PublicKey(metadata.id),
+                  inputTokenProgram: buy
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+                  outputToken: buy ? new PublicKey(metadata.id) : NATIVE_MINT,
+                  outputTokenProgram: buy
+                    ? TOKEN_2022_PROGRAM_ID
+                    : TOKEN_PROGRAM_ID,
+                });
               }}
               className={`btn ${
                 buy ? 'btn-success' : 'btn-error'
               } w-full rounded`}
             >
-              {swapMutation.isPending || createOracleMutation.isPending ? (
+              {swapMutation.isPending ? (
                 <div className="loading loading-spinner" />
               ) : (
-                <span>
-                  {swapOracle
-                    ? buy
-                      ? 'Buy'
-                      : 'Sell'
-                    : 'Initialize trading account for 0.03 SOL'}
-                </span>
+                <span>{buy ? 'Buy' : 'Sell'}</span>
               )}
             </button>
           </div>
         </>
       ) : (
-        <div>No Pool Address Found.</div>
+        <div className="flex flex-col items-center justify-center">
+          <span>No Pool Address Found</span>
+        </div>
       )}
     </div>
   );
+};
+
+export const CandleStickChart: FC = () => {
+  return <div></div>;
 };

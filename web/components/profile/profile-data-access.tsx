@@ -21,7 +21,7 @@ import { AuthorityData } from './profile-ui';
 export function useGetMintTransferFeeConfig({
   mint,
 }: {
-  mint: Mint | undefined;
+  mint: Mint | undefined | null;
 }) {
   const { connection } = useConnection();
   return useQuery({
@@ -38,7 +38,7 @@ export function useGetMintDetails({
   mint,
   tokenProgram = TOKEN_2022_PROGRAM_ID,
 }: {
-  mint: PublicKey | undefined;
+  mint: PublicKey | null;
   tokenProgram?: PublicKey;
 }) {
   const { connection } = useConnection();
@@ -52,11 +52,7 @@ export function useGetMintDetails({
   });
 }
 
-export function useGetMintSummaryDetails({
-  mint,
-}: {
-  mint: PublicKey | undefined;
-}) {
+export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
@@ -115,7 +111,11 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
   });
 }
 
-export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
+export function useGetLargestAccountFromMint({
+  mint,
+}: {
+  mint: PublicKey | null;
+}) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
@@ -123,6 +123,7 @@ export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
       { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
+      if (!mint) return null;
       const result = await connection.getTokenLargestAccounts(
         mint,
         'confirmed'
@@ -145,6 +146,7 @@ export function useGetLargestAccountFromMint({ mint }: { mint: PublicKey }) {
       );
     },
     staleTime: 1000 * 60 * 10, //10mins
+    enabled: !!mint,
   });
 }
 
@@ -175,6 +177,12 @@ export function useGetTokenDetails({
         }),
       });
       const data = (await response.json()).result as DAS.GetAssetResponse;
+      if (!data) {
+        return null;
+      }
+      if (!withContent) {
+        return data;
+      }
       try {
         const hashFeedUri =
           data.mint_extensions?.metadata?.additional_metadata.find(

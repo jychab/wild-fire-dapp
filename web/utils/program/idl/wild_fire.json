@@ -756,21 +756,21 @@
           }
         },
         {
-          "name": "token_wsol_vault",
+          "name": "admin_mint_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "pool_state"
+                "path": "admin"
               },
               {
                 "kind": "account",
-                "path": "token_program"
+                "path": "token_program_mint"
               },
               {
                 "kind": "account",
-                "path": "wsol"
+                "path": "mint"
               }
             ],
             "program": {
@@ -782,14 +782,6 @@
               ]
             }
           }
-        },
-        {
-          "name": "wsol",
-          "address": "So11111111111111111111111111111111111111112"
-        },
-        {
-          "name": "admin_mint_token_account",
-          "writable": true
         },
         {
           "name": "pool_state",
@@ -843,11 +835,11 @@
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "amount_to_curve",
           "type": "u64"
         },
         {
-          "name": "initial_purchase",
+          "name": "amount_to_creator",
           "type": "u64"
         },
         {
@@ -968,12 +960,60 @@
         {
           "name": "input_vault",
           "docs": ["The vault token account for input token"],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_state"
+              },
+              {
+                "kind": "account",
+                "path": "input_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "input_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
         },
         {
           "name": "output_vault",
           "docs": ["The vault token account for output token"],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_state"
+              },
+              {
+                "kind": "account",
+                "path": "output_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "output_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
         },
         {
           "name": "input_token_program",
@@ -992,11 +1032,8 @@
           "docs": ["The mint of output token"]
         },
         {
-          "name": "observation_state",
-          "docs": [
-            "The program account for the most recent oracle observation"
-          ],
-          "writable": true
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "system_program",
@@ -1075,12 +1112,60 @@
         {
           "name": "input_vault",
           "docs": ["The vault token account for input token"],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_state"
+              },
+              {
+                "kind": "account",
+                "path": "input_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "input_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
         },
         {
           "name": "output_vault",
           "docs": ["The vault token account for output token"],
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_state"
+              },
+              {
+                "kind": "account",
+                "path": "output_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "output_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
         },
         {
           "name": "input_token_program",
@@ -1099,11 +1184,8 @@
           "docs": ["The mint of output token"]
         },
         {
-          "name": "observation_state",
-          "docs": [
-            "The program account for the most recent oracle observation"
-          ],
-          "writable": true
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "system_program",

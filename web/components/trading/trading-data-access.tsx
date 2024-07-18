@@ -1,6 +1,5 @@
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
-  createOracle,
   fetchSwapPoolDetails,
   fetchSwapPoolOracle,
   fetchSwapPrice,
@@ -205,57 +204,6 @@ export function useSwapMint({ mint }: { mint: PublicKey | null }) {
           queryKey: [
             'get-address-token-account-info',
             { endpoint: connection.rpcEndpoint, address: wallet.publicKey! },
-          ],
-        }),
-      ]);
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${error}`);
-    },
-  });
-}
-
-export function useCreateOracle({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
-  const transactionToast = useTransactionToast();
-  const wallet = useWallet();
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationKey: [
-      'create-mint-oracle',
-      {
-        endpoint: connection.rpcEndpoint,
-        mint,
-      },
-    ],
-    mutationFn: async () => {
-      if (!mint || !wallet.publicKey || !wallet.signTransaction) return;
-      let signature: TransactionSignature = '';
-      try {
-        const ix = await createOracle(connection, mint, wallet.publicKey);
-
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs: [ix],
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
-        return signature;
-      } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error}` + signature);
-        return;
-      }
-    },
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
-      }
-      return Promise.all([
-        client.invalidateQueries({
-          queryKey: [
-            'get-swap-oracle',
-            { endpoint: connection.rpcEndpoint, mint },
           ],
         }),
       ]);

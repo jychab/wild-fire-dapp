@@ -49,6 +49,18 @@ export async function getDistributorSponsored(metadata: TokenMetadata) {
   return result.data as { partialTx?: string; distributor: string };
 }
 
+export async function getUpdateMetadataSponsored(
+  mint: string,
+  fieldsToUpdate: [string, string][]
+) {
+  const updateMetadataSponsored = httpsCallable(
+    functions,
+    'updateMetadataSponsored'
+  );
+  const result = await updateMetadataSponsored({ mint, fieldsToUpdate });
+  return result.data as string;
+}
+
 export async function sendLike(
   mint: string,
   postMint: string,
@@ -84,7 +96,7 @@ export function createLoginMessage(sessionKey: string) {
 }
 
 export async function uploadMetadata(payload: string, mint: PublicKey) {
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}.json`;
+  const path = `${mint.toBase58()}/metadata.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'text/plain',

@@ -953,21 +953,21 @@ export type WildFire = {
           };
         },
         {
-          name: 'tokenWsolVault';
+          name: 'adminMintTokenAccount';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'account';
-                path: 'poolState';
+                path: 'admin';
               },
               {
                 kind: 'account';
-                path: 'tokenProgram';
+                path: 'tokenProgramMint';
               },
               {
                 kind: 'account';
-                path: 'wsol';
+                path: 'mint';
               }
             ];
             program: {
@@ -1008,14 +1008,6 @@ export type WildFire = {
               ];
             };
           };
-        },
-        {
-          name: 'wsol';
-          address: 'So11111111111111111111111111111111111111112';
-        },
-        {
-          name: 'adminMintTokenAccount';
-          writable: true;
         },
         {
           name: 'poolState';
@@ -1084,11 +1076,11 @@ export type WildFire = {
       ];
       args: [
         {
-          name: 'amount';
+          name: 'amountToCurve';
           type: 'u64';
         },
         {
-          name: 'initialPurchase';
+          name: 'amountToCreator';
           type: 'u64';
         },
         {
@@ -1210,11 +1202,117 @@ export type WildFire = {
           name: 'inputVault';
           docs: ['The vault token account for input token'];
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'inputTokenProgram';
+              },
+              {
+                kind: 'account';
+                path: 'inputTokenMint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
         },
         {
           name: 'outputVault';
           docs: ['The vault token account for output token'];
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'outputTokenProgram';
+              },
+              {
+                kind: 'account';
+                path: 'outputTokenMint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
         },
         {
           name: 'inputTokenProgram';
@@ -1233,9 +1331,8 @@ export type WildFire = {
           docs: ['The mint of output token'];
         },
         {
-          name: 'observationState';
-          docs: ['The program account for the most recent oracle observation'];
-          writable: true;
+          name: 'associatedTokenProgram';
+          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
         },
         {
           name: 'systemProgram';
@@ -1330,11 +1427,117 @@ export type WildFire = {
           name: 'inputVault';
           docs: ['The vault token account for input token'];
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'inputTokenProgram';
+              },
+              {
+                kind: 'account';
+                path: 'inputTokenMint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
         },
         {
           name: 'outputVault';
           docs: ['The vault token account for output token'];
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'poolState';
+              },
+              {
+                kind: 'account';
+                path: 'outputTokenProgram';
+              },
+              {
+                kind: 'account';
+                path: 'outputTokenMint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
         },
         {
           name: 'inputTokenProgram';
@@ -1353,9 +1556,8 @@ export type WildFire = {
           docs: ['The mint of output token'];
         },
         {
-          name: 'observationState';
-          docs: ['The program account for the most recent oracle observation'];
-          writable: true;
+          name: 'associatedTokenProgram';
+          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
         },
         {
           name: 'systemProgram';
