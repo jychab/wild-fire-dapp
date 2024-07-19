@@ -1,9 +1,9 @@
 'use client';
 
-import { FUND_FEE_WALLET, ONE_BILLION } from '@/utils/consts';
+import { ONBOARDING_WALLET, ONE_BILLION } from '@/utils/consts';
 import {
   getDistributor,
-  getDistributorSponsored,
+  getSponsoredDistributor,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
@@ -19,6 +19,7 @@ import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
+  Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
@@ -59,77 +60,30 @@ export function useCreateMint({ address }: { address: string | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program(connection).programId
         );
-
-        const distributor = new PublicKey(
-          await getDistributor(mint.toBase58())
-        );
-        const imageUrl = await uploadMedia(input.picture, mint);
-
-        const payload = {
-          name: input.name,
-          symbol: input.symbol,
-          description: input.description,
-          image: imageUrl,
-        };
-        const uri = await uploadMetadata(JSON.stringify(payload), mint);
-
-        const metadata: TokenMetadata = {
-          name: input.name,
-          symbol: input.symbol,
-          uri: uri,
-          additionalMetadata: [['hashfeed', generateMintApiEndPoint(mint)]],
-          mint: mint,
-        };
-        const fundWallet = await connection.getAccountInfo(FUND_FEE_WALLET);
-
-        let partialTx;
-        if (fundWallet && fundWallet.lamports > 0.03 * LAMPORTS_PER_SOL) {
-          partialTx = (await getDistributorSponsored(metadata)).partialTx;
-        }
-        if (!partialTx) {
-          const ix = [];
-          ix.push(
-            await createMint(
-              connection,
-              distributor,
-              10,
-              undefined,
-              wallet.publicKey
-            )
+        const [distributor, metadata, onboardingWallet] = await Promise.all([
+          getDistributor(),
+          buildTokenMetadata(input, mint),
+          connection.getAccountInfo(ONBOARDING_WALLET),
+        ]);
+        const sponsoredResult =
+          onboardingWallet &&
+          onboardingWallet.lamports > 0.03 * LAMPORTS_PER_SOL
+            ? await getSponsoredDistributor(metadata)
+            : null;
+        if (sponsoredResult && sponsoredResult.partialTx) {
+          signature = await handleSponsoredDistributor(
+            sponsoredResult.partialTx,
+            connection,
+            wallet
           );
-          ix.push(
-            await createMintMetadata(connection, metadata, wallet.publicKey)
-          );
-          ix.push(
-            await initializeMint(
-              connection,
-              ONE_BILLION * 0.8,
-              ONE_BILLION * 0.2,
-              mint,
-              wallet.publicKey
-            )
-          );
-          ix.push(
-            SystemProgram.transfer({
-              fromPubkey: wallet.publicKey,
-              toPubkey: distributor,
-              lamports: LAMPORTS_PER_SOL * 0.003,
-            })
-          );
-          signature = await buildAndSendTransaction({
-            connection: connection,
-            ixs: ix,
-            publicKey: wallet.publicKey,
-            signTransaction: wallet.signTransaction,
-          });
         } else {
-          let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
-          signature = await buildAndSendTransaction({
-            connection: connection,
-            partialSignedTx: tx,
-            publicKey: wallet.publicKey,
-            signTransaction: wallet.signTransaction,
-          });
+          signature = await handleSelfDistributor(
+            metadata,
+            connection,
+            wallet,
+            new PublicKey(distributor),
+            mint
+          );
         }
 
         return { signature, mint };
@@ -148,4 +102,70 @@ export function useCreateMint({ address }: { address: string | null }) {
       console.error(`Transaction failed! ${error}`);
     },
   });
+}
+
+async function handleSponsoredDistributor(
+  partialTx: string,
+  connection: Connection,
+  wallet: any
+): Promise<TransactionSignature> {
+  let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
+  return await buildAndSendTransaction({
+    connection: connection,
+    partialSignedTx: tx,
+    publicKey: wallet.publicKey,
+    signTransaction: wallet.signTransaction,
+  });
+}
+
+async function handleSelfDistributor(
+  metadata: TokenMetadata,
+  connection: Connection,
+  wallet: any,
+  distributor: PublicKey,
+  mint: PublicKey
+): Promise<TransactionSignature> {
+  const [mintIx, metadataIx, initMintIx, transferIx] = await Promise.all([
+    createMint(connection, distributor, 10, undefined, wallet.publicKey),
+    createMintMetadata(connection, metadata, wallet.publicKey),
+    initializeMint(
+      connection,
+      ONE_BILLION * 0.8,
+      ONE_BILLION * 0.2,
+      mint,
+      wallet.publicKey
+    ),
+    SystemProgram.transfer({
+      fromPubkey: wallet.publicKey,
+      toPubkey: distributor,
+      lamports: LAMPORTS_PER_SOL * 0.003,
+    }),
+  ]);
+
+  return await buildAndSendTransaction({
+    connection: connection,
+    ixs: [mintIx, metadataIx, initMintIx, transferIx],
+    publicKey: wallet.publicKey,
+    signTransaction: wallet.signTransaction,
+  });
+}
+async function buildTokenMetadata(
+  input: CreateMintArgs,
+  mint: PublicKey
+): Promise<TokenMetadata> {
+  const imageUrl = await uploadMedia(input.picture, mint);
+  const payload = {
+    name: input.name,
+    symbol: input.symbol,
+    description: input.description,
+    image: imageUrl,
+  };
+  const uri = await uploadMetadata(JSON.stringify(payload), mint);
+  return {
+    name: input.name,
+    symbol: input.symbol,
+    uri: uri,
+    additionalMetadata: [['hashfeed', generateMintApiEndPoint(mint)]],
+    mint: mint,
+  };
 }

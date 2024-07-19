@@ -16,6 +16,6 @@ export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   'HBqRq1kwJP4nSHL633D3Q6zLXYcv9YDi1GvyG3VPwcMK'
 );
 
-export const FUND_FEE_WALLET = new PublicKey(
-  'Hc1vbMTbjDmj5QMazL5PUDZWRdpFakBedZvKJfzEp8B7'
+export const ONBOARDING_WALLET = new PublicKey(
+  '7K2SANnkAuEb385d8YtyC6s4v44xD4pwWZ1H82UdcNNF'
 );

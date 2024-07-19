@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  getUpdateMetadataSponsored,
+  getSponsoredUpdateMetadata,
   uploadMedia,
   uploadMetadata,
 } from '../../utils/firebase/functions';
@@ -185,7 +185,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               distributor &&
               distributor.lamports > 0.0001 * LAMPORTS_PER_SOL
             ) {
-              partialTx = await getUpdateMetadataSponsored(
+              partialTx = await getSponsoredUpdateMetadata(
                 mint.toBase58(),
                 fieldsToUpdate
               );
@@ -238,7 +238,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           await uploadMetadata(JSON.stringify(payload), mint);
         }
 
-        if (ixs.length == 0) return;
+        if (!partialTx && ixs.length == 0) return;
         if (partialTx) {
           const partialSignedTx = VersionedTransaction.deserialize(
             bs58.decode(partialTx)

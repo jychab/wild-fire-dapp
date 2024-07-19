@@ -27,19 +27,19 @@ export async function createOrEditComment(
   await createOrEditComment({ mint, postId, commentId, text, mentions });
 }
 
-export async function getDistributor(mint: string) {
+export async function getDistributor() {
   const getDistributor = httpsCallable(functions, 'getDistributor');
-  const result = await getDistributor({ mint });
+  const result = await getDistributor();
   return result.data as string;
 }
 
-export async function getDistributorSponsored(metadata: TokenMetadata) {
-  const getDistributorSponsored = httpsCallable(
+export async function getSponsoredDistributor(metadata: TokenMetadata) {
+  const getSponsoredDistributor = httpsCallable(
     functions,
-    'getDistributorSponsored'
+    'getSponsoredDistributor'
   );
 
-  const result = await getDistributorSponsored({
+  const result = await getSponsoredDistributor({
     metadata: {
       ...metadata,
       mint: metadata.mint.toBase58(),
@@ -49,15 +49,15 @@ export async function getDistributorSponsored(metadata: TokenMetadata) {
   return result.data as { partialTx?: string; distributor: string };
 }
 
-export async function getUpdateMetadataSponsored(
+export async function getSponsoredUpdateMetadata(
   mint: string,
   fieldsToUpdate: [string, string][]
 ) {
-  const updateMetadataSponsored = httpsCallable(
+  const getSponsoredUpdateMetadata = httpsCallable(
     functions,
-    'updateMetadataSponsored'
+    'getSponsoredUpdateMetadata'
   );
-  const result = await updateMetadataSponsored({ mint, fieldsToUpdate });
+  const result = await getSponsoredUpdateMetadata({ mint, fieldsToUpdate });
   return result.data as string;
 }
 
