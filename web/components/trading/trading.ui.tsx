@@ -15,9 +15,11 @@ import {
 } from '../profile/profile-data-access';
 import { AuthorityData } from '../profile/profile-ui';
 import {
+  getQuote,
   useGetAddressInfo,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
+  useSwapMutation,
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
@@ -39,6 +41,8 @@ export const TradingPanel: FC<{
   const { data: authorityData } = useGetMintToken({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
+
+  const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
 
   const { data: walletInfo } = useGetAddressInfo({
     address: isLiquidityPoolFound ? publicKey : null,
@@ -72,29 +76,23 @@ export const TradingPanel: FC<{
 
   const handleOutputAmountGivenInput = async (amount: number) => {
     setInputAmount(amount.toString());
-    const quoteResponse = await (
-      await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${
-          buy ? NATIVE_MINT.toBase58() : mintId
-        }&outputMint=${
-          buy ? mintId : NATIVE_MINT.toBase58()
-        }&amount=${amount.toString()}&slippageBps=50`
-      )
-    ).json();
+    const quoteResponse = await getQuote(
+      buy ? NATIVE_MINT.toBase58() : mintId,
+      buy ? mintId : NATIVE_MINT.toBase58(),
+      amount,
+      'ExactIn'
+    );
     setOutputAmount(quoteResponse.outAmount || '');
   };
 
   const handleInputAmountGivenOutput = async (amount: number) => {
     setOutputAmount(amount.toString());
-    const quoteResponse = await (
-      await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${
-          buy ? NATIVE_MINT.toBase58() : mintId
-        }&outputMint=${
-          buy ? mintId : NATIVE_MINT.toBase58()
-        }&amount=${amount.toString()}&slippageBps=50&swapMode=ExactOut`
-      )
-    ).json();
+    const quoteResponse = await getQuote(
+      buy ? NATIVE_MINT.toBase58() : mintId,
+      buy ? mintId : NATIVE_MINT.toBase58(),
+      amount,
+      'ExactOut'
+    );
     setInputAmount(quoteResponse.outAmount || '');
   };
 
@@ -305,16 +303,20 @@ export const TradingPanel: FC<{
               <button
                 disabled={!isLiquidityPoolFound}
                 onClick={() => {
-                  if (!metadata) return;
+                  swapMutation.mutateAsync({
+                    inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
+                    outputMint: buy ? mintId : NATIVE_MINT.toBase58(),
+                    amount: parseFloat(inputAmount),
+                    swapMode: 'ExactIn',
+                  });
                 }}
                 className={`mt-4 btn btn-sm ${
                   buy ? 'btn-success' : 'btn-error'
                 } w-full`}
               >
-                {/* {swapMutation.isPending ? (
-                <div className="loading loading-spinner" />
-              ) : ( */}
-                {isLiquidityPoolFound ? (
+                {swapMutation.isPending ? (
+                  <div className="loading loading-spinner" />
+                ) : isLiquidityPoolFound ? (
                   <span>
                     {buy
                       ? `Buy ${metadata?.content?.metadata.symbol}`
@@ -323,8 +325,8 @@ export const TradingPanel: FC<{
                 ) : (
                   <span>No Liquidity Pool Found</span>
                 )}
-                {/* )} */}
               </button>
+
               {!isLiquidityPoolFound && (
                 <Link
                   rel="noopener noreferrer"
@@ -413,10 +415,8 @@ export const MintInfo: FC<{
   authorityData: AuthorityData | null | undefined;
   mintSummaryDetails:
     | {
-        currentPriceInLamports: number;
         currentHoldersCount: number;
         holdersChange24hPercent: number;
-        history24hPrice: number;
       }
     | undefined;
 }> = ({ metadata, authorityData, mintSummaryDetails }) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { DAS } from '@/utils/types/das';
-import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconEdit } from '@tabler/icons-react';
@@ -12,7 +12,11 @@ import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenAccountInfo } from '../trading/trading-data-access';
+import {
+  useGetTokenAccountInfo,
+  useIsLiquidityPoolFound,
+  useSwapMutation,
+} from '../trading/trading-data-access';
 import { TradingPanel } from '../trading/trading.ui';
 import { UploadBtn } from '../upload/upload-ui';
 import {
@@ -151,10 +155,8 @@ const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
 interface ProfileProps {
   mintSummaryDetails:
     | {
-        currentPriceInLamports: number;
         currentHoldersCount: number;
         holdersChange24hPercent: number;
-        history24hPrice: number;
       }
     | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
@@ -186,6 +188,14 @@ const Profile: FC<ProfileProps> = ({
           )
         : null,
   });
+
+  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+
+  const swapMutation = useSwapMutation({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
       <div className="w-40 h-40">
@@ -213,18 +223,31 @@ const Profile: FC<ProfileProps> = ({
         </div>
 
         <div className="flex items-center gap-2 ">
-          <button
-            disabled={!!tokenInfo && tokenInfo.amount > 0}
-            onClick={() => {
-              if (metadata) {
-              }
-            }}
-            className="btn btn-success btn-sm w-32 "
+          <div
+            data-tip={`${
+              isLiquidityPoolFound
+                ? ''
+                : 'Create a liquidity pool to unlock this feature'
+            }`}
+            className="tooltip "
           >
-            <div>
+            <button
+              disabled={
+                !isLiquidityPoolFound || (!!tokenInfo && tokenInfo.amount > 0)
+              }
+              onClick={async () => {
+                swapMutation.mutateAsync({
+                  amount: 1,
+                  inputMint: NATIVE_MINT.toBase58(),
+                  outputMint: mintId,
+                  swapMode: 'ExactOut',
+                });
+              }}
+              className="btn btn-success btn-sm w-32 "
+            >
               {tokenInfo && tokenInfo.amount > 0 ? 'Subscribed' : 'Subscribe'}
-            </div>
-          </button>
+            </button>
+          </div>
 
           {authorityData &&
             publicKey &&
@@ -247,10 +270,24 @@ const Profile: FC<ProfileProps> = ({
 
         <div className="flex items-center gap-2">
           {mintSummaryDetails && (
-            <span>
-              {formatLargeNumber(mintSummaryDetails?.currentHoldersCount || 0) +
-                ' Holders'}
-            </span>
+            <>
+              <span>
+                {formatLargeNumber(
+                  mintSummaryDetails?.currentHoldersCount || 0
+                ) + ' Holders'}
+              </span>
+              <span
+                className={`${
+                  mintSummaryDetails.holdersChange24hPercent < 0
+                    ? 'text-error'
+                    : 'text-success'
+                }`}
+              >
+                {mintSummaryDetails.holdersChange24hPercent < 0
+                  ? `-${mintSummaryDetails.holdersChange24hPercent}%`
+                  : `+${mintSummaryDetails.holdersChange24hPercent}%`}
+              </span>
+            </>
           )}
 
           {tokenDetails?.token_info?.price_info?.price_per_token && (

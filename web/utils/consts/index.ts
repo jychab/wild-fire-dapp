@@ -15,3 +15,7 @@ export const ADDRESS_LOOKUP_TABLE = new PublicKey(
 export const ONBOARDING_WALLET = new PublicKey(
   '7K2SANnkAuEb385d8YtyC6s4v44xD4pwWZ1H82UdcNNF'
 );
+
+export const REFERRAL_KEY = new PublicKey(
+  '6k6ELxTcnT7NVAhxEZ3wV6n6VsxdgXXzG1ehr1GqAbdr'
+);
