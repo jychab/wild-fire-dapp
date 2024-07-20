@@ -22,7 +22,6 @@ import {
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
-  SystemProgram,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -125,26 +124,15 @@ async function handleSelfDistributor(
   distributor: PublicKey,
   mint: PublicKey
 ): Promise<TransactionSignature> {
-  const [mintIx, metadataIx, initMintIx, transferIx] = await Promise.all([
+  const [mintIx, metadataIx, initMintIx] = await Promise.all([
     createMint(connection, distributor, 10, undefined, wallet.publicKey),
     createMintMetadata(connection, metadata, wallet.publicKey),
-    initializeMint(
-      connection,
-      ONE_BILLION * 0.8,
-      ONE_BILLION * 0.2,
-      mint,
-      wallet.publicKey
-    ),
-    SystemProgram.transfer({
-      fromPubkey: wallet.publicKey,
-      toPubkey: distributor,
-      lamports: LAMPORTS_PER_SOL * 0.003,
-    }),
+    initializeMint(connection, ONE_BILLION, mint, wallet.publicKey),
   ]);
 
   return await buildAndSendTransaction({
     connection: connection,
-    ixs: [mintIx, metadataIx, initMintIx, transferIx],
+    ixs: [mintIx, metadataIx, initMintIx],
     publicKey: wallet.publicKey,
     signTransaction: wallet.signTransaction,
   });
