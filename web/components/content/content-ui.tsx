@@ -1,8 +1,7 @@
 import { createOrEditComment, sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
-import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheckFilled,
   IconDotsVertical,
@@ -18,10 +17,7 @@ import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
-import {
-  useGetToken,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import { useGetToken } from '../profile/profile-data-access';
 import { ContentType } from '../upload/upload-ui';
 import { BlinkContent, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -44,7 +40,6 @@ export interface AdditionalMetadata {
   updatedAt?: number;
   price?: number;
   quantity?: number;
-  last24hrPercentChange?: number;
   verified?: boolean;
 }
 
@@ -90,15 +85,17 @@ export const PostCard = ({
   showMintDetails = true,
   editable = false,
   multiGrid = false,
+  expandAll = false,
 }: {
   content: PostContentWithMetadata;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
+  expandAll?: boolean;
 }) => {
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(expandAll);
   const removeContentMutation = useRemoveContentMutation({
     mint: editable ? new PublicKey(content.mint) : null,
   });
@@ -247,24 +244,23 @@ export const PostCard = ({
               >
                 {content.caption}
               </p>
-              {content.caption != '' &&
-                (content.caption.length > 10 ||
-                  content.caption.includes('\n')) && (
-                  <button
-                    onClick={() => {
-                      if (!multiGrid) {
-                        setShowMore(true);
-                      } else {
-                        router.push(
-                          `/content?mintId=${content.mint}&id=${content.id}`
-                        );
-                      }
-                    }}
-                    className="text-xs stat-desc link link-hover w-fit"
-                  >
-                    {!showMore && 'Show More'}
-                  </button>
-                )}
+              {(content.caption.length > 80 ||
+                content.caption.includes('\n')) && (
+                <button
+                  onClick={() => {
+                    if (!multiGrid) {
+                      setShowMore(true);
+                    } else {
+                      router.push(
+                        `/content?mintId=${content.mint}&id=${content.id}`
+                      );
+                    }
+                  }}
+                  className="text-xs stat-desc link link-hover w-fit"
+                >
+                  {!showMore && 'Show More'}
+                </button>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-start gap-1 pt-2">
@@ -281,7 +277,7 @@ export const PostCard = ({
               >{`View ${content.commentsCount} comments`}</button>
             )}
             {!multiGrid && (
-              <label className="input rounded-full flex w-full input-xs items-center group p-0 focus-within:p-4">
+              <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2 ">
                 <input
                   placeholder="Add a comment"
                   type="text"
@@ -323,7 +319,8 @@ export const BlinksCard: FC<{
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
-}> = ({ multiGrid, content, showMintDetails = true, editable = false }) => {
+  expandAll?: boolean;
+}> = ({ multiGrid, content, showMintDetails, editable, expandAll }) => {
   try {
     const url = new URL(content.uri as string);
     return (
@@ -334,6 +331,7 @@ export const BlinksCard: FC<{
           actionUrl={url}
           additionalMetadata={content}
           editable={editable}
+          expandAll={expandAll}
         />
       </div>
     );
@@ -348,6 +346,7 @@ interface DisplayContentProps {
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
+  expandAll?: boolean;
 }
 
 export const DisplayContent: FC<DisplayContentProps> = ({
@@ -355,6 +354,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
   showMintDetails,
   editable,
   multiGrid,
+  expandAll,
 }) => {
   return (
     <>
@@ -365,6 +365,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
           showMintDetails={showMintDetails}
           editable={editable}
           multiGrid={multiGrid}
+          expandAll={expandAll}
         />
       )}
       {content.type == ContentType.POST && (
@@ -374,6 +375,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
           showMintDetails={showMintDetails}
           editable={editable}
           multiGrid={multiGrid}
+          expandAll={expandAll}
         />
       )}
     </>
@@ -383,10 +385,6 @@ export const DisplayContent: FC<DisplayContentProps> = ({
 export const UserProfile: FC<{
   content: PostContentWithMetadata | BlinkContentWithMetadata;
 }> = ({ content }) => {
-  const { data: solDetails } = useGetTokenDetails({
-    mint: NATIVE_MINT,
-    withContent: false,
-  });
   return (
     <div className="flex w-full items-center justify-between px-4 py-2 ">
       <Link
@@ -406,29 +404,19 @@ export const UserProfile: FC<{
         <div className="flex flex-col">
           <div className="text-sm flex gap-1 items-center">
             {content.name}
-            <IconDiscountCheckFilled size={18} className="fill-secondary" />
+            {content.verified && (
+              <IconDiscountCheckFilled size={18} className="fill-secondary" />
+            )}
           </div>
           <div className="text-xs">{content.symbol}</div>
         </div>
       </Link>
-      {content.price && solDetails?.token_info?.price_info?.price_per_token && (
+      {content.price && (
         <Link
           className="flex flex-col gap-1 items-end"
           href={`/profile?mintId=${content.mint}&tab=trade`}
         >
-          <span className="text-sm">
-            $
-            {(
-              (content.price *
-                solDetails?.token_info?.price_info?.price_per_token) /
-              LAMPORTS_PER_SOL
-            ).toPrecision(3)}
-          </span>
-          <span className="text-xs text-success">
-            {content.last24hrPercentChange && content.last24hrPercentChange < 0
-              ? `-${content.last24hrPercentChange}%`
-              : `+${content.last24hrPercentChange}%`}
-          </span>
+          <span className="text-sm">${content.price.toPrecision(3)}</span>
         </Link>
       )}
     </div>

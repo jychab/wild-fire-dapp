@@ -29,7 +29,13 @@ export const SignInBtn: FC = () => {
       {publicKey ? (
         <ProfileButton metaDataQuery={metaDataQuery} />
       ) : (
-        <AuthenticationBtn />
+        <AuthenticationBtn
+          children={
+            <div className="btn btn-sm btn-outline bg-base-100">
+              Connect Wallet
+            </div>
+          }
+        />
       )}
     </>
   );

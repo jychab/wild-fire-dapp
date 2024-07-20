@@ -58,12 +58,14 @@ interface BlinksProps {
   additionalMetadata?: AdditionalMetadata;
   editable?: boolean;
   multiGrid?: boolean;
+  expandAll?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
   additionalMetadata,
   editable = false,
   multiGrid = false,
+  expandAll = false,
 }) => {
   let actionApiUrl: string | null = null;
   const { data: actionsRegistry } = useGetActionRegistry({
@@ -125,6 +127,7 @@ export const Blinks: FC<BlinksProps> = ({
 
   return action && actionsRegistry ? (
     <ActionContainer
+      expandAll={expandAll}
       editable={editable}
       additionalMetadata={additionalMetadata}
       actionsRegistry={actionsRegistry}
@@ -150,6 +153,7 @@ interface ActionContainerProps {
   additionalMetadata?: AdditionalMetadata;
   editable: boolean;
   multiGrid: boolean;
+  expandAll: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
@@ -161,6 +165,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   additionalMetadata,
   editable,
   multiGrid,
+  expandAll,
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -384,6 +389,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
   return (
     <ActionLayout
+      expandAll={expandAll}
       multiGrid={multiGrid}
       editable={editable}
       additionalMetadata={additionalMetadata}
@@ -432,6 +438,7 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 };
 
 interface LayoutProps {
+  expandAll: boolean;
   multiGrid: boolean;
   editable: boolean;
   additionalMetadata?: AdditionalMetadata;
@@ -470,6 +477,7 @@ interface FormProps {
 }
 
 export const ActionLayout = ({
+  expandAll,
   multiGrid,
   editable,
   additionalMetadata,
@@ -488,7 +496,7 @@ export const ActionLayout = ({
 }: LayoutProps) => {
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(expandAll);
   const removeContentMutation = useRemoveContentMutation({
     mint:
       editable && additionalMetadata
@@ -678,7 +686,7 @@ export const ActionLayout = ({
             >{`View ${additionalMetadata.commentsCount} comments`}</button>
           )}
           {!multiGrid && (
-            <label className="input rounded-full flex w-full input-xs items-center group p-0 focus-within:p-4">
+            <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2">
               <input
                 placeholder="Add a comment"
                 type="text"

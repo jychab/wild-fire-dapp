@@ -130,9 +130,12 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
         }
       : undefined;
   return content ? (
-    <div className="flex flex-col py-[32px] w-full items-center">
+    <div className="flex flex-col w-full items-center">
       <div className="max-w-lg w-full">
-        <DisplayContent content={content as ContentWithMetadata} />
+        <DisplayContent
+          expandAll={true}
+          content={content as ContentWithMetadata}
+        />
       </div>
     </div>
   ) : (

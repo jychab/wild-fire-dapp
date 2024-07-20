@@ -38,11 +38,9 @@ interface EditMintArgs {
   picture: File | null;
   description: string;
   fee: number;
-  maxFee: number | undefined;
   admin: PublicKey;
   previous: {
     distributor: PublicKey;
-    maximumFee: bigint;
     transferFeeBasisPoints: number;
     admin: PublicKey;
   };
@@ -149,18 +147,14 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             await changeAdmin(connection, wallet.publicKey, mint, input.admin)
           );
         }
-        if (
-          input.previous.transferFeeBasisPoints != input.fee ||
-          Number(input.previous.maximumFee) !=
-            (input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER)
-        ) {
+        if (input.previous.transferFeeBasisPoints != input.fee) {
           ixs.push(
             await changeTransferFee(
               connection,
               wallet.publicKey,
               mint,
               input.fee,
-              input.maxFee ? input.maxFee : Number.MAX_SAFE_INTEGER
+              Number.MAX_SAFE_INTEGER
             )
           );
         }
@@ -185,6 +179,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               distributor &&
               distributor.lamports > 0.0001 * LAMPORTS_PER_SOL
             ) {
+              console.log(fieldsToUpdate);
               partialTx = await getSponsoredUpdateMetadata(
                 mint.toBase58(),
                 fieldsToUpdate
@@ -308,11 +303,11 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 216,
+              dataSize: 123,
             },
             {
               memcmp: {
-                offset: 72,
+                offset: 40,
                 bytes: mint.toBase58(),
               },
             },
@@ -321,7 +316,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         .then((result) => {
           if (result.length > 0) {
             return program(connection).coder.accounts.decode(
-              'poolState',
+              'tokenState',
               result[0].account.data
             ) as AuthorityData;
           } else {

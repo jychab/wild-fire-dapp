@@ -2,6 +2,7 @@ import { HASHFEED_MINT } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { deletePost } from '@/utils/firebase/functions';
 import { DAS } from '@/utils/types/das';
+import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -150,6 +151,9 @@ export const fetchOwnerTokenDetails = ({
     ],
     queryFn: async () => {
       if (!address) return null;
+      const summary = (await getDoc(doc(db, `Summary/mints`))).data() as {
+        verifiedMints: string[];
+      };
       const ownerTokenAccounts = await getAllFungibleTokensFromOwner({
         address,
         connection,
@@ -161,41 +165,37 @@ export const fetchOwnerTokenDetails = ({
         : ownerTokenAccounts?.items.concat(
             await getAsset({ mint: HASHFEED_MINT, connection })
           );
-      const ownerTokenBalances = await getTokenBalancesFromOwner({
-        address,
-        connection,
-      });
 
-      const allTokenAccountsWithPriceAndQuantity = await Promise.all(
+      return await Promise.all(
         allTokenAccounts.map(async (x) => {
           try {
-            const tokenSummary = await getDoc(
-              doc(db, `Mint/${x.id}/TokenInfo/Summary`)
+            const account = await getAccount(
+              connection,
+              getAssociatedTokenAddressSync(
+                new PublicKey(x.id),
+                address,
+                false,
+                new PublicKey(x.token_info!.token_program!)
+              ),
+              undefined,
+              new PublicKey(x.token_info!.token_program!)
             );
             return {
               ...x,
-              quantity:
-                ownerTokenBalances.token_accounts?.find((y) => y.mint == x.id)
-                  ?.amount || 0,
-              price: tokenSummary.exists()
-                ? tokenSummary.data().currentPrice
-                : 0,
-              last24hrPercentChange: tokenSummary.exists()
-                ? tokenSummary.data().priceChange24hPercent || 0
-                : 0,
+              verified: summary.verifiedMints.includes(x.id),
+              price: x.token_info?.price_info?.price_per_token,
+              quantity: Number(account.amount),
             };
           } catch (e) {
             return {
               ...x,
+              verified: summary.verifiedMints.includes(x.id),
+              price: x.token_info?.price_info?.price_per_token,
               quantity: 0,
-              price: 0,
-              last24hrPercentChange: 0,
             };
           }
         })
       );
-
-      return allTokenAccountsWithPriceAndQuantity;
     },
     enabled: !!address,
     staleTime: 15 * 1000 * 60,

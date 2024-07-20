@@ -2,7 +2,7 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconUpload } from '@tabler/icons-react';
+import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -137,11 +137,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             </button>
           )}
         </div>
-        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center sm:border-t sm:border-base-content">
-          <div className="flex w-32 h-32 lg:w-40 lg:h-40 items-center justify-center">
+        <div className="flex flex-col md:flex-row w-full gap-4 items-center sm:border-t sm:border-base-content pt-4">
+          <div className="flex w-40 h-40 items-center justify-center">
             <label
               htmlFor="dropzone-file"
-              className={`cursor-pointer relative flex flex-col w-32 h-32 lg:w-40 lg:h-40 justify-center items-center`}
+              className={`cursor-pointer relative flex flex-col w-40 h-40 justify-center items-center`}
             >
               {tempImageUrl ? (
                 <Image
@@ -153,10 +153,9 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 />
               ) : (
                 <div className="flex flex-col gap-2 rounded-full w-full h-full border border-base-content items-center justify-center">
-                  <IconUpload />
+                  <IconPhotoPlus size={32} />
                   <p className="text-sm text-center flex flex-col text-gray-400">
                     <span className="font-semibold">Click to upload</span>
-                    <span>or drag and drop</span>
                   </p>
                 </div>
               )}
@@ -188,11 +187,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
         </div>
         <div className="flex flex-col w-full gap-2">
           <div className="label">
-            <span className="label-text">Description (optional)</span>
+            <span className="label-text">Bio (optional)</span>
           </div>
           <textarea
             maxLength={200}
-            placeholder="Write your description..."
+            placeholder="Write a short introduction..."
             className="textarea textarea-bordered textarea-sm w-full h-24 leading-normal overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
@@ -214,7 +213,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 value={admin}
                 onChange={(e) => setAdmin(e.target.value)}
               />
-              <span className="text-sm">Edit Transfer Fee</span>
+              {/* <span className="text-sm">Edit Transfer Fee</span>
               <label className="col-span-3 input input-bordered flex items-center w-fit text-sm gap-2">
                 <input
                   min={0.1}
@@ -228,8 +227,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                   placeholder=""
                 />
                 %
-              </label>
-              <span className="text-sm">Set Max Transfer Fee</span>
+              </label> */}
+              {/* <span className="text-sm">Set Max Transfer Fee</span>
               <div className="col-span-3 flex flex-col items-start gap-2">
                 <div className="flex items-center text-sm gap-4 w-full">
                   {showMaxFee && (
@@ -263,8 +262,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                     }}
                     checked={showMaxFee}
                   />
-                </div>
-              </div>
+                 </div> 
+               </div> */}
             </div>
           </div>
         </div>
@@ -297,7 +296,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 ...transferFeeConfig.newerTransferFee,
               },
               fee: parseFloat(fee) * 100,
-              maxFee: maxFee != '' ? parseInt(maxFee) : undefined,
             });
           }}
           className="btn btn-primary btn-sm w-full rounded"

@@ -2,29 +2,16 @@ import { BN, Program } from '@coral-xyz/anchor';
 import {
   ExtensionType,
   LENGTH_SIZE,
-  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
   TYPE_SIZE,
   TokenAccountNotFoundError,
-  createAssociatedTokenAccountIdempotentInstruction,
-  createCloseAccountInstruction,
-  createSyncNativeInstruction,
-  getAccount,
-  getAssociatedTokenAddressSync,
   getExtensionData,
   getNewAccountLenForExtensionLen,
   unpackMint,
   updateTokenMetadata,
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
-import {
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-} from '@solana/web3.js';
-import { CONFIG, OFF_SET } from '../consts';
+import { Connection, PublicKey } from '@solana/web3.js';
 import Idl from '../program/idl/wild_fire.json';
 import { WildFire } from '../program/types/wild_fire';
 
@@ -89,23 +76,17 @@ export async function createMintMetadata(
 
 export async function initializeMint(
   connection: Connection,
-  amountToCurve: number,
-  amountToCreator: number,
+  amount: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
   return await program(connection)
-    .methods.initializeMint(
-      new BN(amountToCurve),
-      new BN(amountToCreator),
-      new BN(OFF_SET)
-    )
+    .methods.initializeMint(new BN(amount))
     .accounts({
       mint: mint,
       payer: payer,
       admin: payer,
       program: program(connection).programId,
-      ammConfig: CONFIG,
     })
     .instruction();
 }
@@ -117,16 +98,11 @@ export async function changeTransferFee(
   feeBasisPts: number,
   maxFee: number
 ) {
-  const [poolState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
   const ix = await program(connection)
     .methods.changeTransferFee(feeBasisPts, new BN(maxFee))
     .accounts({
       payer: payer,
       mint: mint,
-      poolState,
     })
     .instruction();
 
@@ -139,16 +115,12 @@ export async function changeAdmin(
   mint: PublicKey,
   newAdmin: PublicKey
 ) {
-  const [poolState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
   const ix = await program(connection)
     .methods.changeAdmin(newAdmin)
     .accounts({
       payer: payer,
-      poolState,
       program: program(connection).programId,
+      mint: mint,
     })
     .instruction();
 
@@ -160,15 +132,10 @@ export async function setToImmutable(
   payer: PublicKey,
   mint: PublicKey
 ) {
-  const [poolState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
   const ix = await program(connection)
     .methods.setToImmutable()
     .accounts({
       payer: payer,
-      poolState,
       mint: mint,
     })
     .instruction();
@@ -181,16 +148,10 @@ export async function closeAuthorityAccount(
   payer: PublicKey,
   mint: PublicKey
 ) {
-  const [poolState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-
   const ix = await program(connection)
     .methods.closeAccount()
     .accounts({
       payer: payer,
-      poolState,
       mint: mint,
     })
     .instruction();
@@ -277,330 +238,4 @@ export async function getAdditionalRentForUpdatedMetadata(
     await connection.getMinimumBalanceForRentExemption(newAccountLen);
 
   return newRentExemptMinimum - info.lamports;
-}
-
-export function u16ToBytes(num: number) {
-  const arr = new ArrayBuffer(2);
-  const view = new DataView(arr);
-  view.setUint16(0, num, false);
-  return new Uint8Array(arr);
-}
-
-export async function createConfig(connection: Connection, owner: PublicKey) {
-  return await program(connection)
-    .methods.createAmmConfig(0, new BN(20_000), new BN(250_000))
-    .accounts({
-      owner: owner,
-    })
-    .instruction();
-}
-
-export async function swapBaseOutput(
-  connection: Connection,
-  mint: PublicKey,
-  payer: PublicKey,
-  max_amount_in: number,
-  amount_out_less_fee: number,
-  inputToken: PublicKey,
-  inputTokenProgram: PublicKey,
-  outputToken: PublicKey,
-  outputTokenProgram: PublicKey
-) {
-  const ixs = [];
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-  const [observationAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('observation'), poolAddress.toBuffer()],
-    program(connection).programId
-  );
-
-  const [observationState, poolAccount] = await Promise.all([
-    program(connection).account.observationState.fetchNullable(
-      observationAddress
-    ),
-    program(connection).account.poolState.fetchNullable(poolAddress),
-  ]);
-  if (observationState == null || poolAccount == null) {
-    if (max_amount_in < LAMPORTS_PER_SOL * 0.032) {
-      throw Error('Need at least 0.032 SOL for the first transaction');
-    }
-    ixs.push(
-      await program(connection)
-        .methods.createOracle()
-        .accounts({
-          payer: payer,
-          poolState: poolAddress,
-        })
-        .instruction()
-    );
-  }
-
-  const inputTokenAccount = getAssociatedTokenAddressSync(
-    inputToken,
-    payer,
-    false,
-    inputTokenProgram
-  );
-  try {
-    await getAccount(connection, inputTokenAccount);
-  } catch (e) {
-    ixs.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        inputTokenAccount,
-        payer,
-        inputToken,
-        inputTokenProgram
-      )
-    );
-  }
-  const outputTokenAccount = getAssociatedTokenAddressSync(
-    outputToken,
-    payer,
-    false,
-    outputTokenProgram
-  );
-  try {
-    await getAccount(connection, outputTokenAccount);
-  } catch (e) {
-    ixs.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        outputTokenAccount,
-        payer,
-        outputToken,
-        outputTokenProgram
-      )
-    );
-  }
-  if (inputToken == NATIVE_MINT) {
-    ixs.push(
-      SystemProgram.transfer({
-        fromPubkey: payer,
-        toPubkey: inputTokenAccount,
-        lamports: max_amount_in,
-      })
-    );
-    ixs.push(createSyncNativeInstruction(inputTokenAccount));
-  }
-
-  ixs.push(
-    await program(connection)
-      .methods.swapBaseOutput(
-        new BN(max_amount_in),
-        new BN(amount_out_less_fee)
-      )
-      .accounts({
-        payer: payer,
-        ammConfig: CONFIG,
-        poolState: poolAddress,
-        inputTokenAccount,
-        outputTokenAccount,
-        inputTokenProgram: inputTokenProgram,
-        outputTokenProgram: outputTokenProgram,
-        inputTokenMint: inputToken,
-        outputTokenMint: outputToken,
-        program: program(connection).programId,
-      })
-      .instruction()
-  );
-
-  ixs.push(
-    createCloseAccountInstruction(
-      getAssociatedTokenAddressSync(NATIVE_MINT, payer),
-      payer,
-      payer
-    )
-  );
-
-  return ixs;
-}
-
-export async function fetchSwapPoolDetails(
-  connection: Connection,
-  mint: PublicKey
-) {
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-
-  return await program(connection).account.poolState.fetch(poolAddress);
-}
-
-export async function fetchSwapPrice(
-  connection: Connection,
-  mint: PublicKey,
-  swapDetails: {
-    protocolFeesTokenMint: number;
-    protocolFeesTokenWsol: number;
-    creatorFeesTokenMint: number;
-    creatorFeesTokenWsol: number;
-    offset: number;
-  }
-) {
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-  const mintVault = getAssociatedTokenAddressSync(
-    mint,
-    poolAddress,
-    true,
-    TOKEN_2022_PROGRAM_ID
-  );
-
-  const solVault = getAssociatedTokenAddressSync(
-    NATIVE_MINT,
-    poolAddress,
-    true
-  );
-  let mintAmount = BigInt(0);
-  try {
-    mintAmount += (
-      await getAccount(connection, mintVault, undefined, TOKEN_2022_PROGRAM_ID)
-    ).amount;
-    mintAmount -=
-      BigInt(swapDetails.creatorFeesTokenMint) -
-      BigInt(swapDetails.protocolFeesTokenMint);
-  } catch (e) {}
-
-  let solAmount = BigInt(swapDetails.offset);
-  try {
-    solAmount += (
-      await getAccount(connection, solVault, undefined, TOKEN_PROGRAM_ID)
-    ).amount;
-  } catch (e) {}
-  solAmount -=
-    BigInt(swapDetails.creatorFeesTokenWsol) -
-    BigInt(swapDetails.protocolFeesTokenWsol);
-
-  return {
-    mintAmount,
-    solAmount,
-    price: mintAmount && solAmount ? solAmount / mintAmount : undefined,
-  };
-}
-
-export async function fetchSwapPoolOracle(
-  connection: Connection,
-  mint: PublicKey
-) {
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-
-  const [observationAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('observation'), poolAddress.toBuffer()],
-    program(connection).programId
-  );
-
-  return await program(connection).account.observationState.fetch(
-    observationAddress
-  );
-}
-
-export async function swapBaseInput(
-  connection: Connection,
-  mint: PublicKey,
-  payer: PublicKey,
-  amount_in: number,
-  min_amount_out: number,
-  inputToken: PublicKey,
-  inputTokenProgram: PublicKey,
-  outputToken: PublicKey,
-  outputTokenProgram: PublicKey
-) {
-  const ixs = [];
-  const [poolAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from('pool'), mint.toBuffer()],
-    program(connection).programId
-  );
-
-  const poolAccount = await program(connection).account.poolState.fetchNullable(
-    poolAddress
-  );
-
-  if (poolAccount == null) {
-    throw Error('Pool Address Not Found');
-  }
-
-  const inputTokenAccount = getAssociatedTokenAddressSync(
-    inputToken,
-    payer,
-    false,
-    inputTokenProgram
-  );
-  try {
-    await getAccount(connection, inputTokenAccount);
-  } catch (e) {
-    ixs.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        inputTokenAccount,
-        payer,
-        inputToken,
-        inputTokenProgram
-      )
-    );
-  }
-  const outputTokenAccount = getAssociatedTokenAddressSync(
-    outputToken,
-    payer,
-    false,
-    outputTokenProgram
-  );
-  try {
-    await getAccount(connection, outputTokenAccount);
-  } catch (e) {
-    ixs.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        outputTokenAccount,
-        payer,
-        outputToken,
-        outputTokenProgram
-      )
-    );
-  }
-  if (inputToken == NATIVE_MINT) {
-    ixs.push(
-      SystemProgram.transfer({
-        fromPubkey: payer,
-        toPubkey: inputTokenAccount,
-        lamports: amount_in,
-      })
-    );
-    ixs.push(createSyncNativeInstruction(inputTokenAccount));
-  }
-
-  ixs.push(
-    await program(connection)
-      .methods.swapBaseInput(new BN(amount_in), new BN(min_amount_out))
-      .accounts({
-        payer: payer,
-        ammConfig: CONFIG,
-        poolState: poolAddress,
-        inputTokenAccount,
-        outputTokenAccount,
-        inputTokenProgram: inputTokenProgram,
-        outputTokenProgram: outputTokenProgram,
-        inputTokenMint: inputToken,
-        outputTokenMint: outputToken,
-        program: program(connection).programId,
-      })
-      .instruction()
-  );
-
-  ixs.push(
-    createCloseAccountInstruction(
-      getAssociatedTokenAddressSync(NATIVE_MINT, payer),
-      payer,
-      payer
-    )
-  );
-  return ixs;
 }

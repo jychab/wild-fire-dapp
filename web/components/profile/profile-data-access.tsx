@@ -65,10 +65,10 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
         doc(db, `Mint/${mint.toBase58()}/TokenInfo/Summary`)
       );
       return result.data() as {
-        currentPrice: number;
+        currentPriceInLamports: number;
         currentHoldersCount: number;
         holdersChange24hPercent: number;
-        priceChange24hPercent: number;
+        history24hPrice: number;
       };
     },
     enabled: !!mint,
@@ -85,11 +85,11 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         .getProgramAccounts(program(connection).programId, {
           filters: [
             {
-              dataSize: 216,
+              dataSize: 123,
             },
             {
               memcmp: {
-                offset: 40,
+                offset: 8,
                 bytes: address.toBase58(),
               },
             },
@@ -99,7 +99,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
           if (result.length > 0) {
             return result.map((acc) => {
               return program(connection).coder.accounts.decode(
-                'poolState',
+                'tokenState',
                 acc.account.data
               ) as AuthorityData;
             });

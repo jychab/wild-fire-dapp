@@ -67,11 +67,11 @@ export const CreatePanel: FC = () => {
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
         <span className="hidden md:block">Create your account</span>
-        <div className="flex flex-col md:flex-row w-full gap-4 py-4 items-center md:border-t md:border-base-content">
-          <div className="w-32 h-32 lg:w-40 lg:h-40">
+        <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content pt-4">
+          <div className="flex w-40 h-40 items-center justify-center">
             <label
               htmlFor="dropzone-file"
-              className={`cursor-pointer relative flex flex-col w-32 h-32 lg:w-40 lg:h-40 justify-center items-center`}
+              className={`cursor-pointer relative flex flex-col w-40 h-40 justify-center items-center`}
             >
               {tempImageUrl ? (
                 <Image
