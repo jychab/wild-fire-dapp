@@ -13,7 +13,7 @@ import {
 import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FC, useEffect, useState } from 'react';
+import { FC, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
@@ -59,24 +59,11 @@ export const ContentGrid: FC<ContentGridProps> = ({
   editable = false,
   multiGrid = false,
 }) => {
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportHeight(window.innerHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
   return content ? (
     <div
       className={`grid grid-cols-1 sm:gap-2 ${
-        multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : ''
+        multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : 'pb-32'
       }`}
-      style={{ height: `${viewportHeight}px` }}
     >
       {content.map((x) => (
         <DisplayContent

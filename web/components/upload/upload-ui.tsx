@@ -79,24 +79,8 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
     );
   }
 
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportHeight(window.innerHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   return (
-    <div
-      style={{ height: `${viewportHeight}px` }}
-      className="flex flex-col gap-8 my-4 items-center w-full p-4"
-    >
+    <div className="flex flex-col gap-8 my-4 items-center w-full p-4 pb-32">
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
         {id ? 'Edit Post' : 'Create a New Post'}
       </span>
