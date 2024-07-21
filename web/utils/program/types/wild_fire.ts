@@ -128,6 +128,38 @@ export type WildFire = {
         },
         {
           name: 'mint';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -209,6 +241,38 @@ export type WildFire = {
         },
         {
           name: 'mint';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -437,6 +501,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'distributor';
+          signer: true;
+        },
+        {
           name: 'mint';
         },
         {
@@ -457,6 +525,59 @@ export type WildFire = {
         {
           name: 'tokenStateMintTokenAccount';
           writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'tokenState';
+              },
+              {
+                kind: 'account';
+                path: 'tokenProgramMint';
+              },
+              {
+                kind: 'account';
+                path: 'mint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
         },
         {
           name: 'destinationWallet';
@@ -595,6 +716,63 @@ export type WildFire = {
               {
                 kind: 'account';
                 path: 'admin';
+              },
+              {
+                kind: 'account';
+                path: 'tokenProgramMint';
+              },
+              {
+                kind: 'account';
+                path: 'mint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ];
+            };
+          };
+        },
+        {
+          name: 'tokenStateMintTokenAccount';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'account';
+                path: 'tokenState';
               },
               {
                 kind: 'account';
@@ -934,10 +1112,6 @@ export type WildFire = {
           address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
         },
         {
-          name: 'associatedTokenProgram';
-          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-        },
-        {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
         },
@@ -989,6 +1163,10 @@ export type WildFire = {
       discriminator: [231, 73, 8, 168, 43, 125, 226, 99];
     },
     {
+      name: 'changeDistributor';
+      discriminator: [226, 198, 51, 180, 136, 197, 218, 191];
+    },
+    {
       name: 'createMint';
       discriminator: [174, 206, 148, 3, 212, 221, 222, 175];
     },
@@ -999,6 +1177,10 @@ export type WildFire = {
     {
       name: 'initializeMint';
       discriminator: [227, 163, 208, 22, 174, 191, 7, 162];
+    },
+    {
+      name: 'verifedStatus';
+      discriminator: [249, 11, 69, 153, 222, 216, 160, 43];
     },
     {
       name: 'withdrawFees';
@@ -1034,6 +1216,22 @@ export type WildFire = {
           },
           {
             name: 'newAdmin';
+            type: 'pubkey';
+          }
+        ];
+      };
+    },
+    {
+      name: 'changeDistributor';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'newDistributor';
             type: 'pubkey';
           }
         ];
@@ -1090,6 +1288,14 @@ export type WildFire = {
         fields: [
           {
             name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'distributor';
+            type: 'pubkey';
+          },
+          {
+            name: 'payer';
             type: 'pubkey';
           },
           {
@@ -1179,6 +1385,22 @@ export type WildFire = {
           {
             name: 'maxFee';
             type: 'u64';
+          }
+        ];
+      };
+    },
+    {
+      name: 'verifedStatus';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'verified';
+            type: 'bool';
           }
         ];
       };

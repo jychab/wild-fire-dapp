@@ -23,7 +23,6 @@ export const CreatePanel: FC = () => {
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [description, setDescription] = useState('');
-  const [enableTrading, setEnableTrading] = useState(false);
 
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
@@ -59,15 +58,16 @@ export const CreatePanel: FC = () => {
   const router = useRouter();
   return (
     <div className="flex flex-col gap-4 items-center justify-center">
-      <span className="text-2xl md:text-3xl lg:text-4xl text-center">
-        Create your account
+      <span className="text-3xl md:text-4xl text-center">
+        Create an account to claim your first airdrop!
       </span>
-      <span className="text-sm lg:text-base text-center px-4">
-        Add a profile picture, name and handle. You can always edit it later.
+      <span className="text-md md:text-base text-center px-4">
+        Add a profile picture, display name and username. You can always edit it
+        later.
       </span>
-      <div className="p-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
-        <span className="hidden md:block">Create your account</span>
-        <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content pt-4">
+      <div className="px-4 pb-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
+        <span className="hidden md:block pt-4">Create your account</span>
+        <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content md:pt-4">
           <div className="flex w-40 h-40 items-center justify-center">
             <label
               htmlFor="dropzone-file"
@@ -108,7 +108,7 @@ export const CreatePanel: FC = () => {
             />
             <input
               type="text"
-              placeholder="@username"
+              placeholder="Username"
               maxLength={20}
               className="input input-bordered w-full text-sm rounded"
               value={handle}

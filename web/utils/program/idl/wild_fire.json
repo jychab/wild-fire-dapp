@@ -107,6 +107,23 @@
         },
         {
           "name": "mint"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
+                  114, 105, 116, 121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -188,6 +205,23 @@
         },
         {
           "name": "mint"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
+                  114, 105, 116, 121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -401,6 +435,10 @@
           "signer": true
         },
         {
+          "name": "distributor",
+          "signer": true
+        },
+        {
           "name": "mint"
         },
         {
@@ -420,7 +458,31 @@
         },
         {
           "name": "token_state_mint_token_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "token_state"
+              },
+              {
+                "kind": "account",
+                "path": "token_program_mint"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
         },
         {
           "name": "destination_wallet"
@@ -515,6 +577,34 @@
               {
                 "kind": "account",
                 "path": "admin"
+              },
+              {
+                "kind": "account",
+                "path": "token_program_mint"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_state_mint_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "token_state"
               },
               {
                 "kind": "account",
@@ -781,10 +871,6 @@
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -821,6 +907,10 @@
       "discriminator": [231, 73, 8, 168, 43, 125, 226, 99]
     },
     {
+      "name": "ChangeDistributor",
+      "discriminator": [226, 198, 51, 180, 136, 197, 218, 191]
+    },
+    {
       "name": "CreateMint",
       "discriminator": [174, 206, 148, 3, 212, 221, 222, 175]
     },
@@ -831,6 +921,10 @@
     {
       "name": "InitializeMint",
       "discriminator": [227, 163, 208, 22, 174, 191, 7, 162]
+    },
+    {
+      "name": "VerifedStatus",
+      "discriminator": [249, 11, 69, 153, 222, 216, 160, 43]
     },
     {
       "name": "WithdrawFees",
@@ -866,6 +960,22 @@
           },
           {
             "name": "new_admin",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ChangeDistributor",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_distributor",
             "type": "pubkey"
           }
         ]
@@ -922,6 +1032,14 @@
         "fields": [
           {
             "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "distributor",
+            "type": "pubkey"
+          },
+          {
+            "name": "payer",
             "type": "pubkey"
           },
           {
@@ -1011,6 +1129,22 @@
           {
             "name": "max_fee",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerifedStatus",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "verified",
+            "type": "bool"
           }
         ]
       }

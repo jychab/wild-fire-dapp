@@ -21,6 +21,7 @@ import {
   verifyAndGetToken,
 } from '../../utils/firebase/functions';
 import { SignInBtn } from '../authentication/authentication-ui';
+import NotificationFeature from '../notification/notification-feature';
 import { UploadBtn } from '../upload/upload-ui';
 import { SocialComponent } from './ui-component';
 
@@ -60,6 +61,9 @@ export function UiLayout({ children }: { children: ReactNode }) {
         const token = await verifyAndGetToken(publicKey, output);
         // Sign in with Firebase Authentication using a custom token.
         await signInWithCustomToken(auth, token);
+        (
+          document.getElementById('notification') as HTMLDialogElement
+        ).showModal();
       }
     } catch (error) {
       signOut();
@@ -130,6 +134,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 }
               >
                 {children}
+                <NotificationFeature />
               </Suspense>
             </div>
 

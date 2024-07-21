@@ -1,6 +1,8 @@
 import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import {
+  IconGift,
   IconLogout,
   IconUpload,
   IconUser,
@@ -9,8 +11,10 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FC, ReactNode } from 'react';
 import { DAS } from '../../utils/types/das';
+import { useGetDailyClaimAvailable } from '../notification/notification-data-access';
 import {
   useGetToken,
   useGetTokenDetails,
@@ -19,15 +23,24 @@ import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
+  const { data, isLoading } = useGetToken({ address: publicKey });
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: data ? data[0]?.mint : null,
   });
-
+  const router = useRouter();
   return (
     <>
       {publicKey ? (
-        <ProfileButton metaDataQuery={metaDataQuery} />
+        !(data || isLoading) ? (
+          <div
+            onClick={() => router.push('/mint/create')}
+            className="btn btn-sm btn-outline btn-primary"
+          >
+            Create Account
+          </div>
+        ) : (
+          <ProfileButton metaDataQuery={metaDataQuery} />
+        )
       ) : (
         <AuthenticationBtn
           children={
@@ -61,14 +74,20 @@ interface ProfileButtonProps {
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { publicKey, disconnect } = useWallet();
+  const { data: isClaimAvailable } = useGetDailyClaimAvailable({
+    mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
+  });
   return (
     <div className="dropdown dropdown-end dropdown-bottom">
       <div
         tabIndex={0}
         role="button"
         id="user-menu-button"
-        className="relative w-10 h-10 justify-center items-center flex"
+        className="relative w-10 h-10 justify-center items-center flex indicator"
       >
+        {isClaimAvailable?.availability && (
+          <span className="indicator-item indicator-start badge badge-xs badge-primary animate-ping"></span>
+        )}
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
             src={metaDataQuery.content.links.image}
@@ -87,7 +106,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow"
       >
         <li className="text-left">
-          <span className="block text-sm truncate w-44 ">
+          <span className="block text-sm truncate w-48 ">
             {publicKey ? publicKey.toString() : ''}
           </span>
           <span className="block text-sm truncate ">{'mainnet-beta'}</span>
@@ -106,6 +125,25 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
               <IconUserPlus />
               Create New Account
             </Link>
+          </li>
+        )}
+        {metaDataQuery && (
+          <li className="w-full ">
+            <button
+              onClick={() =>
+                (
+                  document.getElementById('notification') as HTMLDialogElement
+                ).showModal()
+              }
+            >
+              <div className="indicator">
+                {isClaimAvailable?.availability && (
+                  <span className="indicator-item indicator-start badge badge-xs badge-primary animate-ping"></span>
+                )}
+                <IconGift />
+              </div>
+              Claim Daily Bonus
+            </button>
           </li>
         )}
         <li className="w-full">

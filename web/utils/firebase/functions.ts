@@ -61,6 +61,14 @@ export async function getSponsoredUpdateMetadata(
   return result.data as string;
 }
 
+export async function getDailyClaim(mint: string) {
+  const getDailyClaim = httpsCallable(functions, 'getDailyClaim');
+  const result = await getDailyClaim({
+    mint,
+  });
+  return result.data as string;
+}
+
 export async function sendLike(
   mint: string,
   postMint: string,
