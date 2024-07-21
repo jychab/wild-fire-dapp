@@ -2,18 +2,17 @@ import { HASHFEED_MINT } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { deletePost } from '@/utils/firebase/functions';
 import { DAS } from '@/utils/types/das';
-import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useTransactionToast } from '../ui/ui-layout';
 
-export async function getAllFungibleTokensFromOwner({
-  address,
+export async function getAssetBatch({
+  ids,
   connection,
 }: {
-  address: PublicKey;
+  ids: string[];
   connection: Connection;
 }) {
   const response = await fetch(connection.rpcEndpoint, {
@@ -24,17 +23,13 @@ export async function getAllFungibleTokensFromOwner({
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: '',
-      method: 'searchAssets',
+      method: 'getAssetBatch',
       params: {
-        ownerAddress: address.toBase58(),
-        tokenType: 'fungible',
-        options: {
-          showZeroBalance: false,
-        },
+        ids: ids,
       },
     }),
   });
-  const data = (await response.json()).result as DAS.GetAssetResponseList;
+  const data = (await response.json()).result as DAS.GetAssetResponse[];
   return data;
 }
 
@@ -151,53 +146,57 @@ export const fetchOwnerTokenDetails = ({
     ],
     queryFn: async () => {
       if (!address) return null;
-      const summary = (await getDoc(doc(db, `Summary/mints`))).data() as {
-        verifiedMints: string[];
-      };
-      const ownerTokenAccounts = await getAllFungibleTokensFromOwner({
-        address,
-        connection,
-      });
-      const allTokenAccounts = ownerTokenAccounts?.items.find(
-        (x) => x.id === HASHFEED_MINT.toBase58()
-      )
-        ? ownerTokenAccounts.items
-        : ownerTokenAccounts?.items.concat(
-            await getAsset({ mint: HASHFEED_MINT, connection })
-          );
 
-      return await Promise.all(
-        allTokenAccounts.map(async (x) => {
-          try {
-            const account = await getAccount(
-              connection,
-              getAssociatedTokenAddressSync(
-                new PublicKey(x.id),
-                address,
-                false,
-                new PublicKey(x.token_info!.token_program!)
-              ),
-              undefined,
-              new PublicKey(x.token_info!.token_program!)
-            );
-            return {
-              ...x,
-              verified: summary.verifiedMints.includes(x.id),
-              price: x.token_info?.price_info?.price_per_token,
-              quantity: Number(account.amount),
-            };
-          } catch (e) {
-            return {
-              ...x,
-              verified: summary.verifiedMints.includes(x.id),
-              price: x.token_info?.price_info?.price_per_token,
-              quantity: 0,
-            };
-          }
+      // Fetch verified mints summary and owner token accounts in parallel
+      const [summaryDoc, ownerTokenAccounts] = await Promise.all([
+        getDoc(doc(db, 'Summary/mints')),
+        getTokenBalancesFromOwner({ address, connection }),
+      ]);
+
+      const summary = summaryDoc.data() as { verifiedMints: string[] };
+
+      if (!ownerTokenAccounts?.token_accounts) return [];
+
+      // Prepare token account IDs with amounts
+      const tokenAccountsWithHashfeed = ownerTokenAccounts.token_accounts.map(
+        (x) => ({
+          mint: x.mint,
+          amount: x.amount,
         })
       );
+
+      if (
+        !tokenAccountsWithHashfeed.some(
+          (x) => x.mint === HASHFEED_MINT.toBase58()
+        )
+      ) {
+        tokenAccountsWithHashfeed.push({
+          mint: HASHFEED_MINT.toBase58(),
+          amount: 0,
+        });
+      }
+
+      // Fetch metadata for all token accounts in parallel
+      const allTokenAccountIds = tokenAccountsWithHashfeed.map((x) => x.mint!);
+      const allTokenAccountsWithMetadata = await getAssetBatch({
+        ids: allTokenAccountIds,
+        connection,
+      });
+
+      // Combine metadata with token accounts
+      return allTokenAccountsWithMetadata?.map((metadata) => {
+        const tokenAccount = tokenAccountsWithHashfeed.find(
+          (x) => x.mint === metadata.id
+        );
+        return {
+          ...metadata,
+          verified: summary.verifiedMints.includes(metadata.id),
+          price: metadata.token_info?.price_info?.price_per_token,
+          quantity: Number(tokenAccount?.amount),
+        };
+      });
     },
     enabled: !!address,
-    staleTime: 15 * 1000 * 60,
+    staleTime: 15 * 60 * 1000, // 15 minutes
   });
 };
