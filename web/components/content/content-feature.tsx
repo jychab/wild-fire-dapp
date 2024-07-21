@@ -13,7 +13,7 @@ import {
   QuerySnapshot,
   where,
 } from 'firebase/firestore';
-import { FC, useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { UploadContent } from '../upload/upload.data-access';
 import { fetchOwnerTokenDetails as useFetchOwnerTokenDetails } from './content-data-access';
@@ -21,16 +21,22 @@ import { ContentGrid, ContentWithMetadata, DisplayContent } from './content-ui';
 
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
-  const [content, setContent] = useState<ContentWithMetadata[]>();
+  const [content, setContent] = useState<ContentWithMetadata[]>([]);
   const [postLimit, setPostLimit] = useState(20);
 
   const { data: ownerTokenDetails, isLoading } = useFetchOwnerTokenDetails({
     address: publicKey,
   });
 
+  const tokenIds = useMemo(
+    () => ownerTokenDetails?.map((x) => x.id) || [],
+    [ownerTokenDetails]
+  );
+
   const handleSnapshotUpdate = useCallback(
-    (snapshot: QuerySnapshot<DocumentData, DocumentData>) => {
+    (snapshot: QuerySnapshot<DocumentData>) => {
       if (!ownerTokenDetails) return;
+
       setContent((prevContent) => {
         const updatedContent = prevContent ? [...prevContent] : [];
 
@@ -79,16 +85,12 @@ export const ContentGridFeature: FC = () => {
   );
 
   useEffect(() => {
-    if (!ownerTokenDetails || isLoading) return;
+    if (tokenIds.length === 0) return;
 
     const q = query(
       collectionGroup(db, 'Post'),
       where('softDelete', '==', false),
-      where(
-        'mint',
-        'in',
-        ownerTokenDetails.map((x) => x.id)
-      ),
+      where('mint', 'in', tokenIds),
       orderBy('createdAt', 'desc'),
       limit(postLimit)
     );
@@ -96,9 +98,9 @@ export const ContentGridFeature: FC = () => {
     const unsubscribe = onSnapshot(q, handleSnapshotUpdate);
 
     return () => unsubscribe();
-  }, [ownerTokenDetails, postLimit, isLoading, handleSnapshotUpdate]);
+  }, [tokenIds, postLimit, handleSnapshotUpdate]);
 
-  return <ContentGrid content={content} />;
+  return <ContentGrid content={isLoading ? undefined : content} />;
 };
 
 interface ContentCardFeatureProps {
