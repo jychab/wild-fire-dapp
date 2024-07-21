@@ -115,6 +115,18 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
   const { data: metadataQuery } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const content =
     metadataQuery &&
@@ -133,7 +145,10 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
       : undefined;
   return content ? (
     <div className="flex flex-col w-full items-center">
-      <div className="max-w-lg w-full">
+      <div
+        style={{ height: `${viewportHeight}px` }}
+        className="max-w-lg w-full"
+      >
         <DisplayContent
           expandAll={true}
           content={content as ContentWithMetadata}
