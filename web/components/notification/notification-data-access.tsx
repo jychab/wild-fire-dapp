@@ -64,9 +64,8 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
             signTransaction: signTransaction,
             partialSignedTx: transaction,
           });
-
-          return signature;
         }
+        return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;
@@ -76,7 +75,6 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
-        (document.getElementById('notification') as HTMLDialogElement).close();
       }
     },
     onError: (error) => {

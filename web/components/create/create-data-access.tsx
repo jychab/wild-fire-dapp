@@ -95,6 +95,9 @@ export function useCreateMint({ address }: { address: string | null }) {
       if (result) {
         transactionToast(result.signature);
         router.push(`/profile?mintId=${result.mint.toBase58()}`);
+        (
+          document.getElementById('notification') as HTMLDialogElement
+        ).showModal();
       }
     },
     onError: (error) => {

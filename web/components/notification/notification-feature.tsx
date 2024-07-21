@@ -22,8 +22,8 @@ const NotificationFeature = () => {
   const [timeLeft, setTimeLeft] = useState(
     claimData && claimData.lastClaimTimestamp
       ? calculateTimeLeft(
-          claimData.lastClaimTimestamp,
-          Date.now() / 1000 + 24 * 60 * 60
+          Date.now() / 1000,
+          claimData.lastClaimTimestamp + 24 * 60 * 60
         )
       : null
   );
@@ -33,8 +33,8 @@ const NotificationFeature = () => {
       const interval = setInterval(() => {
         setTimeLeft(
           calculateTimeLeft(
-            claimData.lastClaimTimestamp,
-            Date.now() / 1000 + 24 * 60 * 60
+            Date.now() / 1000,
+            claimData.lastClaimTimestamp + 24 * 60 * 60
           )
         );
       }, 1000);
