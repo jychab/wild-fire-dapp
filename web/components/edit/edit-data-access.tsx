@@ -179,7 +179,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               distributor &&
               distributor.lamports > 0.0001 * LAMPORTS_PER_SOL
             ) {
-              console.log(fieldsToUpdate);
               partialTx = await getSponsoredUpdateMetadata(
                 mint.toBase58(),
                 fieldsToUpdate

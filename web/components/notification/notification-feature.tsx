@@ -29,7 +29,7 @@ const NotificationFeature = () => {
   );
 
   useEffect(() => {
-    if (claimData && claimData.lastClaimTimeStamp) {
+    if (claimData && claimData.lastClaimTimeStamp != undefined) {
       const interval = setInterval(() => {
         setTimeLeft(
           calculateTimeLeft(
@@ -52,8 +52,6 @@ const NotificationFeature = () => {
 
     return { hours, minutes, seconds, totalSeconds };
   }
-
-  console.log(timeLeft);
 
   const isClaimAvailable =
     tokenData &&
