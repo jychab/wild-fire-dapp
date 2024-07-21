@@ -15,6 +15,7 @@ import {
 } from '../profile/profile-data-access';
 import { AuthorityData } from '../profile/profile-ui';
 import {
+  getAssociatedTokenStateAccount,
   getQuote,
   useGetAddressInfo,
   useGetTokenAccountInfo,
@@ -386,6 +387,14 @@ export const Activities: FC<ActivitiesProps> = ({
                       {`${
                         x.owner.toBase58() == authorityData?.admin.toBase58()
                           ? '(Creator)'
+                          : ''
+                      }${
+                        authorityData &&
+                        x.owner.toBase58() ==
+                          getAssociatedTokenStateAccount(
+                            authorityData.mint
+                          ).toBase58()
+                          ? '(Reserve)'
                           : ''
                       } ${x.owner.toBase58()}`}
                     </Link>

@@ -23,6 +23,7 @@ export function useGetDailyClaimAvailable({
         const response = result.data() as {
           lastDailyClaimTimeStamp: number;
         };
+        console.log(response);
         return {
           availability:
             Date.now() / 1000 - 24 * 60 * 60 > response.lastDailyClaimTimeStamp,

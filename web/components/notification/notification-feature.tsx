@@ -15,12 +15,12 @@ const NotificationFeature = () => {
   const dailyClaimMutation = useClaimDailyMutation({
     mint: tokenData ? tokenData[0].mint : null,
   });
-  const { data: claimData, isFetching } = useGetDailyClaimAvailable({
+  const { data: claimData } = useGetDailyClaimAvailable({
     mint: tokenData ? tokenData[0].mint : null,
   });
 
   const [timeLeft, setTimeLeft] = useState(
-    claimData && claimData.lastClaimTimeStamp
+    claimData && claimData.lastClaimTimeStamp != undefined
       ? calculateTimeLeft(
           Date.now() / 1000,
           claimData.lastClaimTimeStamp + 24 * 60 * 60
@@ -41,7 +41,7 @@ const NotificationFeature = () => {
 
       return () => clearInterval(interval);
     }
-  }, [claimData?.lastClaimTimeStamp, isFetching]);
+  }, [claimData?.lastClaimTimeStamp]);
 
   function calculateTimeLeft(start: number, end: number) {
     const totalSeconds = Math.max(end - start, 0);
@@ -50,8 +50,10 @@ const NotificationFeature = () => {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = Math.floor(totalSeconds % 60);
 
-    return { hours, minutes, seconds, totalSeconds: end - start };
+    return { hours, minutes, seconds, totalSeconds };
   }
+
+  console.log(timeLeft);
 
   const isClaimAvailable =
     tokenData &&

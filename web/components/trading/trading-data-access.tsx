@@ -1,5 +1,6 @@
 import { REFERRAL_KEY } from '@/utils/consts';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { program } from '@/utils/helper/transcationInstructions';
 import {
   getAccount,
   getAssociatedTokenAddressSync,
@@ -198,4 +199,14 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
     },
     enabled: !!mint,
   });
+}
+
+export function getAssociatedTokenStateAccount(mint: PublicKey) {
+  const { connection } = useConnection();
+  const [tokenState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('token'), mint.toBuffer()],
+    program(connection).programId
+  );
+
+  return tokenState;
 }
