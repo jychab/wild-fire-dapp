@@ -91,7 +91,7 @@ export const CreatePanel: FC = () => {
                 id="dropzone-file"
                 type="file"
                 accept="image/*"
-                className="hidden"
+                className="hidden text-base"
                 name="dropzone-file"
                 onChange={handlePictureChange}
               />
@@ -103,14 +103,14 @@ export const CreatePanel: FC = () => {
               placeholder="Display Name"
               value={name}
               maxLength={20}
-              className="input input-bordered w-full text-sm rounded"
+              className="input input-bordered w-full text-base rounded"
               onChange={handleNameChange}
             />
             <input
               type="text"
               placeholder="Username"
               maxLength={20}
-              className="input input-bordered w-full text-sm rounded"
+              className="input input-bordered w-full text-base rounded"
               value={handle}
               onChange={handleHandleChange}
             />
@@ -123,7 +123,7 @@ export const CreatePanel: FC = () => {
           <textarea
             maxLength={200}
             placeholder="Write a short introduction..."
-            className="textarea textarea-bordered textarea-sm leading-normal h-24 w-full overflow-hidden"
+            className="textarea textarea-bordered textarea-base text-base leading-normal h-24 w-full overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
           ></textarea>

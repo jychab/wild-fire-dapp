@@ -104,7 +104,7 @@ export const TradingPanel: FC<{
       </button>
       <input
         type="number"
-        className="w-full text-right"
+        className="w-full text-right text-base"
         placeholder="0.00"
         value={
           buy
@@ -150,7 +150,7 @@ export const TradingPanel: FC<{
       </button>
       <input
         type="number"
-        className="w-full text-right"
+        className="w-full text-right text-base"
         placeholder="0.00"
         value={buy ? outputAmount : inputAmount}
         onChange={(e) => {

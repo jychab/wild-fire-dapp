@@ -91,19 +91,30 @@ export function useCreateMint({ address }: { address: string | null }) {
         return;
       }
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (result) {
         transactionToast(result.signature);
         router.push(`/profile?mintId=${result.mint.toBase58()}`);
         (
           document.getElementById('notification') as HTMLDialogElement
         ).showModal();
-        return client.invalidateQueries({
-          queryKey: [
-            'get-token',
-            { endpoint: connection.rpcEndpoint, address },
-          ],
-        });
+        return await Promise.all([
+          client.invalidateQueries({
+            queryKey: ['get-claim-availability', { mint: result.mint }],
+          }),
+          client.invalidateQueries({
+            queryKey: [
+              'get-token',
+              { endpoint: connection.rpcEndpoint, address },
+            ],
+          }),
+          client.refetchQueries({
+            queryKey: [
+              'get-token',
+              { endpoint: connection.rpcEndpoint, address },
+            ],
+          }),
+        ]);
       }
     },
     onError: (error) => {

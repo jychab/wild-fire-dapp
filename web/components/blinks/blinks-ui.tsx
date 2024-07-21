@@ -805,7 +805,7 @@ const ActionInput = ({
         value={value}
         disabled={disabled}
         onChange={extendedChange}
-        className="text-sm ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-disabled disabled:text-disabled"
+        className="text-base ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-disabled disabled:text-disabled"
       />
       {button && (
         <div className="my-1 mr-1">

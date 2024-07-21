@@ -117,8 +117,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   };
 
   return (
-    <div className="flex flex-col gap-8 my-4 items-center max-w-2xl w-full sm:p-4">
-      <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
+    <div className="flex flex-col gap-4 my-4 items-center max-w-2xl w-full sm:p-4">
+      <span className="text-3xl lg:text-4xl text-base-content">
         Edit Profile Settings
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded bg-base-100">
@@ -162,7 +162,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               <input
                 id="dropzone-file"
                 type="file"
-                className="hidden"
+                className="hidden text-base"
                 name="dropzone-file"
                 onChange={handlePictureChange}
               />
@@ -171,15 +171,15 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
           <div className="flex flex-col gap-4 w-full">
             <input
               type="text"
-              placeholder="name"
+              placeholder="Display Name"
               value={name}
-              className="input input-bordered w-full text-sm rounded"
+              className="input input-bordered w-full text-base rounded"
               onChange={handleNameChange}
             />
             <input
               type="text"
-              placeholder="symbol"
-              className="input input-bordered w-full text-sm rounded"
+              placeholder="Username"
+              className="input input-bordered w-full text-base rounded"
               value={symbol}
               onChange={handleSymbolChange}
             />
@@ -192,7 +192,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
           <textarea
             maxLength={200}
             placeholder="Write a short introduction..."
-            className="textarea textarea-bordered textarea-sm w-full h-24 leading-normal overflow-hidden"
+            className="textarea textarea-bordered textarea-base text-base w-full h-24 leading-normal overflow-hidden"
             value={description}
             onChange={handleDescriptionChange}
           ></textarea>
@@ -209,7 +209,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 disabled={mintTokenData?.mutable == 0}
                 type="text"
                 placeholder="authority"
-                className="col-span-3 input input-bordered w-full text-sm rounded"
+                className="col-span-3 input input-bordered w-full text-base rounded"
                 value={admin}
                 onChange={(e) => setAdmin(e.target.value)}
               />

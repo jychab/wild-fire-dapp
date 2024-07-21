@@ -486,7 +486,7 @@ export const UploadPost: FC<{
                       multiple
                       id="dropzone-file-image"
                       type="file"
-                      className="hidden"
+                      className="hidden text-base"
                       name="dropzone-file-image"
                       accept="image/*"
                       onChange={handleFilesAdd}
@@ -501,7 +501,7 @@ export const UploadPost: FC<{
                       id="dropzone-file-video"
                       type="file"
                       accept="video/*"
-                      className="hidden"
+                      className="hidden text-base"
                       name="dropzone-file-video"
                       onChange={handleFilesAdd}
                     />
@@ -516,7 +516,7 @@ export const UploadPost: FC<{
         <textarea
           maxLength={200}
           placeholder="Insert your caption here..."
-          className="textarea textarea-bordered leading-normal textarea-sm w-full h-24 overflow-hidden"
+          className="textarea textarea-bordered leading-normal textarea-base text-base w-full h-24 overflow-hidden"
           value={caption}
           onChange={handleCaptionChange}
         />
@@ -575,7 +575,7 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
         <input
           type="url"
           placeholder="Add Blink Url"
-          className="input input-bordered w-full"
+          className="input input-bordered w-full text-base"
           value={uri?.toString()}
           onChange={(e) => setUri(e.target.value)}
         />
