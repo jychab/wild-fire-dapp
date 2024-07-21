@@ -5,7 +5,7 @@ import {
   IconBrandTwitterFilled,
 } from '@tabler/icons-react';
 import Link from 'next/link';
-import { FC, useEffect } from 'react';
+import { FC } from 'react';
 
 export const ThemeComponent: FC = ({}) => {
   const [theme, setTheme] = useLocalStorage('theme', 'dark');
@@ -13,11 +13,6 @@ export const ThemeComponent: FC = ({}) => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  useEffect(() => {
-    if (document.querySelector('html')) {
-      document.querySelector('html')!.setAttribute('data-theme', theme);
-    }
-  }, [theme]);
   return (
     <button onClick={toggleTheme} className="w-full">
       {theme === 'light' && (

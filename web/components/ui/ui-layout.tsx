@@ -5,7 +5,7 @@ import { ReactNode, Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   onAuthStateChanged,
@@ -26,6 +26,12 @@ import { UploadBtn } from '../upload/upload-ui';
 import { SocialComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useLocalStorage('theme', 'dark');
+  useEffect(() => {
+    if (document.querySelector('html')) {
+      document.querySelector('html')!.setAttribute('data-theme', theme);
+    }
+  }, [theme]);
   const links: { label: string; path: string }[] = [];
   const pathname = usePathname();
   const { publicKey, signMessage, disconnect } = useWallet();

@@ -44,7 +44,7 @@ export const SignInBtn: FC = () => {
       ) : (
         <AuthenticationBtn
           children={
-            <div className="btn btn-sm btn-outline bg-base-100">
+            <div className="btn btn-sm btn-outline bg-base-100 rounded-none">
               Connect Wallet
             </div>
           }
