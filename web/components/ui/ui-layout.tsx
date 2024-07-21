@@ -26,7 +26,7 @@ import { UploadBtn } from '../upload/upload-ui';
 import { SocialComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useLocalStorage('theme', 'dark');
+  const [theme, _] = useLocalStorage('theme', 'dark');
   useEffect(() => {
     if (document.querySelector('html')) {
       document.querySelector('html')!.setAttribute('data-theme', theme);
