@@ -58,6 +58,7 @@ interface BlinksProps {
   additionalMetadata?: AdditionalMetadata;
   editable?: boolean;
   multiGrid?: boolean;
+  hideComment?: boolean;
   expandAll?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
@@ -65,6 +66,7 @@ export const Blinks: FC<BlinksProps> = ({
   additionalMetadata,
   editable = false,
   multiGrid = false,
+  hideComment = false,
   expandAll = false,
 }) => {
   let actionApiUrl: string | null = null;
@@ -127,6 +129,7 @@ export const Blinks: FC<BlinksProps> = ({
 
   return action && actionsRegistry ? (
     <ActionContainer
+      hideComment={hideComment}
       expandAll={expandAll}
       editable={editable}
       additionalMetadata={additionalMetadata}
@@ -154,6 +157,7 @@ interface ActionContainerProps {
   editable: boolean;
   multiGrid: boolean;
   expandAll: boolean;
+  hideComment: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
@@ -166,6 +170,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   editable,
   multiGrid,
   expandAll,
+  hideComment,
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -389,6 +394,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
   return (
     <ActionLayout
+      hideComment={hideComment}
       expandAll={expandAll}
       multiGrid={multiGrid}
       editable={editable}
@@ -438,6 +444,7 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 };
 
 interface LayoutProps {
+  hideComment: boolean;
   expandAll: boolean;
   multiGrid: boolean;
   editable: boolean;
@@ -477,6 +484,7 @@ interface FormProps {
 }
 
 export const ActionLayout = ({
+  hideComment,
   expandAll,
   multiGrid,
   editable,
@@ -685,7 +693,7 @@ export const ActionLayout = ({
               className="stat-desc link link-hover"
             >{`View ${additionalMetadata.commentsCount} comments`}</button>
           )}
-          {!multiGrid && (
+          {!hideComment && (
             <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2">
               <input
                 placeholder="Add a comment"

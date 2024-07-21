@@ -581,8 +581,8 @@ export const UploadBlinks: FC<UploadComponentProps> = ({
         />
       </div>
       {validUrl && (
-        <div className="sm:border bg-base-100 rounded">
-          <Blinks actionUrl={validUrl} />
+        <div className="bg-base-100 border rounded">
+          <Blinks hideComment={true} actionUrl={validUrl} />
         </div>
       )}
       <UploadContentBtn

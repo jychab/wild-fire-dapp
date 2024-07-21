@@ -88,6 +88,7 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
   return (
     <>
       <ContentGrid
+        hideComment={true}
         multiGrid={true}
         showMintDetails={false}
         editable={true}

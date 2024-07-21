@@ -172,7 +172,7 @@ export const TradingPanel: FC<{
       {isLoading ? (
         <div className="loading loading-dots loading-lg" />
       ) : (
-        <div className="flex flex-col md:flex-row items-start w-full md:gap-4">
+        <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col w-full">
             <div
               className={`flex md:bg-base-200 rounded md:mb-4 items-center justify-between px-4 md:py-2`}

@@ -27,6 +27,7 @@ interface ContentGridProps {
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
+  hideComment?: boolean;
 }
 export interface AdditionalMetadata {
   id: string;
@@ -53,6 +54,7 @@ interface PostContentWithMetadata extends AdditionalMetadata, PostContent {}
 
 export const ContentGrid: FC<ContentGridProps> = ({
   content,
+  hideComment = false,
   showMintDetails = true,
   editable = false,
   multiGrid = false,
@@ -67,6 +69,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
         <DisplayContent
           key={x.id}
           content={x}
+          hideComment={hideComment}
           showMintDetails={showMintDetails}
           editable={editable}
           multiGrid={multiGrid}
@@ -86,12 +89,14 @@ export const PostCard = ({
   editable = false,
   multiGrid = false,
   expandAll = false,
+  hideComment = false,
 }: {
   content: PostContentWithMetadata;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
   expandAll?: boolean;
+  hideComment?: boolean;
 }) => {
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
@@ -276,7 +281,7 @@ export const PostCard = ({
                 className="stat-desc link link-hover"
               >{`View ${content.commentsCount} comments`}</button>
             )}
-            {!multiGrid && (
+            {!hideComment && (
               <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2 ">
                 <input
                   placeholder="Add a comment"
@@ -320,13 +325,22 @@ export const BlinksCard: FC<{
   editable?: boolean;
   multiGrid?: boolean;
   expandAll?: boolean;
-}> = ({ multiGrid, content, showMintDetails, editable, expandAll }) => {
+  hideComment?: boolean;
+}> = ({
+  multiGrid,
+  content,
+  showMintDetails,
+  editable,
+  expandAll,
+  hideComment,
+}) => {
   try {
     const url = new URL(content.uri as string);
     return (
       <div className="flex flex-col sm:border rounded w-full">
         {showMintDetails && <UserProfile content={content} />}
         <Blinks
+          hideComment={hideComment}
           multiGrid={multiGrid}
           actionUrl={url}
           additionalMetadata={content}
@@ -347,6 +361,7 @@ interface DisplayContentProps {
   editable?: boolean;
   multiGrid?: boolean;
   expandAll?: boolean;
+  hideComment?: boolean;
 }
 
 export const DisplayContent: FC<DisplayContentProps> = ({
@@ -355,6 +370,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
   editable,
   multiGrid,
   expandAll,
+  hideComment,
 }) => {
   return (
     <>
@@ -363,6 +379,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
           key={content.id}
           content={content as BlinkContentWithMetadata}
           showMintDetails={showMintDetails}
+          hideComment={hideComment}
           editable={editable}
           multiGrid={multiGrid}
           expandAll={expandAll}
@@ -373,6 +390,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
           key={content.id}
           content={content as PostContentWithMetadata}
           showMintDetails={showMintDetails}
+          hideComment={hideComment}
           editable={editable}
           multiGrid={multiGrid}
           expandAll={expandAll}

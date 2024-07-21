@@ -85,9 +85,6 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         id="user-menu-button"
         className="relative w-10 h-10 justify-center items-center flex indicator"
       >
-        {isClaimAvailable?.availability && (
-          <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-600 border-none ml-2 mt-2"></span>
-        )}
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
             src={metaDataQuery.content.links.image}
@@ -138,7 +135,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             >
               <div className="indicator">
                 {isClaimAvailable?.availability && (
-                  <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-600 border-none"></span>
+                  <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-400 border-none"></span>
                 )}
                 <IconGift />
               </div>
