@@ -144,7 +144,7 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
         }
       : undefined;
   return content ? (
-    <div className="flex flex-col w-full items-center">
+    <div className="flex flex-col w-full items-center sm:py-4">
       <div
         style={{ height: `${viewportHeight}px` }}
         className="max-w-lg w-full"

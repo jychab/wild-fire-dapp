@@ -57,16 +57,16 @@ export const ProfilePage: FC<{
   );
 
   return (
-    <div className="flex flex-col h-full w-full min-h-[1000px] items-center">
-      <div className="flex flex-col gap-8 items-start w-full h-full max-w-7xl py-8">
+    <div className="flex flex-col w-full items-center">
+      <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
         <Profile
           metadata={metaDataQuery}
           mintId={mintId}
           mintSummaryDetails={mintSummaryDetails}
         />
-        <div className="flex flex-col flex-1 w-full h-full">
+        <div className="flex flex-col flex-1 w-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b w-full sm:h-full md:p-4">
+          <div className="border-base-200 rounded border-x border-b w-full md:p-4">
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}

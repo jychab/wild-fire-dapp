@@ -1,4 +1,4 @@
-import { createOrEditComment, sendLike } from '@/utils/firebase/functions';
+import { sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -8,7 +8,6 @@ import {
   IconEdit,
   IconHeart,
   IconHeartFilled,
-  IconSend,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -17,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
+import { CommentsSection } from '../comments/comments-ui';
 import { useGetToken } from '../profile/profile-data-access';
 import { ContentType } from '../upload/upload-ui';
 import { BlinkContent, PostContent } from '../upload/upload.data-access';
@@ -117,8 +117,8 @@ export const PostCard = ({
   const removeContentMutation = useRemoveContentMutation({
     mint: editable ? new PublicKey(content.mint) : null,
   });
-  const [comment, setComment] = useState('');
   const router = useRouter();
+
   return (
     <div className="flex flex-col sm:border bg-base-100 rounded w-full">
       {showMintDetails && <UserProfile content={content} />}
@@ -289,39 +289,18 @@ export const PostCard = ({
                     router.push(
                       `/content?mintId=${content.mint}&id=${content.id}`
                     );
+                  } else {
+                    (
+                      document.getElementById(
+                        content.id + '/comments'
+                      ) as HTMLDialogElement
+                    ).showModal();
                   }
                 }}
                 className="stat-desc link link-hover"
               >{`View ${content.commentsCount} comments`}</button>
             )}
-            {!hideComment && (
-              <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2 ">
-                <input
-                  placeholder="Add a comment"
-                  type="text"
-                  className="w-full text-xs"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                />
-                <button
-                  onClick={() => {
-                    if (content && comment) {
-                      createOrEditComment(
-                        content?.mint,
-                        content?.id,
-                        crypto.randomUUID(),
-                        comment,
-                        []
-                      );
-                    }
-                    setComment('');
-                  }}
-                  className="hidden group-focus-within:inline-flex btn btn-xs btn-ghost "
-                >
-                  <IconSend />
-                </button>
-              </label>
-            )}
+            {!hideComment && <CommentsSection additionalMetadata={content} />}
             <span className="text-xs stat-desc">
               {convertUTCTimeToDayMonth(content.updatedAt || 0)}
             </span>

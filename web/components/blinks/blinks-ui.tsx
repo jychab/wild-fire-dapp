@@ -1,5 +1,5 @@
 import { ExecutionType } from '@/utils/enums/blinks';
-import { createOrEditComment, sendLike } from '@/utils/firebase/functions';
+import { sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
   ACTIONS_REGISTRY_URL_ALL,
@@ -22,7 +22,6 @@ import {
   IconHeartFilled,
   IconHelpOctagonFilled,
   IconProgress,
-  IconSend,
   IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
@@ -43,6 +42,7 @@ import {
   mergeActionStates,
   normalizeOptions,
 } from '../../utils/helper/blinks';
+import { CommentsSection } from '../comments/comments-ui';
 import { useRemoveContentMutation } from '../content/content-data-access';
 import { AdditionalMetadata } from '../content/content-ui';
 import { useGetToken } from '../profile/profile-data-access';
@@ -515,10 +515,10 @@ export const ActionLayout = ({
   const [comment, setComment] = useState('');
   const router = useRouter();
   return (
-    <div className="flex flex-col w-full cursor-default overflow-hidden shadow-action">
+    <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
       {image && websiteUrl && (
         <div
-          className={`block px-5 pt-5 relative w-full ${
+          className={`block px-5 pt-5 relative h-auto w-full ${
             form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
           }`}
         >
@@ -532,7 +532,9 @@ export const ActionLayout = ({
           />
         </div>
       )}
-      <div className={`px-4 pb-4 pt-2 flex flex-col w-full justify-between`}>
+      <div
+        className={`px-4 pb-4 pt-2 flex flex-col flex-1 w-full justify-between`}
+      >
         <div className="flex flex-col gap-2">
           <div className="flex justify-between">
             <div className="flex gap-2 text-sm items-center">
@@ -688,38 +690,19 @@ export const ActionLayout = ({
                   router.push(
                     `/content?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`
                   );
+                } else {
+                  (
+                    document.getElementById(
+                      additionalMetadata.id + '/comments'
+                    ) as HTMLDialogElement
+                  ).showModal();
                 }
               }}
               className="stat-desc link link-hover"
             >{`View ${additionalMetadata.commentsCount} comments`}</button>
           )}
-          {!hideComment && (
-            <label className="input rounded-full flex w-full input-xs focus-within:outline-none items-center group p-0 focus-within:p-4 focus-within:mt-2">
-              <input
-                placeholder="Add a comment"
-                type="text"
-                className="w-full text-xs"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-              <button
-                onClick={() => {
-                  if (additionalMetadata && comment) {
-                    createOrEditComment(
-                      additionalMetadata?.mint,
-                      additionalMetadata?.id,
-                      crypto.randomUUID(),
-                      comment,
-                      []
-                    );
-                  }
-                  setComment('');
-                }}
-                className="hidden group-focus-within:inline-flex btn btn-xs btn-ghost "
-              >
-                <IconSend />
-              </button>
-            </label>
+          {!hideComment && additionalMetadata && (
+            <CommentsSection additionalMetadata={additionalMetadata} />
           )}
           {additionalMetadata && (
             <span className="text-xs stat-desc">

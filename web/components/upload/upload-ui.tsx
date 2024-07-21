@@ -74,17 +74,29 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   if (data && mintId && data[0].mint.toBase58() != mintId) {
     return (
       <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">
-        <span>
-          The requested mint wasn't created through this platform. However, your
-          content can still be read if you adhere to the following metadata
-          standards. Click here for a guide on how to do this.
-        </span>
+        <span>The requested mint wasn't created through this platform.</span>
       </div>
     );
   }
 
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col gap-8 my-4 items-center w-full p-4">
+    <div
+      style={{ height: `${viewportHeight}px` }}
+      className="flex flex-col gap-8 my-4 items-center w-full p-4"
+    >
       <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
         {id ? 'Edit Post' : 'Create a New Post'}
       </span>

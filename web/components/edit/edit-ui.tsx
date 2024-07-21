@@ -116,8 +116,22 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     setDescription(e.target.value);
   };
 
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   return (
-    <div className="flex flex-col gap-4 my-4 items-center max-w-2xl w-full sm:p-4">
+    <div
+      style={{ height: `${viewportHeight}px` }}
+      className="flex flex-col gap-4 my-4 items-center max-w-2xl w-full sm:p-4"
+    >
       <span className="text-3xl lg:text-4xl text-base-content">
         Edit Profile Settings
       </span>

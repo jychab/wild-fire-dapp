@@ -54,10 +54,24 @@ export const CreatePanel: FC = () => {
   useEffect(() => {
     setValid(!(!picture || !name || !handle));
   }, [picture, publicKey, name, handle]);
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
-  const router = useRouter();
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col gap-4 items-center justify-center">
+    <div
+      style={{ height: `${viewportHeight}px` }}
+      className="flex flex-col gap-4 items-center justify-center"
+    >
       <span className="text-3xl md:text-4xl text-center">
         Create an account to claim your first airdrop!
       </span>
