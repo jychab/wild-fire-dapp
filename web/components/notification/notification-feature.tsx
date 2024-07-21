@@ -20,28 +20,28 @@ const NotificationFeature = () => {
   });
 
   const [timeLeft, setTimeLeft] = useState(
-    claimData && claimData.lastClaimTimestamp
+    claimData && claimData.lastClaimTimeStamp
       ? calculateTimeLeft(
           Date.now() / 1000,
-          claimData.lastClaimTimestamp + 24 * 60 * 60
+          claimData.lastClaimTimeStamp + 24 * 60 * 60
         )
       : null
   );
 
   useEffect(() => {
-    if (claimData && claimData.lastClaimTimestamp) {
+    if (claimData && claimData.lastClaimTimeStamp) {
       const interval = setInterval(() => {
         setTimeLeft(
           calculateTimeLeft(
             Date.now() / 1000,
-            claimData.lastClaimTimestamp + 24 * 60 * 60
+            claimData.lastClaimTimeStamp + 24 * 60 * 60
           )
         );
       }, 1000);
 
       return () => clearInterval(interval);
     }
-  }, [claimData?.lastClaimTimestamp, isFetching]);
+  }, [claimData?.lastClaimTimeStamp, isFetching]);
 
   function calculateTimeLeft(start: number, end: number) {
     const totalSeconds = Math.max(end - start, 0);
