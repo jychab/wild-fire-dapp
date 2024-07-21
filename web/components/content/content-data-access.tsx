@@ -147,13 +147,16 @@ export const fetchOwnerTokenDetails = ({
     queryFn: async () => {
       if (!address) return null;
 
-      // Fetch verified mints summary and owner token accounts in parallel
-      const [summaryDoc, ownerTokenAccounts] = await Promise.all([
-        getDoc(doc(db, 'Summary/mints')),
-        getTokenBalancesFromOwner({ address, connection }),
-      ]);
+      // Fetch verified mints summary in parallel
+      const summaryPromise = getDoc(doc(db, 'Summary/mints')).then(
+        (doc) => doc.data() as { verifiedMints: string[] }
+      );
 
-      const summary = summaryDoc.data() as { verifiedMints: string[] };
+      // Fetch owner token accounts
+      const ownerTokenAccounts = await getTokenBalancesFromOwner({
+        address,
+        connection,
+      });
 
       if (!ownerTokenAccounts?.token_accounts) return [];
 
@@ -176,12 +179,13 @@ export const fetchOwnerTokenDetails = ({
         });
       }
 
-      // Fetch metadata for all token accounts in parallel
       const allTokenAccountIds = tokenAccountsWithHashfeed.map((x) => x.mint!);
-      const allTokenAccountsWithMetadata = await getAssetBatch({
-        ids: allTokenAccountIds,
-        connection,
-      });
+
+      // Fetch metadata and summary in parallel
+      const [allTokenAccountsWithMetadata, summary] = await Promise.all([
+        getAssetBatch({ ids: allTokenAccountIds, connection }),
+        summaryPromise,
+      ]);
 
       // Combine metadata with token accounts
       return allTokenAccountsWithMetadata?.map((metadata) => {
