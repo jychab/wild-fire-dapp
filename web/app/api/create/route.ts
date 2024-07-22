@@ -23,7 +23,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Idl from '../../../utils/program/idl/wild_fire.json';
 
 const connection = new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT!);
-export const program = (connection: Connection) =>
+const program = (connection: Connection) =>
   new Program<WildFire>(Idl as unknown as WildFire, {
     connection,
   });
