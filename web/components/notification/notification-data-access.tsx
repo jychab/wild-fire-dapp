@@ -4,7 +4,7 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -40,6 +40,7 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const { publicKey, signTransaction } = useWallet();
+  const client = useQueryClient();
 
   return useMutation({
     mutationKey: [
@@ -72,9 +73,17 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
       }
     },
 
-    onSuccess: (signature) => {
+    onSuccess: async (signature) => {
       if (signature) {
         transactionToast(signature);
+        return await Promise.all([
+          client.invalidateQueries({
+            queryKey: ['get-claim-availability', { mint: mint }],
+          }),
+          client.refetchQueries({
+            queryKey: ['get-claim-availability', { mint: mint }],
+          }),
+        ]);
       }
     },
     onError: (error) => {

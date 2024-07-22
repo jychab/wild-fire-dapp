@@ -145,7 +145,7 @@ export const CommentsSection: FC<{
               <IconX />
             </button>
           </div>
-          <div className="overflow-y-scroll mb-6 pb-4 px-4">
+          <div className="overflow-y-scroll mb-6 pb-4 px-4 scrollbar-none">
             <div className="flex flex-col gap-4 ">
               {comments.map((x) => (
                 <AvatarWithText key={x.commentId} comment={x} />
