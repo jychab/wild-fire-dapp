@@ -23,6 +23,7 @@ export function useGetBlinkAction({
       return Action.fetch(actionUrl);
     },
     enabled: enabled,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -49,6 +50,7 @@ export function useGetBlinkActionJsonUrl({
       }
     },
     enabled: enabled,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

@@ -31,6 +31,7 @@ export function useGetMintTransferFeeConfig({
     ],
     queryFn: () => mint && getTransferFeeConfig(mint),
     enabled: !!mint,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -49,6 +50,7 @@ export function useGetMintDetails({
     ],
     queryFn: () => mint && getMint(connection, mint, undefined, tokenProgram),
     enabled: !!mint,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -72,6 +74,7 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
       };
     },
     enabled: !!mint,
+    staleTime: 60 * 1000,
   });
 }
 
@@ -108,6 +111,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
           }
         }),
     enabled: !!address,
+    staleTime: 15 * 60 * 1000,
   });
 }
 
@@ -145,7 +149,7 @@ export function useGetLargestAccountFromMint({
         })
       );
     },
-    staleTime: 1000 * 60 * 10, //10mins
+    staleTime: 1000 * 60, //1mins
     enabled: !!mint,
   });
 }
@@ -183,6 +187,7 @@ export function useGetTokenDetails({
       if (!withContent) {
         return data;
       }
+
       try {
         const hashFeedUri =
           data.mint_extensions?.metadata?.additional_metadata.find(
@@ -203,5 +208,6 @@ export function useGetTokenDetails({
       }
     },
     enabled: !!mint,
+    staleTime: 5 * 60 * 1000,
   });
 }
