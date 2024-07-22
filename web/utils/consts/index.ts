@@ -1,12 +1,10 @@
 import { PublicKey } from '@solana/web3.js';
 
 export const HASHFEED_MINT = new PublicKey(
-  '4jGm9BWY6vX2ppcjP7szpCq9jfb2QbX6h5qbJ8bTJYJp'
+  'CtiPMWDvrYm8SaWwuVJWWbq9qHCsGZjxVi4RShrgtyCY'
 );
 
 export const ONE_BILLION = 1_000_000_000;
-
-export const OFF_SET = 1_000_000_000_000;
 
 export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   'HBqRq1kwJP4nSHL633D3Q6zLXYcv9YDi1GvyG3VPwcMK'
