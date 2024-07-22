@@ -80,7 +80,6 @@ export function useSwapMutation({ mint }: { mint: PublicKey | null }) {
         amount,
         swapMode
       );
-
       const [feeAccount] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('referral_ata'),

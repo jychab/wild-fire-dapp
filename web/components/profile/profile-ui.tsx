@@ -226,7 +226,7 @@ const Profile: FC<ProfileProps> = ({
         <div className="flex items-center gap-2 ">
           <div
             data-tip={`${
-              isLiquidityPoolFound
+              isLiquidityPoolFound || (tokenInfo && tokenInfo.amount > 0)
                 ? ''
                 : 'Create a liquidity pool to unlock this feature'
             }`}

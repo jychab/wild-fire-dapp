@@ -8,6 +8,7 @@ import {
   IconEdit,
   IconHeart,
   IconHeartFilled,
+  IconMoneybag,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast';
 import { Blinks } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
 import { useGetToken } from '../profile/profile-data-access';
+import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { ContentType } from '../upload/upload-ui';
 import { BlinkContent, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -101,6 +103,9 @@ export const PostCard = ({
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
   const [showMore, setShowMore] = useState(expandAll);
+  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
+    mint: new PublicKey(content.mint),
+  });
   const removeContentMutation = useRemoveContentMutation({
     mint: editable ? new PublicKey(content.mint) : null,
   });
@@ -199,7 +204,8 @@ export const PostCard = ({
                   </div>
                 )}
               </div>
-              {editable && (
+
+              {(editable || isLiquidityPoolFound) && (
                 <div className="dropdown dropdown-left ">
                   <div tabIndex={0} role="button">
                     {removeContentMutation.isPending ? (
@@ -212,31 +218,46 @@ export const PostCard = ({
                     tabIndex={0}
                     className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
                   >
-                    <li>
-                      <Link
-                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                        href={`/content/edit?mintId=${content.mint}&id=${content.id}`}
-                      >
-                        <IconEdit size={18} />
-                        Edit Post
-                      </Link>
-                    </li>
-                    <li>
-                      <button
-                        disabled={removeContentMutation.isPending}
-                        onClick={() =>
-                          removeContentMutation.mutateAsync(content.id)
-                        }
-                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                      >
-                        {removeContentMutation.isPending ? (
-                          <div className="loading loading-spinner loading-sm" />
-                        ) : (
-                          <IconTrash size={18} />
-                        )}
-                        Delete Post
-                      </button>
-                    </li>
+                    {!editable && isLiquidityPoolFound && (
+                      <li>
+                        <Link
+                          href={`/profile?mintId=${content.mint}&tab=trade`}
+                          className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                        >
+                          <IconMoneybag size={18} />
+                          Trade
+                        </Link>
+                      </li>
+                    )}
+                    {editable && (
+                      <li>
+                        <Link
+                          className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                          href={`/content/edit?mintId=${content.mint}&id=${content.id}`}
+                        >
+                          <IconEdit size={18} />
+                          Edit Post
+                        </Link>
+                      </li>
+                    )}
+                    {editable && (
+                      <li>
+                        <button
+                          disabled={removeContentMutation.isPending}
+                          onClick={() =>
+                            removeContentMutation.mutateAsync(content.id)
+                          }
+                          className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                        >
+                          {removeContentMutation.isPending ? (
+                            <div className="loading loading-spinner loading-sm" />
+                          ) : (
+                            <IconTrash size={18} />
+                          )}
+                          Delete Post
+                        </button>
+                      </li>
+                    )}
                   </ul>
                 </div>
               )}

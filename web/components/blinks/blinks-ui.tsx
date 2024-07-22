@@ -21,6 +21,7 @@ import {
   IconHeart,
   IconHeartFilled,
   IconHelpOctagonFilled,
+  IconMoneybag,
   IconProgress,
   IconShieldCheckFilled,
   IconTrash,
@@ -46,6 +47,10 @@ import { CommentsSection } from '../comments/comments-ui';
 import { useRemoveContentMutation } from '../content/content-data-access';
 import { AdditionalMetadata } from '../content/content-ui';
 import { useGetToken } from '../profile/profile-data-access';
+import {
+  useIsLiquidityPoolFound,
+  useSwapMutation,
+} from '../trading/trading-data-access';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -511,8 +516,13 @@ export const ActionLayout = ({
         ? new PublicKey(additionalMetadata.mint)
         : null,
   });
+  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
+    mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
+  });
 
-  const [comment, setComment] = useState('');
+  const swapMutation = useSwapMutation({
+    mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
+  });
   const router = useRouter();
   return (
     <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
@@ -612,7 +622,7 @@ export const ActionLayout = ({
                 </div>
               )}
             </div>
-            {editable && additionalMetadata && (
+            {(editable || isLiquidityPoolFound) && (
               <div className="dropdown dropdown-left">
                 <div tabIndex={0} role="button">
                   {removeContentMutation.isPending ? (
@@ -625,22 +635,37 @@ export const ActionLayout = ({
                   tabIndex={0}
                   className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
                 >
-                  <li>
-                    <button
-                      disabled={removeContentMutation.isPending}
-                      onClick={() =>
-                        removeContentMutation.mutateAsync(additionalMetadata.id)
-                      }
-                      className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                    >
-                      {removeContentMutation.isPending ? (
-                        <div className="loading loading-spinner loading-sm" />
-                      ) : (
-                        <IconTrash size={18} />
-                      )}
-                      Delete Post
-                    </button>
-                  </li>
+                  {!editable && isLiquidityPoolFound && additionalMetadata && (
+                    <li>
+                      <Link
+                        href={`/profile?mintId=${additionalMetadata.mint}&tab=trade`}
+                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                      >
+                        <IconMoneybag size={18} />
+                        Trade
+                      </Link>
+                    </li>
+                  )}
+                  {editable && additionalMetadata && (
+                    <li>
+                      <button
+                        disabled={removeContentMutation.isPending}
+                        onClick={() =>
+                          removeContentMutation.mutateAsync(
+                            additionalMetadata.id
+                          )
+                        }
+                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                      >
+                        {removeContentMutation.isPending ? (
+                          <div className="loading loading-spinner loading-sm" />
+                        ) : (
+                          <IconTrash size={18} />
+                        )}
+                        Delete Post
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </div>
             )}
