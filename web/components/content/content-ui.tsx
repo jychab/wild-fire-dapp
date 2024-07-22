@@ -180,6 +180,7 @@ export const PostCard = ({
               <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 bg-base-300 rounded py-1 px-2">
                 {content.carousel.map((y) => (
                   <div
+                    key={y.uri}
                     className={`w-2 h-2 rounded-full ${
                       y.uri == file.uri
                         ? 'bg-base-content'
