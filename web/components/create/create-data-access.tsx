@@ -33,7 +33,7 @@ import { useTransactionToast } from '../ui/ui-layout';
 interface CreateMintArgs {
   name: string;
   symbol: string;
-  picture: File;
+  picture: File | string;
   description: string;
 }
 
@@ -157,11 +157,16 @@ async function handleSelfDistributor(
     signTransaction: wallet.signTransaction,
   });
 }
-async function buildTokenMetadata(
+export async function buildTokenMetadata(
   input: CreateMintArgs,
   mint: PublicKey
 ): Promise<TokenMetadata> {
-  const imageUrl = await uploadMedia(input.picture, mint);
+  let imageUrl;
+  if (typeof input.picture != 'string') {
+    imageUrl = await uploadMedia(input.picture, mint);
+  } else {
+    imageUrl = input.picture;
+  }
   const payload = {
     name: input.name,
     symbol: input.symbol,

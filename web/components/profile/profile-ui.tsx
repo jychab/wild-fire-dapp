@@ -57,7 +57,7 @@ export const ProfilePage: FC<{
   );
 
   return (
-    <div className="flex flex-col w-full items-center">
+    <div className="flex flex-col w-full items-center pb-32">
       <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
         <Profile
           metadata={metaDataQuery}
