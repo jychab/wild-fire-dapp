@@ -110,21 +110,31 @@ export const PostCard = ({
     mint: editable ? new PublicKey(content.mint) : null,
   });
   const router = useRouter();
+  const handleScroll = (index: number) => {
+    const element = document.getElementById(`${content.id}/${index}`);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col sm:border bg-base-100 rounded w-full">
       {showMintDetails && <UserProfile content={content} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
         <div className="carousel w-full aspect-square h-auto bg-base-content">
-          {content.carousel.map((file) => (
+          {content.carousel.map((file, index) => (
             <div
-              id={file.uri}
+              id={`${content.id}/${index}`}
               key={file.uri}
               className="carousel-item relative items-center h-auto flex aspect-square w-full"
             >
               {file.fileType.startsWith('image/') && (
                 <Image
-                  className={`rounded object-contain`}
+                  className={`object-contain`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   src={file.uri}
@@ -145,6 +155,39 @@ export const PostCard = ({
                   Your browser does not support the video tag.
                 </video>
               )}
+              <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
+                {index !== 0 ? (
+                  <button
+                    onClick={() => handleScroll(index - 1)}
+                    className="btn btn-circle btn-sm"
+                  >
+                    ❮
+                  </button>
+                ) : (
+                  <div />
+                )}
+                {index !== content.carousel.length - 1 ? (
+                  <button
+                    onClick={() => handleScroll(index + 1)}
+                    className="btn btn-circle btn-sm"
+                  >
+                    ❯
+                  </button>
+                ) : (
+                  <div />
+                )}
+              </div>
+              <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2">
+                {content.carousel.map((y) => (
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      y.uri == file.uri
+                        ? 'bg-base-100'
+                        : 'border border-base-100'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           ))}
         </div>
