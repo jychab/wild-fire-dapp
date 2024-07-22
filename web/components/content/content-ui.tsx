@@ -177,13 +177,13 @@ export const PostCard = ({
                   <div />
                 )}
               </div>
-              <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2">
+              <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 bg-base-300 rounded py-1 px-2">
                 {content.carousel.map((y) => (
                   <div
                     className={`w-2 h-2 rounded-full ${
                       y.uri == file.uri
-                        ? 'bg-base-100'
-                        : 'border border-base-100'
+                        ? 'bg-base-content'
+                        : 'border border-base-content'
                     }`}
                   />
                 ))}

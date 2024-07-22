@@ -2,7 +2,7 @@ import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { getTimeAgo } from '@/utils/helper/format';
 import { PublicKey } from '@solana/web3.js';
-import { IconSend, IconUser, IconX } from '@tabler/icons-react';
+import { IconSend, IconUserCircle, IconX } from '@tabler/icons-react';
 import {
   collection,
   DocumentData,
@@ -124,7 +124,7 @@ export const CommentsSection: FC<{
           }
           className="modal-backdrop"
         />
-        <div className="modal-box max-w-lg flex flex-col gap-4 h-3/5 rounded-t-lg px-0 animate-fade-up animate-once animate-duration-500 animate-ease-out">
+        <div className="modal-box flex flex-col gap-4 h-3/5 rounded-t-lg px-0 animate-fade-up animate-once animate-duration-500 animate-ease-out">
           <div className="flex justify-between px-4">
             <div className="flex gap-2 items-center">
               <span className="font-semibold text-lg">{`Comments`}</span>
@@ -189,27 +189,31 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
     <div className="animate-fade-right animate-once animate-duration-500 animate-ease-out">
       <div className="chat chat-start">
         <div className="chat-image avatar">
-          <div className="w-10 h-10 relative rounded-full">
-            {metadata?.content?.links?.image ? (
+          {metadata?.content?.links?.image ? (
+            <div className="w-10 h-10 relative rounded-full">
               <Image
                 fill={true}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 alt=""
                 src={metadata?.content?.links?.image}
               />
-            ) : (
-              <IconUser />
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="flex w-10 h-10 items-center justify-center ">
+              <div className="items-center flex justify-center h-full">
+                <IconUserCircle size={40} />
+              </div>
+            </div>
+          )}
         </div>
         <div className="chat-header flex items-center gap-2">
-          <span className="truncate max-w-xs">
+          <span className="truncate max-w-[120px] sm:max-w-xs">
             {metadata ? metadata.content?.metadata.name : comment.user}
           </span>
           <time className="text-xs opacity-50">
-            {`${
-              comment.updatedAt != comment.createdAt ? 'Edited ' : ''
-            }${getTimeAgo(comment.updatedAt)}`}
+            {`${getTimeAgo(comment.updatedAt)}${
+              comment.updatedAt != comment.createdAt ? ' (edited)' : ''
+            }`}
           </time>
         </div>
         <div className="text-sm whitespace-pre-wrap">{comment.text}</div>
