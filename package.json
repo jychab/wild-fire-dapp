@@ -15,7 +15,6 @@
     "@solana-developers/preset-next": "3.0.1",
     "@solana/actions": "^1.2.0",
     "@solana/spl-token": "0.4.6",
-    "@solana/spl-token-metadata": "^0.1.4",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",

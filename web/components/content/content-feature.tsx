@@ -137,6 +137,7 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
         <DisplayContent
           expandAll={true}
           content={content as ContentWithMetadata}
+          showMintDetails={true}
         />
       </div>
     </div>

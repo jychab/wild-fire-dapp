@@ -11,7 +11,10 @@ import { FC, useState } from 'react';
 import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
-import { useGetMintToken } from '../edit/edit-data-access';
+import {
+  useGetMintToken,
+  useGetTokenDescription,
+} from '../edit/edit-data-access';
 import {
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
@@ -197,6 +200,10 @@ const Profile: FC<ProfileProps> = ({
   const swapMutation = useSwapMutation({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
+
+  const { data: metadataDescription } = useGetTokenDescription({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
       <div className="w-40 h-40">
@@ -301,9 +308,8 @@ const Profile: FC<ProfileProps> = ({
             </>
           )}
         </div>
-
-        <span className="text-sm truncate font-normal">
-          {metadata?.content?.metadata?.description}
+        <span className="text-base truncate font-normal">
+          {metadataDescription?.description}
         </span>
       </div>
     </div>

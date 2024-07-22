@@ -107,7 +107,8 @@ export async function uploadMetadata(payload: string, mint: PublicKey) {
   const path = `${mint.toBase58()}/metadata.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
-    contentType: 'text/plain',
+    contentType: 'application/json',
+    cacheControl: 'no-cache, must-revalidate, max-age=0',
   });
   return 'https://' + payloadRef.bucket + '/' + path;
 }

@@ -47,10 +47,7 @@ import { CommentsSection } from '../comments/comments-ui';
 import { useRemoveContentMutation } from '../content/content-data-access';
 import { AdditionalMetadata } from '../content/content-ui';
 import { useGetToken } from '../profile/profile-data-access';
-import {
-  useIsLiquidityPoolFound,
-  useSwapMutation,
-} from '../trading/trading-data-access';
+import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -78,7 +75,7 @@ export const Blinks: FC<BlinksProps> = ({
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
   });
-  const mergedOptions = normalizeOptions({ securityLevel: 'all' });
+  const mergedOptions = normalizeOptions({ securityLevel: 'only-trusted' });
   const interstitialData = isInterstitial(actionUrl);
   const { data: interstitialState } = useGetActionRegistryLookUp({
     url: actionUrl,
@@ -519,10 +516,6 @@ export const ActionLayout = ({
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
   });
-
-  const swapMutation = useSwapMutation({
-    mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
-  });
   const router = useRouter();
   return (
     <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
@@ -610,13 +603,13 @@ export const ActionLayout = ({
                         publicKey.toBase58()
                       )
                         ? `you${
-                            additionalMetadata.likesCount > 1
+                            additionalMetadata.likesUser.length > 1
                               ? ' and ' +
-                                additionalMetadata.likesCount +
+                                (additionalMetadata.likesUser.length - 1) +
                                 ' users'
                               : ''
                           }`
-                        : additionalMetadata.likesCount + ' users'
+                        : additionalMetadata.likesUser?.length + ' users'
                     } `}</span>
                   )}
                 </div>

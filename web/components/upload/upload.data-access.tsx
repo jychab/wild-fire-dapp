@@ -40,9 +40,9 @@ export interface PostContent extends BaseContent {
   uri?: string;
 }
 
-export type Carousel = ImageContent | VideoContent;
+export type Carousel = StaticContent | VideoContent;
 
-export interface ImageContent {
+export interface StaticContent {
   uri: string;
   fileType: string;
 }

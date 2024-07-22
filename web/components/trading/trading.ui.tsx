@@ -49,6 +49,10 @@ export const TradingPanel: FC<{
     address: isLiquidityPoolFound ? publicKey : null,
   });
 
+  const { data: largestTokenAccount } = useGetLargestAccountFromMint({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+
   const { data: tokenInfo } = useGetTokenAccountInfo({
     address:
       metadata && publicKey
@@ -342,7 +346,11 @@ export const TradingPanel: FC<{
           </div>
         </div>
       )}
-      <Activities metadata={metadata} authorityData={authorityData} />
+      <Activities
+        metadata={metadata}
+        authorityData={authorityData}
+        largestTokenAccount={largestTokenAccount}
+      />
     </div>
   );
 };
@@ -350,15 +358,24 @@ export const TradingPanel: FC<{
 interface ActivitiesProps {
   authorityData: AuthorityData | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
+  largestTokenAccount:
+    | {
+        owner: PublicKey;
+        address: PublicKey;
+        amount: string;
+        decimals: number;
+        uiAmount: number | null;
+        uiAmountString?: string;
+      }[]
+    | null
+    | undefined;
 }
 
 export const Activities: FC<ActivitiesProps> = ({
   metadata,
   authorityData,
+  largestTokenAccount,
 }) => {
-  const { data: largestTokenAccount } = useGetLargestAccountFromMint({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
   return (
     <div className={`md:bg-base-200 flex flex-col w-full gap-2 rounded p-4`}>
       <span className="card-title text-base">Top 20 Holders</span>

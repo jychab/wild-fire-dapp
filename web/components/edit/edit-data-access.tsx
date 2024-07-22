@@ -94,12 +94,6 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
-          client.refetchQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
           client.invalidateQueries({
             queryKey: [
               'get-token',
@@ -232,7 +226,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           await uploadMetadata(JSON.stringify(payload), mint);
         }
 
-        if (!partialTx && ixs.length == 0) return;
         if (partialTx) {
           const partialSignedTx = VersionedTransaction.deserialize(
             bs58.decode(partialTx)
@@ -243,16 +236,18 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             publicKey: wallet.publicKey,
             signTransaction: wallet.signTransaction,
           });
-        } else {
+          return signature;
+        } else if (ixs.length > 0) {
           signature = await buildAndSendTransaction({
             connection,
             ixs,
             publicKey: wallet.publicKey,
             signTransaction: wallet.signTransaction,
           });
-        }
 
-        return signature;
+          return signature;
+        }
+        return 'Success';
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;
@@ -269,6 +264,9 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               'get-token-details',
               { endpoint: connection.rpcEndpoint, mint },
             ],
+          }),
+          client.invalidateQueries({
+            queryKey: ['get-mint-token-json-uri', { mint }],
           }),
           client.invalidateQueries({
             queryKey: [
@@ -288,6 +286,27 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     onError: (error) => {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
+  });
+}
+
+export function useGetTokenDescription({ mint }: { mint: PublicKey | null }) {
+  return useQuery({
+    queryKey: ['get-mint-token-json-uri', { mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      const result = (await (
+        await fetch(
+          proxify(
+            `https://buckets.hashfeed.social/${mint.toBase58()}/metadata.json`
+          )
+        )
+      ).json()) as {
+        description: string;
+      };
+      return result;
+    },
+
+    enabled: !!mint,
   });
 }
 

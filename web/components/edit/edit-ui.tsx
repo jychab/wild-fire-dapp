@@ -15,6 +15,7 @@ import {
   useCloseAccount,
   useEditData,
   useGetMintToken,
+  useGetTokenDescription,
 } from './edit-data-access';
 
 interface EditTokenProps {
@@ -40,6 +41,11 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   });
   const { data: metaData } = useGetTokenDetails({
     mint: new PublicKey(mintId),
+    withContent: false,
+  });
+
+  const { data: metaDataDescription } = useGetTokenDescription({
+    mint: new PublicKey(mintId),
   });
 
   const [mintTokenDataLoaded, setMintTokenDataLoaded] = useState(false);
@@ -64,13 +70,20 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
       setName(metaData.content?.metadata.name || '');
 
       setSymbol(metaData.content?.metadata.symbol || '');
-
-      if (description == '' && metaData.content?.metadata?.description) {
-        setDescription(metaData.content?.metadata?.description);
+      if (description == '' && metaDataDescription?.description) {
+        setDescription(metaDataDescription?.description);
       }
       setMetadataLoaded(true);
     }
-  }, [metaData, metaDataLoaded, tempImageUrl, name, symbol, description]);
+  }, [
+    metaData,
+    metaDataLoaded,
+    tempImageUrl,
+    name,
+    symbol,
+    description,
+    metaDataDescription,
+  ]);
 
   const [transferFeeConfigLoaded, setTransferFeeConfigLoaded] = useState(false);
   useEffect(() => {
@@ -90,7 +103,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
         setMaxFee(
           Number(transferFeeConfig.newerTransferFee.maximumFee).toString()
         );
-        setShowMaxFee(true);
+        // setShowMaxFee(true);
       }
       setTransferFeeConfigLoaded(true);
     }

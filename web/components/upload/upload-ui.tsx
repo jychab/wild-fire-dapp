@@ -74,7 +74,7 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   if (data && mintId && data[0].mint.toBase58() != mintId) {
     return (
       <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">
-        <span>The requested mint wasn't created through this platform.</span>
+        <span>You are not the creator of this token.</span>
       </div>
     );
   }

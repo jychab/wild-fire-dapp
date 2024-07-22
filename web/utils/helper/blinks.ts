@@ -23,6 +23,7 @@ import {
   Transaction,
   VersionedTransaction,
 } from '@solana/web3.js';
+import toast from 'react-hot-toast';
 import { proxify } from './proxy';
 
 const solanaActionPrefix = /^(solana-action:|solana:)/;
@@ -301,9 +302,10 @@ export const execute = async (
       return;
     }
 
-    const tx = await component
-      .post(payer.toBase58())
-      .catch((e: Error) => ({ error: e.message }));
+    const tx = await component.post(payer.toBase58()).catch((e: Error) => {
+      toast.error(e.message);
+      return { error: e.message };
+    });
 
     if (isPostRequestError(tx)) {
       executionState = executionReducer(executionState, {

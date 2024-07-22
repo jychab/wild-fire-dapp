@@ -130,7 +130,7 @@ export const PostCard = ({
             <div
               id={`${content.id}/${index}`}
               key={file.uri}
-              className="carousel-item relative items-center h-auto flex aspect-square w-full"
+              className="carousel-item relative aspect-square items-center h-auto flex  w-full"
             >
               {file.fileType.startsWith('image/') && (
                 <Image
@@ -155,39 +155,43 @@ export const PostCard = ({
                   Your browser does not support the video tag.
                 </video>
               )}
-              <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
-                {index !== 0 ? (
-                  <button
-                    onClick={() => handleScroll(index - 1)}
-                    className="btn btn-circle btn-sm"
-                  >
-                    ❮
-                  </button>
-                ) : (
-                  <div />
-                )}
-                {index !== content.carousel.length - 1 ? (
-                  <button
-                    onClick={() => handleScroll(index + 1)}
-                    className="btn btn-circle btn-sm"
-                  >
-                    ❯
-                  </button>
-                ) : (
-                  <div />
-                )}
-              </div>
+
+              {!multiGrid && (
+                <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
+                  {index !== 0 ? (
+                    <button
+                      onClick={() => handleScroll(index - 1)}
+                      className="btn btn-circle btn-sm"
+                    >
+                      ❮
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                  {index !== content.carousel.length - 1 ? (
+                    <button
+                      onClick={() => handleScroll(index + 1)}
+                      className="btn btn-circle btn-sm"
+                    >
+                      ❯
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              )}
               <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 bg-base-300 rounded py-1 px-2">
-                {content.carousel.map((y) => (
-                  <div
-                    key={y.uri}
-                    className={`w-2 h-2 rounded-full ${
-                      y.uri == file.uri
-                        ? 'bg-base-content'
-                        : 'border border-base-content'
-                    }`}
-                  />
-                ))}
+                {content.carousel.length > 1 &&
+                  content.carousel.map((y) => (
+                    <div
+                      key={y.uri}
+                      className={`w-2 h-2 rounded-full ${
+                        y.uri == file.uri
+                          ? 'bg-base-content'
+                          : 'border border-base-content'
+                      }`}
+                    />
+                  ))}
               </div>
             </div>
           ))}
@@ -207,13 +211,13 @@ export const PostCard = ({
                 {!multiGrid && (
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         if (!data) {
                           toast.error('You need to create an account first!');
                         }
                         if (data) {
                           try {
-                            await sendLike(
+                            sendLike(
                               data[0].mint.toBase58(),
                               content.mint,
                               content.id,
@@ -238,11 +242,13 @@ export const PostCard = ({
                         publicKey &&
                         content?.likesUser?.includes(publicKey.toBase58())
                           ? `you${
-                              content.likesCount > 1
-                                ? ' and ' + content.likesCount + ' users'
+                              content.likesUser.length > 1
+                                ? ' and ' +
+                                  (content.likesUser.length - 1) +
+                                  ' users'
                                 : ''
                             }`
-                          : content.likesCount + ' users'
+                          : content.likesUser?.length + ' users'
                       } `}</span>
                     )}
                   </div>

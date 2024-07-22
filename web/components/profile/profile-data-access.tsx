@@ -181,6 +181,7 @@ export function useGetTokenDetails({
         }),
       });
       const data = (await response.json()).result as DAS.GetAssetResponse;
+
       if (!data) {
         return null;
       }
