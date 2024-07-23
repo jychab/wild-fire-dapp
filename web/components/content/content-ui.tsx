@@ -14,7 +14,7 @@ import {
 import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FC, RefObject, useState } from 'react';
+import { FC, RefObject, useEffect, useRef, useState } from 'react';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
@@ -101,10 +101,51 @@ export const PostCard = ({
   hideUserPanel?: boolean;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Debounce function to optimize scroll event handling
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  };
+
+  const handleScrollEvent = () => {
+    if (!content) return;
+    if (carouselRef.current) {
+      const scrollLeft = carouselRef.current.scrollLeft;
+      const itemWidth = carouselRef.current.clientWidth;
+      const newIndex = Math.round(scrollLeft / itemWidth);
+
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+      }
+    }
+  };
+
+  // Debounced version of the scroll event handler
+  const handleScrollEventDebounced = debounce(handleScrollEvent, 50);
+
+  useEffect(() => {
+    const carouselElement = carouselRef.current;
+    if (carouselElement) {
+      carouselElement.addEventListener('scroll', handleScrollEventDebounced);
+
+      // Cleanup function
+      return () => {
+        carouselElement.removeEventListener(
+          'scroll',
+          handleScrollEventDebounced
+        );
+      };
+    }
+  }, [currentIndex]);
   const handleScroll = (index: number) => {
+    if (!content) return;
     const element = document.getElementById(`${content.id}/${index}`);
     if (element) {
-      setCurrentIndex(index);
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -122,6 +163,7 @@ export const PostCard = ({
             multiGrid={multiGrid}
             handleScroll={handleScroll}
             currentIndex={currentIndex}
+            carouselRef={carouselRef}
           />
         )}
         <div
@@ -477,7 +519,7 @@ export const CarouselContent: FC<{
   carouselRef,
 }) => {
   return (
-    <div className="relative">
+    <div className="relative leading-[0]">
       <div
         ref={carouselRef}
         className="carousel w-full aspect-square h-auto bg-base-content"
@@ -489,7 +531,7 @@ export const CarouselContent: FC<{
             <div
               id={`${content.id}/${index}`}
               key={file.uri}
-              className="carousel-item relative aspect-square items-center h-auto flex  w-full"
+              className="carousel-item relative aspect-square items-center h-auto flex w-full"
             >
               {file.fileType.startsWith('image/') && (
                 <Image
@@ -546,10 +588,9 @@ export const CarouselContent: FC<{
           ))
         )}
       </div>
-      <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
-        {content &&
-          content.carousel.length > 1 &&
-          content.carousel.map((y, index) => (
+      {content && content.carousel.length > 1 && (
+        <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
+          {content.carousel.map((y, index) => (
             <div
               key={y.uri}
               className={`w-2 h-2 rounded-full ${
@@ -557,7 +598,8 @@ export const CarouselContent: FC<{
               }`}
             />
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

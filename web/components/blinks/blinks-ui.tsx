@@ -626,7 +626,7 @@ export const ActionLayout = ({
   };
   return (
     <div
-      className={`flex flex-col ${
+      className={`flex  flex-col ${
         !hideUserPanel ? 'sm:border' : ''
       } bg-base-100 rounded w-full`}
     >
@@ -976,13 +976,13 @@ export const BlinksStaticContent: FC<{
 }> = ({ form, image }) => {
   return (
     <div
-      className={`flex px-5 pt-5 relative justify-center items-center h-auto w-full ${
+      className={`flex relative justify-center items-center h-auto w-full ${
         form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
       }`}
     >
       {image ? (
         <Image
-          className={`object-cover object-left `}
+          className={`object-cover`}
           src={image}
           fill={true}
           priority={true}

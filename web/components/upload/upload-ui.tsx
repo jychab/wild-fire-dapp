@@ -296,7 +296,9 @@ export const UploadPost: FC<{
   const handleScroll = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      setSelectedBlink(files.find((x) => x.id == 'blinks'));
+      setSelectedBlink(
+        id == 'blinks' ? files.find((x) => x.id == 'blinks') : undefined
+      );
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -352,13 +354,13 @@ export const UploadPost: FC<{
             {files.map((file) => (
               <button
                 key={file.id}
-                className="aspect-square w-14 h-14 relative border border-base-content bg-base-content flex items-center"
+                className="aspect-square w-14 h-14 relative flex border border-base-content items-center justify-center"
                 onClick={() => handleScroll(file.id)}
               >
                 {file.fileType.startsWith('image') && (
                   <>
                     <Image
-                      className={`cursor-pointer object-contain`}
+                      className={`cursor-pointer bg-base-content object-contain`}
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       src={file.uri}
@@ -372,7 +374,7 @@ export const UploadPost: FC<{
                 {file.fileType.startsWith('video') && file.thumbnail && (
                   <>
                     <Image
-                      className={`cursor-pointer object-contain`}
+                      className={`cursor-pointer bg-base-content object-contain`}
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       src={file.thumbnail}
@@ -391,6 +393,7 @@ export const UploadPost: FC<{
                         hideCaption={true}
                         hideUserPanel={true}
                         hideComment={true}
+                        showMintDetails={false}
                       />
                     ) : (
                       <div />
@@ -417,14 +420,18 @@ export const UploadPost: FC<{
                 <li>
                   <button
                     onClick={() => {
-                      setFiles((previous) => [
-                        ...previous,
-                        {
-                          fileType: 'blinks',
-                          uri: '',
-                          id: 'blinks',
-                        },
-                      ]);
+                      if (files.find((x) => x.fileType == 'blinks')) {
+                        toast.error('Only 1 blink per post is allowed');
+                      } else {
+                        setFiles((previous) => [
+                          ...previous,
+                          {
+                            fileType: 'blinks',
+                            uri: '',
+                            id: 'blinks',
+                          },
+                        ]);
+                      }
                     }}
                   >
                     Blinks
@@ -480,13 +487,13 @@ export const UploadPost: FC<{
               <span className="font-semibold">Add a Blink/ Image / Video </span>
             </div>
           ) : (
-            <div className="flex flex-col border">
+            <div className={`flex flex-col ${selectedBlink ? 'border' : ''}`}>
               <div className="carousel w-full z-0">
                 {files.map((file) => (
                   <div
                     id={file.id}
                     key={file.id}
-                    className="carousel-item relative z-0 items-center flex  bg-base-content aspect-square w-full"
+                    className="carousel-item relative z-0 items-center justify-center flex aspect-square w-full"
                   >
                     {file.fileType == 'blinks' &&
                       (checkUrlIsValid(file.uri) ? (
@@ -497,11 +504,14 @@ export const UploadPost: FC<{
                           hideComment={true}
                         />
                       ) : (
-                        <div />
+                        <div className="flex gap-2 flex-col items-center ">
+                          <span>Url Is Invalid</span>
+                          <div className="loading loading-dots" />
+                        </div>
                       ))}
                     {file.fileType.startsWith('image/') && (
                       <Image
-                        className={`object-contain`}
+                        className={`object-contain bg-base-content`}
                         fill={true}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         src={file.uri}
@@ -513,7 +523,7 @@ export const UploadPost: FC<{
                         ref={handleVideoRef(file.id)}
                         width="300"
                         height="300"
-                        className="w-full h-full"
+                        className="w-full h-full bg-base-content"
                         autoPlay
                         muted
                         playsInline
