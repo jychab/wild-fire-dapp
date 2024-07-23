@@ -15,7 +15,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { program } from '../../utils/helper/transcationInstructions';
-import { UploadContent } from '../upload/upload.data-access';
+import { PostContent } from '../upload/upload.data-access';
 import { AuthorityData } from './profile-ui';
 
 export function useGetMintTransferFeeConfig({
@@ -196,7 +196,7 @@ export function useGetTokenDetails({
           )?.[1];
         if (hashFeedUri) {
           const uriMetadata = await (await fetch(proxify(hashFeedUri))).json();
-          let content = uriMetadata.content as UploadContent[] | undefined;
+          let content = uriMetadata.content as PostContent[] | undefined;
           return {
             ...data,
             additionalInfoData: { content },

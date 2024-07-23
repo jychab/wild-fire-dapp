@@ -1,4 +1,4 @@
-import { UploadContent } from '@/components/upload/upload.data-access';
+import { PostContent } from '@/components/upload/upload.data-access';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
@@ -6,7 +6,7 @@ import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import { functions, storage } from './firebase';
 
-export async function createOrEditPost(mint: string, content: UploadContent[]) {
+export async function createOrEditPost(mint: string, content: PostContent[]) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
   await createOrEditPost({ mint, content });
 }
