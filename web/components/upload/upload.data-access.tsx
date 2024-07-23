@@ -21,8 +21,6 @@ import {
 import { useTransactionToast } from '../ui/ui-layout';
 import { ContentType } from './upload-ui';
 
-export type UploadContent = BlinkContent | PostContent;
-
 export interface BaseContent {
   type: ContentType;
   createdAt?: number;
@@ -30,14 +28,10 @@ export interface BaseContent {
   mint: string;
   id: string;
 }
-export interface BlinkContent extends BaseContent {
-  uri: string;
-}
 
 export interface PostContent extends BaseContent {
   carousel: Carousel[];
   caption: string;
-  uri?: string;
 }
 
 export type Carousel = StaticContent | VideoContent;
@@ -54,7 +48,7 @@ export interface VideoContent {
 }
 
 interface UploadArgs {
-  content: UploadContent;
+  content: PostContent;
 }
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -156,4 +150,13 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
   });
+}
+
+export function checkUrlIsValid(uri: string) {
+  try {
+    const result = new URL(uri);
+    return result;
+  } catch (e) {
+    return;
+  }
 }

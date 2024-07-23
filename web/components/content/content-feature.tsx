@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetTokenDetails } from '../profile/profile-data-access';
-import { UploadContent } from '../upload/upload.data-access';
+import { PostContent } from '../upload/upload.data-access';
 import { fetchOwnerTokenDetails as useFetchOwnerTokenDetails } from './content-data-access';
 import { ContentGrid, ContentWithMetadata, DisplayContent } from './content-ui';
 
@@ -41,7 +41,7 @@ export const ContentGridFeature: FC = () => {
         const updatedContent = prevContent ? [...prevContent] : [];
 
         snapshot.docChanges().forEach((change) => {
-          const postData = change.doc.data() as UploadContent;
+          const postData = change.doc.data() as PostContent;
 
           const tokenDetails = ownerTokenDetails.find(
             (x) => x.id === postData.mint

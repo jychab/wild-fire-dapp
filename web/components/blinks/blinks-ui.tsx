@@ -1,5 +1,4 @@
 import { ExecutionType } from '@/utils/enums/blinks';
-import { sendLike } from '@/utils/firebase/functions';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
   ACTIONS_REGISTRY_URL_ALL,
@@ -13,25 +12,26 @@ import {
   Source,
 } from '@/utils/types/blinks';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import {
   IconAlertTriangleFilled,
   IconCheck,
-  IconDotsVertical,
-  IconHeart,
-  IconHeartFilled,
-  IconHelpOctagonFilled,
-  IconMoneybag,
+  IconExclamationCircle,
   IconProgress,
   IconShieldCheckFilled,
-  IconTrash,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
-import { FC, ReactNode, useMemo, useState, type ChangeEvent } from 'react';
-import toast from 'react-hot-toast';
+import {
+  FC,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react';
 import {
   Action,
   ActionComponent,
@@ -43,11 +43,16 @@ import {
   mergeActionStates,
   normalizeOptions,
 } from '../../utils/helper/blinks';
-import { CommentsSection } from '../comments/comments-ui';
-import { useRemoveContentMutation } from '../content/content-data-access';
-import { AdditionalMetadata } from '../content/content-ui';
-import { useGetToken } from '../profile/profile-data-access';
-import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
+import {
+  AdditionalMetadata,
+  CarouselContent,
+  CommentsGrid,
+  PostCaption,
+  PostCard,
+  UserPanel,
+  UserProfile,
+} from '../content/content-ui';
+import { PostContent } from '../upload/upload.data-access';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -56,97 +61,132 @@ import {
 } from './blink-data-access';
 
 interface BlinksProps {
-  actionUrl: URL;
+  actionUrl?: URL;
+  content?: PostContent;
   additionalMetadata?: AdditionalMetadata;
+  showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
   hideComment?: boolean;
   expandAll?: boolean;
+  hideUserPanel?: boolean;
+  hideCaption?: boolean;
+  hideCarousel?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
+  content,
   additionalMetadata,
+  showMintDetails = true,
+  hideUserPanel = false,
   editable = false,
   multiGrid = false,
   hideComment = false,
   expandAll = false,
+  hideCaption = false,
+  hideCarousel = false,
 }) => {
-  let actionApiUrl: string | null = null;
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
   });
   const mergedOptions = normalizeOptions({ securityLevel: 'only-trusted' });
-  const interstitialData = isInterstitial(actionUrl);
+  const interstitialData = actionUrl
+    ? isInterstitial(actionUrl)
+    : { isInterstitial: false, decodedActionUrl: '' };
   const { data: interstitialState } = useGetActionRegistryLookUp({
-    url: actionUrl,
+    url: actionUrl!,
     type: 'interstitial',
     actionsRegistry,
-    enabled: !!actionsRegistry && interstitialData.isInterstitial,
+    enabled:
+      !!actionsRegistry && interstitialData.isInterstitial && !!actionUrl,
   });
-  if (
+
+  const actionApiUrl =
+    actionUrl &&
     interstitialData.isInterstitial &&
     interstitialState &&
     checkSecurity(
       interstitialState.state,
       mergedOptions.securityLevel.interstitials
     )
-  ) {
-    actionApiUrl = interstitialData.decodedActionUrl;
-  }
+      ? interstitialData.decodedActionUrl
+      : null;
 
   const { data: websiteState } = useGetActionRegistryLookUp({
-    url: actionUrl,
+    url: actionUrl!,
     type: 'website',
     actionsRegistry,
-    enabled: !!actionsRegistry && !interstitialData.isInterstitial,
+    enabled:
+      !!actionsRegistry && !interstitialData.isInterstitial && !!actionUrl,
   });
 
   const { data: actionsUrlMapper } = useGetBlinkActionJsonUrl({
-    origin: actionUrl.origin,
+    origin: actionUrl!.origin,
     enabled:
+      !!actionUrl &&
       !!actionsRegistry &&
       !interstitialData.isInterstitial &&
       !!websiteState &&
       checkSecurity(websiteState.state, mergedOptions.securityLevel.websites),
   });
 
-  if (actionsUrlMapper) {
-    actionApiUrl = actionsUrlMapper.mapUrl(actionUrl);
-  }
+  const finalActionApiUrl = actionsUrlMapper
+    ? actionsUrlMapper.mapUrl(actionUrl!)
+    : actionApiUrl;
 
   const { data: actionState } = useGetActionRegistryLookUp({
-    url: actionApiUrl,
+    url: finalActionApiUrl,
     type: 'action',
     actionsRegistry,
-    enabled: !!actionsRegistry && !!actionApiUrl,
+    enabled: !!actionsRegistry && !!finalActionApiUrl,
   });
 
   const { data: action } = useGetBlinkAction({
-    actionUrl: actionApiUrl,
+    actionUrl: finalActionApiUrl,
     enabled:
-      !!actionApiUrl &&
+      !!finalActionApiUrl &&
       !!actionState &&
       checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
   });
 
-  return action && actionsRegistry ? (
-    <ActionContainer
-      hideComment={hideComment}
-      expandAll={expandAll}
-      editable={editable}
-      additionalMetadata={additionalMetadata}
-      actionsRegistry={actionsRegistry}
-      action={action}
-      websiteText={actionUrl.hostname}
-      websiteUrl={actionUrl.toString()}
-      normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
-      multiGrid={multiGrid}
-    />
-  ) : (
-    <div className="w-full p-4 flex items-center justify-center aspect-square w-full">
-      <div className="loading loading-dots"></div>
-    </div>
-  );
+  if (!actionUrl && content && additionalMetadata) {
+    return (
+      <PostCard
+        content={{ ...content, ...additionalMetadata }}
+        showMintDetails={showMintDetails}
+        multiGrid={multiGrid}
+        editable={editable}
+        hideComment={hideComment}
+        expandAll={expandAll}
+      />
+    );
+  } else if (action && actionsRegistry && actionUrl) {
+    return (
+      <ActionContainer
+        hideCarousel={hideCarousel}
+        hideCaption={hideCaption}
+        hideUserPanel={hideUserPanel}
+        hideComment={hideComment}
+        expandAll={expandAll}
+        editable={editable}
+        additionalMetadata={additionalMetadata}
+        actionsRegistry={actionsRegistry}
+        action={action}
+        websiteText={actionUrl.hostname}
+        websiteUrl={actionUrl.toString()}
+        normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
+        multiGrid={multiGrid}
+        showMintDetails={showMintDetails}
+        content={content}
+      />
+    );
+  } else {
+    return (
+      <div className="w-full p-4 flex items-center justify-center w-full">
+        <div className="loading loading-dots"></div>
+      </div>
+    );
+  }
 };
 
 interface ActionContainerProps {
@@ -160,9 +200,16 @@ interface ActionContainerProps {
   multiGrid: boolean;
   expandAll: boolean;
   hideComment: boolean;
+  hideUserPanel: boolean;
+  showMintDetails: boolean;
+  content?: PostContent;
+  hideCaption: boolean;
+  hideCarousel: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
+  hideCarousel,
+  hideCaption,
   websiteText,
   websiteUrl,
   action,
@@ -173,6 +220,9 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   multiGrid,
   expandAll,
   hideComment,
+  showMintDetails,
+  hideUserPanel,
+  content,
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -396,6 +446,10 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
   return (
     <ActionLayout
+      hideCarousel={hideCarousel}
+      hideCaption={hideCaption}
+      hideUserPanel={hideUserPanel}
+      content={content}
       hideComment={hideComment}
       expandAll={expandAll}
       multiGrid={multiGrid}
@@ -417,6 +471,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       inputs={inputs.map((input) => asInputProps(input))}
       form={form ? asFormProps(form) : undefined}
       disclaimer={disclaimer}
+      showMintDetails={showMintDetails}
     />
   );
 };
@@ -446,10 +501,15 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 };
 
 interface LayoutProps {
+  content?: PostContent;
+  hideCarousel: boolean;
+  hideCaption: boolean;
+  hideUserPanel: boolean;
   hideComment: boolean;
   expandAll: boolean;
   multiGrid: boolean;
   editable: boolean;
+  showMintDetails: boolean;
   additionalMetadata?: AdditionalMetadata;
   image?: string;
   error?: string | null;
@@ -480,17 +540,21 @@ interface InputProps {
   button?: ButtonProps;
 }
 
-interface FormProps {
+export interface FormProps {
   inputs: Array<Omit<InputProps, 'button'>>;
   button: ButtonProps;
 }
 
 export const ActionLayout = ({
+  hideCarousel,
+  hideCaption,
+  hideUserPanel,
   hideComment,
   expandAll,
   multiGrid,
   editable,
   additionalMetadata,
+  showMintDetails,
   title,
   description,
   image,
@@ -503,230 +567,139 @@ export const ActionLayout = ({
   form,
   error,
   success,
+  content,
 }: LayoutProps) => {
-  const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
-  const [showMore, setShowMore] = useState(expandAll);
-  const removeContentMutation = useRemoveContentMutation({
-    mint:
-      editable && additionalMetadata
-        ? new PublicKey(additionalMetadata.mint)
-        : null,
-  });
-  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
-  });
-  const router = useRouter();
-  return (
-    <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-      {image && websiteUrl && (
-        <div
-          className={`block px-5 pt-5 relative h-auto w-full ${
-            form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
-          }`}
-        >
-          <Image
-            className={`object-cover object-left `}
-            src={image}
-            fill={true}
-            priority={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            alt="action-image"
-          />
-        </div>
-      )}
-      <div
-        className={`px-4 pb-4 pt-2 flex flex-col flex-1 w-full justify-between`}
-      >
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between">
-            <div className="flex gap-2 text-sm items-center">
-              <div className="flex items-center gap-1">
-                <Link
-                  href="https://docs.dialect.to/documentation/actions/security"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center"
-                >
-                  {type === 'malicious' && <IconAlertTriangleFilled />}
-                  {type === 'trusted' && <IconShieldCheckFilled size={18} />}
-                  {type === 'unknown' && <IconHelpOctagonFilled />}
-                </Link>
-                {websiteUrl && (
-                  <Link
-                    href={websiteUrl}
-                    className="link link-hover font-bold truncate"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {websiteText ?? websiteUrl}
-                  </Link>
-                )}
-              </div>
+  const [renderBlink, setRenderBlink] = useState(
+    content ? content.carousel[0].fileType == 'blinks' : true
+  );
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
-              {!multiGrid && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={async () => {
-                      if (!data) {
-                        toast.error('You need to create an account first!');
-                      }
-                      if (data && additionalMetadata) {
-                        try {
-                          await sendLike(
-                            data[0].mint.toBase58(),
-                            additionalMetadata.mint,
-                            additionalMetadata.id,
-                            10
-                          );
-                        } catch (e) {
-                          console.log(e);
-                        }
-                      }
-                    }}
-                    className=""
-                  >
-                    {additionalMetadata?.likesUser &&
-                    publicKey &&
-                    additionalMetadata.likesUser.includes(
-                      publicKey.toBase58()
-                    ) ? (
-                      <IconHeartFilled size={20} className="fill-primary" />
-                    ) : (
-                      <IconHeart size={20} />
-                    )}
-                  </button>
-                  {additionalMetadata && additionalMetadata.likesCount && (
-                    <span className="text-xs stat-desc link link-hover">{`Liked by ${
-                      publicKey &&
-                      additionalMetadata?.likesUser?.includes(
-                        publicKey.toBase58()
-                      )
-                        ? `you${
-                            additionalMetadata.likesUser.length > 1
-                              ? ' and ' +
-                                (additionalMetadata.likesUser.length - 1) +
-                                ' users'
-                              : ''
-                          }`
-                        : additionalMetadata.likesUser?.length + ' users'
-                    } `}</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {(editable || isLiquidityPoolFound) && (
-              <div className="dropdown dropdown-left">
-                <div tabIndex={0} role="button">
-                  {removeContentMutation.isPending ? (
-                    <div className="loading loading-spinner loading-sm" />
-                  ) : (
-                    <IconDotsVertical size={18} />
-                  )}
-                </div>
-                <ul
-                  tabIndex={0}
-                  className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
-                >
-                  {!editable && isLiquidityPoolFound && additionalMetadata && (
-                    <li>
-                      <Link
-                        href={`/profile?mintId=${additionalMetadata.mint}&tab=trade`}
-                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                      >
-                        <IconMoneybag size={18} />
-                        Trade
-                      </Link>
-                    </li>
-                  )}
-                  {editable && additionalMetadata && (
-                    <li>
-                      <button
-                        disabled={removeContentMutation.isPending}
-                        onClick={() =>
-                          removeContentMutation.mutateAsync(
-                            additionalMetadata.id
-                          )
-                        }
-                        className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                      >
-                        {removeContentMutation.isPending ? (
-                          <div className="loading loading-spinner loading-sm" />
-                        ) : (
-                          <IconTrash size={18} />
-                        )}
-                        Delete Post
-                      </button>
-                    </li>
-                  )}
-                </ul>
-              </div>
+  // Debounce function to optimize scroll event handling
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  };
+
+  const handleScrollEvent = () => {
+    if (!content) return;
+    if (carouselRef.current) {
+      const scrollLeft = carouselRef.current.scrollLeft;
+      const itemWidth = carouselRef.current.clientWidth;
+      const newIndex = Math.round(scrollLeft / itemWidth);
+
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+        setRenderBlink(content.carousel[newIndex].fileType === 'blinks');
+      }
+    }
+  };
+
+  // Debounced version of the scroll event handler
+  const handleScrollEventDebounced = debounce(handleScrollEvent, 50);
+
+  useEffect(() => {
+    const carouselElement = carouselRef.current;
+    if (carouselElement) {
+      carouselElement.addEventListener('scroll', handleScrollEventDebounced);
+
+      // Cleanup function
+      return () => {
+        carouselElement.removeEventListener(
+          'scroll',
+          handleScrollEventDebounced
+        );
+      };
+    }
+  }, [currentIndex]);
+  const handleScroll = (index: number) => {
+    if (!content) return;
+    setRenderBlink(content.carousel[index].fileType == 'blinks');
+    const element = document.getElementById(`${content.id}/${index}`);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  };
+  return (
+    <div
+      className={`flex flex-col ${
+        !hideUserPanel ? 'sm:border' : ''
+      } bg-base-100 rounded w-full`}
+    >
+      {showMintDetails && additionalMetadata && (
+        <UserProfile content={additionalMetadata} />
+      )}
+      <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
+        {!hideCarousel && (
+          <CarouselContent
+            content={content}
+            multiGrid={multiGrid}
+            blinkImageUrl={image}
+            form={form}
+            handleScroll={handleScroll}
+            carouselRef={carouselRef}
+          />
+        )}
+        <div
+          className={`${
+            !hideUserPanel || !hideCaption || !hideComment ? 'p-4' : ''
+          } flex flex-col flex-1 w-full justify-between`}
+        >
+          <div className="flex flex-col">
+            {!hideUserPanel && (
+              <UserPanel
+                additionalMetadata={additionalMetadata}
+                multiGrid={multiGrid}
+                editable={editable}
+              />
+            )}
+            {!hideCaption &&
+              (renderBlink || !content ? (
+                <BlinksCaption
+                  websiteUrl={websiteUrl}
+                  websiteText={websiteText}
+                  type={type}
+                  title={title}
+                  description={description}
+                  disclaimer={disclaimer}
+                  form={form}
+                  inputs={inputs}
+                  buttons={buttons}
+                  success={success}
+                  error={error}
+                  multiGrid={multiGrid}
+                  expandAll={expandAll}
+                  additionalMetadata={additionalMetadata}
+                />
+              ) : (
+                <PostCaption
+                  content={content}
+                  multiGrid={multiGrid}
+                  editable={editable}
+                  expandAll={expandAll}
+                />
+              ))}
+          </div>
+          <div className="flex flex-col ">
+            {!hideComment && additionalMetadata && (
+              <CommentsGrid
+                additionalMetadata={additionalMetadata}
+                multiGrid={multiGrid}
+              />
+            )}
+            {!hideUserPanel && (
+              <span className="text-xs stat-desc pt-2">
+                {convertUTCTimeToDayMonth(content?.updatedAt || 0)}
+              </span>
             )}
           </div>
-          {showMore ? (
-            <div className="flex flex-col pb-2 gap-2">
-              <span className="font-semibold text-sm">{title}</span>
-              <p className="text-xs whitespace-pre-wrap ">{description}</p>
-              {disclaimer && <div className="mb-4">{disclaimer}</div>}
-              <ActionContent form={form} inputs={inputs} buttons={buttons} />
-              {success && (
-                <span className="mt-4 flex justify-center text-xs text-success">
-                  {success}
-                </span>
-              )}
-              {error && !success && (
-                <span className="mt-4 flex justify-center text-subtext text-error">
-                  {error}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-xs truncate">{description}</p>
-              <button
-                onClick={() => {
-                  if (!multiGrid) {
-                    setShowMore(true);
-                  } else if (additionalMetadata) {
-                    router.push(
-                      `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
-                    );
-                  }
-                }}
-                className="text-xs stat-desc link link-hover w-fit"
-              >
-                {!showMore && 'Show More'}
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col items-start gap-1 pt-2">
-          {additionalMetadata?.commentsCount && (
-            <button
-              onClick={() => {
-                if (multiGrid) {
-                  router.push(
-                    `/content?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`
-                  );
-                } else {
-                  (
-                    document.getElementById(
-                      additionalMetadata.id + '/comments'
-                    ) as HTMLDialogElement
-                  ).showModal();
-                }
-              }}
-              className="stat-desc link link-hover"
-            >{`View ${additionalMetadata.commentsCount} comments`}</button>
-          )}
-          {!hideComment && additionalMetadata && (
-            <CommentsSection additionalMetadata={additionalMetadata} />
-          )}
-          {additionalMetadata && (
-            <span className="text-xs stat-desc">
-              {convertUTCTimeToDayMonth(additionalMetadata.updatedAt || 0)}
-            </span>
-          )}
         </div>
       </div>
     </div>
@@ -892,11 +865,131 @@ export const Button = ({
   const buttonStyle = disabled ? 'btn-disabled ' : 'btn-primary';
   return (
     <button
-      className={`${buttonStyle} btn btn-xs flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
+      className={`${buttonStyle} btn btn-sm flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
       disabled={disabled}
       onClick={onClick}
     >
       {children}
     </button>
+  );
+};
+export const BlinksCaption: FC<{
+  websiteUrl: string | null | undefined;
+  websiteText: string | null | undefined;
+  type: string;
+  title: string;
+  description: string;
+  disclaimer: ReactNode;
+  form: FormProps | undefined;
+  inputs: InputProps[] | undefined;
+  buttons: ButtonProps[] | undefined;
+  success: string | null | undefined;
+  error: string | null | undefined;
+  multiGrid: boolean;
+  expandAll: boolean;
+  additionalMetadata: AdditionalMetadata | undefined;
+}> = ({
+  expandAll,
+  websiteUrl,
+  websiteText,
+  type,
+  error,
+  success,
+  title,
+  description,
+  form,
+  inputs,
+  buttons,
+  multiGrid,
+  additionalMetadata,
+  disclaimer,
+}) => {
+  const [showMore, setShowMore] = useState(expandAll);
+
+  const router = useRouter();
+  return (
+    <div>
+      {showMore ? (
+        <div className="flex flex-col pb-2">
+          <div className="flex items-center gap-1">
+            {websiteUrl && (
+              <Link
+                href={websiteUrl}
+                className="link link-hover max-w-xs text-sm stat-desc truncate"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {websiteText ?? websiteUrl}
+              </Link>
+            )}
+            <Link
+              href="https://docs.dialect.to/documentation/actions/security"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center"
+            >
+              {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
+              {type === 'trusted' && <IconShieldCheckFilled size={14} />}
+              {type === 'unknown' && <IconExclamationCircle size={14} />}
+            </Link>
+          </div>
+          <span className="font-semibold text-sm pb-2">{title}</span>
+          <p className="text-xs whitespace-pre-wrap pb-2 ">{description}</p>
+          {disclaimer && <div className="mb-4 pb-2">{disclaimer}</div>}
+          <ActionContent form={form} inputs={inputs} buttons={buttons} />
+          {success && (
+            <span className="mt-4 flex justify-center text-xs text-success">
+              {success}
+            </span>
+          )}
+          {error && !success && (
+            <span className="mt-4 flex justify-center text-subtext text-error">
+              {error}
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <p className="text-xs truncate">{description}</p>
+          <button
+            onClick={() => {
+              if (!multiGrid) {
+                setShowMore(true);
+              } else if (additionalMetadata) {
+                router.push(
+                  `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
+                );
+              }
+            }}
+            className="text-xs stat-desc link link-hover w-fit"
+          >
+            {!showMore && 'Show More'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+export const BlinksStaticContent: FC<{
+  form: FormProps | undefined;
+  image: string | undefined;
+}> = ({ form, image }) => {
+  return (
+    image && (
+      <div
+        className={`block px-5 pt-5 relative h-auto w-full ${
+          form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
+        }`}
+      >
+        <Image
+          className={`object-cover object-left `}
+          src={image}
+          fill={true}
+          priority={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt="action-image"
+        />
+      </div>
+    )
   );
 };
