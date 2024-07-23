@@ -19,7 +19,7 @@ export function useGetBlinkAction({
   return useQuery({
     queryKey: ['get-blink-action', { actionUrl }],
     queryFn: () => {
-      if (!actionUrl) return;
+      if (!actionUrl) return null;
       return Action.fetch(actionUrl);
     },
     enabled: enabled,
@@ -60,7 +60,7 @@ export function useGetActionRegistryLookUp({
   actionsRegistry,
   enabled = true,
 }: {
-  url: string | URL | null;
+  url: string | URL | null | undefined;
   type: LookupType;
   actionsRegistry: ActionsRegistry | undefined;
   enabled: boolean;
@@ -68,7 +68,7 @@ export function useGetActionRegistryLookUp({
   return useQuery({
     queryKey: ['get-blink-lookup-url', { url, type }],
     queryFn: () => {
-      if (!url || !actionsRegistry) return;
+      if (!url || !actionsRegistry) return null;
       if (type === 'action') {
         return lookupAction(url, actionsRegistry);
       }

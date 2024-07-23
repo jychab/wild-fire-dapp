@@ -163,7 +163,7 @@ export const Blinks: FC<BlinksProps> = ({
         hideUserPanel={hideUserPanel}
       />
     );
-  } else if (action && actionsRegistry && actionUrl) {
+  } else {
     return (
       <ActionContainer
         hideCarousel={hideCarousel}
@@ -175,28 +175,22 @@ export const Blinks: FC<BlinksProps> = ({
         additionalMetadata={additionalMetadata}
         actionsRegistry={actionsRegistry}
         action={action}
-        websiteText={actionUrl.hostname}
-        websiteUrl={actionUrl.toString()}
+        websiteText={actionUrl?.hostname}
+        websiteUrl={actionUrl?.toString()}
         normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
         multiGrid={multiGrid}
         showMintDetails={showMintDetails}
         content={content}
       />
     );
-  } else {
-    return (
-      <div className="w-full p-4 flex items-center justify-center w-full">
-        <div className="loading loading-dots"></div>
-      </div>
-    );
   }
 };
 
 interface ActionContainerProps {
-  actionsRegistry: ActionsRegistry;
-  action: Action;
-  websiteUrl?: string | null;
-  websiteText?: string | null;
+  actionsRegistry: ActionsRegistry | undefined;
+  action: Action | undefined | null;
+  websiteUrl?: string | null | undefined;
+  websiteText?: string | null | undefined;
   normalizedSecurityLevel: NormalizedSecurityLevel;
   additionalMetadata?: AdditionalMetadata;
   editable: boolean;
@@ -233,10 +227,10 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   let overallActionState: ActionStateWithOrigin | null = null;
 
   const { data: actionState } = useGetActionRegistryLookUp({
-    url: action.url,
+    url: action?.url,
     type: 'action',
     actionsRegistry,
-    enabled: true,
+    enabled: !!action,
   });
   const originalUrlData = websiteUrl ? isInterstitial(websiteUrl) : null;
 
@@ -350,7 +344,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     loading:
       executionState.status === 'executing' &&
       it === executionState.executingAction,
-    disabled: action.disabled || executionState.status !== 'idle',
+    disabled: !action || action?.disabled || executionState.status !== 'idle',
     variant: buttonVariantMap[executionState.status],
     onClick: (params?: Record<string, string>) =>
       overallActionState &&
@@ -373,7 +367,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     return {
       // since we already filter this, we can safely assume that parameter is not null
       placeholder,
-      disabled: action.disabled || executionState.status !== 'idle',
+      disabled: !action || action.disabled || executionState.status !== 'idle',
       name,
       required,
       button: !parameter ? asButtonProps(it) : undefined,
@@ -459,14 +453,14 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       editable={editable}
       additionalMetadata={additionalMetadata}
       type={overallState || 'unknown'}
-      title={action.title}
-      description={action.description}
+      title={action?.title}
+      description={action?.description}
       websiteUrl={websiteUrl}
       websiteText={websiteText}
-      image={action.icon}
+      image={action?.icon}
       error={
         executionState.status !== 'success'
-          ? executionState.errorMessage ?? action.error
+          ? executionState.errorMessage ?? action?.error
           : null
       }
       success={executionState.successMessage}
@@ -521,8 +515,8 @@ interface LayoutProps {
   websiteText?: string | null;
   disclaimer?: ReactNode;
   type: ExtendedActionState;
-  title: string;
-  description: string;
+  title: string | undefined;
+  description: string | undefined;
   buttons?: ButtonProps[];
   inputs?: InputProps[];
   form?: FormProps;
@@ -883,8 +877,8 @@ export const BlinksCaption: FC<{
   websiteUrl: string | null | undefined;
   websiteText: string | null | undefined;
   type: string;
-  title: string;
-  description: string;
+  title: string | undefined;
+  description: string | undefined;
   disclaimer: ReactNode;
   form: FormProps | undefined;
   inputs: InputProps[] | undefined;
@@ -956,7 +950,7 @@ export const BlinksCaption: FC<{
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          <p className="text-xs truncate">{description}</p>
+          {description && <p className="text-xs truncate">{description}</p>}
           <button
             onClick={() => {
               if (!multiGrid) {
@@ -969,7 +963,7 @@ export const BlinksCaption: FC<{
             }}
             className="text-xs stat-desc link link-hover w-fit"
           >
-            {!showMore && 'Show More'}
+            {!showMore && description != undefined && 'Show More'}
           </button>
         </div>
       )}
@@ -981,12 +975,12 @@ export const BlinksStaticContent: FC<{
   image: string | undefined;
 }> = ({ form, image }) => {
   return (
-    image && (
-      <div
-        className={`block px-5 pt-5 relative h-auto w-full ${
-          form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
-        }`}
-      >
+    <div
+      className={`flex px-5 pt-5 relative justify-center items-center h-auto w-full ${
+        form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
+      }`}
+    >
+      {image ? (
         <Image
           className={`object-cover object-left `}
           src={image}
@@ -995,7 +989,9 @@ export const BlinksStaticContent: FC<{
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           alt="action-image"
         />
-      </div>
-    )
+      ) : (
+        <div className="loading loading-spinner text-neutral loading-lg" />
+      )}
+    </div>
   );
 };

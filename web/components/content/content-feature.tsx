@@ -78,47 +78,52 @@ export const ContentGridFeature: FC = () => {
   const handleSnapshotUpdate = useCallback(
     (snapshot: QuerySnapshot<DocumentData>) => {
       if (!sortedTokenDetails) return;
-
-      const newContentMap = new Map<string, ContentWithMetadata>();
-
-      snapshot.docChanges().forEach((change) => {
-        const postData = change.doc.data() as PostContent;
-        const tokenDetails = sortedTokenDetails.find(
-          (x) => x.id === postData.mint
+      setContent((prevContent) => {
+        // Initialize updatedContent as a Map for efficient updates
+        const updatedContentMap = new Map(
+          (prevContent || []).map((item) => [item.id, item])
         );
 
-        if (!tokenDetails?.content?.links?.image) return;
+        // Process each change in the snapshot
+        snapshot.docChanges().forEach((change) => {
+          const postData = change.doc.data() as PostContent;
 
-        const contentItem: ContentWithMetadata = {
-          ...tokenDetails,
-          ...postData,
-          name: tokenDetails.content.metadata.name,
-          symbol: tokenDetails.content.metadata.symbol,
-          image: tokenDetails.content.links.image,
-          mint: tokenDetails.id,
-        };
+          const tokenDetails = sortedTokenDetails.find(
+            (x) => x.id === postData.mint
+          );
 
-        if (change.type === 'removed') {
-          newContentMap.delete(contentItem.id);
-        } else {
-          newContentMap.set(contentItem.id, contentItem);
-        }
-      });
+          if (!tokenDetails?.content?.links?.image) return;
 
-      setContent((prevContent) => {
-        const mergedContent = [
-          ...prevContent.filter((item) => !newContentMap.has(item.id)),
-          ...Array.from(newContentMap.values()),
-        ];
+          const newContent = {
+            ...tokenDetails,
+            ...postData,
+            name: tokenDetails.content.metadata.name,
+            symbol: tokenDetails.content.metadata.symbol,
+            image: tokenDetails.content.links.image,
+            mint: tokenDetails.id,
+          };
+
+          if (change.type === 'removed') {
+            updatedContentMap.delete(newContent.id);
+          } else {
+            updatedContentMap.set(newContent.id, newContent);
+          }
+        });
+
+        // Convert the Map back to an array and sort
+        const updatedContent = Array.from(updatedContentMap.values()).sort(
+          (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+        );
+
         if (publicKey) {
           // Cache the content
           localStorage.setItem(
             `cachedFeed, ${publicKey?.toBase58()}`,
-            JSON.stringify(mergedContent)
+            JSON.stringify(updatedContent)
           );
         }
 
-        return mergedContent;
+        return updatedContent;
       });
       setIsFetching(false);
     },

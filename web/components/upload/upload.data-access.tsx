@@ -147,7 +147,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
 export function checkUrlIsValid(uri: string) {
   try {
     const result = new URL(uri);
-    console.log(result);
     return result;
   } catch (e) {
     return;

@@ -75,9 +75,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
       ))}
     </div>
   ) : (
-    <div className=" w-full flex justify-center items-center h-64">
-      <div className="loading loading-dots loading-md" />
-    </div>
+    <div />
   );
 };
 
@@ -516,7 +514,7 @@ export const CarouselContent: FC<{
                   Your browser does not support the video tag.
                 </video>
               )}
-              {file.fileType == 'blinks' && blinkImageUrl && (
+              {file.fileType == 'blinks' && (
                 <BlinksStaticContent form={form} image={blinkImageUrl} />
               )}
 
