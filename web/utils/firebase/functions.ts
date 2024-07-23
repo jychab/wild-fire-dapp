@@ -70,7 +70,6 @@ export async function getDailyClaim(mint: string) {
 }
 
 export async function sendLike(
-  mint: string,
   postMint: string,
   postId: string,
   amount: number,
@@ -78,7 +77,6 @@ export async function sendLike(
 ) {
   const sendLike = httpsCallable(functions, 'sendLike');
   await sendLike({
-    mint,
     postMint,
     postId,
     commentId,

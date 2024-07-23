@@ -15,10 +15,8 @@ import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FC, RefObject, useState } from 'react';
-import toast from 'react-hot-toast';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
-import { useGetToken } from '../profile/profile-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -276,7 +274,11 @@ export const UserPanel: FC<{
   editable: boolean;
 }> = ({ additionalMetadata, editable, multiGrid }) => {
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
+  const [liked, setLiked] = useState(
+    (publicKey &&
+      additionalMetadata?.likesUser?.includes(publicKey?.toBase58())) ||
+      false
+  );
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
   });
@@ -298,28 +300,24 @@ export const UserPanel: FC<{
         {!multiGrid && (
           <div className="flex items-center gap-1">
             <button
-              onClick={async () => {
-                if (!data) {
-                  toast.error('You need to create an account first!');
-                }
-                if (data && additionalMetadata) {
+              onClick={() => {
+                if (additionalMetadata && !liked) {
                   try {
-                    await sendLike(
-                      data[0].mint.toBase58(),
+                    sendLike(
                       additionalMetadata.mint,
                       additionalMetadata.id,
                       10
                     );
                   } catch (e) {
                     console.log(e);
+                  } finally {
+                    setLiked(true);
                   }
                 }
               }}
               className=""
             >
-              {additionalMetadata?.likesUser &&
-              publicKey &&
-              additionalMetadata.likesUser.includes(publicKey.toBase58()) ? (
+              {liked ? (
                 <IconHeartFilled size={20} className="fill-primary" />
               ) : (
                 <IconHeart size={20} />
