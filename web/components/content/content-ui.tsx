@@ -19,7 +19,10 @@ import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid, PostContent } from '../upload/upload.data-access';
-import { useRemoveContentMutation } from './content-data-access';
+import {
+  checkIfPublicKeyIsMintOwner,
+  useRemoveContentMutation,
+} from './content-data-access';
 
 interface ContentGridProps {
   content: ContentWithMetadata[] | undefined;
@@ -297,6 +300,7 @@ export const UserPanel: FC<{
         >
           {additionalMetadata?.name}
         </Link>
+
         {!multiGrid && (
           <div className="flex items-center gap-1">
             <button
@@ -323,79 +327,89 @@ export const UserPanel: FC<{
                 <IconHeart size={20} />
               )}
             </button>
-            {additionalMetadata && additionalMetadata.likesCount && (
-              <span className="text-xs stat-desc link link-hover">{`Liked by ${
-                publicKey &&
-                additionalMetadata?.likesUser?.includes(publicKey.toBase58())
-                  ? `you${
-                      additionalMetadata.likesUser.length > 1
-                        ? ' and ' +
-                          (additionalMetadata.likesUser.length - 1) +
-                          ' users'
-                        : ''
-                    }`
-                  : additionalMetadata.likesUser?.length + ' users'
-              } `}</span>
-            )}
+
+            <span className="text-xs stat-desc link link-hover">{`Liked by ${
+              liked
+                ? `you${
+                    additionalMetadata?.likesUser &&
+                    additionalMetadata.likesUser.length > 1
+                      ? ' and ' +
+                        (additionalMetadata.likesUser.length - 1) +
+                        ' users'
+                      : ''
+                  }`
+                : additionalMetadata
+                ? additionalMetadata?.likesUser?.length + ' users'
+                : ''
+            } `}</span>
           </div>
         )}
       </div>
-      {(editable || isLiquidityPoolFound) && (
-        <div className="dropdown dropdown-left">
-          <div tabIndex={0} role="button">
-            {removeContentMutation.isPending ? (
-              <div className="loading loading-spinner loading-sm" />
-            ) : (
-              <IconDotsVertical size={18} />
-            )}
+
+      {(editable || isLiquidityPoolFound) &&
+        (!multiGrid ||
+          (multiGrid &&
+            additionalMetadata &&
+            publicKey &&
+            checkIfPublicKeyIsMintOwner(
+              new PublicKey(additionalMetadata.mint),
+              publicKey
+            ))) && (
+          <div className="dropdown dropdown-left">
+            <div tabIndex={0} role="button">
+              {removeContentMutation.isPending ? (
+                <div className="loading loading-spinner loading-sm" />
+              ) : (
+                <IconDotsVertical size={18} />
+              )}
+            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
+            >
+              {!editable && isLiquidityPoolFound && additionalMetadata && (
+                <li>
+                  <Link
+                    href={`/profile?mintId=${additionalMetadata.mint}&tab=trade`}
+                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                  >
+                    <IconMoneybag size={18} />
+                    Trade
+                  </Link>
+                </li>
+              )}
+              {editable && additionalMetadata && (
+                <li>
+                  <Link
+                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                    href={`/content/edit?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`}
+                  >
+                    <IconEdit size={18} />
+                    Edit Post
+                  </Link>
+                </li>
+              )}
+              {editable && additionalMetadata && (
+                <li>
+                  <button
+                    disabled={removeContentMutation.isPending}
+                    onClick={() =>
+                      removeContentMutation.mutateAsync(additionalMetadata.id)
+                    }
+                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                  >
+                    {removeContentMutation.isPending ? (
+                      <div className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <IconTrash size={18} />
+                    )}
+                    Delete Post
+                  </button>
+                </li>
+              )}
+            </ul>
           </div>
-          <ul
-            tabIndex={0}
-            className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
-          >
-            {!editable && isLiquidityPoolFound && additionalMetadata && (
-              <li>
-                <Link
-                  href={`/profile?mintId=${additionalMetadata.mint}&tab=trade`}
-                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                >
-                  <IconMoneybag size={18} />
-                  Trade
-                </Link>
-              </li>
-            )}
-            {editable && additionalMetadata && (
-              <li>
-                <Link
-                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                  href={`/content/edit?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`}
-                >
-                  <IconEdit size={18} />
-                  Edit Post
-                </Link>
-              </li>
-            )}
-            {editable && additionalMetadata && (
-              <li>
-                <button
-                  disabled={removeContentMutation.isPending}
-                  onClick={() =>
-                    removeContentMutation.mutateAsync(additionalMetadata.id)
-                  }
-                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                >
-                  {removeContentMutation.isPending ? (
-                    <div className="loading loading-spinner loading-sm" />
-                  ) : (
-                    <IconTrash size={18} />
-                  )}
-                  Delete Post
-                </button>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
+        )}
     </div>
   );
 };

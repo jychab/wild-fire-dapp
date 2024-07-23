@@ -100,15 +100,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             );
           }
           for (let x of fieldsToUpdate) {
-            ixs.push(
-              await updateMetadata(
-                connection,
-                wallet.publicKey!,
-                mint,
-                x[0],
-                x[1]
-              )
-            );
+            ixs.push(await updateMetadata(wallet.publicKey!, mint, x[0], x[1]));
           }
           if (ixs.length == 0) return;
           signature = await buildAndSendTransaction({

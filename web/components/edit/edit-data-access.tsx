@@ -64,11 +64,7 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
       let signature: TransactionSignature = '';
       try {
         if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
-        const ix = await closeAuthorityAccount(
-          connection,
-          wallet.publicKey,
-          mint
-        );
+        const ix = await closeAuthorityAccount(wallet.publicKey, mint);
 
         signature = await buildAndSendTransaction({
           connection,
@@ -137,14 +133,11 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       let partialTx;
       try {
         if (input.previous.admin.toString() != input.admin.toString()) {
-          ixs.push(
-            await changeAdmin(connection, wallet.publicKey, mint, input.admin)
-          );
+          ixs.push(await changeAdmin(wallet.publicKey, mint, input.admin));
         }
         if (input.previous.transferFeeBasisPoints != input.fee) {
           ixs.push(
             await changeTransferFee(
-              connection,
               wallet.publicKey,
               mint,
               input.fee,
@@ -196,13 +189,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             }
             for (let x of fieldsToUpdate) {
               ixs.push(
-                await updateMetadata(
-                  connection,
-                  wallet.publicKey,
-                  mint,
-                  x[0],
-                  x[1]
-                )
+                await updateMetadata(wallet.publicKey, mint, x[0], x[1])
               );
             }
           }
@@ -318,7 +305,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
     queryFn: () =>
       mint &&
       connection
-        .getProgramAccounts(program(connection).programId, {
+        .getProgramAccounts(program.programId, {
           filters: [
             {
               dataSize: 123,
@@ -333,7 +320,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         })
         .then((result) => {
           if (result.length > 0) {
-            return program(connection).coder.accounts.decode(
+            return program.coder.accounts.decode(
               'tokenState',
               result[0].account.data
             ) as AuthorityData;

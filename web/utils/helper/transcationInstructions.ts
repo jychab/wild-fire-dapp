@@ -15,20 +15,18 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import Idl from '../program/idl/wild_fire.json';
 import { WildFire } from '../program/types/wild_fire';
 
-export const program = (connection: Connection) =>
-  new Program<WildFire>(Idl as unknown as WildFire, {
-    connection,
-  });
+export const program = new Program<WildFire>(Idl as unknown as WildFire, {
+  connection: new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT!),
+});
 
 export async function createMint(
-  connection: Connection,
   distributor: PublicKey,
   fees: number,
   maxFee: number | undefined,
   payer: PublicKey
 ) {
-  const ix = await program(connection)
-    .methods.createMint({
+  const ix = await program.methods
+    .createMint({
       decimal: 0,
       distributor: distributor,
       transferFeeArgs: {
@@ -39,7 +37,7 @@ export async function createMint(
     .accounts({
       admin: payer,
       payer: payer,
-      program: program(connection).programId,
+      program: program.programId,
     })
     .instruction();
   return ix;
@@ -56,8 +54,8 @@ export async function createMintMetadata(
   const additional_lamport = await connection.getMinimumBalanceForRentExemption(
     metadataExtension + metadataLen
   );
-  const ix = await program(connection)
-    .methods.createMintMetadata(
+  const ix = await program.methods
+    .createMintMetadata(
       new BN(additional_lamport),
       metaData.name,
       metaData.symbol,
@@ -75,31 +73,29 @@ export async function createMintMetadata(
 }
 
 export async function initializeMint(
-  connection: Connection,
   amount: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
-  return await program(connection)
-    .methods.initializeMint(new BN(amount))
+  return await program.methods
+    .initializeMint(new BN(amount))
     .accounts({
       mint: mint,
       payer: payer,
       admin: payer,
-      program: program(connection).programId,
+      program: program.programId,
     })
     .instruction();
 }
 
 export async function changeTransferFee(
-  connection: Connection,
   payer: PublicKey,
   mint: PublicKey,
   feeBasisPts: number,
   maxFee: number
 ) {
-  const ix = await program(connection)
-    .methods.changeTransferFee(feeBasisPts, new BN(maxFee))
+  const ix = await program.methods
+    .changeTransferFee(feeBasisPts, new BN(maxFee))
     .accounts({
       payer: payer,
       mint: mint,
@@ -110,16 +106,15 @@ export async function changeTransferFee(
 }
 
 export async function changeAdmin(
-  connection: Connection,
   payer: PublicKey,
   mint: PublicKey,
   newAdmin: PublicKey
 ) {
-  const ix = await program(connection)
-    .methods.changeAdmin(newAdmin)
+  const ix = await program.methods
+    .changeAdmin(newAdmin)
     .accounts({
       payer: payer,
-      program: program(connection).programId,
+      program: program.programId,
       mint: mint,
     })
     .instruction();
@@ -127,13 +122,9 @@ export async function changeAdmin(
   return ix;
 }
 
-export async function setToImmutable(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey
-) {
-  const ix = await program(connection)
-    .methods.setToImmutable()
+export async function setToImmutable(payer: PublicKey, mint: PublicKey) {
+  const ix = await program.methods
+    .setToImmutable()
     .accounts({
       payer: payer,
       mint: mint,
@@ -143,13 +134,9 @@ export async function setToImmutable(
   return ix;
 }
 
-export async function closeAuthorityAccount(
-  connection: Connection,
-  payer: PublicKey,
-  mint: PublicKey
-) {
-  const ix = await program(connection)
-    .methods.closeAccount()
+export async function closeAuthorityAccount(payer: PublicKey, mint: PublicKey) {
+  const ix = await program.methods
+    .closeAccount()
     .accounts({
       payer: payer,
       mint: mint,
@@ -160,13 +147,12 @@ export async function closeAuthorityAccount(
 }
 
 export async function removeFieldFromMetadata(
-  connection: Connection,
   payer: PublicKey,
   mint: PublicKey,
   field: string
 ) {
-  return await program(connection)
-    .methods.removeKeyFromMetadata(field)
+  return await program.methods
+    .removeKeyFromMetadata(field)
     .accounts({
       mint: mint,
       payer: payer,
@@ -175,14 +161,13 @@ export async function removeFieldFromMetadata(
 }
 
 export async function updateMetadata(
-  connection: Connection,
   payer: PublicKey,
   mint: PublicKey,
   field: string,
   value: string
 ) {
-  return await program(connection)
-    .methods.updateMintMetadata(field, value)
+  return await program.methods
+    .updateMintMetadata(field, value)
     .accounts({
       mint: mint,
       payer: payer,

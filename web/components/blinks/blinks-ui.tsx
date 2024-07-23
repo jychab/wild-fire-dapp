@@ -649,7 +649,9 @@ export const ActionLayout = ({
         )}
         <div
           className={`${
-            !hideUserPanel || !hideCaption || !hideComment ? 'p-4' : ''
+            !hideUserPanel || !hideCaption || !hideComment
+              ? 'px-4 pb-4 pt-2'
+              : ''
           } flex flex-col flex-1 w-full justify-between`}
         >
           <div className="flex flex-col">

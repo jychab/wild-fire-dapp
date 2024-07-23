@@ -201,10 +201,9 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
 }
 
 export function getAssociatedTokenStateAccount(mint: PublicKey) {
-  const { connection } = useConnection();
   const [tokenState] = PublicKey.findProgramAddressSync(
     [Buffer.from('token'), mint.toBuffer()],
-    program(connection).programId
+    program.programId
   );
 
   return tokenState;

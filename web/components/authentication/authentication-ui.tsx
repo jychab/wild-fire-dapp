@@ -23,7 +23,7 @@ import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
   const { publicKey } = useWallet();
-  const { data, isLoading } = useGetToken({ address: publicKey });
+  const { data } = useGetToken({ address: publicKey });
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: data ? data[0]?.mint : null,
   });
@@ -31,16 +31,7 @@ export const SignInBtn: FC = () => {
   return (
     <>
       {publicKey ? (
-        !(data || isLoading) ? (
-          <div
-            onClick={() => router.push('/mint/create')}
-            className="btn btn-sm btn-outline btn-primary"
-          >
-            Create Account
-          </div>
-        ) : (
-          <ProfileButton metaDataQuery={metaDataQuery} />
-        )
+        <ProfileButton metaDataQuery={metaDataQuery} />
       ) : (
         <AuthenticationBtn
           children={
@@ -124,25 +115,23 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             </Link>
           </li>
         )}
-        {metaDataQuery && (
-          <li className="w-full ">
-            <button
-              onClick={() =>
-                (
-                  document.getElementById('notification') as HTMLDialogElement
-                ).showModal()
-              }
-            >
-              <div className="indicator">
-                {isClaimAvailable?.availability && (
-                  <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-400 border-none"></span>
-                )}
-                <IconGift />
-              </div>
-              Claim Daily Bonus
-            </button>
-          </li>
-        )}
+        <li className="w-full ">
+          <button
+            onClick={() =>
+              (
+                document.getElementById('notification') as HTMLDialogElement
+              ).showModal()
+            }
+          >
+            <div className="indicator">
+              {isClaimAvailable?.availability && (
+                <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-400 border-none"></span>
+              )}
+              <IconGift />
+            </div>
+            Claim Daily Bonus
+          </button>
+        </li>
         <li className="w-full">
           <Link href={`/content/create`}>
             <IconUpload />

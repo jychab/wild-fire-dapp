@@ -85,7 +85,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
     queryFn: () =>
       address &&
       connection
-        .getProgramAccounts(program(connection).programId, {
+        .getProgramAccounts(program.programId, {
           filters: [
             {
               dataSize: 123,
@@ -101,7 +101,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         .then((result) => {
           if (result.length > 0) {
             return result.map((acc) => {
-              return program(connection).coder.accounts.decode(
+              return program.coder.accounts.decode(
                 'tokenState',
                 acc.account.data
               ) as AuthorityData;

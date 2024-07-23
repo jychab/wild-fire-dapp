@@ -57,7 +57,7 @@ export function useCreateMint({ address }: { address: string | null }) {
       try {
         const [mint] = PublicKey.findProgramAddressSync(
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
-          program(connection).programId
+          program.programId
         );
         const [distributor, metadata, onboardingWallet] = await Promise.all([
           getDistributor(),
@@ -145,9 +145,9 @@ async function handleSelfDistributor(
   mint: PublicKey
 ): Promise<TransactionSignature> {
   const [mintIx, metadataIx, initMintIx] = await Promise.all([
-    createMint(connection, distributor, 10, undefined, wallet.publicKey),
+    createMint(distributor, 10, undefined, wallet.publicKey),
     createMintMetadata(connection, metadata, wallet.publicKey),
-    initializeMint(connection, ONE_BILLION, mint, wallet.publicKey),
+    initializeMint(ONE_BILLION, mint, wallet.publicKey),
   ]);
 
   return await buildAndSendTransaction({

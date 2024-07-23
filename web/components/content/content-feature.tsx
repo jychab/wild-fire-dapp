@@ -18,89 +18,141 @@ import { useGetTokenDetails } from '../profile/profile-data-access';
 import { PostContent } from '../upload/upload.data-access';
 import { fetchOwnerTokenDetails as useFetchOwnerTokenDetails } from './content-data-access';
 import { ContentGrid, ContentWithMetadata, DisplayContent } from './content-ui';
-
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
+  // Check for cached content
+  useEffect(() => {
+    if (publicKey) {
+      const cachedContent = localStorage.getItem(
+        `cachedFeed, ${publicKey.toBase58()}`
+      );
+      if (cachedContent) {
+        setContent(JSON.parse(cachedContent));
+      }
+    }
+  }, [publicKey]);
   const [content, setContent] = useState<ContentWithMetadata[]>([]);
   const [postLimit, setPostLimit] = useState(20);
+  const [sortedTokenIds, setSortedTokenIds] = useState<string[]>([]);
+  const [nextTokenIndex, setNextTokenIndex] = useState(0);
 
-  const { data: ownerTokenDetails, isLoading } = useFetchOwnerTokenDetails({
+  const [isFetching, setIsFetching] = useState(false);
+
+  const { data: ownerTokenDetails } = useFetchOwnerTokenDetails({
     address: publicKey,
   });
 
-  const tokenIds = useMemo(
-    () => ownerTokenDetails?.map((x) => x.id) || [],
-    [ownerTokenDetails]
+  const sortedTokenDetails = useMemo(() => {
+    if (!ownerTokenDetails) return [];
+    return ownerTokenDetails
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.price || 0) * (b.quantity || 0) -
+          (a.price || 0) * (a.quantity || 0)
+      );
+  }, [ownerTokenDetails]);
+
+  const updateSortedTokenIds = useCallback(() => {
+    if (!sortedTokenDetails.length) return;
+    setSortedTokenIds(sortedTokenDetails.map((item) => item.id));
+    setNextTokenIndex(0); // Reset index for pagination
+  }, [sortedTokenDetails]);
+
+  const fetchPosts = useCallback(
+    (tokenChunk: string[]) => {
+      const q = query(
+        collectionGroup(db, 'Post'),
+        where('softDelete', '==', false),
+        where('mint', 'in', tokenChunk),
+        orderBy('createdAt', 'desc'),
+        limit(postLimit)
+      );
+      return onSnapshot(q, (snapshot) => {
+        handleSnapshotUpdate(snapshot);
+      });
+    },
+    [postLimit, sortedTokenDetails]
   );
 
   const handleSnapshotUpdate = useCallback(
     (snapshot: QuerySnapshot<DocumentData>) => {
-      if (!ownerTokenDetails) return;
+      if (!sortedTokenDetails) return;
+
+      const newContentMap = new Map<string, ContentWithMetadata>();
+
+      snapshot.docChanges().forEach((change) => {
+        const postData = change.doc.data() as PostContent;
+        const tokenDetails = sortedTokenDetails.find(
+          (x) => x.id === postData.mint
+        );
+
+        if (!tokenDetails?.content?.links?.image) return;
+
+        const contentItem: ContentWithMetadata = {
+          ...tokenDetails,
+          ...postData,
+          name: tokenDetails.content.metadata.name,
+          symbol: tokenDetails.content.metadata.symbol,
+          image: tokenDetails.content.links.image,
+          mint: tokenDetails.id,
+        };
+
+        if (change.type === 'removed') {
+          newContentMap.delete(contentItem.id);
+        } else {
+          newContentMap.set(contentItem.id, contentItem);
+        }
+      });
 
       setContent((prevContent) => {
-        const updatedContent = prevContent ? [...prevContent] : [];
-
-        snapshot.docChanges().forEach((change) => {
-          const postData = change.doc.data() as PostContent;
-
-          const tokenDetails = ownerTokenDetails.find(
-            (x) => x.id === postData.mint
+        const mergedContent = [
+          ...prevContent.filter((item) => !newContentMap.has(item.id)),
+          ...Array.from(newContentMap.values()),
+        ];
+        if (publicKey) {
+          // Cache the content
+          localStorage.setItem(
+            `cachedFeed, ${publicKey?.toBase58()}`,
+            JSON.stringify(mergedContent)
           );
+        }
 
-          if (!tokenDetails?.content?.links?.image) return;
-
-          const newContent = {
-            ...tokenDetails,
-            ...postData,
-            name: tokenDetails.content.metadata.name,
-            symbol: tokenDetails.content.metadata.symbol,
-            image: tokenDetails.content.links.image,
-            mint: tokenDetails.id,
-          };
-
-          const existingIndex = updatedContent.findIndex(
-            (item) => item.id === newContent.id
-          );
-
-          if (change.type === 'removed') {
-            if (existingIndex > -1) {
-              updatedContent.splice(existingIndex, 1);
-            }
-          } else if (existingIndex > -1) {
-            updatedContent[existingIndex] = newContent;
-          } else {
-            updatedContent.push(newContent);
-            updatedContent.sort(
-              (a, b) =>
-                (b.price || 0) * (b.quantity || 0) -
-                (a.price || 0) * (a.quantity || 0)
-            );
-          }
-        });
-
-        return updatedContent;
+        return mergedContent;
       });
+      setIsFetching(false);
     },
-    [ownerTokenDetails]
+    [sortedTokenDetails, publicKey]
   );
 
   useEffect(() => {
-    if (tokenIds.length === 0) return;
+    if (sortedTokenIds.length === 0 || isFetching) return;
 
-    const q = query(
-      collectionGroup(db, 'Post'),
-      where('softDelete', '==', false),
-      where('mint', 'in', tokenIds),
-      orderBy('createdAt', 'desc'),
-      limit(postLimit)
+    if (
+      !(content.length < postLimit && nextTokenIndex < sortedTokenIds.length)
+    ) {
+      return;
+    }
+    const batchSize = 30;
+    const endIndex = Math.min(
+      nextTokenIndex + batchSize,
+      sortedTokenIds.length
     );
+    const tokenChunk = sortedTokenIds.slice(nextTokenIndex, endIndex);
 
-    const unsubscribe = onSnapshot(q, handleSnapshotUpdate);
+    if (tokenChunk.length === 0) return;
 
-    return () => unsubscribe();
-  }, [tokenIds, postLimit, handleSnapshotUpdate]);
+    setIsFetching(true);
+    fetchPosts(tokenChunk);
 
-  return <ContentGrid content={isLoading ? undefined : content} />;
+    setNextTokenIndex(endIndex);
+  }, [sortedTokenIds, nextTokenIndex, fetchPosts, isFetching]);
+
+  useEffect(() => {
+    updateSortedTokenIds();
+  }, [updateSortedTokenIds]);
+
+  return <ContentGrid content={content} />;
 };
 
 interface ContentCardFeatureProps {

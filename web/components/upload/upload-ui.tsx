@@ -352,7 +352,7 @@ export const UploadPost: FC<{
             {files.map((file) => (
               <button
                 key={file.id}
-                className="aspect-square w-14 h-14 relative border border-base-content flex items-center"
+                className="aspect-square w-14 h-14 relative border border-base-content bg-base-content flex items-center"
                 onClick={() => handleScroll(file.id)}
               >
                 {file.fileType.startsWith('image') && (
@@ -480,13 +480,13 @@ export const UploadPost: FC<{
               <span className="font-semibold">Add a Blink/ Image / Video </span>
             </div>
           ) : (
-            <div className="flex flex-col">
+            <div className="flex flex-col border">
               <div className="carousel w-full z-0">
                 {files.map((file) => (
                   <div
                     id={file.id}
                     key={file.id}
-                    className="carousel-item relative z-0 items-center flex aspect-square w-full"
+                    className="carousel-item relative z-0 items-center flex  bg-base-content aspect-square w-full"
                   >
                     {file.fileType == 'blinks' &&
                       (checkUrlIsValid(file.uri) ? (
