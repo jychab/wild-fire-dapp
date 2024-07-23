@@ -88,6 +88,9 @@ export const PostCard = ({
   multiGrid = false,
   expandAll = false,
   hideComment = false,
+  hideCaption = false,
+  hideCarousel = false,
+  hideUserPanel = false,
 }: {
   content: PostContentWithMetadata;
   showMintDetails?: boolean;
@@ -95,10 +98,15 @@ export const PostCard = ({
   multiGrid?: boolean;
   expandAll?: boolean;
   hideComment?: boolean;
+  hideCarousel?: boolean;
+  hideCaption?: boolean;
+  hideUserPanel?: boolean;
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const handleScroll = (index: number) => {
     const element = document.getElementById(`${content.id}/${index}`);
     if (element) {
+      setCurrentIndex(index);
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
@@ -110,20 +118,29 @@ export const PostCard = ({
     <div className="flex flex-col sm:border bg-base-100 rounded w-full">
       {showMintDetails && <UserProfile content={content} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-        <CarouselContent
-          content={content}
-          multiGrid={multiGrid}
-          handleScroll={handleScroll}
-        />
+        {!hideCarousel && (
+          <CarouselContent
+            content={content}
+            multiGrid={multiGrid}
+            handleScroll={handleScroll}
+            currentIndex={currentIndex}
+          />
+        )}
         <div
-          className={`px-4 pb-4 pt-2 flex flex-col flex-1 w-full justify-between`}
+          className={`${
+            !hideUserPanel || !hideCaption || !hideComment
+              ? 'px-4 pb-4 pt-2'
+              : ''
+          } flex flex-col flex-1 w-full justify-between`}
         >
           <div className="flex flex-col">
-            <UserPanel
-              additionalMetadata={content}
-              multiGrid={multiGrid}
-              editable={editable}
-            />
+            {!hideUserPanel && (
+              <UserPanel
+                additionalMetadata={content}
+                multiGrid={multiGrid}
+                editable={editable}
+              />
+            )}
             <PostCaption
               content={content}
               multiGrid={multiGrid}
@@ -131,7 +148,7 @@ export const PostCard = ({
               expandAll={expandAll}
             />
           </div>
-          <div className="flex flex-col items-start gap-1 pt-2">
+          <div className="flex flex-col">
             {!hideComment && (
               <CommentsGrid
                 additionalMetadata={content}
@@ -450,6 +467,7 @@ export const CarouselContent: FC<{
   content?: PostContent;
   multiGrid: boolean;
   handleScroll: (index: number) => void;
+  currentIndex: number;
   carouselRef?: RefObject<HTMLDivElement>;
 }> = ({
   content,
@@ -457,89 +475,91 @@ export const CarouselContent: FC<{
   blinkImageUrl,
   form,
   handleScroll,
+  currentIndex,
   carouselRef,
 }) => {
   return (
-    <div
-      ref={carouselRef}
-      className="carousel w-full aspect-square h-auto bg-base-content"
-    >
-      {!content ? (
-        <BlinksStaticContent form={form} image={blinkImageUrl} />
-      ) : (
-        content.carousel.map((file, index) => (
-          <div
-            id={`${content.id}/${index}`}
-            key={file.uri}
-            className="carousel-item relative aspect-square items-center h-auto flex  w-full"
-          >
-            {file.fileType.startsWith('image/') && (
-              <Image
-                className={`object-contain`}
-                fill={true}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                src={file.uri}
-                alt={''}
-              />
-            )}
-            {file.fileType.startsWith('video/') && (
-              <video
-                width="300"
-                height="300"
-                className="w-full h-full rounded"
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-              >
-                <source src={file.uri} type={file.fileType} />
-                Your browser does not support the video tag.
-              </video>
-            )}
-            {file.fileType == 'blinks' && blinkImageUrl && (
-              <BlinksStaticContent form={form} image={blinkImageUrl} />
-            )}
+    <div className="relative">
+      <div
+        ref={carouselRef}
+        className="carousel w-full aspect-square h-auto bg-base-content"
+      >
+        {!content ? (
+          <BlinksStaticContent form={form} image={blinkImageUrl} />
+        ) : (
+          content.carousel.map((file, index) => (
+            <div
+              id={`${content.id}/${index}`}
+              key={file.uri}
+              className="carousel-item relative aspect-square items-center h-auto flex  w-full"
+            >
+              {file.fileType.startsWith('image/') && (
+                <Image
+                  className={`object-contain`}
+                  fill={true}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  src={file.uri}
+                  alt={''}
+                />
+              )}
+              {file.fileType.startsWith('video/') && (
+                <video
+                  width="300"
+                  height="300"
+                  className="w-full h-full rounded"
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="auto"
+                >
+                  <source src={file.uri} type={file.fileType} />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+              {file.fileType == 'blinks' && blinkImageUrl && (
+                <BlinksStaticContent form={form} image={blinkImageUrl} />
+              )}
 
-            {!multiGrid && (
-              <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
-                {index !== 0 ? (
-                  <button
-                    onClick={() => handleScroll(index - 1)}
-                    className="btn btn-circle btn-sm"
-                  >
-                    ❮
-                  </button>
-                ) : (
-                  <div />
-                )}
-                {index !== content.carousel.length - 1 ? (
-                  <button
-                    onClick={() => handleScroll(index + 1)}
-                    className="btn btn-circle btn-sm"
-                  >
-                    ❯
-                  </button>
-                ) : (
-                  <div />
-                )}
-              </div>
-            )}
-            <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 bg-base-300 opacity-50 rounded py-1 px-1">
-              {content.carousel.length > 1 &&
-                content.carousel.map((y) => (
-                  <div
-                    key={y.uri}
-                    className={`w-2 h-2 rounded-full ${
-                      y.uri == file.uri
-                        ? 'bg-base-content'
-                        : 'border border-base-content'
-                    }`}
-                  />
-                ))}
+              {!multiGrid && (
+                <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
+                  {index !== 0 ? (
+                    <button
+                      onClick={() => handleScroll(index - 1)}
+                      className="btn btn-circle btn-sm"
+                    >
+                      ❮
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                  {index !== content.carousel.length - 1 ? (
+                    <button
+                      onClick={() => handleScroll(index + 1)}
+                      className="btn btn-circle btn-sm"
+                    >
+                      ❯
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))
-      )}
+          ))
+        )}
+      </div>
+      <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
+        {content &&
+          content.carousel.length > 1 &&
+          content.carousel.map((y, index) => (
+            <div
+              key={y.uri}
+              className={`w-2 h-2 rounded-full ${
+                index == currentIndex ? 'bg-base-300' : 'border border-base-300'
+              }`}
+            />
+          ))}
+      </div>
     </div>
   );
 };

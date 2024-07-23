@@ -31,7 +31,7 @@ export function useGetBlinkActionJsonUrl({
   origin,
   enabled,
 }: {
-  origin: string;
+  origin: string | undefined;
   enabled: boolean;
 }) {
   return useQuery({

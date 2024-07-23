@@ -121,7 +121,7 @@ export const Blinks: FC<BlinksProps> = ({
   });
 
   const { data: actionsUrlMapper } = useGetBlinkActionJsonUrl({
-    origin: actionUrl!.origin,
+    origin: actionUrl?.origin,
     enabled:
       !!actionUrl &&
       !!actionsRegistry &&
@@ -158,6 +158,9 @@ export const Blinks: FC<BlinksProps> = ({
         editable={editable}
         hideComment={hideComment}
         expandAll={expandAll}
+        hideCarousel={hideCarousel}
+        hideCaption={hideCaption}
+        hideUserPanel={hideUserPanel}
       />
     );
   } else if (action && actionsRegistry && actionUrl) {
@@ -645,6 +648,7 @@ export const ActionLayout = ({
             form={form}
             handleScroll={handleScroll}
             carouselRef={carouselRef}
+            currentIndex={currentIndex}
           />
         )}
         <div
