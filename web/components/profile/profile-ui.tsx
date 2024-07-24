@@ -159,6 +159,7 @@ interface ProfileProps {
         currentHoldersCount: number;
         holdersChange24hPercent: number;
       }
+    | null
     | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
   mintId: string;
@@ -295,10 +296,11 @@ const Profile: FC<ProfileProps> = ({
               </span>
             </>
           )}
-
+          {mintSummaryDetails &&
+            tokenDetails?.token_info?.price_info?.price_per_token &&
+            '||'}
           {tokenDetails?.token_info?.price_info?.price_per_token && (
             <>
-              ||
               <span>{`$${
                 tokenDetails?.token_info?.price_info?.price_per_token || 0
               }

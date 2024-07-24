@@ -8,8 +8,13 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, VersionedTransaction } from '@solana/web3.js';
+import {
+  PublicKey,
+  TransactionSignature,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export function useGetTokenAccountInfo({
@@ -74,58 +79,64 @@ export function useSwapMutation({ mint }: { mint: PublicKey | null }) {
       swapMode: string;
     }) => {
       if (!mint || !publicKey || !signTransaction) return null;
-      const quoteResponse = await getQuote(
-        inputMint,
-        outputMint,
-        amount,
-        swapMode
-      );
-      const [feeAccount] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('referral_ata'),
-          REFERRAL_KEY.toBuffer(),
-          NATIVE_MINT.toBuffer(),
-        ],
-        new PublicKey('REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3')
-      );
-      let payload;
-      payload = {
-        // quoteResponse from /quote api
-        quoteResponse,
-        // user public key to be used for the swap
-        userPublicKey: publicKey.toString(),
-        // auto wrap and unwrap SOL. default is true
-        wrapAndUnwrapSol: true,
-        // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
-      };
-      if (
-        (swapMode == 'ExactIn' && outputMint == NATIVE_MINT.toBase58()) ||
-        (swapMode == 'ExactOut' && inputMint == NATIVE_MINT.toBase58())
-      ) {
-        payload = { ...payload, feeAccount };
+      let signature: TransactionSignature = '';
+      try {
+        const quoteResponse = await getQuote(
+          inputMint,
+          outputMint,
+          amount,
+          swapMode
+        );
+        const [feeAccount] = PublicKey.findProgramAddressSync(
+          [
+            Buffer.from('referral_ata'),
+            REFERRAL_KEY.toBuffer(),
+            NATIVE_MINT.toBuffer(),
+          ],
+          new PublicKey('REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3')
+        );
+        let payload;
+        payload = {
+          // quoteResponse from /quote api
+          quoteResponse,
+          // user public key to be used for the swap
+          userPublicKey: publicKey.toString(),
+          // auto wrap and unwrap SOL. default is true
+          wrapAndUnwrapSol: true,
+          // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
+        };
+        if (
+          (swapMode == 'ExactIn' && outputMint == NATIVE_MINT.toBase58()) ||
+          (swapMode == 'ExactOut' && inputMint == NATIVE_MINT.toBase58())
+        ) {
+          payload = { ...payload, feeAccount };
+        }
+        // get serialized transactions for the swap
+        const { swapTransaction } = await (
+          await fetch('https://quote-api.jup.ag/v6/swap', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          })
+        ).json();
+        // deserialize the transaction
+        const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+        var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
+        signature = await buildAndSendTransaction({
+          connection: connection,
+          publicKey: publicKey,
+          signTransaction: signTransaction,
+          partialSignedTx: transaction,
+        });
+
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error} ` + signature);
+        return;
       }
-      // get serialized transactions for the swap
-      const { swapTransaction } = await (
-        await fetch('https://quote-api.jup.ag/v6/swap', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        })
-      ).json();
-      // deserialize the transaction
-      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-      var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
-      const txSig = await buildAndSendTransaction({
-        connection: connection,
-        publicKey: publicKey,
-        signTransaction: signTransaction,
-        partialSignedTx: transaction,
-      });
-
-      return txSig;
     },
 
     onSuccess: (signature) => {
@@ -194,7 +205,7 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
       const result = await (
         await fetch(`https://price.jup.ag/v6/price?ids=${mint.toBase58()}`)
       ).json();
-      return result.data?.price != undefined;
+      return result.data[mint.toBase58()] != undefined;
     },
     enabled: !!mint,
   });

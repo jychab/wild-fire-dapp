@@ -58,26 +58,26 @@ export const ContentGrid: FC<ContentGridProps> = ({
   editable = false,
   multiGrid = false,
 }) => {
-  return (
+  return content ? (
     <div
       className={`grid grid-cols-1 sm:gap-2 ${
         multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : 'pb-32'
       }`}
     >
-      {content ? (
-        content.map((x) => (
-          <DisplayContent
-            key={x.id}
-            content={x}
-            hideComment={hideComment}
-            showMintDetails={showMintDetails}
-            editable={editable}
-            multiGrid={multiGrid}
-          />
-        ))
-      ) : (
-        <div className="loading loading-dots" />
-      )}
+      {content.map((x) => (
+        <DisplayContent
+          key={x.id}
+          content={x}
+          hideComment={hideComment}
+          showMintDetails={showMintDetails}
+          editable={editable}
+          multiGrid={multiGrid}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className="flex items-center justify-center w-full ">
+      <div className="loading loading-dots" />
     </div>
   );
 };

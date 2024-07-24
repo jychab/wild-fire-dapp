@@ -49,10 +49,6 @@ export const TradingPanel: FC<{
     address: isLiquidityPoolFound ? publicKey : null,
   });
 
-  const { data: largestTokenAccount } = useGetLargestAccountFromMint({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-
   const { data: tokenInfo } = useGetTokenAccountInfo({
     address:
       metadata && publicKey
@@ -87,6 +83,7 @@ export const TradingPanel: FC<{
       amount,
       'ExactIn'
     );
+    console.log(quoteResponse);
     setOutputAmount(quoteResponse.outAmount || '');
   };
 
@@ -157,7 +154,16 @@ export const TradingPanel: FC<{
         type="number"
         className="w-full text-right text-base"
         placeholder="0.00"
-        value={buy ? outputAmount : inputAmount}
+        value={
+          buy
+            ? inputAmount != ''
+              ? Number(outputAmount) /
+                10 ** (metadata?.token_info?.decimals || 0)
+              : ''
+            : outputAmount != ''
+            ? Number(inputAmount) / 10 ** (metadata?.token_info?.decimals || 0)
+            : ''
+        }
         onChange={(e) => {
           let amount = parseFloat(e.target.value);
           if (Number.isNaN(amount)) {
@@ -267,7 +273,7 @@ export const TradingPanel: FC<{
                     <button
                       onClick={() =>
                         inputToken &&
-                        handleOutputAmountGivenInput(inputToken / 2)
+                        handleOutputAmountGivenInput(Math.round(inputToken / 2))
                       }
                       className="badge badge-xs badge-outline badge-secondary p-2 "
                     >
@@ -346,11 +352,7 @@ export const TradingPanel: FC<{
           </div>
         </div>
       )}
-      <Activities
-        metadata={metadata}
-        authorityData={authorityData}
-        largestTokenAccount={largestTokenAccount}
-      />
+      <Activities metadata={metadata} authorityData={authorityData} />
     </div>
   );
 };
@@ -358,24 +360,18 @@ export const TradingPanel: FC<{
 interface ActivitiesProps {
   authorityData: AuthorityData | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
-  largestTokenAccount:
-    | {
-        owner: PublicKey;
-        address: PublicKey;
-        amount: string;
-        decimals: number;
-        uiAmount: number | null;
-        uiAmountString?: string;
-      }[]
-    | null
-    | undefined;
 }
 
 export const Activities: FC<ActivitiesProps> = ({
   metadata,
   authorityData,
-  largestTokenAccount,
 }) => {
+  const { data: largestTokenAccount } = useGetLargestAccountFromMint({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata.token_info.token_program)
+      : null,
+  });
   return (
     <div className={`md:bg-base-200 flex flex-col w-full gap-2 rounded p-4`}>
       <span className="card-title text-base">Top 20 Holders</span>
@@ -444,6 +440,7 @@ export const MintInfo: FC<{
         currentHoldersCount: number;
         holdersChange24hPercent: number;
       }
+    | null
     | undefined;
 }> = ({ metadata, authorityData, mintSummaryDetails }) => {
   return (
@@ -484,10 +481,12 @@ export const MintInfo: FC<{
       <span className="text-right col-span-3">
         {formatLargeNumber(metadata?.token_info?.supply || 0)}
       </span>
-      <div className="col-span-1 text-sm">Holders:</div>
-      <span className="text-right col-span-3">
-        {mintSummaryDetails?.currentHoldersCount}
-      </span>
+      {mintSummaryDetails && <div className="col-span-1 text-sm">Holders:</div>}
+      {mintSummaryDetails && (
+        <span className="text-right col-span-3">
+          {mintSummaryDetails.currentHoldersCount}
+        </span>
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import { Scope } from '@/utils/enums/das';
 import { uploadMedia } from '@/utils/firebase/functions';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -59,10 +60,19 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
     mint: data ? new PublicKey(data[0].mint) : null,
   });
 
-  if (data && mintId && data[0].mint.toBase58() != mintId) {
+  if (
+    (data && mintId && data[0].mint.toBase58() != mintId) ||
+    !(
+      publicKey &&
+      metadataQuery?.authorities?.find(
+        (x) =>
+          x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
+      )?.address == publicKey.toBase58()
+    )
+  ) {
     return (
       <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">
-        <span>You are not the creator of this token.</span>
+        <span>You are not the update authority for this token.</span>
       </div>
     );
   }

@@ -255,17 +255,21 @@ export function useGetTokenJsonUri({ mint }: { mint: PublicKey | null }) {
     queryKey: ['get-mint-token-json-uri', { mint }],
     queryFn: async () => {
       if (!mint) return null;
-      const result = (await (
-        await fetch(
-          proxify(
-            `https://buckets.hashfeed.social/${mint.toBase58()}/metadata.json`
+      try {
+        const result = (await (
+          await fetch(
+            proxify(
+              `https://buckets.hashfeed.social/${mint.toBase58()}/metadata.json`
+            )
           )
-        )
-      ).json()) as {
-        description: string;
-        image: string;
-      };
-      return result;
+        ).json()) as {
+          description: string;
+          image: string;
+        };
+        return result;
+      } catch (e) {
+        return null;
+      }
     },
     enabled: !!mint,
     staleTime: 15 * 60 * 1000,

@@ -62,16 +62,20 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
       { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
     ],
     queryFn: async () => {
-      if (!mint) return;
+      if (!mint) return null;
       const result = await getDoc(
         doc(db, `Mint/${mint.toBase58()}/TokenInfo/Summary`)
       );
-      return result.data() as {
-        currentPriceInLamports: number;
-        currentHoldersCount: number;
-        holdersChange24hPercent: number;
-        history24hPrice: number;
-      };
+      if (result.exists()) {
+        return result.data() as {
+          currentPriceInLamports: number;
+          currentHoldersCount: number;
+          holdersChange24hPercent: number;
+          history24hPrice: number;
+        };
+      } else {
+        return null;
+      }
     },
     enabled: !!mint,
     staleTime: 60 * 1000,
@@ -117,17 +121,19 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
 
 export function useGetLargestAccountFromMint({
   mint,
+  tokenProgram,
 }: {
   mint: PublicKey | null;
+  tokenProgram: PublicKey | null;
 }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
       'get-largest-token-accounts-from-mint',
-      { endpoint: connection.rpcEndpoint, mint },
+      { endpoint: connection.rpcEndpoint, mint, tokenProgram },
     ],
     queryFn: async () => {
-      if (!mint) return null;
+      if (!mint || !tokenProgram) return null;
       const result = await connection.getTokenLargestAccounts(
         mint,
         'confirmed'
@@ -135,12 +141,7 @@ export function useGetLargestAccountFromMint({
       return Promise.all(
         result.value.map(async (x) => {
           const owner = (
-            await getAccount(
-              connection,
-              x.address,
-              undefined,
-              TOKEN_2022_PROGRAM_ID
-            )
+            await getAccount(connection, x.address, undefined, tokenProgram)
           )?.owner;
           return {
             ...x,
@@ -150,7 +151,7 @@ export function useGetLargestAccountFromMint({
       );
     },
     staleTime: 1000 * 60, //1mins
-    enabled: !!mint,
+    enabled: !!mint && !!tokenProgram,
   });
 }
 
@@ -205,10 +206,16 @@ export function useGetTokenDetails({
             additionalInfoData: { content },
           } as DAS.GetAssetResponse;
         } else {
-          return data;
+          return {
+            ...data,
+            additionalInfoData: { content: [] },
+          } as DAS.GetAssetResponse;
         }
       } catch (e) {
-        return data;
+        return {
+          ...data,
+          additionalInfoData: { content: [] },
+        } as DAS.GetAssetResponse;
       }
     },
     enabled: !!mint,
