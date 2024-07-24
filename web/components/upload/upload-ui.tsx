@@ -393,6 +393,7 @@ export const UploadPost: FC<{
                         hideCaption={true}
                         hideUserPanel={true}
                         hideComment={true}
+                        hideBorder={true}
                         showMintDetails={false}
                       />
                     ) : (
@@ -501,6 +502,7 @@ export const UploadPost: FC<{
                           actionUrl={new URL(file.uri)}
                           hideCaption={true}
                           hideUserPanel={true}
+                          hideBorder={true}
                           hideComment={true}
                         />
                       ) : (
@@ -558,6 +560,7 @@ export const UploadPost: FC<{
                       hideCaption={false}
                       hideCarousel={true}
                       hideComment={true}
+                      hideBorder={true}
                       hideUserPanel={true}
                       expandAll={true}
                     />

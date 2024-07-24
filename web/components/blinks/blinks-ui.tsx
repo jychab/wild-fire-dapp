@@ -72,6 +72,7 @@ interface BlinksProps {
   hideUserPanel?: boolean;
   hideCaption?: boolean;
   hideCarousel?: boolean;
+  hideBorder?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
@@ -85,6 +86,7 @@ export const Blinks: FC<BlinksProps> = ({
   expandAll = false,
   hideCaption = false,
   hideCarousel = false,
+  hideBorder = false,
 }) => {
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
@@ -166,6 +168,7 @@ export const Blinks: FC<BlinksProps> = ({
   } else {
     return (
       <ActionContainer
+        hideBorder={hideBorder}
         hideCarousel={hideCarousel}
         hideCaption={hideCaption}
         hideUserPanel={hideUserPanel}
@@ -202,9 +205,11 @@ interface ActionContainerProps {
   content?: PostContent;
   hideCaption: boolean;
   hideCarousel: boolean;
+  hideBorder: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
+  hideBorder,
   hideCarousel,
   hideCaption,
   websiteText,
@@ -443,6 +448,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
   return (
     <ActionLayout
+      hideBorder={hideBorder}
       hideCarousel={hideCarousel}
       hideCaption={hideCaption}
       hideUserPanel={hideUserPanel}
@@ -498,6 +504,7 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 };
 
 interface LayoutProps {
+  hideBorder: boolean;
   content?: PostContent;
   hideCarousel: boolean;
   hideCaption: boolean;
@@ -543,6 +550,7 @@ export interface FormProps {
 }
 
 export const ActionLayout = ({
+  hideBorder,
   hideCarousel,
   hideCaption,
   hideUserPanel,
@@ -627,7 +635,7 @@ export const ActionLayout = ({
   return (
     <div
       className={`flex  flex-col ${
-        !hideUserPanel ? 'sm:border' : ''
+        !hideBorder ? 'sm:border' : ''
       } bg-base-100 rounded w-full`}
     >
       {showMintDetails && additionalMetadata && (
@@ -726,8 +734,8 @@ const ActionContent = ({
           ))}
         </div>
       )}
-      {inputs?.map((input) => (
-        <ActionInput key={input.name} {...input} />
+      {inputs?.map((input, index) => (
+        <ActionInput key={index} {...input} />
       ))}
     </div>
   );

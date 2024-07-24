@@ -1,8 +1,10 @@
 'use client';
 
 import { AuthenticationBtn } from '@/components/authentication/authentication-ui';
+import { Blinks } from '@/components/blinks/blinks-ui';
 import { ContentGridFeature } from '@/components/content/content-feature';
 import { AppHero } from '@/components/ui/ui-layout';
+import { HASHFEED_MINT } from '@/utils/consts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRouter } from 'next/navigation';
 
@@ -23,7 +25,7 @@ export default function Page() {
       subtitle={
         <div className="flex flex-col gap-4 items-center lg:items-start">
           <p className="text-lg">
-            Discover content specially curated by the tokens you hold.
+            Discover content curated by the tokens you hold.
           </p>
           <AuthenticationBtn
             children={
@@ -38,28 +40,148 @@ export default function Page() {
         <div className="mockup-phone w-full max-w-xs">
           <div className="camera"></div>
           <div className="display w-full">
-            <div className="artboard artboard-demo phone-1">
-              <div className="carousel carousel-vertical rounded-box w-full">
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1559703248-dcaaec9fab78.jpg" />
+            <div className="artboard artboard-demo h-[600px] overflow-y-scroll scrollbar-none">
+              <div className="grid grid-cols-1 h-full w-full">
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action:https://solana.playspokemon.com/'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1565098772267-60af42b81ef2.jpg" />
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fhedgehog.markets%2Fapi%2Fv1%2Fclassic%2Fbuy%2F%3Fmarket%3D2PdyVYFstuFxXedzwHN39V5mh44DQvtXBaP7JgvRUGR9'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1572635148818-ef6fd45eb394.jpg" />
+
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action:https://jupiter.dial.to/swap/SOL-Bonk'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1494253109108-2e30c049369b.jpg" />
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action:https://tug-of-war.magicblock.app/api/v1/tug/item/DN4PPQ6MxAEy9sfrPRcrrxyoW8S2m5kX3NGfzrN3YMdQ'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1550258987-190a2d41a8ba.jpg" />
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action:https://api-main-mainnet.dreader.io/blink/action-spec/mint/48'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1559181567-c3190ca9959b.jpg" />
+                <div className="w-full">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fmeteora.dial.to%2Fswap%2FHtnih5T64YYvwbkNDmeac2jbiAe1Gec7s5MCiUjTwUPw%3Ftoken%3D3dCCbYca3jSgRdDiMEeV5e3YKNzsZAp3ZVfzUsbb4be4%26referrer%3DF1CWpTFAiPZKsYK2DNQ5zzic1CiPBQLuQxGbDMxz53WF'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
-                <div className="carousel-item h-full">
-                  <img src="https://img.daisyui.com/images/stock/photo-1601004890684-d8cbf643f5f2.jpg" />
+                <div className="carousel-item ">
+                  <Blinks
+                    actionUrl={
+                      new URL(
+                        'https://dial.to/?action=solana-action:https://tensor.dial.to/buy-floor/madlads'
+                      )
+                    }
+                    additionalMetadata={{
+                      name: 'HashFeed',
+                      id: crypto.randomUUID(),
+                      symbol: 'HashFeed',
+                      image: 'https://buckets.hashfeed.social/placeholder.png',
+                      mint: HASHFEED_MINT.toBase58(),
+                    }}
+                    hideUserPanel={true}
+                    hideBorder={true}
+                    expandAll={true}
+                    hideComment={true}
+                  />
                 </div>
               </div>
             </div>
