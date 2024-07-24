@@ -227,7 +227,7 @@ export const CommentsSection: FC<{
           </div>
           <div
             ref={commentsRef}
-            className="overflow-y-scroll mb-6 pb-4 px-4 scrollbar-none"
+            className="overflow-y-scroll mb-14 sm:mb-6 pb-4 px-4 scrollbar-none"
           >
             <div className="flex flex-col gap-4 ">
               {comments.map((x) => (
@@ -235,7 +235,7 @@ export const CommentsSection: FC<{
               ))}
             </div>
           </div>
-          <label className="absolute max-w-lg bottom-0 gap-2 z-2 mb-8 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
+          <label className="absolute max-w-lg bottom-0 gap-2 z-2 mb-8 sm:mb-0 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
             <div className="avatar">
               <div className=" w-8 h-8 relative rounded-full">
                 <Image
