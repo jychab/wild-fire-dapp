@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthenticationBtn } from '@/components/authentication/authentication-ui';
 import { ContentGridFeature } from '@/components/content/content-feature';
 import { AppHero } from '@/components/ui/ui-layout';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -24,12 +25,13 @@ export default function Page() {
           <p className="text-lg">
             Discover content specially curated by the tokens you hold.
           </p>
-          <button
-            onClick={() => router.push('/mint/create')}
-            className="btn btn-outline"
-          >
-            Get Started
-          </button>
+          <AuthenticationBtn
+            children={
+              <div className="btn btn-outline bg-base-100 rounded-none">
+                Get Started
+              </div>
+            }
+          />
         </div>
       }
       children={

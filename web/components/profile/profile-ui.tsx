@@ -11,10 +11,7 @@ import { FC, useState } from 'react';
 import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
-import {
-  useGetMintToken,
-  useGetTokenDescription,
-} from '../edit/edit-data-access';
+import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
 import {
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
@@ -102,7 +99,7 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
                   ...x,
                   name: metadata.content!.metadata.name,
                   symbol: metadata.content!.metadata.symbol,
-                  image: metadata.content!.links!.image!,
+                  image: metadata?.content?.links?.image || '',
                   mint: metadata.id,
                 };
               })
@@ -201,20 +198,21 @@ const Profile: FC<ProfileProps> = ({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
-  const { data: metadataDescription } = useGetTokenDescription({
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
       <div className="w-40 h-40">
-        {metadata && metadata.content?.links?.image && (
+        {((metadata && metadata.content?.links?.image) ||
+          metadataJsonUri?.image) && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata?.content?.links?.image}
+              src={metadataJsonUri?.image || metadata?.content?.links?.image!}
               alt={''}
             />
           </div>
@@ -309,7 +307,8 @@ const Profile: FC<ProfileProps> = ({
           )}
         </div>
         <span className="text-base truncate font-normal">
-          {metadataDescription?.description}
+          {metadataJsonUri?.description ||
+            metadata?.content?.metadata.description}
         </span>
       </div>
     </div>

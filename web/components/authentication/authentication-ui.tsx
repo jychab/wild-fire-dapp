@@ -11,9 +11,9 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FC, ReactNode } from 'react';
 import { DAS } from '../../utils/types/das';
+import { useGetTokenJsonUri } from '../edit/edit-data-access';
 import { useGetDailyClaimAvailable } from '../notification/notification-data-access';
 import {
   useGetToken,
@@ -27,7 +27,6 @@ export const SignInBtn: FC = () => {
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: data ? data[0]?.mint : null,
   });
-  const router = useRouter();
   return (
     <>
       {publicKey ? (
@@ -68,17 +67,23 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { data: isClaimAvailable } = useGetDailyClaimAvailable({
     mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
   });
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
+    mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
+  });
   return (
     <div className="dropdown dropdown-end dropdown-bottom">
       <div
         tabIndex={0}
         role="button"
         id="user-menu-button"
-        className="relative w-10 h-10 justify-center items-center flex indicator"
+        className="relative w-8 h-8 justify-center items-center flex indicator"
       >
-        {metaDataQuery && metaDataQuery.content?.links?.image ? (
+        {(metaDataQuery && metaDataQuery.content?.links?.image) ||
+        metadataJsonUri?.image ? (
           <Image
-            src={metaDataQuery.content.links.image}
+            src={
+              metadataJsonUri?.image || metaDataQuery?.content?.links?.image!
+            }
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}

@@ -6,16 +6,12 @@ import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import {
-  useGetMintDetails,
-  useGetMintTransferFeeConfig,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import {
   useCloseAccount,
   useEditData,
   useGetMintToken,
-  useGetTokenDescription,
+  useGetTokenJsonUri,
 } from './edit-data-access';
 
 interface EditTokenProps {
@@ -26,52 +22,52 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [description, setDescription] = useState('');
-  const [fee, setFee] = useState('');
-  const [maxFee, setMaxFee] = useState('');
+  // const [fee, setFee] = useState('');
+  // const [maxFee, setMaxFee] = useState('');
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const { publicKey } = useWallet();
-  const [admin, setAdmin] = useState('');
+  // const [admin, setAdmin] = useState('');
 
-  const editMutation = useEditData({ mint: new PublicKey(mintId) });
-  const closeMutation = useCloseAccount({ mint: new PublicKey(mintId) });
-
-  const [showMaxFee, setShowMaxFee] = useState(false);
-  const { data: mintTokenData } = useGetMintToken({
+  // const [showMaxFee, setShowMaxFee] = useState(false);
+  const { data: mintTokenData, isLoading } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
+  const editMutation = useEditData({
+    mint: mintTokenData ? mintTokenData.mint : null,
+  });
+  const closeMutation = useCloseAccount({
+    mint: mintTokenData ? mintTokenData.mint : null,
+  });
   const { data: metaData } = useGetTokenDetails({
-    mint: new PublicKey(mintId),
+    mint: mintTokenData ? mintTokenData.mint : null,
     withContent: false,
   });
 
-  const { data: metaDataDescription } = useGetTokenDescription({
-    mint: new PublicKey(mintId),
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
+    mint: mintTokenData ? mintTokenData.mint : null,
   });
 
-  const [mintTokenDataLoaded, setMintTokenDataLoaded] = useState(false);
-  useEffect(() => {
-    if (mintTokenData && !mintTokenDataLoaded) {
-      setAdmin(mintTokenData.admin.toString());
-      setMintTokenDataLoaded(true);
-    }
-  }, [mintTokenData, mintTokenDataLoaded]);
-  const { data: mintQuery } = useGetMintDetails({
-    mint: new PublicKey(mintId),
-  });
-  const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
-    mint: mintQuery,
-  });
+  // const [mintTokenDataLoaded, setMintTokenDataLoaded] = useState(false);
+  // useEffect(() => {
+  //   if (mintTokenData && !mintTokenDataLoaded) {
+  //     // setAdmin(mintTokenData.admin.toString());
+  //     setMintTokenDataLoaded(true);
+  //   }
+  // }, [mintTokenData, mintTokenDataLoaded]);
+  // const { data: transferFeeConfig } = useGetMintTransferFeeConfig({
+  //   mint: mintQuery,
+  // });
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
-    if (metaData && !metaDataLoaded && metaData.content?.links?.image) {
-      setTempImageUrl(metaData.content.links.image);
+    if (metaData && !metaDataLoaded && metadataJsonUri) {
+      setTempImageUrl(metadataJsonUri?.image);
 
       setName(metaData.content?.metadata.name || '');
 
       setSymbol(metaData.content?.metadata.symbol || '');
-      if (description == '' && metaDataDescription?.description) {
-        setDescription(metaDataDescription?.description);
+      if (description == '' && metadataJsonUri?.description) {
+        setDescription(metadataJsonUri?.description);
       }
       setMetadataLoaded(true);
     }
@@ -82,32 +78,32 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     name,
     symbol,
     description,
-    metaDataDescription,
+    metadataJsonUri,
   ]);
 
-  const [transferFeeConfigLoaded, setTransferFeeConfigLoaded] = useState(false);
-  useEffect(() => {
-    if (transferFeeConfig && !transferFeeConfigLoaded) {
-      if (fee == '') {
-        setFee(
-          (
-            transferFeeConfig.newerTransferFee.transferFeeBasisPoints / 100
-          ).toString()
-        );
-      }
-      if (
-        maxFee == '' &&
-        Number(transferFeeConfig.newerTransferFee.maximumFee) !=
-          Number.MAX_SAFE_INTEGER
-      ) {
-        setMaxFee(
-          Number(transferFeeConfig.newerTransferFee.maximumFee).toString()
-        );
-        // setShowMaxFee(true);
-      }
-      setTransferFeeConfigLoaded(true);
-    }
-  }, [transferFeeConfig, transferFeeConfigLoaded, fee, maxFee]);
+  // const [transferFeeConfigLoaded, setTransferFeeConfigLoaded] = useState(false);
+  // useEffect(() => {
+  //   if (transferFeeConfig && !transferFeeConfigLoaded) {
+  //     if (fee == '') {
+  //       setFee(
+  //         (
+  //           transferFeeConfig.newerTransferFee.transferFeeBasisPoints / 100
+  //         ).toString()
+  //       );
+  //     }
+  //     if (
+  //       maxFee == '' &&
+  //       Number(transferFeeConfig.newerTransferFee.maximumFee) !=
+  //         Number.MAX_SAFE_INTEGER
+  //     ) {
+  //       setMaxFee(
+  //         Number(transferFeeConfig.newerTransferFee.maximumFee).toString()
+  //       );
+  //       // setShowMaxFee(true);
+  //     }
+  //     setTransferFeeConfigLoaded(true);
+  //   }
+  // }, [transferFeeConfig, transferFeeConfigLoaded, fee, maxFee]);
 
   const handlePictureChange = (e: any) => {
     const selectedFile = e.target.files[0];
@@ -129,7 +125,12 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     setDescription(e.target.value);
   };
 
-  return (
+  return !mintTokenData && !isLoading ? (
+    <span>
+      This mint is not created on this platform so editing is not allowed for
+      now.
+    </span>
+  ) : (
     <div className="flex flex-col gap-4 my-4 items-center max-w-2xl w-full sm:p-4 pb-32">
       <span className="text-3xl lg:text-4xl text-base-content">
         Edit Profile Settings
@@ -137,7 +138,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
       <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded bg-base-100">
         <div className="flex w-full justify-between items-center">
           <span className="hidden sm:block">Profile</span>
-          {mintQuery && Number(mintQuery.supply) == 0 && (
+          {metaData?.token_info?.supply == 0 && (
             <button
               onClick={() => closeMutation.mutateAsync()}
               className="btn btn-error btn-sm"
@@ -210,7 +211,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
             onChange={handleDescriptionChange}
           ></textarea>
         </div>
-        <div tabIndex={0} className="collapse collapse-plus">
+        {/* <div tabIndex={0} className="collapse collapse-plus">
           <input type="checkbox" className="peer" />
           <div className="collapse-title border-b border-base-content">
             Show Advanced Settings
@@ -225,8 +226,8 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 className="col-span-3 input input-bordered w-full text-base rounded"
                 value={admin}
                 onChange={(e) => setAdmin(e.target.value)}
-              />
-              {/* <span className="text-sm">Edit Transfer Fee</span>
+              /> */}
+        {/* <span className="text-sm">Edit Transfer Fee</span>
               <label className="col-span-3 input input-bordered flex items-center w-fit text-sm gap-2">
                 <input
                   min={0.1}
@@ -241,7 +242,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                 />
                 %
               </label> */}
-              {/* <span className="text-sm">Set Max Transfer Fee</span>
+        {/* <span className="text-sm">Set Max Transfer Fee</span>
               <div className="col-span-3 flex flex-col items-start gap-2">
                 <div className="flex items-center text-sm gap-4 w-full">
                   {showMaxFee && (
@@ -277,9 +278,9 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
                   />
                  </div> 
                </div> */}
-            </div>
+        {/* </div>
           </div>
-        </div>
+        </div> */}
         <button
           disabled={!publicKey || editMutation.isPending}
           onClick={async () => {
@@ -287,18 +288,16 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               metaData == null ||
               metaData == undefined ||
               mintTokenData == null ||
-              mintTokenData == undefined ||
-              !transferFeeConfig
+              mintTokenData == undefined
             ) {
               toast.error('Unable to fetch current mint metadata.');
               return;
             }
-            if (parseFloat(fee) < 0.1) {
-              toast.error('Transfer Fee needs to be at least 0.1%.');
-              return;
-            }
+            // if (parseFloat(fee) < 0.1) {
+            //   toast.error('Transfer Fee needs to be at least 0.1%.');
+            //   return;
+            // }
             await editMutation.mutateAsync({
-              admin: new PublicKey(admin),
               name: name,
               symbol: symbol,
               description: description,
@@ -306,9 +305,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               previous: {
                 ...metaData,
                 ...mintTokenData,
-                ...transferFeeConfig.newerTransferFee,
               },
-              fee: parseFloat(fee) * 100,
             });
           }}
           className="btn btn-primary btn-sm w-full rounded"

@@ -163,7 +163,10 @@ export function useGetTokenDetails({
 }) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
+    queryKey: [
+      'get-token-details',
+      { endpoint: connection.rpcEndpoint, mint, withContent },
+    ],
     queryFn: async () => {
       if (!mint) return null;
       const response = await fetch(connection.rpcEndpoint, {

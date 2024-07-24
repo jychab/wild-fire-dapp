@@ -2,7 +2,7 @@ import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { getTimeAgo } from '@/utils/helper/format';
 import { PublicKey } from '@solana/web3.js';
-import { IconSend, IconUserCircle, IconX } from '@tabler/icons-react';
+import { IconSend, IconX } from '@tabler/icons-react';
 import {
   collection,
   DocumentData,
@@ -16,9 +16,12 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
-import { getMintFromPubkey } from '../content/content-data-access';
 import { AdditionalMetadata } from '../content/content-ui';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import { useGetTokenJsonUri } from '../edit/edit-data-access';
+import {
+  useGetToken,
+  useGetTokenDetails,
+} from '../profile/profile-data-access';
 
 interface Comment {
   commentId: string;
@@ -248,35 +251,48 @@ export const CommentsSection: FC<{
 };
 
 export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
+  const { data } = useGetToken({ address: new PublicKey(comment.user) });
   const { data: metadata } = useGetTokenDetails({
-    mint: getMintFromPubkey(new PublicKey(comment.user)),
+    mint: data ? data[0].mint : null,
     withContent: false,
   });
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
+    mint: data ? data[0].mint : null,
+  });
+  const router = useRouter();
   return (
     <div className="animate-fade-right animate-once animate-duration-300 animate-ease-out">
       <div className="chat chat-start">
-        <div className="chat-image avatar">
-          {metadata?.content?.links?.image ? (
-            <div className="w-10 h-10 relative rounded-full">
-              <Image
-                fill={true}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                alt=""
-                src={metadata?.content?.links?.image}
-              />
-            </div>
-          ) : (
-            <div className="flex w-10 h-10 items-center justify-center ">
-              <div className="items-center flex justify-center h-full">
-                <IconUserCircle size={40} />
-              </div>
-            </div>
-          )}
-        </div>
+        <button
+          disabled={!metadata}
+          className="chat-image avatar"
+          onClick={() =>
+            metadata && router.push(`/profile?mintId=${metadata.id}`)
+          }
+        >
+          <div className="w-8 h-8 relative rounded-full">
+            <Image
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              alt=""
+              src={
+                metadataJsonUri?.image ||
+                metadata?.content?.links?.image ||
+                'https://buckets.hashfeed.social/placeholder.png'
+              }
+            />
+          </div>
+        </button>
         <div className="chat-header flex items-center gap-2">
-          <span className="truncate max-w-[120px] sm:max-w-xs">
+          <button
+            disabled={!metadata}
+            onClick={() =>
+              metadata && router.push(`/profile?mintId=${metadata.id}`)
+            }
+            className="truncate max-w-[120px] sm:max-w-xs"
+          >
             {metadata ? metadata.content?.metadata.name : comment.user}
-          </span>
+          </button>
           <time className="text-xs opacity-50">
             {`${getTimeAgo(comment.updatedAt)}${
               comment.updatedAt != comment.createdAt ? ' (edited)' : ''

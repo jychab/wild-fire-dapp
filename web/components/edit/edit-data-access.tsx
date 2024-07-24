@@ -22,8 +22,6 @@ import {
 } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
-  changeAdmin,
-  changeTransferFee,
   closeAuthorityAccount,
   getAdditionalRentForUpdatedMetadata,
   program,
@@ -37,12 +35,12 @@ interface EditMintArgs {
   symbol: string;
   picture: File | null;
   description: string;
-  fee: number;
-  admin: PublicKey;
+  // fee: number;
+  // admin: PublicKey;
   previous: {
     distributor: PublicKey;
-    transferFeeBasisPoints: number;
-    admin: PublicKey;
+    // transferFeeBasisPoints: number;
+    // admin: PublicKey;
   };
 }
 
@@ -90,18 +88,6 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
               { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-token',
-              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
-            ],
-          }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-mint-transfer-fee-config',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
         ]);
       }
     },
@@ -132,19 +118,19 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       let ixs: TransactionInstruction[] = [];
       let partialTx;
       try {
-        if (input.previous.admin.toString() != input.admin.toString()) {
-          ixs.push(await changeAdmin(wallet.publicKey, mint, input.admin));
-        }
-        if (input.previous.transferFeeBasisPoints != input.fee) {
-          ixs.push(
-            await changeTransferFee(
-              wallet.publicKey,
-              mint,
-              input.fee,
-              Number.MAX_SAFE_INTEGER
-            )
-          );
-        }
+        // if (input.previous.admin.toString() != input.admin.toString()) {
+        //   ixs.push(await changeAdmin(wallet.publicKey, mint, input.admin));
+        // }
+        // if (input.previous.transferFeeBasisPoints != input.fee) {
+        //   ixs.push(
+        //     await changeTransferFee(
+        //       wallet.publicKey,
+        //       mint,
+        //       input.fee,
+        //       Number.MAX_SAFE_INTEGER
+        //     )
+        //   );
+        // }
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
         const uriMetadata = await (
@@ -255,18 +241,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: ['get-mint-token-json-uri', { mint }],
           }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-token',
-              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
-            ],
-          }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-mint-transfer-fee-config',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
         ]);
       }
     },
@@ -276,7 +250,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useGetTokenDescription({ mint }: { mint: PublicKey | null }) {
+export function useGetTokenJsonUri({ mint }: { mint: PublicKey | null }) {
   return useQuery({
     queryKey: ['get-mint-token-json-uri', { mint }],
     queryFn: async () => {
@@ -289,11 +263,12 @@ export function useGetTokenDescription({ mint }: { mint: PublicKey | null }) {
         )
       ).json()) as {
         description: string;
+        image: string;
       };
       return result;
     },
-
     enabled: !!mint,
+    staleTime: 15 * 60 * 1000,
   });
 }
 

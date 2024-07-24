@@ -1,7 +1,6 @@
 import { HASHFEED_MINT } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { deletePost } from '@/utils/firebase/functions';
-import { program } from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -205,21 +204,6 @@ export const fetchOwnerTokenDetails = ({
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 };
-
-export function checkIfPublicKeyIsMintOwner(
-  mint: PublicKey,
-  publicKey: PublicKey
-) {
-  return getMintFromPubkey(publicKey).toBase58() == mint.toBase58();
-}
-
-export function getMintFromPubkey(publicKey: PublicKey) {
-  const [derivedMint] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mint'), new PublicKey(publicKey).toBuffer()],
-    program.programId
-  );
-  return derivedMint;
-}
 
 export function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout;

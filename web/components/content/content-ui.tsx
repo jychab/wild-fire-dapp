@@ -20,12 +20,10 @@ import { useRouter } from 'next/navigation';
 import { FC, RefObject, useEffect, useRef, useState } from 'react';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
+import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid, PostContent } from '../upload/upload.data-access';
-import {
-  checkIfPublicKeyIsMintOwner,
-  useRemoveContentMutation,
-} from './content-data-access';
+import { useRemoveContentMutation } from './content-data-access';
 
 interface ContentGridProps {
   content: ContentWithMetadata[] | undefined;
@@ -78,7 +76,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
       ))}
     </div>
   ) : (
-    <div />
+    <div className="loading loading-dots" />
   );
 };
 
@@ -257,6 +255,9 @@ export const DisplayContent: FC<DisplayContentProps> = ({
 export const UserProfile: FC<{
   content: AdditionalMetadata;
 }> = ({ content }) => {
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
+    mint: new PublicKey(content.mint),
+  });
   return (
     <div className="flex w-full items-center justify-between px-4 py-2 ">
       <Link
@@ -265,7 +266,7 @@ export const UserProfile: FC<{
       >
         <div className="relative w-8 h-8 rounded-full">
           <Image
-            src={content.image}
+            src={metadataJsonUri?.image || content.image}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}
@@ -337,6 +338,9 @@ export const UserPanel: FC<{
   editable: boolean;
 }> = ({ additionalMetadata, editable, multiGrid }) => {
   const { publicKey } = useWallet();
+  const { data } = useGetMintToken({
+    mint: additionalMetadata ? new PublicKey(additionalMetadata.mint) : null,
+  });
   const [liked, setLiked] = useState(
     (publicKey &&
       additionalMetadata?.likesUser?.includes(publicKey?.toBase58())) ||
@@ -415,12 +419,9 @@ export const UserPanel: FC<{
       {(editable || isLiquidityPoolFound) &&
         (!multiGrid ||
           (multiGrid &&
-            additionalMetadata &&
+            data &&
             publicKey &&
-            checkIfPublicKeyIsMintOwner(
-              new PublicKey(additionalMetadata.mint),
-              publicKey
-            ))) && (
+            data.admin.toBase58() == publicKey.toBase58())) && (
           <div className="dropdown dropdown-left">
             <div tabIndex={0} role="button">
               {removeContentMutation.isPending ? (
