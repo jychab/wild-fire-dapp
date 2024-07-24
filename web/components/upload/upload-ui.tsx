@@ -38,7 +38,7 @@ export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
       className="btn btn-sm btn-outline "
     >
       <IconPlus />
-      Upload
+      Create Post
     </button>
   );
 };

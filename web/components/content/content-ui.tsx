@@ -1,5 +1,8 @@
 import { sendLike } from '@/utils/firebase/functions';
-import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
+import {
+  convertUTCTimeToDayMonth,
+  formatLargeNumber,
+} from '@/utils/helper/format';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
@@ -190,7 +193,7 @@ export const PostCard = ({
           </div>
           <div className="flex flex-col">
             {!hideComment && (
-              <CommentsGrid
+              <CommentsSection
                 additionalMetadata={content}
                 multiGrid={multiGrid}
               />
@@ -385,20 +388,26 @@ export const UserPanel: FC<{
               )}
             </button>
 
-            <span className="text-xs stat-desc link link-hover">{`Liked by ${
-              liked
-                ? `you${
-                    additionalMetadata?.likesUser &&
-                    additionalMetadata.likesUser.length > 1
-                      ? ' and ' +
-                        (additionalMetadata.likesUser.length - 1) +
-                        ' users'
-                      : ''
-                  }`
-                : additionalMetadata
-                ? additionalMetadata?.likesUser?.length + ' users'
-                : ''
-            } `}</span>
+            {(liked || additionalMetadata?.likesUser) && (
+              <span className="text-xs stat-desc link link-hover">{`Liked by ${
+                liked
+                  ? `you${
+                      additionalMetadata?.likesUser &&
+                      additionalMetadata.likesUser.length > 1
+                        ? ' and ' +
+                          formatLargeNumber(
+                            additionalMetadata.likesUser.length
+                          ) +
+                          '  others'
+                        : ''
+                    }`
+                  : additionalMetadata?.likesUser &&
+                    additionalMetadata.likesUser.length > 0
+                  ? formatLargeNumber(additionalMetadata?.likesUser?.length) +
+                    ' others'
+                  : ''
+              } `}</span>
+            )}
           </div>
         )}
       </div>
@@ -467,36 +476,6 @@ export const UserPanel: FC<{
             </ul>
           </div>
         )}
-    </div>
-  );
-};
-
-export const CommentsGrid: FC<{
-  additionalMetadata: AdditionalMetadata;
-  multiGrid: boolean;
-}> = ({ additionalMetadata, multiGrid }) => {
-  const router = useRouter();
-  return (
-    <div className="flex flex-col pt-2 gap-1 items-start">
-      {additionalMetadata.commentsCount && (
-        <button
-          onClick={() => {
-            if (multiGrid) {
-              router.push(
-                `/content?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`
-              );
-            } else {
-              (
-                document.getElementById(
-                  additionalMetadata.id + '/comments'
-                ) as HTMLDialogElement
-              ).showModal();
-            }
-          }}
-          className="stat-desc link link-hover"
-        >{`View ${additionalMetadata.commentsCount} comments`}</button>
-      )}
-      <CommentsSection additionalMetadata={additionalMetadata} />
     </div>
   );
 };

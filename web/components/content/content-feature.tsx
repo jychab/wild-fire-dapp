@@ -18,6 +18,9 @@ import { useGetTokenDetails } from '../profile/profile-data-access';
 import { PostContent } from '../upload/upload.data-access';
 import { fetchOwnerTokenDetails as useFetchOwnerTokenDetails } from './content-data-access';
 import { ContentGrid, ContentWithMetadata, DisplayContent } from './content-ui';
+
+const batchSize = 30;
+
 export const ContentGridFeature: FC = () => {
   const { publicKey } = useWallet();
   // Check for cached content
@@ -31,8 +34,8 @@ export const ContentGridFeature: FC = () => {
       }
     }
   }, [publicKey]);
+  const [postLimit, setPostLimit] = useState(30);
   const [content, setContent] = useState<ContentWithMetadata[]>([]);
-  const [postLimit, setPostLimit] = useState(20);
   const [sortedTokenIds, setSortedTokenIds] = useState<string[]>([]);
   const [nextTokenIndex, setNextTokenIndex] = useState(0);
 
@@ -72,12 +75,13 @@ export const ContentGridFeature: FC = () => {
         handleSnapshotUpdate(snapshot);
       });
     },
-    [postLimit, sortedTokenDetails]
+    [sortedTokenDetails]
   );
 
   const handleSnapshotUpdate = useCallback(
     (snapshot: QuerySnapshot<DocumentData>) => {
       if (!sortedTokenDetails) return;
+
       setContent((prevContent) => {
         // Initialize updatedContent as a Map for efficient updates
         const updatedContentMap = new Map(
@@ -138,7 +142,6 @@ export const ContentGridFeature: FC = () => {
     ) {
       return;
     }
-    const batchSize = 30;
     const endIndex = Math.min(
       nextTokenIndex + batchSize,
       sortedTokenIds.length

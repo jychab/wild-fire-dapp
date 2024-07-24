@@ -210,11 +210,15 @@ export function checkIfPublicKeyIsMintOwner(
   mint: PublicKey,
   publicKey: PublicKey
 ) {
+  return getMintFromPubkey(publicKey).toBase58() == mint.toBase58();
+}
+
+export function getMintFromPubkey(publicKey: PublicKey) {
   const [derivedMint] = PublicKey.findProgramAddressSync(
     [Buffer.from('mint'), new PublicKey(publicKey).toBuffer()],
     program.programId
   );
-  return derivedMint.toBase58() == mint.toBase58();
+  return derivedMint;
 }
 
 export function debounce(func: Function, wait: number) {

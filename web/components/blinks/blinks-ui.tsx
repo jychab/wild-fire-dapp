@@ -43,10 +43,10 @@ import {
   mergeActionStates,
   normalizeOptions,
 } from '../../utils/helper/blinks';
+import { CommentsSection } from '../comments/comments-ui';
 import {
   AdditionalMetadata,
   CarouselContent,
-  CommentsGrid,
   PostCaption,
   PostCard,
   UserPanel,
@@ -689,7 +689,7 @@ export const ActionLayout = ({
           </div>
           <div className="flex flex-col ">
             {!hideComment && additionalMetadata && (
-              <CommentsGrid
+              <CommentsSection
                 additionalMetadata={additionalMetadata}
                 multiGrid={multiGrid}
               />

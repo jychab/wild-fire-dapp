@@ -4,7 +4,7 @@ import { PublicKey } from '@solana/web3.js';
 import {
   IconGift,
   IconLogout,
-  IconUpload,
+  IconSquarePlus,
   IconUser,
   IconUserCircle,
   IconUserPlus,
@@ -99,6 +99,12 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
           </span>
           <span className="block text-sm truncate ">{'mainnet-beta'}</span>
         </li>
+        <li className="w-full">
+          <Link href={`/content/create`}>
+            <IconSquarePlus />
+            Create Post
+          </Link>
+        </li>
         {metaDataQuery && (
           <li className="w-full">
             <Link href={`/profile?mintId=${metaDataQuery.id}`}>
@@ -132,12 +138,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             Claim Daily Bonus
           </button>
         </li>
-        <li className="w-full">
-          <Link href={`/content/create`}>
-            <IconUpload />
-            Upload
-          </Link>
-        </li>
+
         <li className="w-full">
           <ThemeComponent />
         </li>
