@@ -1,6 +1,7 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { getTimeAgo } from '@/utils/helper/format';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconSend, IconX } from '@tabler/icons-react';
 import {
@@ -48,6 +49,15 @@ export const CommentsSection: FC<{
   const commentsRef = useRef<HTMLDivElement>(null);
   const debounceTimeout = useRef<number | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const { publicKey } = useWallet();
+  const { data } = useGetToken({ address: publicKey });
+  const { data: metadata } = useGetTokenDetails({
+    mint: data ? data[0].mint : null,
+    withContent: false,
+  });
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
+    mint: data ? data[0].mint : null,
+  });
 
   const handleCommentSubmit = () => {
     if (additionalMetadata && comment) {
@@ -225,7 +235,21 @@ export const CommentsSection: FC<{
               ))}
             </div>
           </div>
-          <label className="absolute max-w-lg bottom-0 z-2 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
+          <label className="absolute max-w-lg bottom-0 gap-2 z-2 mb-8 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
+            <div className="avatar">
+              <div className=" w-8 h-8 relative rounded-full">
+                <Image
+                  fill={true}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  alt=""
+                  src={
+                    metadataJsonUri?.image ||
+                    metadata?.content?.links?.image ||
+                    'https://buckets.hashfeed.social/placeholder.png'
+                  }
+                />
+              </div>
+            </div>
             <input
               autoFocus={true}
               placeholder="Add a comment"
