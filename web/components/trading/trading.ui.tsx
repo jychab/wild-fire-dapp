@@ -416,8 +416,10 @@ export const Activities: FC<ActivitiesProps> = ({
                     {formatLargeNumber(x.uiAmount!)}
                   </td>
                   <td className="w-auto text-xs">
-                    {`${(Number(metadata.token_info?.supply) != 0
-                      ? (x.uiAmount! / Number(metadata.token_info?.supply)) *
+                    {`${(metadata.token_info?.supply
+                      ? (x.uiAmount! /
+                          (metadata?.token_info?.supply /
+                            10 ** (metadata?.token_info?.decimals || 0))) *
                         100
                       : 0
                     ).toFixed(2)}%`}
@@ -479,7 +481,10 @@ export const MintInfo: FC<{
       </Link>
       <div className="col-span-1 text-sm">Supply:</div>
       <span className="text-right col-span-3">
-        {formatLargeNumber(metadata?.token_info?.supply || 0)}
+        {formatLargeNumber(
+          (metadata?.token_info?.supply || 0) /
+            10 ** (metadata?.token_info?.decimals || 0)
+        )}
       </span>
       {mintSummaryDetails && <div className="col-span-1 text-sm">Holders:</div>}
       {mintSummaryDetails && (
