@@ -114,7 +114,7 @@ export const ContentGridFeature: FC = () => {
         );
       }
 
-      setContent(newUpdatedContent);
+      setContent(newUpdatedContent as ContentWithMetadata[]);
       setIsFetching(false);
     },
     [sortedTokenDetails, publicKey]
