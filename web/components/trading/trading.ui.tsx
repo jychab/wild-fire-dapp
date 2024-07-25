@@ -8,7 +8,7 @@ import { IconCurrencySolana } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useState } from 'react';
-import { useGetMintToken } from '../edit/edit-data-access';
+import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
 import {
   useGetLargestAccountFromMint,
   useGetMintSummaryDetails,
@@ -40,6 +40,10 @@ export const TradingPanel: FC<{
   });
 
   const { data: authorityData } = useGetMintToken({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+  });
+
+  const { data: metadataJsonUri } = useGetTokenJsonUri({
     mint: metadata ? new PublicKey(metadata.id) : null,
   });
 
@@ -83,7 +87,6 @@ export const TradingPanel: FC<{
       amount,
       'ExactIn'
     );
-    console.log(quoteResponse);
     setOutputAmount(quoteResponse.outAmount || '');
   };
 
@@ -135,13 +138,13 @@ export const TradingPanel: FC<{
   const MintButton = (
     <>
       <button className="btn btn-sm rounded-lg gap-1 px-2 items-center w-fit">
-        {metadata?.content?.links?.image && (
+        {(metadataJsonUri?.image || metadata?.content?.links?.image) && (
           <div className="w-6 h-6 relative">
             <Image
               className={`rounded-full object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata?.content?.links?.image}
+              src={metadataJsonUri?.image || metadata?.content?.links?.image!}
               alt={''}
             />
           </div>
@@ -178,6 +181,7 @@ export const TradingPanel: FC<{
       />
     </>
   );
+
   return (
     <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
       {isLoading ? (
@@ -189,13 +193,18 @@ export const TradingPanel: FC<{
               className={`flex md:bg-base-200 rounded md:mb-4 items-center justify-between px-4 md:py-2`}
             >
               <div className="flex gap-2 items-center">
-                <Image
-                  width={32}
-                  height={32}
-                  src={metadata?.content?.links?.image || ''}
-                  alt={''}
-                  className="rounded"
-                />
+                {(metadataJsonUri?.image ||
+                  metadata?.content?.links?.image) && (
+                  <Image
+                    width={32}
+                    height={32}
+                    src={
+                      metadataJsonUri?.image || metadata?.content?.links?.image!
+                    }
+                    alt={''}
+                    className="rounded"
+                  />
+                )}
                 <span>{`${metadata?.content?.metadata.symbol}-USD`}</span>
                 {/* <div className="hidden md:flex flex-col card py-2 px-4 text-right">
                   <span className="stat-title text-xs">Liquidity</span>
