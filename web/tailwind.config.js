@@ -18,6 +18,7 @@ module.exports = {
     require('daisyui'),
     require('tailwindcss-animated'),
     require('tailwind-scrollbar'),
+    require('@tailwindcss/line-clamp'),
   ],
   daisyui: {
     themes: [

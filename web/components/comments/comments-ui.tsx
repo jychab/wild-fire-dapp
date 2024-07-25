@@ -1,6 +1,6 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
-import { getTimeAgo } from '@/utils/helper/format';
+import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconSend, IconX } from '@tabler/icons-react';
@@ -49,6 +49,7 @@ export const CommentsSection: FC<{
   const commentsRef = useRef<HTMLDivElement>(null);
   const debounceTimeout = useRef<number | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const [loading, setLoading] = useState(false);
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
   const { data: metadata } = useGetTokenDetails({
@@ -104,6 +105,8 @@ export const CommentsSection: FC<{
 
         return updatedComments;
       });
+
+      setLoading(false);
     },
     [commentsLimit]
   );
@@ -123,6 +126,7 @@ export const CommentsSection: FC<{
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
     }
+    setLoading(true);
     // Set up new subscription
     const unsubscribe = onSnapshot(q, handleSnapshotUpdate);
     unsubscribeRef.current = unsubscribe;
@@ -233,9 +237,15 @@ export const CommentsSection: FC<{
               {comments.map((x) => (
                 <AvatarWithText key={x.commentId} comment={x} />
               ))}
+              {loading && (
+                <div className="w-full items-end justify-center flex gap-2">
+                  Loading
+                  <div className="loading loading-dots loading-xs" />
+                </div>
+              )}
             </div>
           </div>
-          <label className="absolute max-w-lg bottom-0 gap-2 z-2 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
+          <label className="absolute max-w-lg bottom-0 gap-2 h-fit z-2 py-2 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
             <div className="avatar">
               <div className=" w-8 h-8 relative rounded-full">
                 <Image
@@ -250,11 +260,11 @@ export const CommentsSection: FC<{
                 />
               </div>
             </div>
-            <input
+            <textarea
+              rows={1}
               autoFocus={true}
               placeholder="Add a comment"
-              type="text"
-              className="w-full text-base"
+              className="textarea textarea-bordered textarea-base leading-normal scrollbar-none w-full text-base"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={(e) => {
@@ -275,6 +285,7 @@ export const CommentsSection: FC<{
 };
 
 export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
+  const [showMore, setShowMore] = useState(false);
   const { data } = useGetToken({ address: new PublicKey(comment.user) });
   const { data: metadata } = useGetTokenDetails({
     mint: data ? data[0].mint : null,
@@ -283,6 +294,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
   const { data: metadataJsonUri } = useGetTokenJsonUri({
     mint: data ? data[0].mint : null,
   });
+  const commentRef = useRef<HTMLSpanElement>(null);
   const router = useRouter();
   return (
     <div className="animate-fade-right animate-once animate-duration-300 animate-ease-out">
@@ -323,7 +335,25 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
             }`}
           </time>
         </div>
-        <div className="text-sm whitespace-pre-wrap">{comment.text}</div>
+        <div className="flex flex-col gap-1 items-start">
+          <span
+            ref={commentRef}
+            className={`text-sm w-full break-all ${
+              showMore ? 'whitespace-prewrap' : 'line-clamp-3'
+            }`}
+          >
+            {comment.text}
+          </span>
+          {!showMore && checkIfTruncated(commentRef.current) && (
+            <button
+              className="text-xs stat-desc"
+              onClick={() => setShowMore(true)}
+            >
+              Show More
+            </button>
+          )}
+        </div>
+
         {comment.repliesCount && (
           <div className="chat-footer opacity-50 link">{`${comment.repliesCount}Replies`}</div>
         )}

@@ -957,8 +957,12 @@ export const BlinksCaption: FC<{
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-2">
-          {description && <p className="text-xs truncate">{description}</p>}
+        <div className="flex flex-col items-start gap-1">
+          {description && (
+            <p className="text-xs w-full break-all line-clamp-3">
+              {description}
+            </p>
+          )}
           <button
             onClick={() => {
               if (!multiGrid) {

@@ -61,7 +61,9 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   });
 
   if (
-    (data && mintId && data[0].mint.toBase58() != mintId) ||
+    data &&
+    mintId &&
+    data[0].mint.toBase58() != mintId &&
     !(
       publicKey &&
       metadataQuery?.authorities?.find(

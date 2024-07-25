@@ -65,3 +65,9 @@ export function getTimeAgo(timestamp: number) {
 
   return 'just now';
 }
+
+export function checkIfTruncated(element: HTMLSpanElement | null) {
+  if (!element) return null;
+  const isTextClamped = element.scrollHeight > element.clientHeight;
+  return isTextClamped;
+}

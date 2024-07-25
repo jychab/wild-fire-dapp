@@ -1,5 +1,6 @@
 import { sendLike } from '@/utils/firebase/functions';
 import {
+  checkIfTruncated,
   convertUTCTimeToDayMonth,
   formatLargeNumber,
 } from '@/utils/helper/format';
@@ -305,17 +306,20 @@ export const PostCaption: FC<{
   expandAll: boolean;
 }> = ({ content, multiGrid, expandAll }) => {
   const [showMore, setShowMore] = useState(expandAll);
-
+  const captionRef = useRef<HTMLSpanElement>(null);
   const router = useRouter();
   return (
     <>
-      <div className="flex gap-2 items-center">
-        <p
-          className={`text-xs ${showMore ? 'whitespace-pre-wrap' : 'truncate'}`}
+      <div className="flex flex-col gap-1 items-start">
+        <span
+          ref={captionRef}
+          className={`text-xs w-full break-all ${
+            showMore ? 'whitespace-pre-wrap' : 'line-clamp-3'
+          }`}
         >
           {content.caption}
-        </p>
-        {(content.caption.length > 80 || content.caption.includes('\n')) && (
+        </span>
+        {checkIfTruncated(captionRef.current) && (
           <button
             onClick={() => {
               if (!multiGrid) {
