@@ -82,23 +82,18 @@ export const ContentGridFeature: FC = () => {
     (snapshot: QuerySnapshot<DocumentData>) => {
       if (!sortedTokenDetails) return;
 
-      setContent((prevContent) => {
-        // Initialize updatedContent as a Map for efficient updates
-        const updatedContentMap = new Map(
-          (prevContent || []).map((item) => [item.id, item])
-        );
-
-        // Process each change in the snapshot
-        snapshot.docChanges().forEach((change) => {
-          const postData = change.doc.data() as PostContent;
+      // Process each change in the snapshot
+      const newUpdatedContent = snapshot.docs
+        .map((doc) => {
+          const postData = doc.data() as PostContent;
 
           const tokenDetails = sortedTokenDetails.find(
             (x) => x.id === postData.mint
           );
 
-          if (!tokenDetails?.content?.links?.image) return;
+          if (!tokenDetails?.content?.links?.image) return null;
 
-          const newContent = {
+          return {
             ...tokenDetails,
             ...postData,
             name: tokenDetails.content.metadata.name,
@@ -106,29 +101,20 @@ export const ContentGridFeature: FC = () => {
             image: tokenDetails.content.links.image,
             mint: tokenDetails.id,
           };
-
-          if (change.type === 'removed') {
-            updatedContentMap.delete(newContent.id);
-          } else {
-            updatedContentMap.set(newContent.id, newContent);
-          }
-        });
-
-        // Convert the Map back to an array and sort
-        const updatedContent = Array.from(updatedContentMap.values()).sort(
-          (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+        })
+        .filter((x) => x != null);
+      newUpdatedContent.sort(
+        (a, b) => (b?.createdAt || 0) - (a?.createdAt || 0)
+      );
+      if (publicKey) {
+        // Cache the content
+        localStorage.setItem(
+          `cachedFeed, ${publicKey?.toBase58()}`,
+          JSON.stringify(newUpdatedContent)
         );
+      }
 
-        if (publicKey) {
-          // Cache the content
-          localStorage.setItem(
-            `cachedFeed, ${publicKey?.toBase58()}`,
-            JSON.stringify(updatedContent)
-          );
-        }
-
-        return updatedContent;
-      });
+      setContent(newUpdatedContent);
       setIsFetching(false);
     },
     [sortedTokenDetails, publicKey]
