@@ -62,7 +62,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
   return content ? (
     <div
       className={`grid grid-cols-1 sm:gap-2 ${
-        multiGrid ? 'sm:grid-cols-3 lg:grid-cols-5' : 'pb-32'
+        multiGrid ? 'grid-cols-2 lg:grid-cols-5' : 'pb-32'
       }`}
     >
       {content.map((x) => (
@@ -314,7 +314,9 @@ export const PostCaption: FC<{
         <span
           ref={captionRef}
           className={`text-xs w-full break-all ${
-            showMore ? 'whitespace-pre-wrap' : 'line-clamp-3'
+            showMore
+              ? 'whitespace-pre-wrap'
+              : `${multiGrid ? 'line-clamp-1' : 'line-clamp-3'}`
           }`}
         >
           {content.caption}

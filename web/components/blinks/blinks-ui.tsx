@@ -959,7 +959,11 @@ export const BlinksCaption: FC<{
       ) : (
         <div className="flex flex-col items-start gap-1">
           {description && (
-            <p className="text-xs w-full break-all line-clamp-3">
+            <p
+              className={`text-xs w-full break-all ${
+                multiGrid ? 'line-clamp-1' : 'line-clamp-3'
+              }`}
+            >
               {description}
             </p>
           )}
