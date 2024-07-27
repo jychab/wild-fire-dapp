@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { FC, RefObject, useEffect, useRef, useState } from 'react';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
-import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
+import { useGetMintToken } from '../edit/edit-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid, PostContent } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -258,9 +258,6 @@ export const DisplayContent: FC<DisplayContentProps> = ({
 export const UserProfile: FC<{
   content: AdditionalMetadata;
 }> = ({ content }) => {
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: new PublicKey(content.mint),
-  });
   return (
     <div className="flex w-full items-center justify-between px-4 py-2 ">
       <Link
@@ -269,7 +266,7 @@ export const UserProfile: FC<{
       >
         <div className="relative w-8 h-8 rounded-full">
           <Image
-            src={metadataJsonUri?.image || content.image}
+            src={content.image}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}

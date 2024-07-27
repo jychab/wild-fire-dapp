@@ -102,7 +102,7 @@ export function createLoginMessage(sessionKey: string) {
 }
 
 export async function uploadMetadata(payload: string, mint: PublicKey) {
-  const path = `${mint.toBase58()}/metadata.json`;
+  const path = `${mint.toBase58()}/metadata/${crypto.randomUUID()}.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload, undefined, {
     contentType: 'application/json',

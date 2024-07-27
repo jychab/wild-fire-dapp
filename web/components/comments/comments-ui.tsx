@@ -18,7 +18,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { AdditionalMetadata } from '../content/content-ui';
-import { useGetTokenJsonUri } from '../edit/edit-data-access';
 import {
   useGetToken,
   useGetTokenDetails,
@@ -55,9 +54,6 @@ export const CommentsSection: FC<{
   const { data: metadata } = useGetTokenDetails({
     mint: data ? data[0].mint : null,
     withContent: false,
-  });
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: data ? data[0].mint : null,
   });
 
   const handleCommentSubmit = () => {
@@ -253,7 +249,6 @@ export const CommentsSection: FC<{
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
                   src={
-                    metadataJsonUri?.image ||
                     metadata?.content?.links?.image ||
                     'https://buckets.hashfeed.social/placeholder.png'
                   }
@@ -291,9 +286,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
     mint: data ? data[0].mint : null,
     withContent: false,
   });
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: data ? data[0].mint : null,
-  });
+
   const commentRef = useRef<HTMLSpanElement>(null);
   const router = useRouter();
   return (
@@ -312,7 +305,6 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt=""
               src={
-                metadataJsonUri?.image ||
                 metadata?.content?.links?.image ||
                 'https://buckets.hashfeed.social/placeholder.png'
               }

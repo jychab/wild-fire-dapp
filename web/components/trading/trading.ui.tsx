@@ -1,23 +1,31 @@
+import TradingViewChart from '@/utils/charts';
+import { USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from '@solana/spl-token';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { IconCurrencySolana } from '@tabler/icons-react';
+import {
+  calculateFee,
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+  TransferFee,
+} from '@solana/spl-token';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
+import { IconCurrencyDollar } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useState } from 'react';
-import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
+import { FC, useCallback, useMemo, useState } from 'react';
+import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useGetLargestAccountFromMint,
   useGetMintSummaryDetails,
+  useGetTokenDetails,
 } from '../profile/profile-data-access';
 import { AuthorityData } from '../profile/profile-ui';
 import {
   getAssociatedTokenStateAccount,
   getQuote,
-  useGetAddressInfo,
+  getUSDCVault,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -25,9 +33,13 @@ import {
 
 export const TradingPanel: FC<{
   mintId: string;
-  metadata: DAS.GetAssetResponse | null | undefined;
-}> = ({ metadata, mintId }) => {
+}> = ({ mintId }) => {
   const { publicKey } = useWallet();
+  const [showWarning, setShowWarning] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const { data: metadata } = useGetTokenDetails({
+    mint: new PublicKey(mintId),
+  });
 
   const [buy, setBuy] = useState(true);
 
@@ -36,24 +48,34 @@ export const TradingPanel: FC<{
   });
 
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: metadata ? new PublicKey(mintId) : null,
+    mint: new PublicKey(mintId),
   });
 
   const { data: authorityData } = useGetMintToken({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
-
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
   });
 
   const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
 
-  const { data: walletInfo } = useGetAddressInfo({
-    address: isLiquidityPoolFound ? publicKey : null,
-  });
+  const chartProps = useMemo(
+    () => ({
+      mint: mintId,
+    }),
+    [mintId]
+  );
 
-  const { data: tokenInfo } = useGetTokenAccountInfo({
+  const { data: userUsdcInfo } = useGetTokenAccountInfo({
+    address: publicKey
+      ? getAssociatedTokenAddressSync(
+          new PublicKey(USDC),
+          publicKey,
+          false,
+          new PublicKey(TOKEN_PROGRAM_ID)
+        )
+      : null,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+  const { data: userMintInfo } = useGetTokenAccountInfo({
     address:
       metadata && publicKey
         ? getAssociatedTokenAddressSync(
@@ -65,70 +87,105 @@ export const TradingPanel: FC<{
         : null,
   });
 
+  const { data: usdcVault } = useGetTokenAccountInfo({
+    address:
+      metadata && publicKey ? getUSDCVault(new PublicKey(metadata.id)) : null,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+
+  const liquidity = (Number(usdcVault?.amount) || 0) * 0.99;
+
   const inputToken = buy
-    ? walletInfo?.lamports
-    : tokenInfo
-    ? Number(tokenInfo.amount)
+    ? Number(userUsdcInfo?.amount)
+    : userMintInfo
+    ? Number(userMintInfo.amount)
     : undefined;
   const outputToken = buy
-    ? tokenInfo
-      ? Number(tokenInfo.amount)
+    ? userMintInfo
+      ? Number(userMintInfo.amount)
       : undefined
-    : walletInfo?.lamports;
+    : Number(userUsdcInfo?.amount);
 
   const [inputAmount, setInputAmount] = useState('');
   const [outputAmount, setOutputAmount] = useState('');
+  const formattedInputAmount = useMemo(() => {
+    return buy
+      ? Number(inputAmount) / 10 ** USDC_DECIMALS
+      : Number(inputAmount);
+  }, [buy, inputAmount]);
 
-  const handleOutputAmountGivenInput = async (amount: number) => {
-    setInputAmount(amount.toString());
-    const quoteResponse = await getQuote(
-      buy ? NATIVE_MINT.toBase58() : mintId,
-      buy ? mintId : NATIVE_MINT.toBase58(),
-      amount,
-      'ExactIn'
-    );
-    setOutputAmount(quoteResponse.outAmount || '');
-  };
+  const formattedOutputAmount = useMemo(() => {
+    return buy
+      ? Number(outputAmount)
+      : Number(outputAmount) / 10 ** USDC_DECIMALS;
+  }, [buy, outputAmount]);
+  const { connection } = useConnection();
 
-  const handleInputAmountGivenOutput = async (amount: number) => {
-    setOutputAmount(amount.toString());
-    const quoteResponse = await getQuote(
-      buy ? NATIVE_MINT.toBase58() : mintId,
-      buy ? mintId : NATIVE_MINT.toBase58(),
-      amount,
-      'ExactOut'
-    );
-    setInputAmount(quoteResponse.outAmount || '');
-  };
+  const handleOutputAmountGivenInput = useCallback(
+    async (amount: number) => {
+      setInputAmount(amount.toString());
+      setShowError(false);
+      if (liquidity) {
+        const quoteResponse = await getQuote(
+          connection,
+          publicKey!,
+          new PublicKey(mintId),
+          buy ? USDC.toBase58() : mintId,
+          buy ? mintId : USDC.toBase58(),
+          amount,
+          'ExactIn'
+        );
+        if (
+          !quoteResponse.outAmount ||
+          (!buy && quoteResponse.outAmount > liquidity)
+        ) {
+          setShowError(true);
+          return;
+        }
 
-  const SolButton = (
+        let outAmount = quoteResponse.outAmount;
+        if (buy) {
+          const currentTransferFeeConfig =
+            metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
+          if (currentTransferFeeConfig) {
+            const transferFee: TransferFee = {
+              epoch: BigInt(currentTransferFeeConfig.epoch),
+              maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
+              transferFeeBasisPoints: Number(
+                currentTransferFeeConfig.transfer_fee_basis_points
+              ),
+            };
+            outAmount = outAmount - calculateFee(transferFee, outAmount);
+          }
+        }
+
+        setOutputAmount(outAmount.toString());
+      } else {
+        // show mint not created through this platform
+      }
+    },
+    [mintId, publicKey, liquidity, metadata, connection, buy]
+  );
+
+  const USDCButton = (
     <>
       <button className="btn btn-sm rounded-lg gap-1 px-2 flex items-center text-sm ">
-        <IconCurrencySolana />
-        SOL
+        <IconCurrencyDollar />
+        USDC
       </button>
       <input
+        disabled={!buy}
         type="number"
         className="w-full text-right text-base"
         placeholder="0.00"
-        value={
-          buy
-            ? inputAmount != ''
-              ? Number(inputAmount) / LAMPORTS_PER_SOL
-              : ''
-            : outputAmount != ''
-            ? Number(outputAmount) / LAMPORTS_PER_SOL
-            : ''
-        }
+        value={buy ? formattedInputAmount : formattedOutputAmount}
         onChange={(e) => {
-          let amount = parseFloat(e.target.value) * LAMPORTS_PER_SOL;
+          let amount = parseFloat(e.target.value) * 10 ** USDC_DECIMALS;
           if (Number.isNaN(amount)) {
             setOutputAmount('');
             setInputAmount('');
           } else {
-            buy
-              ? handleOutputAmountGivenInput(amount)
-              : handleInputAmountGivenOutput(amount);
+            handleOutputAmountGivenInput(amount);
           }
         }}
       />
@@ -138,13 +195,13 @@ export const TradingPanel: FC<{
   const MintButton = (
     <>
       <button className="btn btn-sm rounded-lg gap-1 px-2 items-center w-fit">
-        {(metadataJsonUri?.image || metadata?.content?.links?.image) && (
+        {metadata?.content?.links?.image && (
           <div className="w-6 h-6 relative">
             <Image
               className={`rounded-full object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadataJsonUri?.image || metadata?.content?.links?.image!}
+              src={metadata?.content?.links?.image!}
               alt={''}
             />
           </div>
@@ -154,28 +211,18 @@ export const TradingPanel: FC<{
         </span>
       </button>
       <input
+        disabled={buy}
         type="number"
         className="w-full text-right text-base"
         placeholder="0.00"
-        value={
-          buy
-            ? inputAmount != ''
-              ? Number(outputAmount) /
-                10 ** (metadata?.token_info?.decimals || 0)
-              : ''
-            : outputAmount != ''
-            ? Number(inputAmount) / 10 ** (metadata?.token_info?.decimals || 0)
-            : ''
-        }
+        value={buy ? formattedOutputAmount : formattedInputAmount}
         onChange={(e) => {
           let amount = parseFloat(e.target.value);
           if (Number.isNaN(amount)) {
             setOutputAmount('');
             setInputAmount('');
           } else {
-            buy
-              ? handleInputAmountGivenOutput(amount)
-              : handleOutputAmountGivenInput(amount);
+            handleOutputAmountGivenInput(amount);
           }
         }}
       />
@@ -188,59 +235,8 @@ export const TradingPanel: FC<{
         <div className="loading loading-dots loading-lg" />
       ) : (
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
-          <div className="flex flex-col w-full">
-            <div
-              className={`flex md:bg-base-200 rounded md:mb-4 items-center justify-between px-4 md:py-2`}
-            >
-              <div className="flex gap-2 items-center">
-                {(metadataJsonUri?.image ||
-                  metadata?.content?.links?.image) && (
-                  <Image
-                    width={32}
-                    height={32}
-                    src={
-                      metadataJsonUri?.image || metadata?.content?.links?.image!
-                    }
-                    alt={''}
-                    className="rounded"
-                  />
-                )}
-                <span>{`${metadata?.content?.metadata.symbol}-USD`}</span>
-                {/* <div className="hidden md:flex flex-col card py-2 px-4 text-right">
-                  <span className="stat-title text-xs">Liquidity</span>
-                  <span className="stat-value text-base font-normal">{`$${(
-                    (metadata?.token_info?.price_info?.price_per_token || 0) *
-                    (metadata?.token_info?.supply || 0)
-                  ).toPrecision(3)}`}</span>
-                </div>
-                <div className="hidden md:flex flex-col card py-2 px-4 text-right">
-                  <span className="stat-title text-xs">24Hr Vol</span>
-                  <span className="stat-value text-base font-normal">{`$${(
-                    (metadata?.token_info?.price_info?.price_per_token || 0) *
-                    (metadata?.token_info?.supply || 0)
-                  ).toPrecision(3)}`}</span>
-                </div>
-                <div className="hidden md:flex flex-col card py-2 px-4 text-right">
-                  <span className="stat-title text-xs">24Hr Trades</span>
-                  <span className="stat-value text-base font-normal">{`$${(
-                    (metadata?.token_info?.price_info?.price_per_token || 0) *
-                    (metadata?.token_info?.supply || 0)
-                  ).toPrecision(3)}`}</span>
-                </div> */}
-              </div>
-              <div className="flex gap-2 items-center">
-                <div className="flex flex-col card py-2 px-4 text-right">
-                  <span className="stat-value text-lg md:text-xl font-normal">{`$${(
-                    metadata?.token_info?.price_info?.price_per_token || 0
-                  ).toPrecision(3)}`}</span>
-                </div>
-              </div>
-            </div>
-            <iframe
-              width="100%"
-              height="500"
-              src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=hide&theme=dark`}
-            ></iframe>
+          <div className="flex flex-col h-[500px] w-full">
+            <TradingViewChart {...chartProps} />
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
             {
@@ -248,6 +244,7 @@ export const TradingPanel: FC<{
                 metadata={metadata}
                 authorityData={authorityData}
                 mintSummaryDetails={mintSummaryDetails}
+                liquidity={liquidity}
               />
             }
             <div className="flex flex-col gap-2 p-4 rounded">
@@ -274,15 +271,16 @@ export const TradingPanel: FC<{
                   <span className="label-text text-xs">You're Paying</span>
                   <div className="label-text-alt flex items-end gap-2">
                     <span>{`${(buy
-                      ? (inputToken || 0) / LAMPORTS_PER_SOL
+                      ? (inputToken || 0) / 10 ** USDC_DECIMALS
                       : inputToken || 0
                     )?.toPrecision(3)} ${
-                      buy ? 'SOL' : metadata?.content?.metadata.symbol
+                      buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
                     <button
                       onClick={() =>
-                        inputToken &&
-                        handleOutputAmountGivenInput(Math.round(inputToken / 2))
+                        handleOutputAmountGivenInput(
+                          Math.round((inputToken || 0) / 2)
+                        )
                       }
                       className="badge badge-xs badge-outline badge-secondary p-2 "
                     >
@@ -290,7 +288,7 @@ export const TradingPanel: FC<{
                     </button>
                     <button
                       onClick={() =>
-                        inputToken && handleOutputAmountGivenInput(inputToken)
+                        handleOutputAmountGivenInput(inputToken || 0)
                       }
                       className="badge badge-xs badge-outline badge-secondary p-2 "
                     >
@@ -299,7 +297,7 @@ export const TradingPanel: FC<{
                   </div>
                 </div>
                 <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? SolButton : MintButton}
+                  {buy ? USDCButton : MintButton}
                 </div>
               </label>
 
@@ -309,23 +307,33 @@ export const TradingPanel: FC<{
                   <div className="label-text-alt">
                     <span>{`${
                       !buy
-                        ? (outputToken || 0) / LAMPORTS_PER_SOL
+                        ? (outputToken || 0) / 10 ** USDC_DECIMALS
                         : outputToken || 0
                     } ${
-                      !buy ? 'SOL' : metadata?.content?.metadata.symbol
+                      !buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
                   </div>
                 </div>
                 <div className=" input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? MintButton : SolButton}
+                  {buy ? MintButton : USDCButton}
                 </div>
               </label>
+              {showWarning && (
+                <span className="text-right text-xs text-warning">
+                  {'Price Impact exceeds 30%'}
+                </span>
+              )}
+              {showError && (
+                <span className="text-right text-xs text-error">
+                  {'Insufficient liquidity in the pool for this trade'}
+                </span>
+              )}
               <button
-                disabled={!isLiquidityPoolFound}
+                disabled={!isLiquidityPoolFound || showError}
                 onClick={() => {
                   swapMutation.mutateAsync({
-                    inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
-                    outputMint: buy ? mintId : NATIVE_MINT.toBase58(),
+                    inputMint: buy ? USDC.toBase58() : mintId,
+                    outputMint: buy ? mintId : USDC.toBase58(),
                     amount: parseFloat(inputAmount),
                     swapMode: 'ExactIn',
                   });
@@ -453,7 +461,8 @@ export const MintInfo: FC<{
       }
     | null
     | undefined;
-}> = ({ metadata, authorityData, mintSummaryDetails }) => {
+  liquidity: number;
+}> = ({ metadata, authorityData, mintSummaryDetails, liquidity }) => {
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">
       <div className="col-span-1 text-sm">Mint:</div>
@@ -495,6 +504,11 @@ export const MintInfo: FC<{
             10 ** (metadata?.token_info?.decimals || 0)
         )}
       </span>
+      <div className="col-span-1 text-sm">Liquidity:</div>
+      <span className="text-right col-span-3">
+        {`$${formatLargeNumber(liquidity / 10 ** USDC_DECIMALS)}`}
+      </span>
+
       {mintSummaryDetails && <div className="col-span-1 text-sm">Holders:</div>}
       {mintSummaryDetails && (
         <span className="text-right col-span-3">

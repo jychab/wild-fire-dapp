@@ -143,6 +143,25 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         if (uriMetadata.symbol !== input.symbol) {
           fieldsToUpdate.push(['symbol', input.symbol]);
         }
+        if (
+          input.picture ||
+          input.description != uriMetadata.description ||
+          fieldsToUpdate.length != 0
+        ) {
+          let imageUrl;
+          if (input.picture) {
+            imageUrl = await uploadMedia(input.picture, mint);
+          }
+          const payload = {
+            ...uriMetadata,
+            name: input.name,
+            symbol: input.symbol,
+            description: input.description,
+            image: imageUrl ? imageUrl : uriMetadata.image,
+          };
+          const uri = await uploadMetadata(JSON.stringify(payload), mint);
+          fieldsToUpdate.push(['uri', uri]);
+        }
         if (fieldsToUpdate.length > 0) {
           if (ixs.length == 0) {
             const distributor = await connection.getAccountInfo(
@@ -179,24 +198,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
               );
             }
           }
-        }
-        if (
-          input.picture ||
-          input.description != uriMetadata.description ||
-          fieldsToUpdate.length != 0
-        ) {
-          let imageUrl;
-          if (input.picture) {
-            imageUrl = await uploadMedia(input.picture, mint);
-          }
-          const payload = {
-            ...uriMetadata,
-            name: input.name,
-            symbol: input.symbol,
-            description: input.description,
-            image: imageUrl ? imageUrl : uriMetadata.image,
-          };
-          await uploadMetadata(JSON.stringify(payload), mint);
         }
 
         if (partialTx) {
@@ -250,32 +251,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useGetTokenJsonUri({ mint }: { mint: PublicKey | null }) {
-  return useQuery({
-    queryKey: ['get-mint-token-json-uri', { mint }],
-    queryFn: async () => {
-      if (!mint) return null;
-      try {
-        const result = (await (
-          await fetch(
-            proxify(
-              `https://buckets.hashfeed.social/${mint.toBase58()}/metadata.json`
-            )
-          )
-        ).json()) as {
-          description: string;
-          image: string;
-        };
-        return result;
-      } catch (e) {
-        return null;
-      }
-    },
-    enabled: !!mint,
-    staleTime: 15 * 60 * 1000,
-  });
-}
-
 export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
 
@@ -307,6 +282,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
             return null;
           }
         }),
+    staleTime: 15 * 60 * 1000,
     enabled: !!mint,
   });
 }

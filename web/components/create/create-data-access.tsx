@@ -1,9 +1,8 @@
 'use client';
 
-import { ONBOARDING_WALLET, ONE_BILLION } from '@/utils/consts';
+import { OFF_SET, ONBOARDING_WALLET, ONE_BILLION } from '@/utils/consts';
 import {
   getDistributor,
-  getSponsoredDistributor,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
@@ -13,6 +12,7 @@ import {
   createMint,
   createMintMetadata,
   initializeMint,
+  initializePool,
   program,
 } from '@/utils/helper/transcationInstructions';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
@@ -20,7 +20,6 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   Connection,
-  LAMPORTS_PER_SOL,
   PublicKey,
   TransactionSignature,
   VersionedTransaction,
@@ -64,26 +63,26 @@ export function useCreateMint({ address }: { address: string | null }) {
           buildTokenMetadata(input, mint),
           connection.getAccountInfo(ONBOARDING_WALLET),
         ]);
-        const sponsoredResult =
-          onboardingWallet &&
-          onboardingWallet.lamports > 0.03 * LAMPORTS_PER_SOL
-            ? await getSponsoredDistributor(metadata)
-            : null;
-        if (sponsoredResult && sponsoredResult.partialTx) {
-          signature = await handleSponsoredDistributor(
-            sponsoredResult.partialTx,
-            connection,
-            wallet
-          );
-        } else {
-          signature = await handleSelfDistributor(
-            metadata,
-            connection,
-            wallet,
-            new PublicKey(distributor),
-            mint
-          );
-        }
+        // const sponsoredResult =
+        //   onboardingWallet &&
+        //   onboardingWallet.lamports > 0.03 * LAMPORTS_PER_SOL
+        //     ? await getSponsoredDistributor(metadata)
+        //     : null;
+        // if (sponsoredResult && sponsoredResult.partialTx) {
+        //   signature = await handleSponsoredDistributor(
+        //     sponsoredResult.partialTx,
+        //     connection,
+        //     wallet
+        //   );
+        // } else {
+        signature = await handleSelfDistributor(
+          metadata,
+          connection,
+          wallet,
+          new PublicKey(distributor),
+          mint
+        );
+        // }
 
         return { signature, mint };
       } catch (error: unknown) {
@@ -144,15 +143,22 @@ async function handleSelfDistributor(
   distributor: PublicKey,
   mint: PublicKey
 ): Promise<TransactionSignature> {
-  const [mintIx, metadataIx, initMintIx] = await Promise.all([
+  const [mintIx, metadataIx, initMintIx, initializePoolIx] = await Promise.all([
     createMint(distributor, 10, undefined, wallet.publicKey),
     createMintMetadata(connection, metadata, wallet.publicKey),
     initializeMint(ONE_BILLION, mint, wallet.publicKey),
+    initializePool(
+      connection,
+      mint,
+      wallet.publicKey,
+      ONE_BILLION * 0.85,
+      Number(OFF_SET)
+    ),
   ]);
 
   return await buildAndSendTransaction({
     connection: connection,
-    ixs: [mintIx, metadataIx, initMintIx],
+    ixs: [mintIx, metadataIx, initMintIx, ...initializePoolIx],
     publicKey: wallet.publicKey,
     signTransaction: wallet.signTransaction,
   });

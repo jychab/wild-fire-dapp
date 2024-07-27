@@ -11,7 +11,6 @@ import {
   useCloseAccount,
   useEditData,
   useGetMintToken,
-  useGetTokenJsonUri,
 } from './edit-data-access';
 
 interface EditTokenProps {
@@ -43,10 +42,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     withContent: false,
   });
 
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: mintTokenData ? mintTokenData.mint : null,
-  });
-
   // const [mintTokenDataLoaded, setMintTokenDataLoaded] = useState(false);
   // useEffect(() => {
   //   if (mintTokenData && !mintTokenDataLoaded) {
@@ -60,26 +55,18 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
-    if (metaData && !metaDataLoaded && metadataJsonUri) {
-      setTempImageUrl(metadataJsonUri?.image);
+    if (metaData && !metaDataLoaded && metaData.content?.links?.image) {
+      setTempImageUrl(metaData.content.links?.image);
 
       setName(metaData.content?.metadata.name || '');
 
       setSymbol(metaData.content?.metadata.symbol || '');
-      if (description == '' && metadataJsonUri?.description) {
-        setDescription(metadataJsonUri?.description);
+      if (description == '' && metaData.content.metadata?.description) {
+        setDescription(metaData.content.metadata?.description);
       }
       setMetadataLoaded(true);
     }
-  }, [
-    metaData,
-    metaDataLoaded,
-    tempImageUrl,
-    name,
-    symbol,
-    description,
-    metadataJsonUri,
-  ]);
+  }, [metaData, metaDataLoaded, tempImageUrl, name, symbol, description]);
 
   // const [transferFeeConfigLoaded, setTransferFeeConfigLoaded] = useState(false);
   // useEffect(() => {

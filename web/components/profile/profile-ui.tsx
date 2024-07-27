@@ -11,8 +11,9 @@ import { FC, useState } from 'react';
 import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
-import { useGetMintToken, useGetTokenJsonUri } from '../edit/edit-data-access';
+import { useGetMintToken } from '../edit/edit-data-access';
 import {
+  useGetPrice,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -70,9 +71,7 @@ export const ProfilePage: FC<{
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} />
             )}
-            {selectedTab == TabsEnum.TRADE && (
-              <TradingPanel mintId={mintId} metadata={metaDataQuery} />
-            )}
+            {selectedTab == TabsEnum.TRADE && <TradingPanel mintId={mintId} />}
           </div>
         </div>
       </div>
@@ -173,10 +172,10 @@ const Profile: FC<ProfileProps> = ({
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: authorityData } = useGetMintToken({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
   });
   const { data: tokenDetails } = useGetTokenDetails({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
   });
 
   const { data: tokenInfo } = useGetTokenAccountInfo({
@@ -192,28 +191,26 @@ const Profile: FC<ProfileProps> = ({
   });
 
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
   });
 
   const swapMutation = useSwapMutation({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
   });
 
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-  });
+  const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
+
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
       <div className="w-40 h-40">
-        {((metadata && metadata.content?.links?.image) ||
-          metadataJsonUri?.image) && (
+        {metadata && metadata.content?.links?.image && (
           <div className="relative h-full w-full">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadataJsonUri?.image || metadata?.content?.links?.image!}
+              src={metadata?.content?.links?.image!}
               alt={''}
             />
           </div>
@@ -297,20 +294,21 @@ const Profile: FC<ProfileProps> = ({
             </>
           )}
           {mintSummaryDetails &&
-            tokenDetails?.token_info?.price_info?.price_per_token &&
+            (tokenDetails?.token_info?.price_info?.price_per_token || price) &&
             '||'}
-          {tokenDetails?.token_info?.price_info?.price_per_token && (
+          {(tokenDetails?.token_info?.price_info?.price_per_token || price) && (
             <>
-              <span>{`$${
-                tokenDetails?.token_info?.price_info?.price_per_token || 0
-              }
+              <span>{`$${(
+                tokenDetails?.token_info?.price_info?.price_per_token ||
+                price ||
+                0
+              ).toPrecision(6)}
               `}</span>
             </>
           )}
         </div>
         <span className="text-base truncate font-normal">
-          {metadataJsonUri?.description ||
-            metadata?.content?.metadata.description}
+          {metadata?.content?.metadata.description}
         </span>
       </div>
     </div>

@@ -69,7 +69,6 @@ export async function getSimulationUnits(
       recentBlockhash: PublicKey.default.toString(),
     }).compileToV0Message(lookupTables)
   );
-
   const simulation = await connection.simulateTransaction(testVersionedTxn, {
     replaceRecentBlockhash: true,
     sigVerify: false,

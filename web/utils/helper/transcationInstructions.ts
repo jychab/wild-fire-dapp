@@ -3,8 +3,12 @@ import {
   ExtensionType,
   LENGTH_SIZE,
   TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
   TYPE_SIZE,
   TokenAccountNotFoundError,
+  createAssociatedTokenAccountIdempotentInstruction,
+  getAccount,
+  getAssociatedTokenAddressSync,
   getExtensionData,
   getNewAccountLenForExtensionLen,
   unpackMint,
@@ -12,12 +16,22 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { CONFIG, OFF_SET, USDC } from '../consts';
+import swapIdl from '../program/idl/raydium_cp_swap.json';
 import Idl from '../program/idl/wild_fire.json';
+import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';
 import { WildFire } from '../program/types/wild_fire';
 
 export const program = new Program<WildFire>(Idl as unknown as WildFire, {
   connection: new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT!),
 });
+
+export const swapProgram = new Program<RaydiumCpSwap>(
+  swapIdl as unknown as RaydiumCpSwap,
+  {
+    connection: new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT!),
+  }
+);
 
 export async function createMint(
   distributor: PublicKey,
@@ -223,4 +237,272 @@ export async function getAdditionalRentForUpdatedMetadata(
     await connection.getMinimumBalanceForRentExemption(newAccountLen);
 
   return newRentExemptMinimum - info.lamports;
+}
+
+export async function swapBaseInput(
+  connection: Connection,
+  payer: PublicKey,
+  mint: PublicKey,
+  amount_in: number,
+  inputToken: PublicKey,
+  inputTokenProgram: PublicKey,
+  outputToken: PublicKey,
+  outputTokenProgram: PublicKey
+) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    swapProgram.programId
+  );
+
+  const [inputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
+    swapProgram.programId
+  );
+
+  const [outputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
+    swapProgram.programId
+  );
+
+  const ixs = [];
+  const inputTokenAccount = getAssociatedTokenAddressSync(
+    inputToken,
+    payer,
+    false,
+    inputTokenProgram
+  );
+  try {
+    await getAccount(connection, inputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        inputTokenAccount,
+        payer,
+        inputToken,
+        inputTokenProgram
+      )
+    );
+  }
+  const outputTokenAccount = getAssociatedTokenAddressSync(
+    outputToken,
+    payer,
+    false,
+    outputTokenProgram
+  );
+  try {
+    await getAccount(connection, outputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        outputTokenAccount,
+        payer,
+        outputToken,
+        outputTokenProgram
+      )
+    );
+  }
+
+  ixs.push(
+    await swapProgram.methods
+      .swapBaseInput(new BN(amount_in), new BN(0))
+      .accounts({
+        payer: payer,
+        ammConfig: CONFIG,
+        poolState: poolAddress,
+        inputTokenAccount,
+        outputTokenAccount,
+        inputVault,
+        outputVault,
+        inputTokenProgram: inputTokenProgram,
+        outputTokenProgram: outputTokenProgram,
+        inputTokenMint: inputToken,
+        outputTokenMint: outputToken,
+        program: swapProgram.programId,
+      })
+      .instruction()
+  );
+
+  return ixs;
+}
+
+export async function swapBaseOutput(
+  connection: Connection,
+  payer: PublicKey,
+  mint: PublicKey,
+  amount_out: number,
+  inputToken: PublicKey,
+  inputTokenProgram: PublicKey,
+  outputToken: PublicKey,
+  outputTokenProgram: PublicKey
+) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    swapProgram.programId
+  );
+
+  const [inputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), inputToken.toBuffer()],
+    swapProgram.programId
+  );
+
+  const [outputVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), outputToken.toBuffer()],
+    swapProgram.programId
+  );
+
+  const ixs = [];
+  const inputTokenAccount = getAssociatedTokenAddressSync(
+    inputToken,
+    payer,
+    false,
+    inputTokenProgram
+  );
+  try {
+    await getAccount(connection, inputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        inputTokenAccount,
+        payer,
+        inputToken,
+        inputTokenProgram
+      )
+    );
+  }
+  const outputTokenAccount = getAssociatedTokenAddressSync(
+    outputToken,
+    payer,
+    false,
+    outputTokenProgram
+  );
+  try {
+    await getAccount(connection, outputTokenAccount);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        outputTokenAccount,
+        payer,
+        outputToken,
+        outputTokenProgram
+      )
+    );
+  }
+
+  ixs.push(
+    await swapProgram.methods
+      .swapBaseOutput(new BN(Number.MAX_SAFE_INTEGER), new BN(amount_out))
+      .accounts({
+        payer: payer,
+        ammConfig: CONFIG,
+        poolState: poolAddress,
+        inputTokenAccount,
+        outputTokenAccount,
+        inputVault,
+        outputVault,
+        inputTokenProgram: inputTokenProgram,
+        outputTokenProgram: outputTokenProgram,
+        inputTokenMint: inputToken,
+        outputTokenMint: outputToken,
+        program: swapProgram.programId,
+      })
+      .instruction()
+  );
+
+  return ixs;
+}
+
+export async function initializePool(
+  connection: Connection,
+  mint: PublicKey,
+  payer: PublicKey,
+  amount: number,
+  offSet: number
+) {
+  const ixs = [];
+  const creatorTokenMint = getAssociatedTokenAddressSync(
+    mint,
+    payer,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  );
+  try {
+    await getAccount(connection, creatorTokenMint);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        creatorTokenMint,
+        payer,
+        mint,
+        TOKEN_2022_PROGRAM_ID
+      )
+    );
+  }
+  const creatorTokenUsdc = getAssociatedTokenAddressSync(
+    USDC,
+    payer,
+    false,
+    TOKEN_PROGRAM_ID
+  );
+  try {
+    await getAccount(connection, creatorTokenUsdc);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        creatorTokenUsdc,
+        payer,
+        USDC,
+        TOKEN_PROGRAM_ID
+      )
+    );
+  }
+
+  ixs.push(
+    await swapProgram.methods
+      .initialize(new BN(amount), new BN(offSet), new BN(Date.now() / 1000))
+      .accounts({
+        ammConfig: CONFIG,
+        program: swapProgram.programId,
+        mint: mint,
+        creator: payer,
+        creatorTokenMint: creatorTokenMint,
+        creatorTokenUsdc: creatorTokenUsdc,
+        mintTokenProgram: TOKEN_2022_PROGRAM_ID,
+      })
+      .instruction()
+  );
+  return ixs;
+}
+
+export async function createConfig(payer: PublicKey) {
+  const ix = await swapProgram.methods
+    .createAmmConfig(
+      0,
+      new BN(10_000),
+      new BN(100_000),
+      new PublicKey('Hc1vbMTbjDmj5QMazL5PUDZWRdpFakBedZvKJfzEp8B7')
+    )
+    .accounts({ owner: payer })
+    .instruction();
+  console.log(ix);
+  return ix;
+}
+
+export async function changeOffSet(payer: PublicKey, mint: PublicKey) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    swapProgram.programId
+  );
+  return await swapProgram.methods
+    .updatePoolOffset(new BN(OFF_SET))
+    .accountsPartial({
+      authority: payer,
+      poolState: poolAddress,
+    })
+    .instruction();
 }

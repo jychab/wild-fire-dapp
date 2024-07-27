@@ -13,7 +13,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, ReactNode } from 'react';
 import { DAS } from '../../utils/types/das';
-import { useGetTokenJsonUri } from '../edit/edit-data-access';
 import { useGetDailyClaimAvailable } from '../notification/notification-data-access';
 import {
   useGetToken,
@@ -67,9 +66,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { data: isClaimAvailable } = useGetDailyClaimAvailable({
     mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
   });
-  const { data: metadataJsonUri } = useGetTokenJsonUri({
-    mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
-  });
+
   return (
     <div className="dropdown dropdown-end dropdown-bottom">
       <div
@@ -78,12 +75,9 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         id="user-menu-button"
         className="relative w-8 h-8 justify-center items-center flex indicator"
       >
-        {(metaDataQuery && metaDataQuery.content?.links?.image) ||
-        metadataJsonUri?.image ? (
+        {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
-            src={
-              metadataJsonUri?.image || metaDataQuery?.content?.links?.image!
-            }
+            src={metaDataQuery?.content?.links?.image!}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}

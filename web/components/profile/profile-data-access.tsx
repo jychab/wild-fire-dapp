@@ -68,10 +68,8 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
       );
       if (result.exists()) {
         return result.data() as {
-          currentPriceInLamports: number;
           currentHoldersCount: number;
           holdersChange24hPercent: number;
-          history24hPrice: number;
         };
       } else {
         return null;
