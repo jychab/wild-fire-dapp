@@ -1,5 +1,5 @@
 import TradingViewChart from '@/utils/charts';
-import { ONE_BILLION, USDC, USDC_DECIMALS } from '@/utils/consts';
+import { USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
@@ -26,7 +26,6 @@ import {
   getAssociatedTokenStateAccount,
   getQuote,
   getUSDCVault,
-  useCreatePoolMutation,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -57,7 +56,6 @@ export const TradingPanel: FC<{
   });
 
   const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
-  const createPool = useCreatePoolMutation({ mint: new PublicKey(mintId) });
 
   const chartProps = useMemo(
     () => ({
@@ -272,10 +270,11 @@ export const TradingPanel: FC<{
                 <div className="label">
                   <span className="label-text text-xs">You're Paying</span>
                   <div className="label-text-alt flex items-end gap-2">
-                    <span>{`${(buy
-                      ? (inputToken || 0) / 10 ** USDC_DECIMALS
-                      : inputToken || 0
-                    )?.toPrecision(3)} ${
+                    <span>{`${formatLargeNumber(
+                      buy
+                        ? (inputToken || 0) / 10 ** USDC_DECIMALS
+                        : inputToken || 0
+                    )} ${
                       buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
                     <button
@@ -307,11 +306,11 @@ export const TradingPanel: FC<{
                 <div className="label">
                   <span className="label-text text-xs">To Receive</span>
                   <div className="label-text-alt">
-                    <span>{`${
+                    <span>{`${formatLargeNumber(
                       !buy
                         ? (outputToken || 0) / 10 ** USDC_DECIMALS
                         : outputToken || 0
-                    } ${
+                    )} ${
                       !buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
                   </div>
@@ -358,19 +357,14 @@ export const TradingPanel: FC<{
               </button>
 
               {!usdcVault && (
-                <button
-                  disabled={createPool.isPending}
-                  onClick={() =>
-                    createPool.mutateAsync({ amount: ONE_BILLION * 0.85 })
-                  }
+                <Link
+                  rel="noopener noreferrer"
+                  target="_blank"
                   className="btn btn-primary w-full text-center"
+                  href={'https://raydium.io/liquidity/create-pool/'}
                 >
-                  {createPool.isPending ? (
-                    <div className="loading loading-spinner" />
-                  ) : (
-                    'Create a Liquidity Pool'
-                  )}
-                </button>
+                  Create your liquidity pool on Raydium
+                </Link>
               )}
             </div>
           </div>

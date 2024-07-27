@@ -84,13 +84,11 @@ const useInitializeChart = (
         vertLines: { color: '#444' },
         horzLines: { color: '#444' },
       },
-      leftPriceScale: {
-        visible: true,
-      },
+
       rightPriceScale: {
-        autoScale: true,
         scaleMargins: {
-          bottom: 0.4,
+          top: 0.1,
+          bottom: 0.3,
         },
       },
       timeScale: {
@@ -108,12 +106,12 @@ const useInitializeChart = (
 
     const volumeSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
-      priceScaleId: 'left',
+      priceScaleId: '',
       color: '#26a69a', // Default color
     });
 
     volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.7, bottom: 0 },
+      scaleMargins: { top: 0.8, bottom: 0 },
     });
 
     const series = chart.addCandlestickSeries({
@@ -269,6 +267,7 @@ const TradingViewChart = memo(({ mint }: { mint: string }) => {
   return (
     <div
       ref={chartContainerRef}
+      className="z-0"
       style={{ position: 'relative', width: '100%', height: '100%' }}
     >
       <div className="absolute top-4 left-4 text-base z-10 flex items-center gap-2 bg-base-100 px-4 py-2 rounded">
@@ -292,9 +291,9 @@ const TradingViewChart = memo(({ mint }: { mint: string }) => {
         ).toPrecision(6)}`}</span>
       </div>
 
-      {!data && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-lg font-bold z-10">
-          No Data Available
+      {data?.length == 0 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-lg font-semibold z-10 bg-base-100 px-4 py-2 rounded">
+          No Liquidity Pool Found
         </div>
       )}
     </div>
