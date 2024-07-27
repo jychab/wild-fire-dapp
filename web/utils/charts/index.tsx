@@ -126,14 +126,11 @@ const useInitializeChart = (
       priceFormat: { type: 'price', precision: 8, minMove: 0.00000001 },
     });
 
-    chart.priceScale('right').applyOptions({ borderColor: '#71649C' });
-    chart.priceScale('left').applyOptions({ borderColor: '#71649C' });
-
     chart.applyOptions({
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          width: 2,
+          width: 1,
           color: '#C3BCDB44',
           style: LineStyle.Solid,
           labelBackgroundColor: '#9B7DFF',

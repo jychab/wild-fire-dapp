@@ -1,5 +1,5 @@
 import TradingViewChart from '@/utils/charts';
-import { USDC, USDC_DECIMALS } from '@/utils/consts';
+import { ONE_BILLION, USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
@@ -26,6 +26,7 @@ import {
   getAssociatedTokenStateAccount,
   getQuote,
   getUSDCVault,
+  useCreatePoolMutation,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -56,6 +57,7 @@ export const TradingPanel: FC<{
   });
 
   const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
+  const createPool = useCreatePoolMutation({ mint: new PublicKey(mintId) });
 
   const chartProps = useMemo(
     () => ({
@@ -355,15 +357,20 @@ export const TradingPanel: FC<{
                 )}
               </button>
 
-              {!isLiquidityPoolFound && (
-                <Link
-                  rel="noopener noreferrer"
-                  target="_blank"
+              {!usdcVault && (
+                <button
+                  disabled={createPool.isPending}
+                  onClick={() =>
+                    createPool.mutateAsync({ amount: ONE_BILLION * 0.85 })
+                  }
                   className="btn btn-primary w-full text-center"
-                  href={'https://raydium.io/liquidity/create-pool/'}
                 >
-                  Create your liquidity pool on Raydium
-                </Link>
+                  {createPool.isPending ? (
+                    <div className="loading loading-spinner" />
+                  ) : (
+                    'Create a Liquidity Pool'
+                  )}
+                </button>
               )}
             </div>
           </div>

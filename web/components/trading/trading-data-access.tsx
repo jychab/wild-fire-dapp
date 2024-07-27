@@ -2,6 +2,7 @@ import { OFF_SET, USDC, USDC_DECIMALS } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
+  initializePool,
   program,
   swapBaseInput,
   swapBaseOutput,
@@ -426,4 +427,74 @@ export function getAssociatedTokenStateAccount(mint: PublicKey) {
   );
 
   return tokenState;
+}
+
+export function useCreatePoolMutation({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const client = useQueryClient();
+  const { publicKey, signTransaction } = useWallet();
+
+  return useMutation({
+    mutationKey: [
+      'initialize-pool',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async ({ amount }: { amount: number }) => {
+      if (!mint || !publicKey || !signTransaction) return null;
+      let signature: TransactionSignature = '';
+      try {
+        let instructions = await initializePool(
+          connection,
+          mint,
+          publicKey,
+          amount,
+          Number(OFF_SET)
+        );
+
+        signature = await buildAndSendTransaction({
+          connection: connection,
+          publicKey: publicKey,
+          signTransaction: signTransaction,
+          ixs: instructions,
+        });
+
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error} ` + signature);
+        return;
+      }
+    },
+
+    onSuccess: (signature) => {
+      if (signature) {
+        transactionToast(signature);
+        return Promise.all([
+          client.invalidateQueries({
+            queryKey: ['get-price', { endpoint: connection.rpcEndpoint, mint }],
+          }),
+          client.invalidateQueries({
+            queryKey: [
+              'get-address-token-account-info',
+              {
+                endpoint: connection.rpcEndpoint,
+                address: getAssociatedTokenAddressSync(
+                  mint!,
+                  publicKey!,
+                  false,
+                  TOKEN_2022_PROGRAM_ID
+                ),
+              },
+            ],
+          }),
+        ]);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${JSON.stringify(error)}`);
+    },
+  });
 }
