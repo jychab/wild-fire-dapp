@@ -11,6 +11,7 @@ import {
   Parameter,
   Source,
 } from '@/utils/types/blinks';
+import { PostContent } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   IconAlertTriangleFilled,
@@ -45,14 +46,12 @@ import {
 } from '../../utils/helper/blinks';
 import { CommentsSection } from '../comments/comments-ui';
 import {
-  AdditionalMetadata,
   CarouselContent,
   PostCaption,
   PostCard,
   UserPanel,
   UserProfile,
 } from '../content/content-ui';
-import { PostContent } from '../upload/upload.data-access';
 import {
   useGetActionRegistry,
   useGetActionRegistryLookUp,
@@ -62,8 +61,7 @@ import {
 
 interface BlinksProps {
   actionUrl?: URL;
-  content?: PostContent;
-  additionalMetadata?: AdditionalMetadata;
+  post?: PostContent;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -76,8 +74,7 @@ interface BlinksProps {
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
-  content,
-  additionalMetadata,
+  post,
   showMintDetails = true,
   hideUserPanel = false,
   editable = false,
@@ -151,10 +148,10 @@ export const Blinks: FC<BlinksProps> = ({
       checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
   });
 
-  if (!actionUrl && content && additionalMetadata) {
+  if (!actionUrl && post) {
     return (
       <PostCard
-        content={{ ...content, ...additionalMetadata }}
+        post={post}
         showMintDetails={showMintDetails}
         multiGrid={multiGrid}
         editable={editable}
@@ -175,7 +172,6 @@ export const Blinks: FC<BlinksProps> = ({
         hideComment={hideComment}
         expandAll={expandAll}
         editable={editable}
-        additionalMetadata={additionalMetadata}
         actionsRegistry={actionsRegistry}
         action={action}
         websiteText={actionUrl?.hostname}
@@ -183,7 +179,7 @@ export const Blinks: FC<BlinksProps> = ({
         normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
         multiGrid={multiGrid}
         showMintDetails={showMintDetails}
-        content={content}
+        post={post}
       />
     );
   }
@@ -195,14 +191,13 @@ interface ActionContainerProps {
   websiteUrl?: string | null | undefined;
   websiteText?: string | null | undefined;
   normalizedSecurityLevel: NormalizedSecurityLevel;
-  additionalMetadata?: AdditionalMetadata;
   editable: boolean;
   multiGrid: boolean;
   expandAll: boolean;
   hideComment: boolean;
   hideUserPanel: boolean;
   showMintDetails: boolean;
-  content?: PostContent;
+  post?: PostContent;
   hideCaption: boolean;
   hideCarousel: boolean;
   hideBorder: boolean;
@@ -217,14 +212,13 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   action,
   actionsRegistry,
   normalizedSecurityLevel,
-  additionalMetadata,
   editable,
   multiGrid,
   expandAll,
   hideComment,
   showMintDetails,
   hideUserPanel,
-  content,
+  post,
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -452,12 +446,11 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       hideCarousel={hideCarousel}
       hideCaption={hideCaption}
       hideUserPanel={hideUserPanel}
-      content={content}
+      post={post}
       hideComment={hideComment}
       expandAll={expandAll}
       multiGrid={multiGrid}
       editable={editable}
-      additionalMetadata={additionalMetadata}
       type={overallState || 'unknown'}
       title={action?.title}
       description={action?.description}
@@ -505,7 +498,7 @@ export const Snackbar = ({ variant = 'warning', children }: Props) => {
 
 interface LayoutProps {
   hideBorder: boolean;
-  content?: PostContent;
+  post?: PostContent;
   hideCarousel: boolean;
   hideCaption: boolean;
   hideUserPanel: boolean;
@@ -514,7 +507,6 @@ interface LayoutProps {
   multiGrid: boolean;
   editable: boolean;
   showMintDetails: boolean;
-  additionalMetadata?: AdditionalMetadata;
   image?: string;
   error?: string | null;
   success?: string | null;
@@ -558,7 +550,6 @@ export const ActionLayout = ({
   expandAll,
   multiGrid,
   editable,
-  additionalMetadata,
   showMintDetails,
   title,
   description,
@@ -572,10 +563,10 @@ export const ActionLayout = ({
   form,
   error,
   success,
-  content,
+  post,
 }: LayoutProps) => {
   const [renderBlink, setRenderBlink] = useState(
-    content ? content.carousel[0].fileType == 'blinks' : true
+    post ? post.carousel[0].fileType == 'blinks' : true
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -590,7 +581,7 @@ export const ActionLayout = ({
   };
 
   const handleScrollEvent = () => {
-    if (!content) return;
+    if (!post) return;
     if (carouselRef.current) {
       const scrollLeft = carouselRef.current.scrollLeft;
       const itemWidth = carouselRef.current.clientWidth;
@@ -598,7 +589,7 @@ export const ActionLayout = ({
 
       if (newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
-        setRenderBlink(content.carousel[newIndex].fileType === 'blinks');
+        setRenderBlink(post.carousel[newIndex].fileType === 'blinks');
       }
     }
   };
@@ -621,9 +612,9 @@ export const ActionLayout = ({
     }
   }, [currentIndex]);
   const handleScroll = (index: number) => {
-    if (!content) return;
-    setRenderBlink(content.carousel[index].fileType == 'blinks');
-    const element = document.getElementById(`${content.id}/${index}`);
+    if (!post) return;
+    setRenderBlink(post.carousel[index].fileType == 'blinks');
+    const element = document.getElementById(`${post.id}/${index}`);
     if (element) {
       element.scrollIntoView({
         behavior: 'smooth',
@@ -638,13 +629,11 @@ export const ActionLayout = ({
         !hideBorder ? 'sm:border' : ''
       } bg-base-100 rounded w-full`}
     >
-      {showMintDetails && additionalMetadata && (
-        <UserProfile content={additionalMetadata} />
-      )}
+      {showMintDetails && post && <UserProfile post={post} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
         {!hideCarousel && (
           <CarouselContent
-            content={content}
+            post={post}
             multiGrid={multiGrid}
             blinkImageUrl={image}
             form={form}
@@ -663,13 +652,13 @@ export const ActionLayout = ({
           <div className="flex flex-col">
             {!hideUserPanel && (
               <UserPanel
-                additionalMetadata={additionalMetadata}
+                post={post}
                 multiGrid={multiGrid}
                 editable={editable}
               />
             )}
             {!hideCaption &&
-              (renderBlink || !content ? (
+              (renderBlink || !post ? (
                 <BlinksCaption
                   websiteUrl={websiteUrl}
                   websiteText={websiteText}
@@ -684,11 +673,11 @@ export const ActionLayout = ({
                   error={error}
                   multiGrid={multiGrid}
                   expandAll={expandAll}
-                  additionalMetadata={additionalMetadata}
+                  post={post}
                 />
               ) : (
                 <PostCaption
-                  content={content}
+                  post={post}
                   multiGrid={multiGrid}
                   editable={editable}
                   expandAll={expandAll}
@@ -696,15 +685,12 @@ export const ActionLayout = ({
               ))}
           </div>
           <div className="flex flex-col ">
-            {!hideComment && additionalMetadata && (
-              <CommentsSection
-                additionalMetadata={additionalMetadata}
-                multiGrid={multiGrid}
-              />
+            {!hideComment && post && (
+              <CommentsSection post={post} multiGrid={multiGrid} />
             )}
             {!hideUserPanel && (
               <span className="text-xs stat-desc pt-2">
-                {convertUTCTimeToDayMonth(content?.updatedAt || 0)}
+                {convertUTCTimeToDayMonth(post?.updatedAt || 0)}
               </span>
             )}
           </div>
@@ -895,7 +881,7 @@ export const BlinksCaption: FC<{
   error: string | null | undefined;
   multiGrid: boolean;
   expandAll: boolean;
-  additionalMetadata: AdditionalMetadata | undefined;
+  post: PostContent | undefined;
 }> = ({
   expandAll,
   websiteUrl,
@@ -909,7 +895,7 @@ export const BlinksCaption: FC<{
   inputs,
   buttons,
   multiGrid,
-  additionalMetadata,
+  post,
   disclaimer,
 }) => {
   const [showMore, setShowMore] = useState(expandAll);
@@ -960,7 +946,7 @@ export const BlinksCaption: FC<{
         <div className="flex flex-col items-start gap-1">
           {description && (
             <p
-              className={`text-xs w-full break-all ${
+              className={`text-xs w-full ${
                 multiGrid ? 'line-clamp-1' : 'line-clamp-3'
               }`}
             >
@@ -971,10 +957,8 @@ export const BlinksCaption: FC<{
             onClick={() => {
               if (!multiGrid) {
                 setShowMore(true);
-              } else if (additionalMetadata) {
-                router.push(
-                  `/content?mintId=${additionalMetadata?.mint}&id=${additionalMetadata?.id}`
-                );
+              } else if (post) {
+                router.push(`/post?mintId=${post?.mint}&id=${post?.id}`);
               }
             }}
             className="text-xs stat-desc link link-hover w-fit"

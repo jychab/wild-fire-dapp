@@ -91,21 +91,18 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
         multiGrid={true}
         showMintDetails={false}
         editable={true}
-        content={
-          metadata?.additionalInfoData?.content
-            ? metadata.additionalInfoData.content.map((x) => {
+        posts={
+          metadata?.additionalInfoData?.posts
+            ? metadata.additionalInfoData.posts.map((x) => {
                 return {
                   ...x,
-                  name: metadata.content!.metadata.name,
-                  symbol: metadata.content!.metadata.symbol,
-                  image: metadata?.content?.links?.image || '',
-                  mint: metadata.id,
+                  metadata,
                 };
               })
             : undefined
         }
       />
-      {metadata?.additionalInfoData?.content?.length == 0 && (
+      {metadata?.additionalInfoData?.posts?.length == 0 && (
         <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
           Create your first post!
           <div className="w-36">

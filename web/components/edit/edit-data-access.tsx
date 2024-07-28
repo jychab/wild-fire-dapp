@@ -1,6 +1,6 @@
 'use client';
 
-import { proxify } from '@/utils/helper/proxy';
+import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -161,6 +161,12 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           };
           const uri = await uploadMetadata(JSON.stringify(payload), mint);
           fieldsToUpdate.push(['uri', uri]);
+        }
+        if (
+          details.additionalMetadata.find((x) => x[0] == 'hashfeed')?.[1] !=
+          generateMintApiEndPoint(mint)
+        ) {
+          fieldsToUpdate.push(['hashfeed', generateMintApiEndPoint(mint)]);
         }
         if (fieldsToUpdate.length > 0) {
           if (ixs.length == 0) {

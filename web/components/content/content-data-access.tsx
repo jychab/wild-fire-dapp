@@ -1,11 +1,10 @@
-import { HASHFEED_MINT } from '@/utils/consts';
-import { db } from '@/utils/firebase/firebase';
 import { deletePost } from '@/utils/firebase/functions';
+import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
+import { PostContent } from '@/utils/types/post';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { doc, getDoc } from 'firebase/firestore';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export async function getAssetBatch({
@@ -133,7 +132,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export const fetchOwnerTokenDetails = ({
+export const getPostsFromAddress = ({
   address,
 }: {
   address: PublicKey | null;
@@ -141,64 +140,18 @@ export const fetchOwnerTokenDetails = ({
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
-      'get-fetch-owner-token-details',
+      'get-posts-from-address',
       { endpoint: connection.rpcEndpoint, address },
     ],
     queryFn: async () => {
       if (!address) return null;
-
-      // Fetch verified mints summary in parallel
-      const summaryPromise = getDoc(doc(db, 'Summary/mints')).then(
-        (doc) => doc.data() as { verifiedMints: string[] }
-      );
-
-      // Fetch owner token accounts
-      const ownerTokenAccounts = await getTokenBalancesFromOwner({
-        address,
-        connection,
-      });
-
-      if (!ownerTokenAccounts?.token_accounts) return [];
-
-      // Prepare token account IDs with amounts
-      const tokenAccountsWithHashfeed = ownerTokenAccounts.token_accounts.map(
-        (x) => ({
-          mint: x.mint,
-          amount: x.amount,
-        })
-      );
-
-      if (
-        !tokenAccountsWithHashfeed.some(
-          (x) => x.mint === HASHFEED_MINT.toBase58()
+      const result = await fetch(
+        proxify(
+          `https://api.hashfeed.social/getPosts?address=${address.toBase58()}`
         )
-      ) {
-        tokenAccountsWithHashfeed.push({
-          mint: HASHFEED_MINT.toBase58(),
-          amount: 0,
-        });
-      }
-
-      const allTokenAccountIds = tokenAccountsWithHashfeed.map((x) => x.mint!);
-
-      // Fetch metadata and summary in parallel
-      const [allTokenAccountsWithMetadata, summary] = await Promise.all([
-        getAssetBatch({ ids: allTokenAccountIds, connection }),
-        summaryPromise,
-      ]);
-
-      // Combine metadata with token accounts
-      return allTokenAccountsWithMetadata?.map((metadata) => {
-        const tokenAccount = tokenAccountsWithHashfeed.find(
-          (x) => x.mint === metadata.id
-        );
-        return {
-          ...metadata,
-          verified: summary.verifiedMints.includes(metadata.id),
-          price: metadata.token_info?.price_info?.price_per_token,
-          quantity: Number(tokenAccount?.amount),
-        };
-      });
+      );
+      const posts = (await result.json()).posts as PostContent[];
+      return posts;
     },
     enabled: !!address,
     staleTime: 15 * 60 * 1000, // 15 minutes

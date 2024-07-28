@@ -1,14 +1,14 @@
-import { PostContent } from '@/components/upload/upload.data-access';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
+import { PostContent } from '../types/post';
 import { functions, storage } from './firebase';
 
-export async function createOrEditPost(mint: string, content: PostContent[]) {
+export async function createOrEditPost(mint: string, posts: PostContent[]) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
-  await createOrEditPost({ mint, content });
+  await createOrEditPost({ mint, posts });
 }
 
 export async function deletePost(mint: string, postId: string) {
@@ -104,10 +104,7 @@ export function createLoginMessage(sessionKey: string) {
 export async function uploadMetadata(payload: string, mint: PublicKey) {
   const path = `${mint.toBase58()}/metadata/${crypto.randomUUID()}.json`;
   const payloadRef = ref(storage, path);
-  await uploadString(payloadRef, payload, undefined, {
-    contentType: 'application/json',
-    cacheControl: 'no-cache, must-revalidate, max-age=0',
-  });
+  await uploadString(payloadRef, payload);
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 

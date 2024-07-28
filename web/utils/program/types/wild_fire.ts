@@ -688,6 +688,10 @@ export type WildFire = {
         {
           name: 'amount';
           type: 'u64';
+        },
+        {
+          name: 'docId';
+          type: 'string';
         }
       ];
     },
@@ -885,7 +889,11 @@ export type WildFire = {
       ];
       args: [
         {
-          name: 'amount';
+          name: 'amountReserve';
+          type: 'u64';
+        },
+        {
+          name: 'amountToCreator';
           type: 'u64';
         }
       ];
@@ -1305,6 +1313,10 @@ export type WildFire = {
           {
             name: 'to';
             type: 'pubkey';
+          },
+          {
+            name: 'docId';
+            type: 'string';
           }
         ];
       };
@@ -1319,7 +1331,11 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'amount';
+            name: 'amountToCreator';
+            type: 'u64';
+          },
+          {
+            name: 'amountReserve';
             type: 'u64';
           }
         ];

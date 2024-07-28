@@ -1,6 +1,12 @@
 'use client';
 
-import { OFF_SET, ONBOARDING_WALLET, ONE_BILLION } from '@/utils/consts';
+import {
+  AMOUNT_CREATOR,
+  AMOUNT_LIQUIDITY_POOL,
+  AMOUNT_RESERVE,
+  OFF_SET,
+  ONBOARDING_WALLET,
+} from '@/utils/consts';
 import {
   getDistributor,
   uploadMedia,
@@ -146,12 +152,12 @@ async function handleSelfDistributor(
   const [mintIx, metadataIx, initMintIx, initializePoolIx] = await Promise.all([
     createMint(distributor, 10, undefined, wallet.publicKey),
     createMintMetadata(connection, metadata, wallet.publicKey),
-    initializeMint(ONE_BILLION, mint, wallet.publicKey),
+    initializeMint(AMOUNT_RESERVE, AMOUNT_CREATOR, mint, wallet.publicKey),
     initializePool(
       connection,
       mint,
       wallet.publicKey,
-      ONE_BILLION * 0.85,
+      AMOUNT_LIQUIDITY_POOL,
       Number(OFF_SET)
     ),
   ]);

@@ -20,6 +20,12 @@ export const CONFIG = new PublicKey(
 
 export const ONE_BILLION = 1_000_000_000;
 
+export const AMOUNT_RESERVE = ONE_BILLION * 0.1;
+
+export const AMOUNT_CREATOR = ONE_BILLION * 0.9;
+
+export const AMOUNT_LIQUIDITY_POOL = ONE_BILLION * 0.85;
+
 export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   'HBqRq1kwJP4nSHL633D3Q6zLXYcv9YDi1GvyG3VPwcMK'
 );

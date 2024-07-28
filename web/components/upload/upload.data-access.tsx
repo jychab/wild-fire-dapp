@@ -2,6 +2,7 @@
 
 import { createOrEditPost } from '@/utils/firebase/functions';
 import { generateMintApiEndPoint } from '@/utils/helper/proxy';
+import { PostContent } from '@/utils/types/post';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -19,36 +20,9 @@ import {
   updateMetadata,
 } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
-import { ContentType } from './upload-ui';
-
-export interface BaseContent {
-  type: ContentType;
-  createdAt?: number;
-  updatedAt?: number;
-  mint: string;
-  id: string;
-}
-
-export interface PostContent extends BaseContent {
-  carousel: Carousel[];
-  caption: string;
-}
-
-export type Carousel = StaticContent | VideoContent;
-
-export interface StaticContent {
-  uri: string;
-  fileType: string;
-}
-
-export interface VideoContent {
-  uri: string;
-  fileType: string;
-  duration: number;
-}
 
 interface UploadArgs {
-  content: PostContent;
+  post: PostContent;
 }
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -60,7 +34,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
 
   return useMutation({
     mutationKey: [
-      'upload-mint-content',
+      'upload-mint-post',
       {
         endpoint: connection.rpcEndpoint,
         mint,
@@ -72,14 +46,11 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       try {
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
-        const hashFeedContent = details.additionalMetadata.find(
+        const hashFeedPosts = details.additionalMetadata.find(
           (x) => x[0] == 'hashfeed'
         )?.[1];
-        await createOrEditPost(mint.toBase58(), [input.content]);
-        if (
-          !hashFeedContent ||
-          hashFeedContent !== generateMintApiEndPoint(mint)
-        ) {
+        await createOrEditPost(mint.toBase58(), [input.post]);
+        if (!hashFeedPosts || hashFeedPosts !== generateMintApiEndPoint(mint)) {
           // create the additional metadata
           let fieldsToUpdate: [string, string][] = [
             ['hashfeed', generateMintApiEndPoint(mint)],

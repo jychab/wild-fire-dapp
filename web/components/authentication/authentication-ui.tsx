@@ -99,7 +99,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
           <span className="block text-sm truncate ">{'mainnet-beta'}</span>
         </li>
         <li className="w-full">
-          <Link href={`/content/create`}>
+          <Link href={`/post/create`}>
             <IconSquarePlus />
             Create Post
           </Link>

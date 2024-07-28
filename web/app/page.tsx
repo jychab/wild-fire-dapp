@@ -1,10 +1,8 @@
 'use client';
 
 import { AuthenticationBtn } from '@/components/authentication/authentication-ui';
-import { Blinks } from '@/components/blinks/blinks-ui';
 import { ContentGridFeature } from '@/components/content/content-feature';
 import { AppHero } from '@/components/ui/ui-layout';
-import { HASHFEED_MINT } from '@/utils/consts';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRouter } from 'next/navigation';
 
@@ -43,16 +41,26 @@ export default function Page() {
             <div className="artboard artboard-demo h-[600px] overflow-y-scroll scrollbar-none">
               <div className="grid grid-cols-1 h-full w-full">
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action:https://solana.playspokemon.com/'
                       )
                     }
-                    additionalMetadata={{
-                      name: 'HashFeed',
+                    post={{
+                      metadata: {
+                        content: {
+                          $schema: '',
+                          json_uri: '',
+                          metadata: {
+                            name: 'HashFeed',
+                            symbol: 'HashFeed',
+                            description: '',
+                          },
+                        },
+                      },
                       id: crypto.randomUUID(),
-                      symbol: 'HashFeed',
+
                       image: 'https://buckets.hashfeed.social/placeholder.png',
                       mint: HASHFEED_MINT.toBase58(),
                     }}
@@ -60,10 +68,10 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fhedgehog.markets%2Fapi%2Fv1%2Fclassic%2Fbuy%2F%3Fmarket%3D2PdyVYFstuFxXedzwHN39V5mh44DQvtXBaP7JgvRUGR9'
@@ -80,11 +88,11 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
 
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action:https://jupiter.dial.to/swap/SOL-Bonk'
@@ -101,10 +109,10 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action:https://tug-of-war.magicblock.app/api/v1/tug/item/DN4PPQ6MxAEy9sfrPRcrrxyoW8S2m5kX3NGfzrN3YMdQ'
@@ -121,10 +129,10 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action:https://api-main-mainnet.dreader.io/blink/action-spec/mint/48'
@@ -141,10 +149,10 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
                 <div className="w-full">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action%3Ahttps%3A%2F%2Fmeteora.dial.to%2Fswap%2FHtnih5T64YYvwbkNDmeac2jbiAe1Gec7s5MCiUjTwUPw%3Ftoken%3D3dCCbYca3jSgRdDiMEeV5e3YKNzsZAp3ZVfzUsbb4be4%26referrer%3DF1CWpTFAiPZKsYK2DNQ5zzic1CiPBQLuQxGbDMxz53WF'
@@ -161,10 +169,10 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
                 <div className="carousel-item ">
-                  <Blinks
+                  {/* <Blinks
                     actionUrl={
                       new URL(
                         'https://dial.to/?action=solana-action:https://tensor.dial.to/buy-floor/madlads'
@@ -181,7 +189,7 @@ export default function Page() {
                     hideBorder={true}
                     expandAll={true}
                     hideComment={true}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>

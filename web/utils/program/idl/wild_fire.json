@@ -549,6 +549,10 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "doc_id",
+          "type": "string"
         }
       ]
     },
@@ -673,7 +677,11 @@
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "amount_reserve",
+          "type": "u64"
+        },
+        {
+          "name": "amount_to_creator",
           "type": "u64"
         }
       ]
@@ -1049,6 +1057,10 @@
           {
             "name": "to",
             "type": "pubkey"
+          },
+          {
+            "name": "doc_id",
+            "type": "string"
           }
         ]
       }
@@ -1063,7 +1075,11 @@
             "type": "pubkey"
           },
           {
-            "name": "amount",
+            "name": "amount_to_creator",
+            "type": "u64"
+          },
+          {
+            "name": "amount_reserve",
             "type": "u64"
           }
         ]

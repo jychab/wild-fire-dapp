@@ -1,6 +1,7 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
+import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconSend, IconX } from '@tabler/icons-react';
@@ -17,7 +18,6 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
-import { AdditionalMetadata } from '../content/content-ui';
 import {
   useGetToken,
   useGetTokenDetails,
@@ -36,9 +36,9 @@ interface Comment {
 }
 
 export const CommentsSection: FC<{
-  additionalMetadata: AdditionalMetadata;
+  post: PostContent;
   multiGrid: boolean;
-}> = ({ additionalMetadata, multiGrid }) => {
+}> = ({ post, multiGrid }) => {
   const [commentsLimit, setCommentsLimit] = useState(20);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -57,10 +57,10 @@ export const CommentsSection: FC<{
   });
 
   const handleCommentSubmit = () => {
-    if (additionalMetadata && comment) {
+    if (post && comment) {
       createOrEditComment(
-        additionalMetadata?.mint,
-        additionalMetadata?.id,
+        post?.mint,
+        post?.id,
         crypto.randomUUID(),
         comment,
         []
@@ -108,12 +108,9 @@ export const CommentsSection: FC<{
   );
 
   const fetchComments = useCallback(() => {
-    if (!additionalMetadata) return;
+    if (!post) return;
     const q = query(
-      collection(
-        db,
-        `Mint/${additionalMetadata.mint}/Post/${additionalMetadata.id}/Comments`
-      ),
+      collection(db, `Mint/${post.mint}/Post/${post.id}/Comments`),
       where('softDelete', '==', false),
       orderBy('createdAt', 'desc'),
       limit(commentsLimit)
@@ -126,13 +123,7 @@ export const CommentsSection: FC<{
     // Set up new subscription
     const unsubscribe = onSnapshot(q, handleSnapshotUpdate);
     unsubscribeRef.current = unsubscribe;
-  }, [
-    additionalMetadata.mint,
-    additionalMetadata.id,
-    handleSnapshotUpdate,
-    unsubscribeRef,
-    commentsLimit,
-  ]);
+  }, [post.mint, post.id, handleSnapshotUpdate, unsubscribeRef, commentsLimit]);
 
   useEffect(() => {
     if (commentsLimit > 20) {
@@ -173,15 +164,11 @@ export const CommentsSection: FC<{
     if (open) {
       fetchComments();
       (
-        document.getElementById(
-          additionalMetadata.id + '/comments'
-        ) as HTMLDialogElement
+        document.getElementById(post.id + '/comments') as HTMLDialogElement
       ).showModal();
     } else {
       (
-        document.getElementById(
-          additionalMetadata.id + '/comments'
-        ) as HTMLDialogElement
+        document.getElementById(post.id + '/comments') as HTMLDialogElement
       ).close();
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
@@ -191,25 +178,23 @@ export const CommentsSection: FC<{
 
   return (
     <div className="flex flex-col pt-2 gap-1 items-start">
-      {additionalMetadata.commentsCount && (
+      {post.commentsCount && (
         <button
           onClick={() => {
             if (multiGrid) {
-              router.push(
-                `/content?mintId=${additionalMetadata.mint}&id=${additionalMetadata.id}`
-              );
+              router.push(`/post?mintId=${post.mint}&id=${post.id}`);
             } else {
               toggleModal(true);
             }
           }}
           className="stat-desc link link-hover"
-        >{`View ${additionalMetadata.commentsCount} comments`}</button>
+        >{`View ${post.commentsCount} comments`}</button>
       )}
       <button className="stat-desc" onClick={() => toggleModal(true)}>
         Add a comment
       </button>
       <dialog
-        id={additionalMetadata.id + '/comments'}
+        id={post.id + '/comments'}
         className="modal modal-bottom sm:modal-middle"
       >
         <div onClick={() => toggleModal(false)} className="modal-backdrop" />
@@ -218,7 +203,7 @@ export const CommentsSection: FC<{
             <div className="flex gap-2 items-center">
               <span className="font-semibold text-lg">{`Comments`}</span>
               <span className="text-base stat-desc">
-                {additionalMetadata.commentsCount || ''}
+                {post.commentsCount || ''}
               </span>
             </div>
             <button onClick={() => toggleModal(false)} className="">

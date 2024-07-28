@@ -87,12 +87,13 @@ export async function createMintMetadata(
 }
 
 export async function initializeMint(
-  amount: number,
+  amountReserve: number,
+  amountCreator: number,
   mint: PublicKey,
   payer: PublicKey
 ) {
   return await program.methods
-    .initializeMint(new BN(amount))
+    .initializeMint(new BN(amountReserve), new BN(amountCreator))
     .accounts({
       mint: mint,
       payer: payer,
@@ -489,7 +490,6 @@ export async function createConfig(payer: PublicKey) {
     )
     .accounts({ owner: payer })
     .instruction();
-  console.log(ix);
   return ix;
 }
 

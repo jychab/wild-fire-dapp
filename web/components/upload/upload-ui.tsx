@@ -1,7 +1,9 @@
 'use client';
 
 import { Scope } from '@/utils/enums/das';
+import { ContentType } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
+import { PostContent, VideoContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
@@ -22,19 +24,14 @@ import {
   useGetToken,
   useGetTokenDetails,
 } from '../profile/profile-data-access';
-import {
-  PostContent,
-  VideoContent,
-  checkUrlIsValid,
-  useUploadMutation,
-} from './upload.data-access';
+import { checkUrlIsValid, useUploadMutation } from './upload.data-access';
 
 export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   const router = useRouter();
   return (
     <button
       onClick={() =>
-        router.push(`/content/create${mintId ? `?mintId=${mintId}` : ''}`)
+        router.push(`/post/create${mintId ? `?mintId=${mintId}` : ''}`)
       }
       className="btn btn-sm btn-outline "
     >
@@ -43,9 +40,7 @@ export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
     </button>
   );
 };
-export enum ContentType {
-  POST = 'Post',
-}
+
 interface UploadProps {
   mintId?: string;
   id?: string;
@@ -88,13 +83,9 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
         <UploadPost
           id={id}
           mint={metadataQuery?.id}
-          content={
-            metadataQuery &&
-            metadataQuery.additionalInfoData &&
-            metadataQuery.additionalInfoData.content
-              ? (metadataQuery.additionalInfoData.content.find(
-                  (x) => x.id == id
-                ) as PostContent) || undefined
+          post={
+            metadataQuery?.additionalInfoData?.posts?.find((x) => x.id == id)
+              ? metadataQuery.additionalInfoData.posts.find((x) => x.id == id)
               : undefined
           }
         />
@@ -106,11 +97,8 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
 export const UploadContentBtn: FC<{
   id?: string;
   mint?: string;
-  content:
-    | PostContent
-    | { file: UploadFileTypes[]; caption: string }
-    | undefined;
-}> = ({ mint, content, id }) => {
+  post: PostContent | { file: UploadFileTypes[]; caption: string } | undefined;
+}> = ({ mint, post, id }) => {
   const { publicKey } = useWallet();
   const uploadMutation = useUploadMutation({
     mint: mint ? new PublicKey(mint) : null,
@@ -120,12 +108,12 @@ export const UploadContentBtn: FC<{
     <div className="w-full">
       {publicKey && mint && (
         <button
-          disabled={!content || loading}
+          disabled={!post || loading}
           onClick={async () => {
-            if (!content || !mint) return;
+            if (!post || !mint) return;
             setLoading(true);
 
-            let postContent = content as {
+            let postContent = post as {
               file: UploadFileTypes[];
               caption: string;
             };
@@ -150,7 +138,7 @@ export const UploadContentBtn: FC<{
             );
             if (carousel.length > 0) {
               await uploadMutation.mutateAsync({
-                content: {
+                post: {
                   id: id ? id : crypto.randomUUID(),
                   type: ContentType.POST,
                   caption: postContent.caption,
@@ -200,10 +188,10 @@ interface UploadFileTypes {
 }
 
 export const UploadPost: FC<{
-  content: PostContent | undefined;
+  post: PostContent | undefined;
   mint?: string;
   id?: string;
-}> = ({ content, mint, id }) => {
+}> = ({ post, mint, id }) => {
   const [files, setFiles] = useState<UploadFileTypes[]>([]);
   const previousFilesRef = useRef(files);
   const [caption, setCaption] = useState('');
@@ -232,12 +220,12 @@ export const UploadPost: FC<{
     if (
       !filesLoaded &&
       files.length == 0 &&
-      content &&
-      content.carousel &&
-      content.carousel.length > 0
+      post &&
+      post.carousel &&
+      post.carousel.length > 0
     ) {
       setFiles(
-        content.carousel.map((x) => {
+        post.carousel.map((x) => {
           if (x.fileType.startsWith('image/')) {
             return {
               fileType: x.fileType,
@@ -264,11 +252,11 @@ export const UploadPost: FC<{
       setFilesLoaded(true);
     }
 
-    if (!captionLoaded && caption == '' && content && content.caption != '') {
-      setCaption(content.caption);
+    if (!captionLoaded && caption == '' && post && post.caption != '') {
+      setCaption(post.caption);
       setCaptionLoaded(true);
     }
-  }, [files, content, caption]);
+  }, [files, post, caption]);
 
   const handleCaptionChange = (e: any) => {
     setCaption(e.target.value);
@@ -597,7 +585,7 @@ export const UploadPost: FC<{
       <UploadContentBtn
         id={id}
         mint={mint}
-        content={{ file: files, caption: caption }}
+        post={{ file: files, caption: caption }}
       />
     </div>
   );
