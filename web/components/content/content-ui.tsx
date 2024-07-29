@@ -8,12 +8,12 @@ import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
+  IconChartLine,
   IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
   IconHeart,
   IconHeartFilled,
-  IconMoneybag,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
@@ -77,6 +77,7 @@ export const PostCard = ({
   hideCaption = false,
   hideCarousel = false,
   hideUserPanel = false,
+  hideBorder = false,
 }: {
   post: PostContent;
   showMintDetails?: boolean;
@@ -87,6 +88,7 @@ export const PostCard = ({
   hideCarousel?: boolean;
   hideCaption?: boolean;
   hideUserPanel?: boolean;
+  hideBorder?: boolean;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -142,7 +144,11 @@ export const PostCard = ({
     }
   };
   return (
-    <div className="flex flex-col sm:border bg-base-100 rounded w-full">
+    <div
+      className={`flex  flex-col ${
+        !hideBorder ? `${multiGrid ? 'border' : 'sm:border'}` : ``
+      } bg-base-100 rounded w-full`}
+    >
       {showMintDetails && <UserProfile post={post} />}
       <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
         {!hideCarousel && (
@@ -157,7 +163,7 @@ export const PostCard = ({
         <div
           className={`${
             !hideUserPanel || !hideCaption || !hideComment
-              ? 'px-4 pb-4 pt-2'
+              ? `${multiGrid ? 'sm:px-4 px-2' : 'px-4'} pb-4 pt-2`
               : ''
           } flex flex-col flex-1 w-full justify-between`}
         >
@@ -269,14 +275,6 @@ export const UserProfile: FC<{
           <div className="text-xs">{metadata?.content?.metadata.name}</div>
         </div>
       </Link>
-      {post.price !== undefined && post.price > 0 && (
-        <Link
-          className="flex flex-col gap-1 items-end"
-          href={`/profile?mintId=${post.mint}&tab=trade`}
-        >
-          <span className="text-sm">${post.price}</span>
-        </Link>
-      )}
     </div>
   );
 };
@@ -412,7 +410,7 @@ export const UserPanel: FC<{
             </div>
             <ul
               tabIndex={0}
-              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-36"
+              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-24"
             >
               {!editable && isLiquidityPoolFound && post && (
                 <li>
@@ -420,7 +418,7 @@ export const UserPanel: FC<{
                     href={`/profile?mintId=${post.mint}&tab=trade`}
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                   >
-                    <IconMoneybag size={18} />
+                    <IconChartLine size={18} />
                     Trade
                   </Link>
                 </li>
@@ -432,7 +430,7 @@ export const UserPanel: FC<{
                     href={`/post/edit?mintId=${post.mint}&id=${post.id}`}
                   >
                     <IconEdit size={18} />
-                    Edit Post
+                    Edit
                   </Link>
                 </li>
               )}
@@ -448,7 +446,7 @@ export const UserPanel: FC<{
                     ) : (
                       <IconTrash size={18} />
                     )}
-                    Delete Post
+                    Delete
                   </button>
                 </li>
               )}

@@ -354,7 +354,7 @@ export const UploadPost: FC<{
             {files.map((file) => (
               <button
                 key={file.id}
-                className="aspect-square w-14 h-14 relative flex border border-base-content items-center justify-center"
+                className="aspect-square w-14 h-14 relative flex border border-base-300 items-center justify-center"
                 onClick={() => handleScroll(file.id)}
               >
                 {file.fileType.startsWith('image') && (
@@ -410,13 +410,13 @@ export const UploadPost: FC<{
               <div
                 tabIndex={0}
                 role="button"
-                className="btn btn-outline rounded-none w-14 h-14"
+                className="btn btn-outline border-base-300 rounded-none w-14 h-14"
               >
                 <IconPlus />
               </div>
               <ul
                 tabIndex={0}
-                className="dropdown-content menu bg-base-100 border rounded z-10 p-2 shadow"
+                className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-2 shadow"
               >
                 <li>
                   <button
@@ -484,11 +484,15 @@ export const UploadPost: FC<{
             />
           )}
           {files.length == 0 ? (
-            <div className="flex flex-col w-full h-full aspect-square items-center justify-center bg-base-100 border z-0 rounded">
+            <div className="flex flex-col w-full h-full aspect-square items-center justify-center bg-base-100 border border-base-300 z-0 rounded">
               <span className="font-semibold">Add a Blink/ Image / Video </span>
             </div>
           ) : (
-            <div className={`flex flex-col ${selectedBlink ? 'border' : ''}`}>
+            <div
+              className={`flex flex-col ${
+                selectedBlink ? 'border border-base-300' : ''
+              }`}
+            >
               <div className="carousel w-full z-0">
                 {files.map((file) => (
                   <div

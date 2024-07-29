@@ -160,6 +160,7 @@ export const Blinks: FC<BlinksProps> = ({
         hideCarousel={hideCarousel}
         hideCaption={hideCaption}
         hideUserPanel={hideUserPanel}
+        hideBorder={hideBorder}
       />
     );
   } else {
@@ -480,8 +481,8 @@ interface Props {
 }
 
 const variantClasses: Record<SnackbarVariant, string> = {
-  error: 'bg-blink-error/10 text-blink-error border-blink-error',
-  warning: 'bg-blink-warning/10 text-blink-warning border-blink-warning',
+  error: 'bg-error text-error border-error',
+  warning: 'bg-warning text-warning border-warning',
 };
 
 export const Snackbar = ({ variant = 'warning', children }: Props) => {
@@ -625,8 +626,8 @@ export const ActionLayout = ({
   };
   return (
     <div
-      className={`flex  flex-col ${
-        !hideBorder ? 'sm:border' : ''
+      className={`flex border-base-300 flex-col ${
+        !hideBorder ? `${multiGrid ? 'border' : 'sm:border'}` : ``
       } bg-base-100 rounded w-full`}
     >
       {showMintDetails && post && <UserProfile post={post} />}
@@ -645,7 +646,7 @@ export const ActionLayout = ({
         <div
           className={`${
             !hideUserPanel || !hideCaption || !hideComment
-              ? 'px-4 pb-4 pt-2'
+              ? `${multiGrid ? 'sm:px-4 px-2' : 'px-4'} pb-4 pt-2`
               : ''
           } flex flex-col flex-1 w-full justify-between`}
         >
