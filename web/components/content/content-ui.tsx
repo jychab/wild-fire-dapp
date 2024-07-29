@@ -23,7 +23,10 @@ import { FC, RefObject, useEffect, useRef, useState } from 'react';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { CommentsSection } from '../comments/comments-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import {
+  useGetToken,
+  useGetTokenDetails,
+} from '../profile/profile-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -145,7 +148,7 @@ export const PostCard = ({
   };
   return (
     <div
-      className={`flex  flex-col ${
+      className={`flex border-base-300 flex-col ${
         !hideBorder ? `${multiGrid ? 'border' : 'sm:border'}` : ``
       } bg-base-100 rounded w-full`}
     >
@@ -330,7 +333,8 @@ export const UserPanel: FC<{
     mint: post ? new PublicKey(post.mint) : null,
   });
   const [liked, setLiked] = useState(
-    (publicKey && post?.likesUser?.includes(publicKey?.toBase58())) || false
+    (publicKey && post?.likesUserTruncated?.includes(publicKey?.toBase58())) ||
+      false
   );
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: post ? new PublicKey(post.mint) : null,
@@ -342,6 +346,24 @@ export const UserPanel: FC<{
     mint: post ? new PublicKey(post.mint) : null,
     withContent: false,
   });
+  const closestUser =
+    post?.likesUserTruncated && post?.likesUserTruncated?.length > 0
+      ? post.likesUserTruncated[0]
+      : undefined;
+  const { data: closestUserMint } = useGetToken({
+    address:
+      closestUser && closestUser !== publicKey?.toBase58()
+        ? new PublicKey(closestUser)
+        : null,
+  });
+  const { data: closestUserMintMetadata } = useGetTokenDetails({
+    mint:
+      closestUserMint && closestUser !== publicKey?.toBase58()
+        ? closestUserMint[0].mint
+        : null,
+    withContent: false,
+  });
+
   return (
     <div className="flex justify-between pb-1">
       <div className="flex gap-2 text-sm items-center">
@@ -375,20 +397,24 @@ export const UserPanel: FC<{
               )}
             </button>
 
-            {(liked || post?.likesUser) && (
+            {(liked || post?.likesCount) && (
               <span className="text-xs stat-desc link link-hover">{`Liked by ${
-                liked
-                  ? `you${
-                      post?.likesUser && post.likesUser.length > 1
-                        ? ' and ' +
-                          formatLargeNumber(post.likesUser.length) +
-                          '  others'
-                        : ''
-                    }`
-                  : post?.likesUser && post.likesUser.length > 0
-                  ? formatLargeNumber(post?.likesUser?.length) + ' others'
+                closestUserMintMetadata?.content?.metadata.name ||
+                (closestUser == publicKey?.toBase58() ? 'you' : '')
+              }${
+                (closestUser == publicKey?.toBase58() ||
+                  closestUserMintMetadata?.content?.metadata.name) &&
+                post?.likesCount != undefined &&
+                post.likesCount > 1
+                  ? ` and `
                   : ''
-              } `}</span>
+              }${
+                post?.likesCount != undefined && post.likesCount > 0
+                  ? formatLargeNumber(
+                      post.likesCount - (closestUserMintMetadata ? 1 : 0)
+                    ) + ' others'
+                  : ''
+              }`}</span>
             )}
           </div>
         )}

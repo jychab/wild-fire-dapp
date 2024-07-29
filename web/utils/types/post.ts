@@ -12,7 +12,8 @@ export interface PostContent {
   price?: number;
   quantity?: number;
   verified?: boolean;
-  likesUser?: string[];
+  likesCount?: number;
+  likesUserTruncated?: string[];
   commentsCount?: number;
   softDelete?: boolean;
   recencyScore?: number;
