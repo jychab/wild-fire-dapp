@@ -1,4 +1,5 @@
 import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import { IconGift } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,10 +14,10 @@ const NotificationFeature = () => {
   const { data: tokenData } = useGetToken({ address: publicKey });
   const router = useRouter();
   const dailyClaimMutation = useClaimDailyMutation({
-    mint: tokenData ? tokenData.mint : null,
+    mint: tokenData ? new PublicKey(tokenData.mint) : null,
   });
   const { data: claimData } = useGetDailyClaimAvailable({
-    mint: tokenData ? tokenData.mint : null,
+    mint: tokenData ? new PublicKey(tokenData.mint) : null,
   });
 
   const [timeLeft, setTimeLeft] = useState(

@@ -37,7 +37,7 @@ interface EditMintArgs {
   // fee: number;
   // admin: PublicKey;
   previous: {
-    distributor: PublicKey;
+    distributor: string;
     // transferFeeBasisPoints: number;
     // admin: PublicKey;
   };
@@ -170,7 +170,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         if (fieldsToUpdate.length > 0) {
           if (ixs.length == 0) {
             const distributor = await connection.getAccountInfo(
-              input.previous.distributor
+              new PublicKey(input.previous.distributor)
             );
             if (
               distributor &&

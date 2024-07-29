@@ -32,13 +32,13 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
     mint: new PublicKey(mintId),
   });
   const editMutation = useEditData({
-    mint: mintTokenData ? mintTokenData.mint : null,
+    mint: mintTokenData ? new PublicKey(mintTokenData.mint) : null,
   });
   const closeMutation = useCloseAccount({
-    mint: mintTokenData ? mintTokenData.mint : null,
+    mint: mintTokenData ? new PublicKey(mintTokenData.mint) : null,
   });
   const { data: metaData } = useGetTokenDetails({
-    mint: mintTokenData ? mintTokenData.mint : null,
+    mint: mintTokenData ? new PublicKey(mintTokenData.mint) : null,
     withContent: false,
   });
 

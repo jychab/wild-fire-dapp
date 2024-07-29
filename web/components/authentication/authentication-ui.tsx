@@ -24,7 +24,7 @@ export const SignInBtn: FC = () => {
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
   const { data: metaDataQuery } = useGetTokenDetails({
-    mint: data ? data?.mint : null,
+    mint: data ? new PublicKey(data?.mint) : null,
   });
   return (
     <>
