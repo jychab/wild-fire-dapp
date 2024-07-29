@@ -3,7 +3,6 @@ import { USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
-import { TokenState } from '@/utils/types/program';
 import {
   calculateFee,
   getAssociatedTokenAddressSync,
@@ -47,14 +46,6 @@ export const TradingPanel: FC<{
     mint: new PublicKey(mintId),
   });
 
-  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: new PublicKey(mintId),
-  });
-
-  const { data: tokenStateData } = useGetMintToken({
-    mint: new PublicKey(mintId),
-  });
-
   const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
 
   const chartProps = useMemo(
@@ -88,8 +79,7 @@ export const TradingPanel: FC<{
   });
 
   const { data: usdcVault } = useGetTokenAccountInfo({
-    address:
-      metadata && publicKey ? getUSDCVault(new PublicKey(metadata.id)) : null,
+    address: getUSDCVault(new PublicKey(mintId)),
     tokenProgram: TOKEN_PROGRAM_ID,
   });
 
@@ -241,9 +231,8 @@ export const TradingPanel: FC<{
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
             {
               <MintInfo
+                mintId={mintId}
                 metadata={metadata}
-                tokenStateData={tokenStateData}
-                mintSummaryDetails={mintSummaryDetails}
                 liquidity={liquidity}
               />
             }
@@ -370,25 +359,25 @@ export const TradingPanel: FC<{
           </div>
         </div>
       )}
-      <Activities metadata={metadata} tokenStateData={tokenStateData} />
+      <Activities metadata={metadata} mintId={mintId} />
     </div>
   );
 };
 
 interface ActivitiesProps {
-  tokenStateData: TokenState | null | undefined;
+  mintId: string;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-export const Activities: FC<ActivitiesProps> = ({
-  metadata,
-  tokenStateData,
-}) => {
+export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
   const { data: largestTokenAccount } = useGetLargestAccountFromMint({
-    mint: metadata ? new PublicKey(metadata.id) : null,
+    mint: new PublicKey(mintId),
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata.token_info.token_program)
       : null,
+  });
+  const { data: tokenStateData } = useGetMintToken({
+    mint: new PublicKey(mintId),
   });
   return (
     <div className={`md:bg-base-200 flex flex-col w-full gap-2 rounded p-4`}>
@@ -453,17 +442,16 @@ export const Activities: FC<ActivitiesProps> = ({
 };
 
 export const MintInfo: FC<{
+  mintId: string;
   metadata: DAS.GetAssetResponse | null | undefined;
-  tokenStateData: TokenState | null | undefined;
-  mintSummaryDetails:
-    | {
-        currentHoldersCount: number;
-        holdersChange24hPercent: number;
-      }
-    | null
-    | undefined;
   liquidity: number;
-}> = ({ metadata, tokenStateData, mintSummaryDetails, liquidity }) => {
+}> = ({ mintId, metadata, liquidity }) => {
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
+    mint: new PublicKey(mintId),
+  });
+  const { data: tokenStateData } = useGetMintToken({
+    mint: new PublicKey(mintId),
+  });
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">
       <div className="col-span-1 text-sm">Mint:</div>
@@ -482,7 +470,7 @@ export const MintInfo: FC<{
         className="col-span-3 stat-value text-xs md:text-sm truncate font-normal link link-hover"
         href={`https://solscan.io/address/${
           tokenStateData
-            ? tokenStateData.admin
+            ? new PublicKey(tokenStateData.admin).toBase58()
             : metadata?.authorities?.find(
                 (x) =>
                   x.scopes.includes(Scope.METADATA) ||
@@ -491,7 +479,7 @@ export const MintInfo: FC<{
         }`}
       >
         {tokenStateData
-          ? tokenStateData.admin
+          ? new PublicKey(tokenStateData.admin).toBase58()
           : metadata?.authorities?.find(
               (x) =>
                 x.scopes.includes(Scope.METADATA) ||
