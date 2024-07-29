@@ -119,8 +119,8 @@ export const Blinks: FC<BlinksProps> = ({
       !!actionsRegistry && !interstitialData.isInterstitial && !!actionUrl,
   });
 
-  const { data: actionsUrlMapper } = useGetBlinkActionJsonUrl({
-    origin: actionUrl?.origin,
+  const { data: actionsUrlMapperApiUrl } = useGetBlinkActionJsonUrl({
+    actionUrl: actionUrl,
     enabled:
       !!actionUrl &&
       !!actionsRegistry &&
@@ -129,8 +129,8 @@ export const Blinks: FC<BlinksProps> = ({
       checkSecurity(websiteState.state, mergedOptions.securityLevel.websites),
   });
 
-  const finalActionApiUrl = actionsUrlMapper
-    ? actionsUrlMapper.mapUrl(actionUrl!)
+  const finalActionApiUrl = actionsUrlMapperApiUrl
+    ? actionsUrlMapperApiUrl
     : actionApiUrl;
 
   const { data: actionState } = useGetActionRegistryLookUp({

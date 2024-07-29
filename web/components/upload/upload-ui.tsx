@@ -52,13 +52,13 @@ export const Upload: FC<UploadProps> = ({ mintId, id }) => {
   const { data } = useGetToken({ address: publicKey });
 
   const { data: metadataQuery } = useGetTokenDetails({
-    mint: data ? new PublicKey(data[0].mint) : null,
+    mint: data ? new PublicKey(data.mint) : null,
   });
 
   if (
     data &&
     mintId &&
-    data[0].mint.toBase58() != mintId &&
+    data.mint.toBase58() != mintId &&
     !(
       publicKey &&
       metadataQuery?.authorities?.find(

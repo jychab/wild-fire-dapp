@@ -52,7 +52,7 @@ export const CommentsSection: FC<{
   const { publicKey } = useWallet();
   const { data } = useGetToken({ address: publicKey });
   const { data: metadata } = useGetTokenDetails({
-    mint: data ? data[0].mint : null,
+    mint: data ? data.mint : null,
     withContent: false,
   });
 
@@ -268,7 +268,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
   const [showMore, setShowMore] = useState(false);
   const { data } = useGetToken({ address: new PublicKey(comment.user) });
   const { data: metadata } = useGetTokenDetails({
-    mint: data ? data[0].mint : null,
+    mint: data ? data.mint : null,
     withContent: false,
   });
 

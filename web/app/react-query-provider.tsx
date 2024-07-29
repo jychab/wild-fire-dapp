@@ -1,15 +1,31 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental';
-import { ReactNode, useState } from 'react';
+import indexedDbPersister from '@/utils/indexDB/indexedDbPersister';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { ReactNode } from 'react';
 
 export function ReactQueryProvider({ children }: { children: ReactNode }) {
-  const [client] = useState(new QueryClient());
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        gcTime: 1000 * 60 * 60 * 24, // 24 hours,queries:
+      },
+    },
+  });
+
+  const asyncStoragePersister = createAsyncStoragePersister({
+    storage: indexedDbPersister,
+    key: 'REACT_QUERY_OFFLINE_CACHE',
+  });
 
   return (
-    <QueryClientProvider client={client}>
-      <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
-    </QueryClientProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: asyncStoragePersister }}
+    >
+      {children}
+    </PersistQueryClientProvider>
   );
 }

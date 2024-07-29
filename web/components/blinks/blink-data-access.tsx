@@ -28,20 +28,22 @@ export function useGetBlinkAction({
 }
 
 export function useGetBlinkActionJsonUrl({
-  origin,
+  actionUrl,
   enabled,
 }: {
-  origin: string | undefined;
+  actionUrl: URL | undefined;
   enabled: boolean;
 }) {
   return useQuery({
-    queryKey: ['get-blink-action-json-url', { origin }],
+    queryKey: ['get-blink-action-json-url', { actionUrl }],
     queryFn: async () => {
+      const origin = actionUrl?.origin;
       const actionsJsonUrl = origin + '/actions.json';
       try {
         const res = await fetch(proxify(actionsJsonUrl));
         const actionsJson = (await res.json()) as ActionsJsonConfig;
-        return new ActionsURLMapper(actionsJson);
+        const actionUrlMapper = new ActionsURLMapper(actionsJson);
+        return actionUrlMapper.mapUrl(actionUrl!);
       } catch (_) {
         console.error(
           `Failed to lookup action for Origin: ${origin}/actions.json`

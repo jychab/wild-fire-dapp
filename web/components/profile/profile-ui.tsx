@@ -25,13 +25,6 @@ import {
   useGetTokenDetails,
 } from './profile-data-access';
 
-export interface AuthorityData {
-  mint: PublicKey;
-  admin: PublicKey;
-  distributor: PublicKey;
-  mutable: number;
-}
-
 enum TabsEnum {
   POST = 'Posts',
   TRADE = 'Trade',
@@ -168,7 +161,7 @@ const Profile: FC<ProfileProps> = ({
 }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
-  const { data: authorityData } = useGetMintToken({
+  const { data: tokenStateData } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
   const { data: tokenDetails } = useGetTokenDetails({
@@ -250,10 +243,10 @@ const Profile: FC<ProfileProps> = ({
             </button>
           </div>
 
-          {authorityData &&
+          {tokenStateData &&
             publicKey &&
-            authorityData.mutable == 1 &&
-            (publicKey.toBase58() == authorityData.admin.toBase58() ||
+            tokenStateData.mutable == 1 &&
+            (publicKey.toBase58() == tokenStateData.admin ||
               metadata?.authorities?.find(
                 (x) =>
                   x.scopes.includes(Scope.METADATA) ||

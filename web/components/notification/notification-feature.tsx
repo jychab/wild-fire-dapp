@@ -13,10 +13,10 @@ const NotificationFeature = () => {
   const { data: tokenData } = useGetToken({ address: publicKey });
   const router = useRouter();
   const dailyClaimMutation = useClaimDailyMutation({
-    mint: tokenData ? tokenData[0].mint : null,
+    mint: tokenData ? tokenData.mint : null,
   });
   const { data: claimData } = useGetDailyClaimAvailable({
-    mint: tokenData ? tokenData[0].mint : null,
+    mint: tokenData ? tokenData.mint : null,
   });
 
   const [timeLeft, setTimeLeft] = useState(

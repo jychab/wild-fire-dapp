@@ -359,7 +359,7 @@ export const UserPanel: FC<{
   const { data: closestUserMintMetadata } = useGetTokenDetails({
     mint:
       closestUserMint && closestUser !== publicKey?.toBase58()
-        ? closestUserMint[0].mint
+        ? new PublicKey(closestUserMint.mint)
         : null,
     withContent: false,
   });
@@ -425,7 +425,7 @@ export const UserPanel: FC<{
           (multiGrid &&
             data &&
             publicKey &&
-            data.admin.toBase58() == publicKey.toBase58())) && (
+            data.admin == publicKey.toBase58())) && (
           <div className="dropdown dropdown-left">
             <div tabIndex={0} role="button">
               {removeContentMutation.isPending ? (

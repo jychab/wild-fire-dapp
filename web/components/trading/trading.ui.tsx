@@ -3,6 +3,7 @@ import { USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
+import { TokenState } from '@/utils/types/program';
 import {
   calculateFee,
   getAssociatedTokenAddressSync,
@@ -21,7 +22,6 @@ import {
   useGetMintSummaryDetails,
   useGetTokenDetails,
 } from '../profile/profile-data-access';
-import { AuthorityData } from '../profile/profile-ui';
 import {
   getAssociatedTokenStateAccount,
   getQuote,
@@ -51,7 +51,7 @@ export const TradingPanel: FC<{
     mint: new PublicKey(mintId),
   });
 
-  const { data: authorityData } = useGetMintToken({
+  const { data: tokenStateData } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
 
@@ -242,7 +242,7 @@ export const TradingPanel: FC<{
             {
               <MintInfo
                 metadata={metadata}
-                authorityData={authorityData}
+                tokenStateData={tokenStateData}
                 mintSummaryDetails={mintSummaryDetails}
                 liquidity={liquidity}
               />
@@ -370,19 +370,19 @@ export const TradingPanel: FC<{
           </div>
         </div>
       )}
-      <Activities metadata={metadata} authorityData={authorityData} />
+      <Activities metadata={metadata} tokenStateData={tokenStateData} />
     </div>
   );
 };
 
 interface ActivitiesProps {
-  authorityData: AuthorityData | null | undefined;
+  tokenStateData: TokenState | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
 export const Activities: FC<ActivitiesProps> = ({
   metadata,
-  authorityData,
+  tokenStateData,
 }) => {
   const { data: largestTokenAccount } = useGetLargestAccountFromMint({
     mint: metadata ? new PublicKey(metadata.id) : null,
@@ -416,14 +416,14 @@ export const Activities: FC<ActivitiesProps> = ({
                       href={`https://solscan.io/address/${x.owner.toBase58()}`}
                     >
                       {`${
-                        x.owner.toBase58() == authorityData?.admin.toBase58()
+                        x.owner.toBase58() == tokenStateData?.admin
                           ? '(Creator)'
                           : ''
                       }${
-                        authorityData &&
+                        tokenStateData &&
                         x.owner.toBase58() ==
                           getAssociatedTokenStateAccount(
-                            authorityData.mint
+                            new PublicKey(tokenStateData.mint)
                           ).toBase58()
                           ? '(Reserve)'
                           : ''
@@ -454,7 +454,7 @@ export const Activities: FC<ActivitiesProps> = ({
 
 export const MintInfo: FC<{
   metadata: DAS.GetAssetResponse | null | undefined;
-  authorityData: AuthorityData | null | undefined;
+  tokenStateData: TokenState | null | undefined;
   mintSummaryDetails:
     | {
         currentHoldersCount: number;
@@ -463,7 +463,7 @@ export const MintInfo: FC<{
     | null
     | undefined;
   liquidity: number;
-}> = ({ metadata, authorityData, mintSummaryDetails, liquidity }) => {
+}> = ({ metadata, tokenStateData, mintSummaryDetails, liquidity }) => {
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">
       <div className="col-span-1 text-sm">Mint:</div>
@@ -481,8 +481,8 @@ export const MintInfo: FC<{
         target="_blank"
         className="col-span-3 stat-value text-xs md:text-sm truncate font-normal link link-hover"
         href={`https://solscan.io/address/${
-          authorityData
-            ? authorityData.admin
+          tokenStateData
+            ? tokenStateData.admin
             : metadata?.authorities?.find(
                 (x) =>
                   x.scopes.includes(Scope.METADATA) ||
@@ -490,8 +490,8 @@ export const MintInfo: FC<{
               )?.address
         }`}
       >
-        {authorityData
-          ? authorityData.admin.toBase58()
+        {tokenStateData
+          ? tokenStateData.admin
           : metadata?.authorities?.find(
               (x) =>
                 x.scopes.includes(Scope.METADATA) ||

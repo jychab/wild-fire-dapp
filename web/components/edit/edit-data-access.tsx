@@ -1,6 +1,7 @@
 'use client';
 
 import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
+import { TokenState } from '@/utils/types/program';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -26,7 +27,6 @@ import {
   program,
   updateMetadata,
 } from '../../utils/helper/transcationInstructions';
-import { AuthorityData } from '../profile/profile-ui';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -261,32 +261,31 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
 
   return useQuery({
     queryKey: ['get-mint-token', { endpoint: connection.rpcEndpoint, mint }],
-    queryFn: () =>
-      mint &&
-      connection
-        .getProgramAccounts(program.programId, {
-          filters: [
-            {
-              dataSize: 123,
+    queryFn: async () => {
+      if (!mint) return null;
+      const result = await connection.getProgramAccounts(program.programId, {
+        filters: [
+          {
+            dataSize: 123,
+          },
+          {
+            memcmp: {
+              offset: 40,
+              bytes: mint.toBase58(),
             },
-            {
-              memcmp: {
-                offset: 40,
-                bytes: mint.toBase58(),
-              },
-            },
-          ],
-        })
-        .then((result) => {
-          if (result.length > 0) {
-            return program.coder.accounts.decode(
-              'tokenState',
-              result[0].account.data
-            ) as AuthorityData;
-          } else {
-            return null;
-          }
-        }),
+          },
+        ],
+      });
+      if (result.length > 0) {
+        const tokenState: TokenState = program.coder.accounts.decode(
+          'tokenState',
+          result[0].account.data
+        );
+        return tokenState;
+      } else {
+        return null;
+      }
+    },
     staleTime: 15 * 60 * 1000,
     enabled: !!mint,
   });

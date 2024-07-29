@@ -17,7 +17,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { program } from '../../utils/helper/transcationInstructions';
 
 import { PostContent } from '@/utils/types/post';
-import { AuthorityData } from './profile-ui';
+import { TokenState } from '@/utils/types/program';
 
 export function useGetMintTransferFeeConfig({
   mint,
@@ -85,34 +85,32 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: ['get-token', { endpoint: connection.rpcEndpoint, address }],
-    queryFn: () =>
-      address &&
-      connection
-        .getProgramAccounts(program.programId, {
-          filters: [
-            {
-              dataSize: 123,
+    queryFn: async () => {
+      if (!address) return null;
+      const result = await connection.getProgramAccounts(program.programId, {
+        filters: [
+          {
+            dataSize: 123,
+          },
+          {
+            memcmp: {
+              offset: 8,
+              bytes: address.toBase58(),
             },
-            {
-              memcmp: {
-                offset: 8,
-                bytes: address.toBase58(),
-              },
-            },
-          ],
-        })
-        .then((result) => {
-          if (result.length > 0) {
-            return result.map((acc) => {
-              return program.coder.accounts.decode(
-                'tokenState',
-                acc.account.data
-              ) as AuthorityData;
-            });
-          } else {
-            return null;
-          }
-        }),
+          },
+        ],
+      });
+      if (result.length > 0) {
+        const tokenState: TokenState = program.coder.accounts.decode(
+          'tokenState',
+          result[0].account.data
+        );
+        return tokenState;
+      } else {
+        return null;
+      }
+    },
+
     enabled: !!address,
     staleTime: 15 * 60 * 1000,
   });
