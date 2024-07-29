@@ -27,7 +27,7 @@ export const AMOUNT_CREATOR = ONE_BILLION * 0.9;
 export const AMOUNT_LIQUIDITY_POOL = ONE_BILLION * 0.85;
 
 export const ADDRESS_LOOKUP_TABLE = new PublicKey(
-  'HBqRq1kwJP4nSHL633D3Q6zLXYcv9YDi1GvyG3VPwcMK'
+  '49vVdqGZ8BfxtJFkY4oaWVhGgwhFkC27FWZki5S93vS7'
 );
 
 export const ONBOARDING_WALLET = new PublicKey(

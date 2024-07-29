@@ -1,7 +1,6 @@
 import { db } from '@/utils/firebase/firebase';
 import { getDailyClaim } from '@/utils/firebase/functions';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -57,7 +56,7 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
         const partialTx = await getDailyClaim(mint.toBase58());
         if (partialTx) {
           const transaction = VersionedTransaction.deserialize(
-            bs58.decode(partialTx)
+            Buffer.from(partialTx, 'base64')
           );
           signature = await buildAndSendTransaction({
             connection: connection,

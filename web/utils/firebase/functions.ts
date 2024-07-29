@@ -1,6 +1,5 @@
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
-import bs58 from 'bs58';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import { PostContent } from '../types/post';
@@ -91,7 +90,7 @@ export async function verifyAndGetToken(
   const verifyResponse = httpsCallable(functions, 'verifySignIn');
   return (
     await verifyResponse({
-      signature: bs58.encode(output),
+      signature: Buffer.from(output).toString('base64'),
       publicKey: publicKey.toBase58(),
     })
   ).data as string;
@@ -102,7 +101,7 @@ export function createLoginMessage(sessionKey: string) {
 }
 
 export async function uploadMetadata(payload: string, mint: PublicKey) {
-  const path = `${mint.toBase58()}/metadata/${crypto.randomUUID()}.json`;
+  const path = `${mint.toBase58()}/${crypto.randomUUID()}/metadata.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload);
   return 'https://' + payloadRef.bucket + '/' + path;

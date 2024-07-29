@@ -1,7 +1,6 @@
 'use client';
 
 import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -208,7 +207,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
 
         if (partialTx) {
           const partialSignedTx = VersionedTransaction.deserialize(
-            bs58.decode(partialTx)
+            Buffer.from(partialTx, 'base64')
           );
           signature = await buildAndSendTransaction({
             connection,

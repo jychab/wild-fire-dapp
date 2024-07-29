@@ -9,6 +9,7 @@ import {
 } from '@/utils/consts';
 import {
   getDistributor,
+  getSponsoredDistributor,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
@@ -21,11 +22,11 @@ import {
   initializePool,
   program,
 } from '@/utils/helper/transcationInstructions';
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   Connection,
+  LAMPORTS_PER_SOL,
   PublicKey,
   TransactionSignature,
   VersionedTransaction,
@@ -64,32 +65,31 @@ export function useCreateMint({ address }: { address: string | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program.programId
         );
-        const [distributor, metadata, onboardingWallet] = await Promise.all([
-          getDistributor(),
+        const distributor = await getDistributor();
+        const [metadata, onboardingWallet] = await Promise.all([
           buildTokenMetadata(input, mint),
           connection.getAccountInfo(ONBOARDING_WALLET),
         ]);
-        // const sponsoredResult =
-        //   onboardingWallet &&
-        //   onboardingWallet.lamports > 0.03 * LAMPORTS_PER_SOL
-        //     ? await getSponsoredDistributor(metadata)
-        //     : null;
-        // if (sponsoredResult && sponsoredResult.partialTx) {
-        //   signature = await handleSponsoredDistributor(
-        //     sponsoredResult.partialTx,
-        //     connection,
-        //     wallet
-        //   );
-        // } else {
-        signature = await handleSelfDistributor(
-          metadata,
-          connection,
-          wallet,
-          new PublicKey(distributor),
-          mint
-        );
-        // }
-
+        const sponsoredResult =
+          onboardingWallet &&
+          onboardingWallet.lamports > 0.022 * LAMPORTS_PER_SOL
+            ? await getSponsoredDistributor(metadata)
+            : null;
+        if (sponsoredResult && sponsoredResult.partialTx) {
+          signature = await handleSponsoredDistributor(
+            sponsoredResult.partialTx,
+            connection,
+            wallet
+          );
+        } else {
+          signature = await handleSelfDistributor(
+            metadata,
+            connection,
+            wallet,
+            new PublicKey(distributor),
+            mint
+          );
+        }
         return { signature, mint };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
@@ -113,12 +113,6 @@ export function useCreateMint({ address }: { address: string | null }) {
               { endpoint: connection.rpcEndpoint, address },
             ],
           }),
-          client.refetchQueries({
-            queryKey: [
-              'get-token',
-              { endpoint: connection.rpcEndpoint, address },
-            ],
-          }),
         ]);
       }
     },
@@ -133,7 +127,7 @@ async function handleSponsoredDistributor(
   connection: Connection,
   wallet: any
 ): Promise<TransactionSignature> {
-  let tx = VersionedTransaction.deserialize(bs58.decode(partialTx));
+  let tx = VersionedTransaction.deserialize(Buffer.from(partialTx, 'base64'));
   return await buildAndSendTransaction({
     connection: connection,
     partialSignedTx: tx,
@@ -156,6 +150,7 @@ async function handleSelfDistributor(
     initializePool(
       connection,
       mint,
+      wallet.publicKey,
       wallet.publicKey,
       AMOUNT_LIQUIDITY_POOL,
       Number(OFF_SET)

@@ -1,4 +1,3 @@
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import {
   AddressLookupTableAccount,
   Commitment,
@@ -14,17 +13,17 @@ import {
 import { ADDRESS_LOOKUP_TABLE } from '../consts';
 
 async function getPriorityFeeEstimate(
-  priorityLevel: string,
   testInstructions: TransactionInstruction[],
   payer: PublicKey,
-  connection: Connection
+  connection: Connection,
+  lookupTables: AddressLookupTableAccount[]
 ) {
   const testVersionedTxn = new VersionedTransaction(
     new TransactionMessage({
       instructions: testInstructions,
       payerKey: payer,
       recentBlockhash: PublicKey.default.toString(),
-    }).compileToV0Message([])
+    }).compileToV0Message(lookupTables)
   );
   const response = await fetch(connection.rpcEndpoint, {
     method: 'POST',
@@ -35,19 +34,16 @@ async function getPriorityFeeEstimate(
       method: 'getPriorityFeeEstimate',
       params: [
         {
-          transaction: bs58.encode(testVersionedTxn.serialize()), // Pass the serialized transaction in Base58
-          options: { priorityLevel: priorityLevel },
+          transaction: Buffer.from(testVersionedTxn.serialize()).toString(
+            'base64'
+          ), // Pass the serialized transaction in Base58
+          options: { recommended: true, transactionEncoding: 'base64' },
         },
       ],
     }),
   });
   const data = await response.json();
-  console.log(
-    'Fee in function for',
-    priorityLevel,
-    ' :',
-    data.result.priorityFeeEstimate
-  );
+  console.log('Recommended Fee: ', data.result.priorityFeeEstimate);
   return data.result.priorityFeeEstimate;
 }
 
@@ -102,10 +98,13 @@ export async function buildAndSendTransaction({
     commitment: 'confirmed',
   });
   if (ixs && ixs.length > 0) {
-    const [microLamports, units, lookupTables] = await Promise.all([
-      getPriorityFeeEstimate('High', ixs, publicKey, connection),
-      getSimulationUnits(connection, ixs, publicKey, []),
-      (await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)).value,
+    const lookupTables = (
+      await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)
+    ).value;
+    const lookUpTable = lookupTables ? [lookupTables] : [];
+    const [microLamports, units] = await Promise.all([
+      getPriorityFeeEstimate(ixs, publicKey, connection, lookUpTable),
+      getSimulationUnits(connection, ixs, publicKey, lookUpTable),
     ]);
     ixs.unshift(
       ComputeBudgetProgram.setComputeUnitPrice({
@@ -127,7 +126,7 @@ export async function buildAndSendTransaction({
         instructions: ixs,
         recentBlockhash: recentBlockhash.blockhash,
         payerKey: publicKey,
-      }).compileToV0Message(lookupTables ? [lookupTables] : [])
+      }).compileToV0Message(lookUpTable)
     );
     if (signers) {
       tx.sign(signers);

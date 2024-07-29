@@ -38,7 +38,7 @@ export type RaydiumCpSwap = {
         },
         {
           name: 'protocolOwner';
-          address: 'Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'authority';
@@ -303,7 +303,7 @@ export type RaydiumCpSwap = {
           docs: ['Address to be set as protocol owner.'];
           writable: true;
           signer: true;
-          address: 'Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'ammConfig';
@@ -364,9 +364,12 @@ export type RaydiumCpSwap = {
       discriminator: [175, 175, 109, 31, 13, 152, 155, 237];
       accounts: [
         {
-          name: 'creator';
-          docs: ['Address paying to create the pool. Can be anyone'];
+          name: 'payer';
           writable: true;
+          signer: true;
+        },
+        {
+          name: 'creator';
           signer: true;
         },
         {
@@ -884,7 +887,7 @@ export type RaydiumCpSwap = {
           name: 'owner';
           docs: ['The amm config owner or admin'];
           signer: true;
-          address: 'Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'ammConfig';
@@ -910,7 +913,7 @@ export type RaydiumCpSwap = {
         {
           name: 'authority';
           signer: true;
-          address: 'Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'poolState';
@@ -940,7 +943,7 @@ export type RaydiumCpSwap = {
         {
           name: 'authority';
           signer: true;
-          address: 'Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p';
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'poolState';

@@ -420,32 +420,20 @@ export async function initializePool(
   connection: Connection,
   mint: PublicKey,
   payer: PublicKey,
+  creator: PublicKey,
   amount: number,
   offSet: number
 ) {
   const ixs = [];
   const creatorTokenMint = getAssociatedTokenAddressSync(
     mint,
-    payer,
+    creator,
     false,
     TOKEN_2022_PROGRAM_ID
   );
-  try {
-    await getAccount(connection, creatorTokenMint);
-  } catch (e) {
-    ixs.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer,
-        creatorTokenMint,
-        payer,
-        mint,
-        TOKEN_2022_PROGRAM_ID
-      )
-    );
-  }
   const creatorTokenUsdc = getAssociatedTokenAddressSync(
     USDC,
-    payer,
+    creator,
     false,
     TOKEN_PROGRAM_ID
   );
@@ -456,7 +444,7 @@ export async function initializePool(
       createAssociatedTokenAccountIdempotentInstruction(
         payer,
         creatorTokenUsdc,
-        payer,
+        creator,
         USDC,
         TOKEN_PROGRAM_ID
       )
@@ -467,6 +455,7 @@ export async function initializePool(
     await swapProgram.methods
       .initialize(new BN(amount), new BN(offSet), new BN(Date.now() / 1000))
       .accounts({
+        payer: payer,
         ammConfig: CONFIG,
         program: swapProgram.programId,
         mint: mint,

@@ -451,6 +451,7 @@ export function useCreatePoolMutation({ mint }: { mint: PublicKey | null }) {
           connection,
           mint,
           publicKey,
+          publicKey,
           amount,
           Number(OFF_SET)
         );

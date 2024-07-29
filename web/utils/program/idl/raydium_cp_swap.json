@@ -32,7 +32,7 @@
         },
         {
           "name": "protocol_owner",
-          "address": "Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "authority",
@@ -200,7 +200,7 @@
           "docs": ["Address to be set as protocol owner."],
           "writable": true,
           "signer": true,
-          "address": "Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "amm_config",
@@ -261,9 +261,12 @@
       "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
       "accounts": [
         {
-          "name": "creator",
-          "docs": ["Address paying to create the pool. Can be anyone"],
+          "name": "payer",
           "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator",
           "signer": true
         },
         {
@@ -664,7 +667,7 @@
           "name": "owner",
           "docs": ["The amm config owner or admin"],
           "signer": true,
-          "address": "Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "amm_config",
@@ -690,7 +693,7 @@
         {
           "name": "authority",
           "signer": true,
-          "address": "Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "pool_state",
@@ -720,7 +723,7 @@
         {
           "name": "authority",
           "signer": true,
-          "address": "Eo769i4Q8ExHzQ9gS9S5PexAu8zXPe5G7hYArqqsja7p"
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "pool_state",
