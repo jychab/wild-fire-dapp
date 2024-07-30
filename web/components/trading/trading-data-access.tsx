@@ -8,21 +8,16 @@ import {
   swapBaseOutput,
   swapProgram,
 } from '@/utils/helper/transcationInstructions';
+import { BN } from '@coral-xyz/anchor';
 import {
+  Account,
   getAccount,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  Connection,
-  ParsedInstruction,
-  PublicKey,
-  TransactionMessage,
-  TransactionSignature,
-  VersionedTransaction,
-} from '@solana/web3.js';
+import { Connection, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -46,6 +41,18 @@ export function useGetTokenAccountInfo({
       return getAccount(connection, address, undefined, tokenProgram);
     },
     enabled: !!address,
+  });
+}
+
+export function useGetPoolState({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: ['get-pool-state', { endpoint: connection.rpcEndpoint, mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      return swapProgram.account.poolState.fetch(getPool(mint));
+    },
+    enabled: !!mint,
   });
 }
 
@@ -95,11 +102,20 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
         undefined,
         TOKEN_2022_PROGRAM_ID
       );
+      const poolState = await swapProgram.account.poolState.fetch(
+        getPool(mint)
+      );
 
       const result =
-        Number(usdcVault.amount + OFF_SET) / Number(mintVault.amount);
+        usdcVault.amount -
+        BigInt(Number(poolState.creatorFeesTokenUsdc)) -
+        BigInt(Number(poolState.protocolFeesTokenUsdc)) +
+        OFF_SET /
+          (mintVault.amount -
+            BigInt(Number(poolState.creatorFeesTokenMint)) -
+            BigInt(Number(poolState.protocolFeesTokenMint)));
 
-      return result / 10 ** USDC_DECIMALS;
+      return Number(result) / 10 ** USDC_DECIMALS;
     },
     enabled: !!mint,
     staleTime: 15 * 60 * 1000,
@@ -303,87 +319,56 @@ export function getUSDCVault(mint: PublicKey) {
   return usdcVault;
 }
 
+export function getPool(mint: PublicKey) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    swapProgram.programId
+  );
+
+  return poolAddress;
+}
+
 export async function getQuote(
   connection: Connection,
-  payer: PublicKey,
   mint: PublicKey,
+  mintVault: Account,
+  usdcVault: Account,
+  poolState: {
+    creatorFeesTokenMint: BN;
+    creatorFeesTokenUsdc: BN;
+    protocolFeesTokenMint: BN;
+    protocolFeesTokenUsdc: BN;
+  },
   inputMint: string,
-  outputMint: string,
-  amount: number,
+  amount: bigint,
   swapMode: string
 ) {
   if (swapMode == 'ExactIn') {
-    const instruction = await swapBaseInput(
-      program.provider.connection,
-      payer,
-      mint,
-      amount,
-      new PublicKey(inputMint),
-      inputMint == USDC.toBase58() ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID,
-      new PublicKey(outputMint),
-      outputMint == USDC.toBase58() ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID
-    );
-
-    const testVersionedTxn = new VersionedTransaction(
-      new TransactionMessage({
-        instructions: instruction,
-        payerKey: payer,
-        recentBlockhash: PublicKey.default.toString(),
-      }).compileToV0Message()
-    );
-    const result = await connection.simulateTransaction(testVersionedTxn, {
-      replaceRecentBlockhash: true,
-      sigVerify: false,
-      innerInstructions: true,
-    });
-
-    try {
-      const outAmount: number = result.value
-        .innerInstructions![0].instructions.filter(
-          (x) => (x as ParsedInstruction).parsed!
-        )
-        .map((x) => (x as ParsedInstruction).parsed.info)
-        .find((x) => x.mint == outputMint).tokenAmount.amount;
-
-      return { outAmount: BigInt(outAmount) };
-    } catch (e) {
-      return { outAmount: undefined };
+    if (inputMint == USDC.toBase58()) {
+      return calculateMintAmountGivenUSDC(
+        mintVault.amount -
+          BigInt(Number(poolState.creatorFeesTokenMint)) -
+          BigInt(Number(poolState.protocolFeesTokenMint)),
+        usdcVault.amount -
+          BigInt(Number(poolState.creatorFeesTokenUsdc)) -
+          BigInt(Number(poolState.protocolFeesTokenUsdc)),
+        OFF_SET,
+        amount
+      );
+    } else {
+      return calculateUSDCAmountGivenMint(
+        mintVault.amount -
+          BigInt(Number(poolState.creatorFeesTokenMint)) -
+          BigInt(Number(poolState.protocolFeesTokenMint)),
+        usdcVault.amount -
+          BigInt(Number(poolState.creatorFeesTokenUsdc)) -
+          BigInt(Number(poolState.protocolFeesTokenUsdc)),
+        OFF_SET,
+        amount
+      );
     }
   } else {
-    const instruction = await swapBaseOutput(
-      program.provider.connection,
-      payer,
-      mint,
-      amount,
-      new PublicKey(inputMint),
-      inputMint == USDC.toBase58() ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID,
-      new PublicKey(outputMint),
-      outputMint == USDC.toBase58() ? TOKEN_PROGRAM_ID : TOKEN_2022_PROGRAM_ID
-    );
-
-    const testVersionedTxn = new VersionedTransaction(
-      new TransactionMessage({
-        instructions: instruction,
-        payerKey: payer,
-        recentBlockhash: PublicKey.default.toString(),
-      }).compileToV0Message()
-    );
-    const result = await connection.simulateTransaction(testVersionedTxn, {
-      replaceRecentBlockhash: true,
-      sigVerify: false,
-      innerInstructions: true,
-    });
-    try {
-      const outAmount: number = result.value
-        .innerInstructions![0].instructions.filter(
-          (x) => (x as ParsedInstruction).parsed!
-        )
-        .map((x) => (x as ParsedInstruction).parsed.info)
-        .find((x) => x.mint == outputMint).tokenAmount.amount;
-      return { outAmount: BigInt(outAmount) };
-    } catch (e) {
-      return { outAmount: undefined };
-    }
+    return BigInt(0);
   }
 
   // return await (
@@ -498,4 +483,29 @@ export function useCreatePoolMutation({ mint }: { mint: PublicKey | null }) {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
   });
+}
+
+export function calculateUSDCAmountGivenMint(
+  mintSupply: bigint,
+  usdcSupply: bigint,
+  off_set: bigint,
+  amount: bigint
+) {
+  amount = (amount * BigInt(99)) / BigInt(100); // trading fee
+  const numerator = amount * (usdcSupply + off_set);
+  const denominator = mintSupply + amount;
+  return numerator / denominator;
+}
+
+export function calculateMintAmountGivenUSDC(
+  mintSupply: bigint,
+  usdcSupply: bigint,
+  off_set: bigint,
+  amount: bigint
+) {
+  amount = (amount * BigInt(99)) / BigInt(100); // trading fee
+  const numerator = amount * mintSupply;
+  const denominator = usdcSupply + off_set + amount;
+  const result = numerator / denominator;
+  return result;
 }

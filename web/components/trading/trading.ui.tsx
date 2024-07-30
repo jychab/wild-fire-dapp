@@ -23,8 +23,10 @@ import {
 } from '../profile/profile-data-access';
 import {
   getAssociatedTokenStateAccount,
+  getMintVault,
   getQuote,
   getUSDCVault,
+  useGetPoolState,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -34,7 +36,7 @@ export const TradingPanel: FC<{
   mintId: string;
 }> = ({ mintId }) => {
   const { publicKey } = useWallet();
-  const [showWarning, setShowWarning] = useState(false);
+  const [showWarning, setShowWarning] = useState('');
   const [showError, setShowError] = useState(false);
   const { data: metadata } = useGetTokenDetails({
     mint: new PublicKey(mintId),
@@ -82,8 +84,15 @@ export const TradingPanel: FC<{
     address: getUSDCVault(new PublicKey(mintId)),
     tokenProgram: TOKEN_PROGRAM_ID,
   });
+  const { data: mintVault } = useGetTokenAccountInfo({
+    address: getMintVault(new PublicKey(mintId)),
+  });
+  const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
 
-  const liquidity = (Number(usdcVault?.amount) || 0) * 0.99;
+  const liquidity =
+    Number(usdcVault?.amount) -
+    poolState?.creatorFeesTokenUsdc -
+    poolState?.protocolFeesTokenUsdc;
 
   const inputToken = buy
     ? Number(userUsdcInfo?.amount)
@@ -100,56 +109,73 @@ export const TradingPanel: FC<{
   const [outputAmount, setOutputAmount] = useState('');
   const formattedInputAmount = useMemo(() => {
     return buy
-      ? Number(inputAmount) / 10 ** USDC_DECIMALS
-      : Number(inputAmount);
+      ? inputAmount != ''
+        ? (Number(inputAmount) / 10 ** USDC_DECIMALS).toString()
+        : ''
+      : inputAmount;
   }, [buy, inputAmount]);
 
   const formattedOutputAmount = useMemo(() => {
     return buy
-      ? Number(outputAmount)
-      : Number(outputAmount) / 10 ** USDC_DECIMALS;
+      ? outputAmount
+      : outputAmount != ''
+      ? (Number(outputAmount) / 10 ** USDC_DECIMALS).toString()
+      : '';
   }, [buy, outputAmount]);
   const { connection } = useConnection();
 
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       setInputAmount(amount.toString());
+      if (!inputToken || amount > inputToken) {
+        setShowWarning('Input Amount Exceeds Balance');
+      } else {
+        setShowWarning('');
+      }
       setShowError(false);
-      if (liquidity) {
-        const quoteResponse = await getQuote(
+      if (liquidity && mintVault && usdcVault && poolState) {
+        let transferFee: TransferFee | undefined;
+        const currentTransferFeeConfig =
+          metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
+        if (currentTransferFeeConfig) {
+          transferFee = {
+            epoch: BigInt(currentTransferFeeConfig.epoch),
+            maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
+            transferFeeBasisPoints: Number(
+              currentTransferFeeConfig.transfer_fee_basis_points
+            ),
+          };
+        }
+        let inputAmountWithoutFee = BigInt(amount);
+        if (!buy) {
+          inputAmountWithoutFee =
+            inputAmountWithoutFee -
+            (transferFee
+              ? calculateFee(transferFee, inputAmountWithoutFee)
+              : BigInt(0));
+        }
+        let outAmountWithoutFee = await getQuote(
           connection,
-          publicKey!,
           new PublicKey(mintId),
+          mintVault,
+          usdcVault,
+          poolState,
           buy ? USDC.toBase58() : mintId,
-          buy ? mintId : USDC.toBase58(),
-          amount,
+          inputAmountWithoutFee,
           'ExactIn'
         );
-        if (
-          !quoteResponse.outAmount ||
-          (!buy && quoteResponse.outAmount > liquidity)
-        ) {
+        if (!buy && outAmountWithoutFee > liquidity) {
           setShowError(true);
           return;
         }
-
-        let outAmount = quoteResponse.outAmount;
         if (buy) {
-          const currentTransferFeeConfig =
-            metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
-          if (currentTransferFeeConfig) {
-            const transferFee: TransferFee = {
-              epoch: BigInt(currentTransferFeeConfig.epoch),
-              maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
-              transferFeeBasisPoints: Number(
-                currentTransferFeeConfig.transfer_fee_basis_points
-              ),
-            };
-            outAmount = outAmount - calculateFee(transferFee, outAmount);
-          }
+          outAmountWithoutFee =
+            outAmountWithoutFee -
+            (transferFee
+              ? calculateFee(transferFee, outAmountWithoutFee)
+              : BigInt(0));
         }
-
-        setOutputAmount(outAmount.toString());
+        setOutputAmount(outAmountWithoutFee.toString());
       } else {
         // show mint not created through this platform
       }
@@ -172,8 +198,8 @@ export const TradingPanel: FC<{
         onChange={(e) => {
           let amount = parseFloat(e.target.value) * 10 ** USDC_DECIMALS;
           if (Number.isNaN(amount)) {
-            setOutputAmount('');
             setInputAmount('');
+            setOutputAmount('');
           } else {
             handleOutputAmountGivenInput(amount);
           }
@@ -239,7 +265,11 @@ export const TradingPanel: FC<{
             <div className="flex flex-col gap-2 p-4 rounded">
               <div className="flex items-center w-full">
                 <button
-                  onClick={() => setBuy(true)}
+                  onClick={() => {
+                    setBuy(true);
+                    setInputAmount('');
+                    setOutputAmount('');
+                  }}
                   className={`btn ${
                     !buy ? 'btn-outline' : 'btn-success'
                   } w-1/2  btn-sm rounded-r-none `}
@@ -247,7 +277,11 @@ export const TradingPanel: FC<{
                   Buy
                 </button>
                 <button
-                  onClick={() => setBuy(false)}
+                  onClick={() => {
+                    setBuy(false);
+                    setInputAmount('');
+                    setOutputAmount('');
+                  }}
                   className={`btn w-1/2  ${
                     buy ? 'btn-outline ' : 'btn-error'
                   } btn-sm rounded-l-none `}
@@ -308,9 +342,9 @@ export const TradingPanel: FC<{
                   {buy ? MintButton : USDCButton}
                 </div>
               </label>
-              {showWarning && (
+              {showWarning != '' && (
                 <span className="text-right text-xs text-warning">
-                  {'Price Impact exceeds 30%'}
+                  {showWarning}
                 </span>
               )}
               {showError && (

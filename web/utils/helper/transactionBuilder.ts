@@ -145,6 +145,7 @@ export async function buildAndSendTransaction({
   );
   return txId;
 }
+
 export async function sendAndConfirmTransaction(
   connection: Connection,
   signedTx: Transaction | VersionedTransaction,
@@ -155,7 +156,6 @@ export async function sendAndConfirmTransaction(
   const txId = await connection.sendTransaction(
     signedTx as VersionedTransaction,
     {
-      maxRetries: 0,
       skipPreflight: true,
     }
   );
