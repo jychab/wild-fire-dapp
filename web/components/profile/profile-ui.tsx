@@ -102,23 +102,25 @@ const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
         }
       />
       {metadata?.additionalInfoData?.posts?.length == 0 &&
-      publicKey &&
-      ((tokenStateData && publicKey.toBase58() == tokenStateData.admin) ||
-        metadata?.authorities?.find(
-          (x) =>
-            x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
-        )?.address == publicKey.toBase58()) ? (
-        <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
-          Create your first post!
-          <div className="w-36">
-            <UploadBtn mintId={metadata?.id} />
+        ((tokenStateData &&
+          publicKey &&
+          publicKey.toBase58() == tokenStateData.admin) ||
+        (publicKey &&
+          metadata?.authorities?.find(
+            (x) =>
+              x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
+          )?.address == publicKey.toBase58()) ? (
+          <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
+            Create your first post!
+            <div className="w-36">
+              <UploadBtn mintId={metadata?.id} />
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
-          No post found!
-        </div>
-      )}
+        ) : (
+          <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
+            No post found!
+          </div>
+        ))}
     </>
   );
 };

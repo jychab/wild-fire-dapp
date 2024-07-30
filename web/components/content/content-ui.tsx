@@ -206,6 +206,10 @@ interface DisplayContentProps {
   multiGrid?: boolean;
   expandAll?: boolean;
   hideComment?: boolean;
+  hideBorder?: boolean;
+  hideCaption?: boolean;
+  hideCarousel?: boolean;
+  hideUserPanel?: boolean;
 }
 
 export const DisplayContent: FC<DisplayContentProps> = ({
@@ -215,6 +219,10 @@ export const DisplayContent: FC<DisplayContentProps> = ({
   multiGrid,
   expandAll,
   hideComment,
+  hideBorder,
+  hideCaption,
+  hideCarousel,
+  hideUserPanel,
 }) => {
   const actionUrl = post.carousel.find((x) => x.fileType == 'blinks')?.uri;
   return actionUrl ? (
@@ -227,6 +235,10 @@ export const DisplayContent: FC<DisplayContentProps> = ({
         multiGrid={multiGrid}
         expandAll={expandAll}
         hideComment={hideComment}
+        hideBorder={hideBorder}
+        hideCaption={hideCaption}
+        hideCarousel={hideCarousel}
+        hideUserPanel={hideUserPanel}
       />
     ) : (
       <></>
@@ -239,6 +251,10 @@ export const DisplayContent: FC<DisplayContentProps> = ({
       multiGrid={multiGrid}
       expandAll={expandAll}
       hideComment={hideComment}
+      hideBorder={hideBorder}
+      hideCaption={hideCaption}
+      hideCarousel={hideCarousel}
+      hideUserPanel={hideUserPanel}
     />
   );
 };
