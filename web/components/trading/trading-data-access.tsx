@@ -50,7 +50,7 @@ export function useGetPoolState({ mint }: { mint: PublicKey | null }) {
     queryKey: ['get-pool-state', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
       if (!mint) return null;
-      return swapProgram.account.poolState.fetch(getPool(mint));
+      return swapProgram.account.poolState.fetchNullable(getPool(mint));
     },
     enabled: !!mint,
   });
@@ -90,32 +90,39 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
     queryKey: ['get-price', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
       if (!mint) return null;
-      const usdcVault = await getAccount(
-        connection,
-        getUSDCVault(mint),
-        undefined,
-        TOKEN_PROGRAM_ID
-      );
-      const mintVault = await getAccount(
-        connection,
-        getMintVault(mint),
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      );
-      const poolState = await swapProgram.account.poolState.fetch(
-        getPool(mint)
-      );
+      try {
+        const usdcVault = await getAccount(
+          connection,
+          getUSDCVault(mint),
+          undefined,
+          TOKEN_PROGRAM_ID
+        );
+        const mintVault = await getAccount(
+          connection,
+          getMintVault(mint),
+          undefined,
+          TOKEN_2022_PROGRAM_ID
+        );
+        const poolState = await swapProgram.account.poolState.fetchNullable(
+          getPool(mint)
+        );
+        if (!poolState) {
+          return null;
+        }
 
-      const result =
-        (Number(usdcVault.amount) -
-          poolState.creatorFeesTokenUsdc -
-          poolState.protocolFeesTokenUsdc +
-          Number(OFF_SET)) /
-        (Number(mintVault.amount) -
-          poolState.creatorFeesTokenMint -
-          poolState.protocolFeesTokenMint);
+        const result =
+          (Number(usdcVault.amount) -
+            poolState.creatorFeesTokenUsdc -
+            poolState.protocolFeesTokenUsdc +
+            Number(OFF_SET)) /
+          (Number(mintVault.amount) -
+            poolState.creatorFeesTokenMint -
+            poolState.protocolFeesTokenMint);
 
-      return result / 10 ** USDC_DECIMALS;
+        return result / 10 ** USDC_DECIMALS;
+      } catch (e) {
+        return null;
+      }
     },
     enabled: !!mint,
     staleTime: 15 * 60 * 1000,
