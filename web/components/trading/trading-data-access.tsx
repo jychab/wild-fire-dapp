@@ -107,15 +107,15 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
       );
 
       const result =
-        usdcVault.amount -
-        BigInt(Number(poolState.creatorFeesTokenUsdc)) -
-        BigInt(Number(poolState.protocolFeesTokenUsdc)) +
-        OFF_SET /
-          (mintVault.amount -
-            BigInt(Number(poolState.creatorFeesTokenMint)) -
-            BigInt(Number(poolState.protocolFeesTokenMint)));
+        (Number(usdcVault.amount) -
+          poolState.creatorFeesTokenUsdc -
+          poolState.protocolFeesTokenUsdc +
+          Number(OFF_SET)) /
+        (Number(mintVault.amount) -
+          poolState.creatorFeesTokenMint -
+          poolState.protocolFeesTokenMint);
 
-      return Number(result) / 10 ** USDC_DECIMALS;
+      return result / 10 ** USDC_DECIMALS;
     },
     enabled: !!mint,
     staleTime: 15 * 60 * 1000,
