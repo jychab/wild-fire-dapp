@@ -400,7 +400,7 @@ export const UserPanel: FC<{
             {(liked || post?.likesCount) && (
               <span className="text-xs stat-desc link link-hover">{`Liked by ${
                 closestUserMintMetadata?.content?.metadata.name ||
-                (closestUser == publicKey?.toBase58() ? 'you' : '')
+                (closestUser == publicKey?.toBase58() || liked ? 'you' : '')
               }${
                 (closestUser == publicKey?.toBase58() ||
                   closestUserMintMetadata?.content?.metadata.name) &&
@@ -409,7 +409,7 @@ export const UserPanel: FC<{
                   ? ` and `
                   : ''
               }${
-                post?.likesCount != undefined && post.likesCount > 0
+                post?.likesCount != undefined && post.likesCount > 1
                   ? formatLargeNumber(
                       post.likesCount - (closestUserMintMetadata ? 1 : 0)
                     ) + ' others'
