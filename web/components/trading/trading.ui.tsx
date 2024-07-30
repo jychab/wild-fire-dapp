@@ -155,8 +155,6 @@ export const TradingPanel: FC<{
               : BigInt(0));
         }
         let outAmountWithoutFee = await getQuote(
-          connection,
-          new PublicKey(mintId),
           mintVault,
           usdcVault,
           poolState,

@@ -3,13 +3,7 @@
 import { db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
-import {
-  Mint,
-  TOKEN_2022_PROGRAM_ID,
-  getAccount,
-  getMint,
-  getTransferFeeConfig,
-} from '@solana/spl-token';
+import { getAccount } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
@@ -19,48 +13,12 @@ import { program } from '../../utils/helper/transcationInstructions';
 import { PostContent } from '@/utils/types/post';
 import { TokenState } from '@/utils/types/program';
 
-export function useGetMintTransferFeeConfig({
-  mint,
-}: {
-  mint: Mint | undefined | null;
-}) {
-  const { connection } = useConnection();
-  return useQuery({
-    queryKey: [
-      'get-mint-transfer-fee-config',
-      { endpoint: connection.rpcEndpoint, mint: mint?.address },
-    ],
-    queryFn: () => mint && getTransferFeeConfig(mint),
-    enabled: !!mint,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useGetMintDetails({
-  mint,
-  tokenProgram = TOKEN_2022_PROGRAM_ID,
-}: {
-  mint: PublicKey | null;
-  tokenProgram?: PublicKey;
-}) {
-  const { connection } = useConnection();
-  return useQuery({
-    queryKey: [
-      'get-mint-details',
-      { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
-    ],
-    queryFn: () => mint && getMint(connection, mint, undefined, tokenProgram),
-    enabled: !!mint,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [
       'get-mint-summary-details',
-      { endpoint: connection.rpcEndpoint, mint: mint ? mint : null },
+      { endpoint: connection.rpcEndpoint, mint },
     ],
     queryFn: async () => {
       if (!mint) return null;

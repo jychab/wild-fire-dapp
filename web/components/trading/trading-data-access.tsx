@@ -17,7 +17,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey, TransactionSignature } from '@solana/web3.js';
+import { PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -329,8 +329,6 @@ export function getPool(mint: PublicKey) {
 }
 
 export async function getQuote(
-  connection: Connection,
-  mint: PublicKey,
   mintVault: Account,
   usdcVault: Account,
   poolState: {

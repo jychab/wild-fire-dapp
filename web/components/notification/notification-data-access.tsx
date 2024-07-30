@@ -14,7 +14,7 @@ export function useGetDailyClaimAvailable({
   mint: PublicKey | null;
 }) {
   return useQuery({
-    queryKey: ['get-claim-availability', { mint: mint ? mint : null }],
+    queryKey: ['get-claim-availability', { mint }],
     queryFn: async () => {
       if (!mint) return;
       const result = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
@@ -77,10 +77,10 @@ export function useClaimDailyMutation({ mint }: { mint: PublicKey | null }) {
         transactionToast(signature);
         return await Promise.all([
           client.invalidateQueries({
-            queryKey: ['get-claim-availability', { mint: mint }],
+            queryKey: ['get-claim-availability', { mint }],
           }),
           client.refetchQueries({
-            queryKey: ['get-claim-availability', { mint: mint }],
+            queryKey: ['get-claim-availability', { mint }],
           }),
         ]);
       }

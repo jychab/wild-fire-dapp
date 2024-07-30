@@ -2,7 +2,7 @@ import { deletePost } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
-import { useConnection } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -90,6 +90,7 @@ export async function getTokenBalancesFromOwner({
 
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
+  const wallet = useWallet();
   const transactionToast = useTransactionToast();
   const client = useQueryClient();
 
@@ -114,13 +115,13 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
+              { endpoint: connection.rpcEndpoint, mint, withContent: true },
             ],
           }),
-          client.refetchQueries({
+          client.invalidateQueries({
             queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
+              'get-posts-from-address',
+              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
             ],
           }),
         ]);
@@ -157,11 +158,3 @@ export const getPostsFromAddress = ({
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 };
-
-export function debounce(func: Function, wait: number) {
-  let timeout: NodeJS.Timeout;
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}

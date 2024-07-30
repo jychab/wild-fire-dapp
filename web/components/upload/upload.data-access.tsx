@@ -97,13 +97,13 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
+              { endpoint: connection.rpcEndpoint, mint, withContent: true },
             ],
           }),
-          client.refetchQueries({
+          client.invalidateQueries({
             queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
+              'get-posts-from-address',
+              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
             ],
           }),
         ]);

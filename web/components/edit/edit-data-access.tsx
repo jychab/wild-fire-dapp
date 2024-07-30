@@ -80,14 +80,6 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
-        return Promise.all([
-          client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
-        ]);
       }
     },
     onError: (error) => {
@@ -241,11 +233,14 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
+              { endpoint: connection.rpcEndpoint, mint, withContent: true },
             ],
           }),
           client.invalidateQueries({
-            queryKey: ['get-mint-token-json-uri', { mint }],
+            queryKey: [
+              'get-token-details',
+              { endpoint: connection.rpcEndpoint, mint, withContent: false },
+            ],
           }),
         ]);
       }
