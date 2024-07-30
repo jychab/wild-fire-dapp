@@ -1,6 +1,7 @@
 'use client';
 
-import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
+import { db } from '@/utils/firebase/firebase';
+import { proxify } from '@/utils/helper/proxy';
 import { TokenState } from '@/utils/types/program';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -13,6 +14,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
@@ -153,12 +155,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           const uri = await uploadMetadata(JSON.stringify(payload), mint);
           fieldsToUpdate.push(['uri', uri]);
         }
-        if (
-          details.additionalMetadata.find((x) => x[0] == 'hashfeed')?.[1] !=
-          generateMintApiEndPoint(mint)
-        ) {
-          fieldsToUpdate.push(['hashfeed', generateMintApiEndPoint(mint)]);
-        }
         if (fieldsToUpdate.length > 0) {
           if (ixs.length == 0) {
             const distributor = await connection.getAccountInfo(
@@ -278,7 +274,16 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         );
         return tokenState;
       } else {
-        return null;
+        const mintData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
+        if (!mintData.exists) {
+          return null;
+        } else {
+          return {
+            mint: mintData.data()!.mint,
+            admin: mintData.data()!.admin,
+            mutable: 0,
+          } as TokenState;
+        }
       }
     },
     staleTime: 15 * 60 * 1000,

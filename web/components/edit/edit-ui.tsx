@@ -271,12 +271,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
         <button
           disabled={!publicKey || editMutation.isPending}
           onClick={async () => {
-            if (
-              metaData == null ||
-              metaData == undefined ||
-              mintTokenData == null ||
-              mintTokenData == undefined
-            ) {
+            if (!metaData || !mintTokenData) {
               toast.error('Unable to fetch current mint metadata.');
               return;
             }
@@ -292,6 +287,7 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
               previous: {
                 ...metaData,
                 ...mintTokenData,
+                distributor: mintTokenData.distributor!,
               },
             });
           }}

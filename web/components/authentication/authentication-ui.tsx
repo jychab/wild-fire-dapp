@@ -90,7 +90,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       </div>
       <ul
         tabIndex={0}
-        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow"
+        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-56"
       >
         <li className="text-left">
           <span className="block text-sm truncate w-48 ">

@@ -1,5 +1,6 @@
 'use client';
 
+import { Scope } from '@/utils/enums/das';
 import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync, NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -8,11 +9,11 @@ import { IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
-import { Scope } from '../../utils/enums/das';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
+  useGetPoolState,
   useGetPrice,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
@@ -62,7 +63,7 @@ export const ProfilePage: FC<{
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
           <div className="border-base-200 rounded border-x border-b w-full md:p-4">
             {selectedTab == TabsEnum.POST && (
-              <ContentPanel metadata={metaDataQuery} />
+              <ContentPanel metadata={metaDataQuery} mintId={mintId} />
             )}
             {selectedTab == TabsEnum.TRADE && <TradingPanel mintId={mintId} />}
           </div>
@@ -73,10 +74,15 @@ export const ProfilePage: FC<{
 };
 
 interface ContentPanelProps {
+  mintId: string;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
+const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
+  const { publicKey } = useWallet();
+  const { data: tokenStateData } = useGetMintToken({
+    mint: new PublicKey(mintId),
+  });
   return (
     <>
       <ContentGrid
@@ -95,12 +101,22 @@ const ContentPanel: FC<ContentPanelProps> = ({ metadata }) => {
             : undefined
         }
       />
-      {metadata?.additionalInfoData?.posts?.length == 0 && (
+      {metadata?.additionalInfoData?.posts?.length == 0 &&
+      publicKey &&
+      ((tokenStateData && publicKey.toBase58() == tokenStateData.admin) ||
+        metadata?.authorities?.find(
+          (x) =>
+            x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
+        )?.address == publicKey.toBase58()) ? (
         <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
           Create your first post!
           <div className="w-36">
             <UploadBtn mintId={metadata?.id} />
           </div>
+        </div>
+      ) : (
+        <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
+          No post found!
         </div>
       )}
     </>
@@ -188,6 +204,8 @@ const Profile: FC<ProfileProps> = ({
     mint: new PublicKey(mintId),
   });
 
+  const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
+
   const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
 
   return (
@@ -213,53 +231,43 @@ const Profile: FC<ProfileProps> = ({
               {metadata?.content?.metadata.name}
             </span>
           </div>
-          <span className="">{metadata?.content?.metadata.symbol}</span>
+          <span>{metadata?.content?.metadata.symbol}</span>
         </div>
 
         <div className="flex items-center gap-2 ">
-          <div
-            data-tip={`${
-              isLiquidityPoolFound || (tokenInfo && tokenInfo.amount > 0)
-                ? ''
-                : 'Create a liquidity pool to unlock this feature'
-            }`}
-            className="tooltip "
+          <button
+            disabled={
+              !isLiquidityPoolFound || (!!tokenInfo && tokenInfo.amount > 0)
+            }
+            onClick={async () => {
+              swapMutation.mutateAsync({
+                poolState,
+                amount: 1,
+                inputMint: NATIVE_MINT.toBase58(),
+                outputMint: mintId,
+                swapMode: 'ExactOut',
+              });
+            }}
+            className="btn btn-success btn-sm w-32 "
           >
-            <button
-              disabled={
-                !isLiquidityPoolFound || (!!tokenInfo && tokenInfo.amount > 0)
-              }
-              onClick={async () => {
-                swapMutation.mutateAsync({
-                  amount: 1,
-                  inputMint: NATIVE_MINT.toBase58(),
-                  outputMint: mintId,
-                  swapMode: 'ExactOut',
-                });
-              }}
-              className="btn btn-success btn-sm w-32 "
-            >
-              {tokenInfo && tokenInfo.amount > 0 ? 'Subscribed' : 'Subscribe'}
-            </button>
-          </div>
-
-          {tokenStateData &&
-            publicKey &&
-            tokenStateData.mutable == 1 &&
-            (publicKey.toBase58() == tokenStateData.admin ||
-              metadata?.authorities?.find(
-                (x) =>
-                  x.scopes.includes(Scope.METADATA) ||
-                  x.scopes.includes(Scope.FULL)
-              )?.address == publicKey.toBase58()) && (
-              <button
-                className="btn btn-outline btn-sm items-center"
-                onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
-              >
-                <IconEdit />
-                Edit
-              </button>
+            {tokenInfo && tokenInfo.amount > 0 ? (
+              'Subscribed'
+            ) : swapMutation.isPending ? (
+              <div className="loading loading-spinner" />
+            ) : (
+              'Subscribe'
             )}
+          </button>
+
+          {tokenStateData && publicKey && tokenStateData.mutable == 1 && (
+            <button
+              className="btn btn-outline btn-sm items-center"
+              onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
+            >
+              <IconEdit />
+              Edit
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

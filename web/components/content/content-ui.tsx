@@ -436,7 +436,7 @@ export const UserPanel: FC<{
             </div>
             <ul
               tabIndex={0}
-              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-24"
+              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-28"
             >
               {!editable && isLiquidityPoolFound && post && (
                 <li>

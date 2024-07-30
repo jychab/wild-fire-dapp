@@ -8,6 +8,7 @@ import {
   ONBOARDING_WALLET,
 } from '@/utils/consts';
 import {
+  createOrUpdateAdminForExternalMint,
   getDistributor,
   getSponsoredDistributor,
   uploadMedia,
@@ -22,6 +23,7 @@ import {
   initializePool,
   program,
 } from '@/utils/helper/transcationInstructions';
+import { DAS } from '@/utils/types/das';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -31,10 +33,46 @@ import {
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
+
+export function useCreateMintWithExistingToken({
+  address,
+}: {
+  address: PublicKey | null;
+}) {
+  const { connection } = useConnection();
+  const router = useRouter();
+  const client = useQueryClient();
+  return useMutation({
+    mutationKey: [
+      'create-mint-with-existing-token',
+      {
+        address,
+      },
+    ],
+    mutationFn: async (mint: PublicKey) => {
+      await createOrUpdateAdminForExternalMint(mint.toBase58());
+      return mint;
+    },
+    onSuccess: async (result) => {
+      router.push(`/profile?mintId=${result.toBase58()}`);
+      return await Promise.all([
+        client.invalidateQueries({
+          queryKey: [
+            'get-token',
+            { endpoint: connection.rpcEndpoint, address },
+          ],
+        }),
+      ]);
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${error}`);
+    },
+  });
+}
 
 interface CreateMintArgs {
   name: string;
@@ -43,7 +81,7 @@ interface CreateMintArgs {
   description: string;
 }
 
-export function useCreateMint({ address }: { address: string | null }) {
+export function useCreateMint({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection();
   const router = useRouter();
   const transactionToast = useTransactionToast();
@@ -100,9 +138,6 @@ export function useCreateMint({ address }: { address: string | null }) {
       if (result) {
         transactionToast(result.signature);
         router.push(`/profile?mintId=${result.mint.toBase58()}`);
-        (
-          document.getElementById('notification') as HTMLDialogElement
-        ).showModal();
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-claim-availability', { mint: result.mint }],
@@ -189,3 +224,50 @@ export async function buildTokenMetadata(
     mint: mint,
   };
 }
+
+export function useGetAssetByAuthority({
+  address,
+}: {
+  address: PublicKey | null;
+}) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-asset-by-authority',
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    queryFn: async () => {
+      if (!address) return null;
+      const assets = await getAssetsByAuthority(connection, address);
+      const fungibleTokens = assets.items.filter(
+        (x) => x.token_info && x.token_info.supply && x.token_info.supply > 1
+      );
+      return fungibleTokens;
+    },
+    enabled: !!address,
+  });
+}
+
+export const getAssetsByAuthority = async (
+  connection: Connection,
+  address: PublicKey
+) => {
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 'my-id',
+      method: 'getAssetsByAuthority',
+      params: {
+        authorityAddress: address.toBase58(),
+        page: 1, // Starts at 1
+        limit: 1000,
+      },
+    }),
+  });
+  const { result } = await response.json();
+  return result as DAS.GetAssetResponseList;
+};

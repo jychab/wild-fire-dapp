@@ -96,30 +96,29 @@ export const TradingPanel: FC<{
 
   const inputToken = buy
     ? Number(userUsdcInfo?.amount)
-    : userMintInfo
-    ? Number(userMintInfo.amount)
-    : undefined;
+    : Number(userMintInfo?.amount);
+
   const outputToken = buy
-    ? userMintInfo
-      ? Number(userMintInfo.amount)
-      : undefined
+    ? Number(userMintInfo?.amount)
     : Number(userUsdcInfo?.amount);
 
   const [inputAmount, setInputAmount] = useState('');
   const [outputAmount, setOutputAmount] = useState('');
   const formattedInputAmount = useMemo(() => {
-    return buy
-      ? inputAmount != ''
-        ? (Number(inputAmount) / 10 ** USDC_DECIMALS).toString()
-        : ''
-      : inputAmount;
+    return inputAmount != ''
+      ? (
+          Number(inputAmount) /
+          10 ** (buy ? USDC_DECIMALS : metadata?.token_info?.decimals || 0)
+        ).toString()
+      : '';
   }, [buy, inputAmount]);
 
   const formattedOutputAmount = useMemo(() => {
-    return buy
-      ? outputAmount
-      : outputAmount != ''
-      ? (Number(outputAmount) / 10 ** USDC_DECIMALS).toString()
+    return outputAmount != ''
+      ? (
+          Number(outputAmount) /
+          10 ** (buy ? metadata?.token_info?.decimals || 0 : USDC_DECIMALS)
+        ).toString()
       : '';
   }, [buy, outputAmount]);
   const { connection } = useConnection();
@@ -127,56 +126,56 @@ export const TradingPanel: FC<{
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       setInputAmount(amount.toString());
+      console.log(inputToken);
+      console.log(amount);
       if (!inputToken || amount > inputToken) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
         setShowWarning('');
       }
       setShowError(false);
-      if (liquidity && mintVault && usdcVault && poolState) {
-        let transferFee: TransferFee | undefined;
-        const currentTransferFeeConfig =
-          metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
-        if (currentTransferFeeConfig) {
-          transferFee = {
-            epoch: BigInt(currentTransferFeeConfig.epoch),
-            maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
-            transferFeeBasisPoints: Number(
-              currentTransferFeeConfig.transfer_fee_basis_points
-            ),
-          };
-        }
-        let inputAmountWithoutFee = BigInt(amount);
-        if (!buy) {
-          inputAmountWithoutFee =
-            inputAmountWithoutFee -
-            (transferFee
-              ? calculateFee(transferFee, inputAmountWithoutFee)
-              : BigInt(0));
-        }
-        let outAmountWithoutFee = await getQuote(
-          mintVault,
-          usdcVault,
-          poolState,
-          buy ? USDC.toBase58() : mintId,
-          inputAmountWithoutFee,
-          'ExactIn'
-        );
-        if (!buy && outAmountWithoutFee > liquidity) {
-          setShowError(true);
-          return;
-        }
-        if (buy) {
-          outAmountWithoutFee =
-            outAmountWithoutFee -
-            (transferFee
-              ? calculateFee(transferFee, outAmountWithoutFee)
-              : BigInt(0));
-        }
-        setOutputAmount(outAmountWithoutFee.toString());
-      } else {
-        // show mint not created through this platform
+
+      let transferFee: TransferFee | undefined;
+      const currentTransferFeeConfig =
+        metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
+      if (currentTransferFeeConfig) {
+        transferFee = {
+          epoch: BigInt(currentTransferFeeConfig.epoch),
+          maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
+          transferFeeBasisPoints: Number(
+            currentTransferFeeConfig.transfer_fee_basis_points
+          ),
+        };
       }
+      let inputAmountWithoutFee = BigInt(amount);
+      if (!buy) {
+        inputAmountWithoutFee =
+          inputAmountWithoutFee -
+          (transferFee
+            ? calculateFee(transferFee, inputAmountWithoutFee)
+            : BigInt(0));
+      }
+      let outAmountWithoutFee = await getQuote(
+        mintVault,
+        usdcVault,
+        poolState,
+        buy ? USDC.toBase58() : mintId,
+        buy ? mintId : USDC.toBase58(),
+        inputAmountWithoutFee,
+        'ExactIn'
+      );
+      if (!buy && outAmountWithoutFee > liquidity) {
+        setShowError(true);
+        return;
+      }
+      if (buy) {
+        outAmountWithoutFee =
+          outAmountWithoutFee -
+          (transferFee
+            ? calculateFee(transferFee, outAmountWithoutFee)
+            : BigInt(0));
+      }
+      setOutputAmount(outAmountWithoutFee.toString());
     },
     [mintId, publicKey, liquidity, metadata, connection, buy]
   );
@@ -231,7 +230,9 @@ export const TradingPanel: FC<{
         placeholder="0.00"
         value={buy ? formattedOutputAmount : formattedInputAmount}
         onChange={(e) => {
-          let amount = parseFloat(e.target.value);
+          let amount =
+            parseFloat(e.target.value) *
+            10 ** (metadata?.token_info?.decimals || 0);
           if (Number.isNaN(amount)) {
             setOutputAmount('');
             setInputAmount('');
@@ -250,7 +251,15 @@ export const TradingPanel: FC<{
       ) : (
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col h-[500px] w-full">
-            <TradingViewChart {...chartProps} />
+            {poolState ? (
+              <TradingViewChart {...chartProps} />
+            ) : (
+              <iframe
+                width="100%"
+                height="500"
+                src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+              ></iframe>
+            )}
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
             {
@@ -294,7 +303,8 @@ export const TradingPanel: FC<{
                     <span>{`${formatLargeNumber(
                       buy
                         ? (inputToken || 0) / 10 ** USDC_DECIMALS
-                        : inputToken || 0
+                        : (inputToken || 0) /
+                            10 ** (metadata?.token_info?.decimals || 0)
                     )} ${
                       buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
@@ -354,6 +364,7 @@ export const TradingPanel: FC<{
                 disabled={!isLiquidityPoolFound || showError}
                 onClick={() => {
                   swapMutation.mutateAsync({
+                    poolState,
                     inputMint: buy ? USDC.toBase58() : mintId,
                     outputMint: buy ? mintId : USDC.toBase58(),
                     amount: parseFloat(inputAmount),
@@ -377,7 +388,7 @@ export const TradingPanel: FC<{
                 )}
               </button>
 
-              {!usdcVault && (
+              {!isLiquidityPoolFound && (
                 <Link
                   rel="noopener noreferrer"
                   target="_blank"
@@ -525,10 +536,14 @@ export const MintInfo: FC<{
             10 ** (metadata?.token_info?.decimals || 0)
         )}
       </span>
-      <div className="col-span-1 text-sm">Liquidity:</div>
-      <span className="text-right col-span-3">
-        {`$${formatLargeNumber(liquidity / 10 ** USDC_DECIMALS)}`}
-      </span>
+      {!Number.isNaN(liquidity) && (
+        <div className="col-span-1 text-sm">Liquidity:</div>
+      )}
+      {!Number.isNaN(liquidity) && (
+        <span className="text-right col-span-3">
+          {`$${formatLargeNumber(liquidity / 10 ** USDC_DECIMALS)}`}
+        </span>
+      )}
 
       {mintSummaryDetails && <div className="col-span-1 text-sm">Holders:</div>}
       {mintSummaryDetails && (

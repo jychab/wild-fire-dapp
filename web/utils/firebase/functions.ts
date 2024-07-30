@@ -26,6 +26,14 @@ export async function createOrEditComment(
   await createOrEditComment({ mint, postId, commentId, text, mentions });
 }
 
+export async function createOrUpdateAdminForExternalMint(mint: string) {
+  const createOrUpdateAdminForExternalMint = httpsCallable(
+    functions,
+    'createOrUpdateAdminForExternalMint'
+  );
+  await createOrUpdateAdminForExternalMint({ mint });
+}
+
 export async function getDistributor() {
   const getDistributor = httpsCallable(functions, 'getDistributor');
   const result = await getDistributor();

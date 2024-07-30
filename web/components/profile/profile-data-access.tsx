@@ -1,13 +1,21 @@
 'use client';
 
 import { db } from '@/utils/firebase/firebase';
-import { proxify } from '@/utils/helper/proxy';
+import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { getAccount } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where,
+} from 'firebase/firestore';
 import { program } from '../../utils/helper/transcationInstructions';
 
 import { PostContent } from '@/utils/types/post';
@@ -65,7 +73,22 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
         );
         return tokenState;
       } else {
-        return null;
+        const mintData = await getDocs(
+          query(
+            collection(db, `Mint`),
+            where('admin', '==', address.toBase58()),
+            limit(1)
+          )
+        );
+        if (mintData.empty) {
+          return null;
+        } else {
+          return {
+            mint: mintData.docs[0].data().mint,
+            admin: mintData.docs[0].data().admin,
+            mutable: 0,
+          } as TokenState;
+        }
       }
     },
 
@@ -149,25 +172,16 @@ export function useGetTokenDetails({
       }
 
       try {
-        const hashFeedUri =
-          data.mint_extensions?.metadata?.additional_metadata.find(
-            (x) => x[0] == 'hashfeed'
-          )?.[1];
-        if (hashFeedUri) {
-          const uriMetadata = await (await fetch(proxify(hashFeedUri))).json();
-          let posts = uriMetadata.posts as PostContent[] | undefined;
-          return {
-            ...data,
-            additionalInfoData: {
-              posts: posts,
-            },
-          } as DAS.GetAssetResponse;
-        } else {
-          return {
-            ...data,
-            additionalInfoData: { posts: [] },
-          } as DAS.GetAssetResponse;
-        }
+        const uriMetadata = await (
+          await fetch(proxify(generateMintApiEndPoint(mint)))
+        ).json();
+        let posts = uriMetadata.posts as PostContent[] | undefined;
+        return {
+          ...data,
+          additionalInfoData: {
+            posts: posts,
+          },
+        } as DAS.GetAssetResponse;
       } catch (e) {
         return {
           ...data,
