@@ -69,7 +69,7 @@ export function useGetActionRegistryLookUp({
   enabled: boolean;
 }) {
   return useQuery({
-    queryKey: ['get-blink-lookup-url', { url, type }],
+    queryKey: ['get-blink-lookup-url', { url, type, actionsRegistry }],
     queryFn: () => {
       if (!url || !actionsRegistry) return null;
       if (type === 'action') {
@@ -142,6 +142,7 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
       };
       try {
         const response = await fetch(proxify(registryUrl));
+
         let config;
         if (!response.ok) {
           console.error(

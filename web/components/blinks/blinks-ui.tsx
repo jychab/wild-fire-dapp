@@ -92,6 +92,7 @@ export const Blinks: FC<BlinksProps> = ({
   const interstitialData = actionUrl
     ? isInterstitial(actionUrl)
     : { isInterstitial: false, decodedActionUrl: '' };
+
   const { data: interstitialState } = useGetActionRegistryLookUp({
     url: actionUrl!,
     type: 'interstitial',
