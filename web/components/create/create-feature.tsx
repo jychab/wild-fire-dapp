@@ -12,6 +12,7 @@ import {
   useCreateMint,
   useCreateMintWithExistingToken,
   useGetAssetByAuthority,
+  useGetJupiterVerifiedTokens,
 } from './create-data-access';
 
 export const CreatePanel: FC = () => {
@@ -175,8 +176,10 @@ export const CreatePanel: FC = () => {
 
 export const CreateWithExistingPanel: FC = () => {
   const { publicKey } = useWallet();
+  const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
   const { data: assets, isLoading } = useGetAssetByAuthority({
     address: publicKey,
+    verifiedTokenList: verifiedTokens?.map((x) => x.address),
   });
   const [selected, setSelected] = useState<DAS.GetAssetResponse>();
   const createMutation = useCreateMintWithExistingToken({ address: publicKey });
@@ -186,10 +189,11 @@ export const CreateWithExistingPanel: FC = () => {
         Create an account using an existing token
       </span>
       <span className="text-md md:text-base text-center px-4">
-        Select one from the list of the tokens created by you.
+        Select an existing token created by you.
       </span>
       {isLoading && <div className="loading loading-dots" />}
-      {!isLoading && (
+      {assets && assets.length == 0 && <div>No Tokens Found</div>}
+      {!isLoading && assets && assets?.length > 0 && (
         <>
           <div className="grid gap-2 overflow-scroll border p-4 w-full max-w-sm rounded">
             {assets?.map((x) => {

@@ -226,10 +226,28 @@ export async function buildTokenMetadata(
   };
 }
 
+export function useGetJupiterVerifiedTokens() {
+  return useQuery({
+    queryKey: [
+      'get-jupiter-verified-tokens',
+      { endpoint: 'https://tokens.jup.ag/tokens?tags=verified' },
+    ],
+    queryFn: async () => {
+      const result = await (
+        await fetch('https://tokens.jup.ag/tokens?tags=verified')
+      ).json();
+      return result as any[];
+    },
+    staleTime: LONG_STALE_TIME,
+  });
+}
+
 export function useGetAssetByAuthority({
   address,
+  verifiedTokenList,
 }: {
   address: PublicKey | null;
+  verifiedTokenList?: string[];
 }) {
   const { connection } = useConnection();
   return useQuery({
@@ -241,7 +259,11 @@ export function useGetAssetByAuthority({
       if (!address) return null;
       const assets = await getAssetsByAuthority(connection, address);
       const fungibleTokens = assets.items.filter(
-        (x) => x.token_info && x.token_info.supply && x.token_info.supply > 1
+        (x) =>
+          x.token_info &&
+          x.token_info.supply &&
+          x.token_info.supply > 1 &&
+          verifiedTokenList?.includes(x.id)
       );
       return fungibleTokens;
     },
