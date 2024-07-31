@@ -30,18 +30,18 @@ const NotificationFeature = () => {
   );
 
   useEffect(() => {
-    if (claimData && claimData.lastClaimTimeStamp != undefined) {
-      const interval = setInterval(() => {
+    const interval = setInterval(() => {
+      if (claimData?.lastClaimTimeStamp) {
         setTimeLeft(
           calculateTimeLeft(
             Date.now() / 1000,
             claimData.lastClaimTimeStamp + 24 * 60 * 60
           )
         );
-      }, 1000);
+      }
+    }, 1000);
 
-      return () => clearInterval(interval);
-    }
+    return () => clearInterval(interval);
   }, [claimData?.lastClaimTimeStamp]);
 
   function calculateTimeLeft(start: number, end: number) {
