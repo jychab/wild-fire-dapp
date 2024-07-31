@@ -134,7 +134,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export const getPostsFromAddress = ({
+export const useGetPostsFromAddress = ({
   address,
 }: {
   address: PublicKey | null;

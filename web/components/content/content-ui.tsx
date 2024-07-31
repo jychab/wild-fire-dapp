@@ -31,44 +31,13 @@ import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
-interface ContentGridProps {
+export interface ContentGridProps {
   posts: PostContent[] | undefined | null;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
   hideComment?: boolean;
 }
-
-export const ContentGrid: FC<ContentGridProps> = ({
-  posts: posts,
-  hideComment = false,
-  showMintDetails = true,
-  editable = false,
-  multiGrid = false,
-}) => {
-  return posts ? (
-    <div
-      className={`grid grid-cols-1 sm:gap-2 ${
-        multiGrid ? 'grid-cols-2 lg:grid-cols-5' : 'pb-32'
-      }`}
-    >
-      {posts.map((x) => (
-        <DisplayContent
-          key={x.id}
-          post={x}
-          hideComment={hideComment}
-          showMintDetails={showMintDetails}
-          editable={editable}
-          multiGrid={multiGrid}
-        />
-      ))}
-    </div>
-  ) : (
-    <div className="flex items-center justify-center w-full ">
-      <div className="loading loading-dots" />
-    </div>
-  );
-};
 
 export const PostCard = ({
   post,

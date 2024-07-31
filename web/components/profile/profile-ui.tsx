@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
 import { formatLargeNumber } from '../../utils/helper/format';
-import { ContentGrid } from '../content/content-ui';
+import { ContentGrid } from '../content/content-feature';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useGetPoolState,

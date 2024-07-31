@@ -21,11 +21,13 @@ export function useGetDailyClaimAvailable({
       const result = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
       if (result.exists()) {
         const response = result.data() as {
-          lastDailyClaimTimeStamp: number;
+          lastDailyClaimTimeStamp: number | undefined;
         };
         return {
-          availability:
-            Date.now() / 1000 - 24 * 60 * 60 > response.lastDailyClaimTimeStamp,
+          availability: response.lastDailyClaimTimeStamp
+            ? Date.now() / 1000 - 24 * 60 * 60 >
+              response.lastDailyClaimTimeStamp
+            : false,
           lastClaimTimeStamp: response.lastDailyClaimTimeStamp,
         };
       } else {

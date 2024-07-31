@@ -23,7 +23,6 @@ import {
 import { SignInBtn } from '../authentication/authentication-ui';
 import NotificationFeature from '../notification/notification-feature';
 import { UploadBtn } from '../upload/upload-ui';
-import { SocialComponent } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
   const [theme, _] = useLocalStorage('theme', 'dark');
@@ -67,9 +66,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
         const token = await verifyAndGetToken(publicKey, output);
         // Sign in with Firebase Authentication using a custom token.
         await signInWithCustomToken(auth, token);
-        (
-          document.getElementById('notification') as HTMLDialogElement
-        ).showModal();
       }
     } catch (error) {
       signOut();
@@ -132,7 +128,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
               <SignInBtn />
             </div>
           </div>
-          <div className="flex flex-1 mx-4 w-full mx-auto mt-16 ">
+          <div className="flex flex-1 mx-4 w-full mx-auto mt-16">
             <div className="w-full bg-base-100 text-base-content flex flex-col items-center">
               <Suspense
                 fallback={
@@ -168,15 +164,15 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 ))}
               </ul>
             </div>
-            <div className="block md:hidden">
+            {/* <div className="block md:hidden">
               <SocialComponent />
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
-      <footer className="hidden md:block p-4">
+      {/* <footer className="hidden md:block p-4">
         <SocialComponent />
-      </footer>
+      </footer> */}
     </div>
   );
 }
@@ -245,7 +241,7 @@ export function AppHero({
   subtitle: ReactNode;
 }) {
   return (
-    <div className={`hero py-[32px]`}>
+    <div className={`hero pb-[32px]`}>
       <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
         <div className="flex flex-col gap-8 w-full text-center ">
           {typeof title === 'string' ? (

@@ -8,7 +8,7 @@ interface UploadFeatureProps {
 
 export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
   return (
-    <div className="flex flex-col py-[32px] w-full items-center">
+    <div className="flex flex-col pb-[32px] w-full items-center">
       <Upload mintId={mintId} id={id} />
     </div>
   );
