@@ -4,6 +4,7 @@ import {
   AMOUNT_CREATOR,
   AMOUNT_LIQUIDITY_POOL,
   AMOUNT_RESERVE,
+  LONG_STALE_TIME,
   OFF_SET,
   ONBOARDING_WALLET,
 } from '@/utils/consts';
@@ -245,6 +246,7 @@ export function useGetAssetByAuthority({
       return fungibleTokens;
     },
     enabled: !!address,
+    staleTime: LONG_STALE_TIME,
   });
 }
 

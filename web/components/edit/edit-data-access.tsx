@@ -1,5 +1,6 @@
 'use client';
 
+import { LONG_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/proxy';
 import { TokenState } from '@/utils/types/program';
@@ -286,7 +287,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         }
       }
     },
-    staleTime: 15 * 60 * 1000,
+    staleTime: LONG_STALE_TIME,
     enabled: !!mint,
   });
 }

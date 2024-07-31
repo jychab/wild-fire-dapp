@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { program } from '../../utils/helper/transcationInstructions';
 
+import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
 import { PostContent } from '@/utils/types/post';
 import { TokenState } from '@/utils/types/program';
 
@@ -43,7 +44,7 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
       }
     },
     enabled: !!mint,
-    staleTime: 60 * 1000,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
@@ -93,7 +94,7 @@ export function useGetToken({ address }: { address: PublicKey | null }) {
     },
 
     enabled: !!address,
-    staleTime: 15 * 60 * 1000,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
@@ -128,7 +129,7 @@ export function useGetLargestAccountFromMint({
         })
       );
     },
-    staleTime: 1000 * 60, //1mins
+    staleTime: SHORT_STALE_TIME,
     enabled: !!mint && !!tokenProgram,
   });
 }
@@ -190,6 +191,6 @@ export function useGetTokenDetails({
       }
     },
     enabled: !!mint,
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHORT_STALE_TIME,
   });
 }

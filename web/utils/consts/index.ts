@@ -4,6 +4,12 @@ export const HASHFEED_MINT = new PublicKey(
   'CtiPMWDvrYm8SaWwuVJWWbq9qHCsGZjxVi4RShrgtyCY'
 );
 
+export const LONG_STALE_TIME = 24 * 60 * 60 * 1000;
+
+export const MEDIUM_STALE_TIME = 60 * 60 * 1000;
+
+export const SHORT_STALE_TIME = 15 * 60 * 1000;
+
 export const U32_MAX = BigInt(4294967296);
 
 export const USDC = new PublicKey(

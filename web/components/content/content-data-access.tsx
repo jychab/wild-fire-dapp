@@ -1,3 +1,4 @@
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
@@ -155,6 +156,6 @@ export const getPostsFromAddress = ({
       return posts;
     },
     enabled: !!address,
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: SHORT_STALE_TIME, // 15 minutes
   });
 };

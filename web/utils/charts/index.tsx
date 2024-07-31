@@ -68,7 +68,6 @@ const useInitializeChart = (
   const chartRef = useRef<any>(null);
   const [seriesRef, setSeriesRef] = useState<any>(null);
   const [volumeRef, setVolumeRef] = useState<any>(null);
-  let closingPrice;
 
   useEffect(() => {
     if (!containerRef.current || !data) return;
@@ -171,7 +170,7 @@ const useInitializeChart = (
     };
   }, [containerRef, data]);
 
-  return { seriesRef, volumeRef, closingPrice };
+  return { seriesRef, volumeRef };
 };
 
 const TradingViewChart = memo(({ mint }: { mint: string }) => {
@@ -184,11 +183,7 @@ const TradingViewChart = memo(({ mint }: { mint: string }) => {
     from: currentTimeRef.current - 60 * 60 * 24,
     to: currentTimeRef.current,
   });
-  const { seriesRef, volumeRef, closingPrice } = useInitializeChart(
-    chartContainerRef,
-    data
-  );
-  const prevClosingPriceRef = useRef(closingPrice);
+  const { seriesRef, volumeRef } = useInitializeChart(chartContainerRef, data);
   const { data: metadata } = useGetTokenDetails({ mint: new PublicKey(mint) });
   const { data: price } = useGetPrice({ mint: new PublicKey(mint) });
 

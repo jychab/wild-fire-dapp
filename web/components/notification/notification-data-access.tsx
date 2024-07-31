@@ -1,3 +1,4 @@
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { getDailyClaim } from '@/utils/firebase/functions';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
@@ -32,6 +33,7 @@ export function useGetDailyClaimAvailable({
       }
     },
     enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 

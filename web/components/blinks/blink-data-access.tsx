@@ -1,3 +1,4 @@
+import { LONG_STALE_TIME, MEDIUM_STALE_TIME } from '@/utils/consts';
 import { proxify } from '@/utils/helper/proxy';
 import {
   ActionsJsonConfig,
@@ -23,7 +24,7 @@ export function useGetBlinkAction({
       return Action.fetch(actionUrl);
     },
     enabled: enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
@@ -52,7 +53,7 @@ export function useGetBlinkActionJsonUrl({
       }
     },
     enabled: enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
@@ -84,6 +85,7 @@ export function useGetActionRegistryLookUp({
       }
     },
     enabled: enabled,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
@@ -168,6 +170,6 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
         return actionRegistry;
       }
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: MEDIUM_STALE_TIME,
   });
 }

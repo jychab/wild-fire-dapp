@@ -1,4 +1,4 @@
-import { OFF_SET, USDC, USDC_DECIMALS } from '@/utils/consts';
+import { OFF_SET, SHORT_STALE_TIME, USDC, USDC_DECIMALS } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/proxy';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
@@ -86,6 +86,7 @@ export function useGetOhlcv({
       return data;
     },
     enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
@@ -96,6 +97,12 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
     queryFn: async () => {
       if (!mint) return null;
       try {
+        const poolState = await swapProgram.account.poolState.fetchNullable(
+          getPool(mint)
+        );
+        if (!poolState) {
+          return null;
+        }
         const usdcVault = await getAccount(
           connection,
           getUSDCVault(mint),
@@ -108,12 +115,6 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
           undefined,
           TOKEN_2022_PROGRAM_ID
         );
-        const poolState = await swapProgram.account.poolState.fetchNullable(
-          getPool(mint)
-        );
-        if (!poolState) {
-          return null;
-        }
 
         const result =
           (Number(usdcVault.amount) -
@@ -130,7 +131,7 @@ export function useGetPrice({ mint }: { mint: PublicKey | null }) {
       }
     },
     enabled: !!mint,
-    staleTime: 15 * 60 * 1000,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
@@ -433,6 +434,7 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
       }
     },
     enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
