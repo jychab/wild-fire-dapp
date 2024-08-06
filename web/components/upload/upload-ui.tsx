@@ -135,13 +135,13 @@ const UploadContentBtn: FC<{
             ).filter((x) => x != null);
             const randomId = crypto.randomUUID();
             if (carousel.length > 0) {
-              const iconUrl = carousel[0].fileType.startsWith('video/')
+              const iconUrl = carousel[0]!.fileType.startsWith('video/')
                 ? await uploadMedia(
-                    post.file.find((x) => x.fileType == carousel[0].fileType)
+                    post.file.find((x) => x.fileType == carousel[0]!.fileType)
                       ?.thumbnailFile!,
                     mint
                   )
-                : carousel[0].uri;
+                : carousel[0]!.uri;
               await uploadMutation.mutateAsync({
                 post: {
                   icon: iconUrl,
@@ -171,7 +171,7 @@ const UploadContentBtn: FC<{
             } else if (post.file[0].fileType == 'blinks') {
               await uploadMutation.mutateAsync({
                 post: {
-                  url: carousel[0].uri,
+                  url: carousel[0]!.uri,
                   mint: mint,
                   id: id ? id : randomId,
                 },
