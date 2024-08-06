@@ -3,9 +3,9 @@
 import { ContentCardFeature } from '@/components/content/content-feature';
 import { useSearchParams } from 'next/navigation';
 
-export default function page() {
+export default function Page() {
   const searchParams = useSearchParams();
-  const mintId = searchParams.get('mintId');
+  const mint = searchParams.get('mint');
   const id = searchParams.get('id');
-  return mintId && id && <ContentCardFeature mintId={mintId} id={id} />;
+  return mint && id && <ContentCardFeature mintId={mint} id={id} />;
 }

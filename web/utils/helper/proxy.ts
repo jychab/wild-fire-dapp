@@ -18,3 +18,15 @@ export function proxify(url: string, skipCache?: boolean): URL {
 export function generateMintApiEndPoint(mint: PublicKey) {
   return `https://api.hashfeed.social/getPosts?mint=${mint.toBase58()}`;
 }
+
+export function generatePostEndPoint(mint: string, id: string) {
+  return `https://hashfeed.social/post/?mint=${mint}&id=${id}`;
+}
+
+export function generatePostApiEndPoint(mint: string, id: string) {
+  return `https://api.hashfeed.social/post/?mint=${mint}&id=${id}`;
+}
+
+export function generatePostActionApiEndPoint(mint: string, id: string) {
+  return `https://api.hashfeed.social/post/actions?mint=${mint}&id=${id}`;
+}

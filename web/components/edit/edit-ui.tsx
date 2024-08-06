@@ -39,7 +39,6 @@ export const EditToken: FC<EditTokenProps> = ({ mintId }) => {
   });
   const { data: metaData } = useGetTokenDetails({
     mint: mintTokenData ? new PublicKey(mintTokenData.mint) : null,
-    withContent: false,
   });
 
   // const [mintTokenDataLoaded, setMintTokenDataLoaded] = useState(false);

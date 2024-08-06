@@ -2,7 +2,7 @@
 
 import { Scope } from '@/utils/enums/das';
 import { DAS } from '@/utils/types/das';
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from '@solana/spl-token';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconEdit } from '@tabler/icons-react';
@@ -13,16 +13,15 @@ import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
-  useGetPoolState,
   useGetPrice,
   useGetTokenAccountInfo,
-  useIsLiquidityPoolFound,
-  useSwapMutation,
+  useSubscriptionMutation,
 } from '../trading/trading-data-access';
 import { TradingPanel } from '../trading/trading.ui';
 import { UploadBtn } from '../upload/upload-ui';
 import {
   useGetMintSummaryDetails,
+  useGetPostsFromMint,
   useGetTokenDetails,
 } from './profile-data-access';
 
@@ -83,6 +82,8 @@ const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
   const { data: tokenStateData } = useGetMintToken({
     mint: new PublicKey(mintId),
   });
+  const { data: posts } = useGetPostsFromMint({ mint: new PublicKey(mintId) });
+
   return (
     <>
       <ContentGrid
@@ -90,18 +91,9 @@ const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
         multiGrid={true}
         showMintDetails={false}
         editable={true}
-        posts={
-          metadata?.additionalInfoData?.posts
-            ? metadata.additionalInfoData.posts.map((x) => {
-                return {
-                  ...x,
-                  metadata,
-                };
-              })
-            : undefined
-        }
+        posts={posts}
       />
-      {metadata?.additionalInfoData?.posts?.length == 0 &&
+      {posts?.posts.length == 0 &&
         ((tokenStateData &&
           publicKey &&
           publicKey.toBase58() == tokenStateData.admin) ||
@@ -113,7 +105,7 @@ const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
           <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
             Create your first post!
             <div className="w-36">
-              <UploadBtn mintId={metadata?.id} />
+              <UploadBtn mintId={mintId} />
             </div>
           </div>
         ) : (
@@ -198,15 +190,9 @@ const Profile: FC<ProfileProps> = ({
         : null,
   });
 
-  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
+  const subscribeMutation = useSubscriptionMutation({
     mint: new PublicKey(mintId),
   });
-
-  const swapMutation = useSwapMutation({
-    mint: new PublicKey(mintId),
-  });
-
-  const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
 
   const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
 
@@ -235,32 +221,29 @@ const Profile: FC<ProfileProps> = ({
           </div>
           <span>{metadata?.content?.metadata.symbol}</span>
         </div>
-
         <div className="flex items-center gap-2 ">
           <button
-            disabled={
-              !isLiquidityPoolFound || (!!tokenInfo && tokenInfo.amount > 0)
-            }
-            onClick={async () => {
-              swapMutation.mutateAsync({
-                poolState,
-                amount: 1,
-                inputMint: NATIVE_MINT.toBase58(),
-                outputMint: mintId,
-                swapMode: 'ExactOut',
-              });
+            disabled={subscribeMutation.isPending}
+            onClick={() => {
+              subscribeMutation.mutateAsync();
             }}
-            className="btn btn-success btn-sm w-32 "
+            className={`btn relative group ${
+              tokenInfo ? 'btn-success hover:btn-warning' : 'btn-primary'
+            } btn-sm w-32 `}
           >
-            {tokenInfo && tokenInfo.amount > 0 ? (
-              'Subscribed'
-            ) : swapMutation.isPending ? (
+            {subscribeMutation.isPending && (
               <div className="loading loading-spinner" />
-            ) : (
-              'Subscribe'
             )}
+            {!subscribeMutation.isPending &&
+              (tokenInfo ? (
+                <>
+                  <span className="hidden group-hover:block">Unsubscribe</span>
+                  <span className="block group-hover:hidden">Subscribed</span>
+                </>
+              ) : (
+                <span>Subscribe</span>
+              ))}
           </button>
-
           {tokenStateData && publicKey && tokenStateData.mutable == 1 && (
             <button
               className="btn btn-outline btn-sm items-center"
@@ -271,7 +254,6 @@ const Profile: FC<ProfileProps> = ({
             </button>
           )}
         </div>
-
         <div className="flex items-center gap-2">
           {mintSummaryDetails && (
             <>

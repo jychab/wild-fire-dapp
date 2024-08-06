@@ -12,14 +12,23 @@ import {
 import { BN } from '@coral-xyz/anchor';
 import {
   Account,
+  createAssociatedTokenAccountIdempotentInstruction,
+  createBurnCheckedInstruction,
+  createCloseAccountInstruction,
   getAccount,
   getAssociatedTokenAddressSync,
+  getMint,
+  NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
+  AddressLookupTableAccount,
+  Connection,
   PublicKey,
+  PublicKeyInitData,
+  TransactionInstruction,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -209,8 +218,7 @@ export function useSwapMutation({ mint }: { mint: PublicKey | null }) {
             ixs: instructions,
           });
         } else {
-          let payload;
-          payload = {
+          let payload = {
             // quoteResponse from /quote api
             quoteResponse: await (
               await fetch(
@@ -225,7 +233,6 @@ export function useSwapMutation({ mint }: { mint: PublicKey | null }) {
             wrapAndUnwrapSol: true,
             // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
           };
-
           // get serialized transactions for the swap
           const { swapTransaction } = await (
             await fetch('https://quote-api.jup.ag/v6/swap', {
@@ -306,6 +313,210 @@ export function useSwapMutation({ mint }: { mint: PublicKey | null }) {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
   });
+}
+
+export function useSubscriptionMutation({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  const transactionToast = useTransactionToast();
+  const client = useQueryClient();
+  const { publicKey, signTransaction } = useWallet();
+
+  return useMutation({
+    mutationKey: [
+      'handle-subscribe-mint',
+      {
+        endpoint: connection.rpcEndpoint,
+        mint,
+      },
+    ],
+    mutationFn: async () => {
+      if (!mint || !publicKey || !signTransaction) return null;
+      let signature: TransactionSignature = '';
+      const associatedTokenAddress = getAssociatedTokenAddressSync(
+        mint,
+        publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID
+      );
+      let account;
+      const addressLookupTableAccounts: AddressLookupTableAccount[] = [];
+      let ixs;
+      try {
+        account = await getAccount(
+          connection,
+          associatedTokenAddress,
+          undefined,
+          TOKEN_2022_PROGRAM_ID
+        );
+      } catch (error: unknown) {
+        ixs = [
+          createAssociatedTokenAccountIdempotentInstruction(
+            publicKey,
+            associatedTokenAddress,
+            publicKey,
+            mint,
+            TOKEN_2022_PROGRAM_ID
+          ),
+        ];
+      }
+      if (account) {
+        try {
+          if (account.amount == BigInt(0)) {
+            throw new Error('Amount is zero');
+          }
+          let payload = {
+            // quoteResponse from /quote api
+            quoteResponse: await (
+              await fetch(
+                proxify(
+                  `https://quote-api.jup.ag/v6/quote?inputMint=${mint.toBase58()}&outputMint=${NATIVE_MINT.toBase58()}&amount=${account.amount.toString()}&slippageBps=50&swapMode=ExactIn`
+                )
+              )
+            ).json(),
+            // user public key to be used for the swap
+            userPublicKey: publicKey.toString(),
+            // auto wrap and unwrap SOL. default is true
+            wrapAndUnwrapSol: true,
+            // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
+          };
+          const instructions = await (
+            await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            })
+          ).json();
+          if (instructions.error) {
+            throw new Error(
+              'Failed to get swap instructions: ' + instructions.error
+            );
+          }
+          const {
+            setupInstructions, // Setup missing ATA for the users.
+            swapInstruction: swapInstructionPayload, // The actual swap instruction.
+            cleanupInstruction, // Unwrap the SOL if `wrapAndUnwrapSol = true`.
+            addressLookupTableAddresses, // The lookup table addresses that you can use if you are using versioned transaction.
+          } = instructions;
+
+          addressLookupTableAccounts.push(
+            ...(await getAddressLookupTableAccounts(
+              connection,
+              addressLookupTableAddresses
+            ))
+          );
+          ixs = [
+            ...setupInstructions.map(deserializeInstruction),
+            deserializeInstruction(swapInstructionPayload),
+            deserializeInstruction(cleanupInstruction),
+            createCloseAccountInstruction(
+              account.address,
+              publicKey,
+              publicKey,
+              undefined,
+              TOKEN_2022_PROGRAM_ID
+            ),
+          ];
+        } catch (error: unknown) {
+          const mintInfo = await getMint(
+            connection,
+            mint,
+            undefined,
+            TOKEN_2022_PROGRAM_ID
+          );
+          ixs = [
+            createBurnCheckedInstruction(
+              account.address,
+              mint,
+              publicKey,
+              account.amount,
+              mintInfo.decimals,
+              undefined,
+              TOKEN_2022_PROGRAM_ID
+            ),
+            createCloseAccountInstruction(
+              account.address,
+              publicKey,
+              publicKey,
+              undefined,
+              TOKEN_2022_PROGRAM_ID
+            ),
+          ];
+        }
+      }
+      if (!ixs) return;
+      try {
+        signature = await buildAndSendTransaction({
+          connection,
+          publicKey,
+          signTransaction,
+          ixs: ixs,
+          addressLookupTableAccounts,
+        });
+
+        return { signature, associatedTokenAddress };
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error} ` + signature);
+        return;
+      }
+    },
+    onSuccess: (data) => {
+      if (data) {
+        transactionToast(data.signature);
+        return Promise.all([
+          client.invalidateQueries({
+            queryKey: [
+              'get-address-token-account-info',
+              {
+                endpoint: connection.rpcEndpoint,
+                address: data.associatedTokenAddress,
+              },
+            ],
+          }),
+        ]);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${JSON.stringify(error)}`);
+    },
+  });
+}
+
+function deserializeInstruction(instruction: any) {
+  return new TransactionInstruction({
+    programId: new PublicKey(instruction.programId),
+    keys: instruction.accounts.map(
+      (key: { pubkey: PublicKeyInitData; isSigner: any; isWritable: any }) => ({
+        pubkey: new PublicKey(key.pubkey),
+        isSigner: key.isSigner,
+        isWritable: key.isWritable,
+      })
+    ),
+    data: Buffer.from(instruction.data, 'base64'),
+  });
+}
+
+async function getAddressLookupTableAccounts(
+  connection: Connection,
+  keys: string[]
+) {
+  const addressLookupTableAccountInfos =
+    await connection.getMultipleAccountsInfo(
+      keys.map((key) => new PublicKey(key))
+    );
+  return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
+    const addressLookupTableAddress = keys[index];
+    if (accountInfo) {
+      const addressLookupTableAccount = new AddressLookupTableAccount({
+        key: new PublicKey(addressLookupTableAddress),
+        state: AddressLookupTableAccount.deserialize(accountInfo.data),
+      });
+      acc.push(addressLookupTableAccount);
+    }
+
+    return acc;
+  }, new Array<AddressLookupTableAccount>());
 }
 
 export function getMintVault(mint: PublicKey) {

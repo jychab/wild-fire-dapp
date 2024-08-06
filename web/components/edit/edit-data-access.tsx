@@ -230,13 +230,7 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, withContent: true },
-            ],
-          }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, withContent: false },
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
         ]);

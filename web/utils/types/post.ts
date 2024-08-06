@@ -1,28 +1,41 @@
-import { ContentType } from '../enums/post';
+import { ActionGetResponse } from '@solana/actions';
 
-export interface PostContent {
-  carousel: Carousel[];
-  caption: string;
-  tags: string[];
-  type: ContentType;
-  id: string;
+export interface GetPostsResponse {
+  posts: PostBlinksDetail[]; // sorted actionUrls for a particular mint/address
+}
+
+export interface PostBlinksDetail {
+  url: string;
   mint: string;
+  id: string;
   createdAt: number;
   updatedAt: number;
-  price?: number;
-  quantity?: number;
-  verified?: boolean;
+}
+
+export interface PostContent extends ActionGetResponse, PostDetails {
+  carousel?: Carousel[];
+  onLoading?: string; // image to display on loading
+  onError?: string; // image to display on error
+  onCompletion?: string; // client will call this url on completion with the publickey -> to return an image string
+}
+
+export interface PostDetails extends PostBlinksDetail {
   likesCount?: number;
   likesUserTruncated?: string[];
   commentsCount?: number;
-  softDelete?: boolean;
-  recencyScore?: number;
-  engagementScore?: number;
+  tags?: string[];
 }
 
-export type Carousel = StaticContent | VideoContent;
+export interface PostCreatorDetails {
+  mint?: string;
+  price?: number;
+  quantity?: number;
+  verified?: boolean;
+}
 
-export interface StaticContent {
+export type Carousel = ImageContent | VideoContent;
+
+export interface ImageContent {
   uri: string;
   fileType: string;
 }

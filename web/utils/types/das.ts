@@ -8,7 +8,6 @@ import {
   Scope,
   UseMethods,
 } from '../enums/das';
-import { PostContent } from './post';
 import { FullRwaAccount } from './rpc';
 
 export declare namespace DAS {
@@ -122,9 +121,6 @@ export declare namespace DAS {
     burnt: boolean;
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
-    additionalInfoData?: {
-      posts: PostContent[] | undefined;
-    };
   };
   type GetRwaAssetResponse = {
     items: FullRwaAccount;

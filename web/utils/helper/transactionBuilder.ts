@@ -80,6 +80,7 @@ export async function buildAndSendTransaction({
   signTransaction,
   ixs,
   partialSignedTx,
+  addressLookupTableAccounts,
   commitment = 'confirmed',
   signers,
 }: {
@@ -90,6 +91,7 @@ export async function buildAndSendTransaction({
   ) => Promise<T>;
   ixs?: TransactionInstruction[];
   partialSignedTx?: VersionedTransaction | Transaction;
+  addressLookupTableAccounts?: AddressLookupTableAccount[];
   commitment?: Commitment;
   signers?: Signer[];
 }): Promise<string> {
@@ -98,13 +100,15 @@ export async function buildAndSendTransaction({
     commitment: 'confirmed',
   });
   if (ixs && ixs.length > 0) {
-    const lookupTables = (
+    const lookupTableAccount = (
       await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)
     ).value;
-    const lookUpTable = lookupTables ? [lookupTables] : [];
+    const lookupTables = (
+      lookupTableAccount ? [lookupTableAccount] : []
+    ).concat(addressLookupTableAccounts || []);
     const [microLamports, units] = await Promise.all([
-      getPriorityFeeEstimate(ixs, publicKey, connection, lookUpTable),
-      getSimulationUnits(connection, ixs, publicKey, lookUpTable),
+      getPriorityFeeEstimate(ixs, publicKey, connection, lookupTables),
+      getSimulationUnits(connection, ixs, publicKey, lookupTables),
     ]);
     ixs.unshift(
       ComputeBudgetProgram.setComputeUnitPrice({
@@ -126,7 +130,7 @@ export async function buildAndSendTransaction({
         instructions: ixs,
         recentBlockhash: recentBlockhash.blockhash,
         payerKey: publicKey,
-      }).compileToV0Message(lookUpTable)
+      }).compileToV0Message(lookupTables)
     );
     if (signers) {
       tx.sign(signers);

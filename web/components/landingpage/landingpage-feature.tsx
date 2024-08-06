@@ -2,21 +2,11 @@ import { HASHFEED_MINT } from '@/utils/consts';
 import { FC } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { DisplayContent } from '../content/content-ui';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import { useGetPostsFromMint } from '../profile/profile-data-access';
 import { AppHero } from '../ui/ui-layout';
 
 export const LandingPage: FC = () => {
-  const { data: metadataQuery } = useGetTokenDetails({
-    mint: HASHFEED_MINT,
-  });
-  const posts = metadataQuery?.additionalInfoData?.posts
-    ? metadataQuery.additionalInfoData.posts.map((x) => {
-        return {
-          ...x,
-          metadataQuery,
-        };
-      })
-    : undefined;
+  const { data: posts } = useGetPostsFromMint({ mint: HASHFEED_MINT });
   return (
     <AppHero
       title={'Your feed, reimagined.'}
@@ -40,10 +30,10 @@ export const LandingPage: FC = () => {
           <div className="display w-full">
             <div className="artboard artboard-demo bg-base-100 h-[600px] overflow-y-scroll scrollbar-none">
               <div className="grid grid-cols-1 gap-2 h-full w-full">
-                {posts?.map((x) => (
+                {posts?.posts?.map((x) => (
                   <DisplayContent
                     key={x.id}
-                    post={x}
+                    blinksDetail={x}
                     hideComment={true}
                     showMintDetails={true}
                     editable={false}

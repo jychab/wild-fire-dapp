@@ -18,6 +18,8 @@ export const USDC = new PublicKey(
 
 export const USDC_DECIMALS = 6;
 
+export const DEFAULT_MINT_DECIMALS = 0;
+
 export const OFF_SET = BigInt(1000 * 10 ** USDC_DECIMALS);
 
 export const CONFIG = new PublicKey(

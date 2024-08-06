@@ -16,7 +16,7 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { CONFIG, OFF_SET, USDC } from '../consts';
+import { CONFIG, DEFAULT_MINT_DECIMALS, OFF_SET, USDC } from '../consts';
 import swapIdl from '../program/idl/raydium_cp_swap.json';
 import Idl from '../program/idl/wild_fire.json';
 import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';
@@ -41,7 +41,7 @@ export async function createMint(
 ) {
   const ix = await program.methods
     .createMint({
-      decimal: 0,
+      decimal: DEFAULT_MINT_DECIMALS,
       distributor: distributor,
       transferFeeArgs: {
         feeBasisPts: fees,

@@ -1,16 +1,18 @@
 'use client';
 
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { createOrEditPost } from '@/utils/firebase/functions';
+import { generatePostApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { PostContent } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface UploadArgs {
-  post: PostContent;
+  post: any;
 }
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -32,7 +34,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
 
       try {
-        await createOrEditPost(mint.toBase58(), [input.post]);
+        await createOrEditPost(mint.toBase58(), input.post);
         return 'Success';
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);
@@ -47,7 +49,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, withContent: true },
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
           client.invalidateQueries({
@@ -72,4 +74,26 @@ export function checkUrlIsValid(uri: string) {
   } catch (e) {
     return;
   }
+}
+
+export function useGetPost({
+  mint,
+  postId,
+}: {
+  mint: PublicKey | null;
+  postId: string | undefined;
+}) {
+  return useQuery({
+    queryKey: ['get-post', { mint, postId }],
+    queryFn: async () => {
+      if (!mint || !postId) return null;
+      const response = await (
+        await fetch(proxify(generatePostApiEndPoint(mint.toBase58(), postId)))
+      ).json();
+      let post = response as PostContent | undefined;
+      return post;
+    },
+    enabled: !!mint && !!postId,
+    staleTime: SHORT_STALE_TIME,
+  });
 }

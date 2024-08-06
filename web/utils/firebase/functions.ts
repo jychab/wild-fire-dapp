@@ -2,12 +2,11 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
-import { PostContent } from '../types/post';
 import { functions, storage } from './firebase';
 
-export async function createOrEditPost(mint: string, posts: PostContent[]) {
+export async function createOrEditPost(mint: string, post: any) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
-  await createOrEditPost({ mint, posts });
+  await createOrEditPost({ mint, post });
 }
 
 export async function deletePost(mint: string, postId: string) {

@@ -1,9 +1,10 @@
 'use client';
 
+import { GetPostsResponse } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
-import { useGetTokenDetails } from '../profile/profile-data-access';
-import { ContentGridProps, DisplayContent } from './content-ui';
+import { useGetPost } from '../upload/upload.data-access';
+import { DisplayContent } from './content-ui';
 
 interface ContentCardFeatureProps {
   mintId: string;
@@ -14,32 +15,34 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
   mintId,
   id,
 }) => {
-  const { data: metadataQuery, isLoading } = useGetTokenDetails({
+  const { data: post } = useGetPost({
     mint: new PublicKey(mintId),
+    postId: id,
   });
-  const postContent = metadataQuery?.additionalInfoData?.posts?.find(
-    (x) => x.id == id
-  );
-  const post = postContent
-    ? {
-        ...postContent,
-        metadata: { ...metadataQuery },
-      }
-    : undefined;
   return (
-    <div className="flex flex-col w-full items-center sm:py-4">
-      {isLoading && <div className="loading loading-dots" />}
-      {!isLoading && !post && <span>No Post Found</span>}
-      {post && (
+    post && (
+      <div className="flex flex-col w-full items-center sm:py-4">
         <div className="max-w-lg w-full">
-          <DisplayContent expandAll={true} post={post} showMintDetails={true} />
+          <DisplayContent
+            expandAll={true}
+            blinksDetail={post}
+            showMintDetails={true}
+          />
         </div>
-      )}
-    </div>
+      </div>
+    )
   );
 };
+
+interface ContentGridProps {
+  posts: GetPostsResponse | undefined | null;
+  showMintDetails?: boolean;
+  editable?: boolean;
+  multiGrid?: boolean;
+  hideComment?: boolean;
+}
 export const ContentGrid: FC<ContentGridProps> = ({
-  posts: posts,
+  posts,
   hideComment = false,
   showMintDetails = true,
   editable = false,
@@ -51,10 +54,10 @@ export const ContentGrid: FC<ContentGridProps> = ({
         multiGrid ? 'grid-cols-2 lg:grid-cols-5' : 'pb-32'
       }`}
     >
-      {posts.map((x) => (
+      {posts.posts.map((x) => (
         <DisplayContent
           key={x.id}
-          post={x}
+          blinksDetail={x}
           hideComment={hideComment}
           showMintDetails={showMintDetails}
           editable={editable}

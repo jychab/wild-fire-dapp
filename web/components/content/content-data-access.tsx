@@ -2,7 +2,7 @@ import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
-import { PostContent } from '@/utils/types/post';
+import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -116,7 +116,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
           client.invalidateQueries({
             queryKey: [
               'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint, withContent: true },
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
           client.invalidateQueries({
@@ -152,7 +152,7 @@ export const useGetPostsFromAddress = ({
           `https://api.hashfeed.social/getPosts?address=${address.toBase58()}`
         )
       );
-      const posts = (await result.json()).posts as PostContent[];
+      const posts = (await result.json()) as GetPostsResponse | undefined;
       return posts;
     },
     enabled: !!address,

@@ -153,12 +153,16 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
         }
         config = (await response.json()) as ActionsRegistryConfig;
 
+        config.actions.push({ host: 'api.hashfeed.social', state: 'trusted' });
+        config.websites.push({ host: 'hashfeed.social', state: 'trusted' });
+
         actionRegistry.actionsByHost = Object.fromEntries(
           config.actions.map((action) => [action.host, action])
         );
         actionRegistry.websitesByHost = Object.fromEntries(
           config.websites.map((website) => [website.host, website])
         );
+
         actionRegistry.interstitialsByHost = Object.fromEntries(
           config.interstitials.map((interstitial) => [
             interstitial.host,

@@ -1,5 +1,5 @@
 import TradingViewChart from '@/utils/charts';
-import { USDC, USDC_DECIMALS } from '@/utils/consts';
+import { DEFAULT_MINT_DECIMALS, USDC, USDC_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
@@ -108,7 +108,10 @@ export const TradingPanel: FC<{
     return inputAmount != ''
       ? (
           Number(inputAmount) /
-          10 ** (buy ? USDC_DECIMALS : metadata?.token_info?.decimals || 0)
+          10 **
+            (buy
+              ? USDC_DECIMALS
+              : metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS)
         ).toString()
       : '';
   }, [buy, inputAmount]);
@@ -117,7 +120,10 @@ export const TradingPanel: FC<{
     return outputAmount != ''
       ? (
           Number(outputAmount) /
-          10 ** (buy ? metadata?.token_info?.decimals || 0 : USDC_DECIMALS)
+          10 **
+            (buy
+              ? metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS
+              : USDC_DECIMALS)
         ).toString()
       : '';
   }, [buy, outputAmount]);
@@ -126,8 +132,6 @@ export const TradingPanel: FC<{
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       setInputAmount(amount.toString());
-      console.log(inputToken);
-      console.log(amount);
       if (!inputToken || amount > inputToken) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
@@ -232,7 +236,7 @@ export const TradingPanel: FC<{
         onChange={(e) => {
           let amount =
             parseFloat(e.target.value) *
-            10 ** (metadata?.token_info?.decimals || 0);
+            10 ** (metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS);
           if (Number.isNaN(amount)) {
             setOutputAmount('');
             setInputAmount('');
@@ -304,7 +308,9 @@ export const TradingPanel: FC<{
                       buy
                         ? (inputToken || 0) / 10 ** USDC_DECIMALS
                         : (inputToken || 0) /
-                            10 ** (metadata?.token_info?.decimals || 0)
+                            10 **
+                              (metadata?.token_info?.decimals ||
+                                DEFAULT_MINT_DECIMALS)
                     )} ${
                       buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
@@ -340,7 +346,10 @@ export const TradingPanel: FC<{
                     <span>{`${formatLargeNumber(
                       !buy
                         ? (outputToken || 0) / 10 ** USDC_DECIMALS
-                        : outputToken || 0
+                        : (outputToken || 0) /
+                            10 **
+                              (metadata?.token_info?.decimals ||
+                                DEFAULT_MINT_DECIMALS)
                     )} ${
                       !buy ? 'USDC' : metadata?.content?.metadata.symbol
                     }`}</span>
@@ -469,7 +478,9 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                     {`${(metadata.token_info?.supply
                       ? (x.uiAmount! /
                           (metadata?.token_info?.supply /
-                            10 ** (metadata?.token_info?.decimals || 0))) *
+                            10 **
+                              (metadata?.token_info?.decimals ||
+                                DEFAULT_MINT_DECIMALS))) *
                         100
                       : 0
                     ).toFixed(2)}%`}
@@ -533,7 +544,7 @@ export const MintInfo: FC<{
       <span className="text-right col-span-3">
         {formatLargeNumber(
           (metadata?.token_info?.supply || 0) /
-            10 ** (metadata?.token_info?.decimals || 0)
+            10 ** (metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS)
         )}
       </span>
       {!Number.isNaN(liquidity) && (

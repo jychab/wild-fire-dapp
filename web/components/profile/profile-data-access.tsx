@@ -1,7 +1,6 @@
 'use client';
 
 import { db } from '@/utils/firebase/firebase';
-import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { getAccount } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
@@ -19,7 +18,8 @@ import {
 import { program } from '../../utils/helper/transcationInstructions';
 
 import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
-import { PostContent } from '@/utils/types/post';
+import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
+import { GetPostsResponse } from '@/utils/types/post';
 import { TokenState } from '@/utils/types/program';
 
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
@@ -134,19 +134,10 @@ export function useGetLargestAccountFromMint({
   });
 }
 
-export function useGetTokenDetails({
-  mint,
-  withContent = true,
-}: {
-  mint: PublicKey | null;
-  withContent?: boolean;
-}) {
+export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'get-token-details',
-      { endpoint: connection.rpcEndpoint, mint, withContent },
-    ],
+    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
       if (!mint) return null;
       const response = await fetch(connection.rpcEndpoint, {
@@ -164,31 +155,23 @@ export function useGetTokenDetails({
         }),
       });
       const data = (await response.json()).result as DAS.GetAssetResponse;
+      return data;
+    },
+    enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
+  });
+}
 
-      if (!data) {
-        return null;
-      }
-      if (!withContent) {
-        return data;
-      }
-
-      try {
-        const uriMetadata = await (
-          await fetch(proxify(generateMintApiEndPoint(mint)))
-        ).json();
-        let posts = uriMetadata.posts as PostContent[] | undefined;
-        return {
-          ...data,
-          additionalInfoData: {
-            posts: posts,
-          },
-        } as DAS.GetAssetResponse;
-      } catch (e) {
-        return {
-          ...data,
-          additionalInfoData: { posts: [] },
-        } as DAS.GetAssetResponse;
-      }
+export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
+  return useQuery({
+    queryKey: ['get-posts-from-mint', { mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      const uriMetadata = await (
+        await fetch(proxify(generateMintApiEndPoint(mint)))
+      ).json();
+      let posts = uriMetadata as GetPostsResponse | undefined;
+      return posts;
     },
     enabled: !!mint,
     staleTime: SHORT_STALE_TIME,

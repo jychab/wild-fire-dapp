@@ -53,11 +53,10 @@ export const CommentsSection: FC<{
   const { data } = useGetToken({ address: publicKey });
   const { data: metadata } = useGetTokenDetails({
     mint: data ? new PublicKey(data.mint) : null,
-    withContent: false,
   });
 
   const handleCommentSubmit = () => {
-    if (post && comment) {
+    if (post?.mint && post.id && comment) {
       createOrEditComment(
         post?.mint,
         post?.id,
@@ -269,7 +268,6 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
   const { data } = useGetToken({ address: new PublicKey(comment.user) });
   const { data: metadata } = useGetTokenDetails({
     mint: data ? new PublicKey(data.mint) : null,
-    withContent: false,
   });
 
   const commentRef = useRef<HTMLSpanElement>(null);

@@ -1,15 +1,10 @@
 import { sendLike } from '@/utils/firebase/functions';
-import {
-  checkIfTruncated,
-  convertUTCTimeToDayMonth,
-  formatLargeNumber,
-} from '@/utils/helper/format';
-import { PostContent } from '@/utils/types/post';
+import { formatLargeNumber } from '@/utils/helper/format';
+import { PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconChartLine,
-  IconDiscountCheckFilled,
   IconDotsVertical,
   IconEdit,
   IconHeart,
@@ -18,10 +13,8 @@ import {
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FC, RefObject, useEffect, useRef, useState } from 'react';
+import { FC, RefObject, useState } from 'react';
 import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
-import { CommentsSection } from '../comments/comments-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useGetToken,
@@ -31,145 +24,8 @@ import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
-export interface ContentGridProps {
-  posts: PostContent[] | undefined | null;
-  showMintDetails?: boolean;
-  editable?: boolean;
-  multiGrid?: boolean;
-  hideComment?: boolean;
-}
-
-export const PostCard = ({
-  post,
-  showMintDetails = true,
-  editable = false,
-  multiGrid = false,
-  expandAll = false,
-  hideComment = false,
-  hideCaption = false,
-  hideCarousel = false,
-  hideUserPanel = false,
-  hideBorder = false,
-}: {
-  post: PostContent;
-  showMintDetails?: boolean;
-  editable?: boolean;
-  multiGrid?: boolean;
-  expandAll?: boolean;
-  hideComment?: boolean;
-  hideCarousel?: boolean;
-  hideCaption?: boolean;
-  hideUserPanel?: boolean;
-  hideBorder?: boolean;
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  // Debounce function to optimize scroll event handling
-  const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  };
-
-  const handleScrollEvent = () => {
-    if (!post) return;
-    if (carouselRef.current) {
-      const scrollLeft = carouselRef.current.scrollLeft;
-      const itemWidth = carouselRef.current.clientWidth;
-      const newIndex = Math.round(scrollLeft / itemWidth);
-
-      if (newIndex !== currentIndex) {
-        setCurrentIndex(newIndex);
-      }
-    }
-  };
-
-  // Debounced version of the scroll event handler
-  const handleScrollEventDebounced = debounce(handleScrollEvent, 50);
-
-  useEffect(() => {
-    const carouselElement = carouselRef.current;
-    if (carouselElement) {
-      carouselElement.addEventListener('scroll', handleScrollEventDebounced);
-
-      // Cleanup function
-      return () => {
-        carouselElement.removeEventListener(
-          'scroll',
-          handleScrollEventDebounced
-        );
-      };
-    }
-  }, [currentIndex]);
-  const handleScroll = (index: number) => {
-    if (!post) return;
-    const element = document.getElementById(`${post.id}/${index}`);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
-    }
-  };
-  return (
-    <div
-      className={`flex border-base-300 flex-col ${
-        !hideBorder ? `${multiGrid ? 'border' : 'sm:border'}` : ``
-      } bg-base-100 rounded w-full`}
-    >
-      {showMintDetails && <UserProfile post={post} />}
-      <div className="flex flex-col w-full h-full cursor-default overflow-hidden shadow-action">
-        {!hideCarousel && (
-          <CarouselContent
-            post={post}
-            multiGrid={multiGrid}
-            handleScroll={handleScroll}
-            currentIndex={currentIndex}
-            carouselRef={carouselRef}
-          />
-        )}
-        <div
-          className={`${
-            !hideUserPanel || !hideCaption || !hideComment
-              ? `${multiGrid ? 'sm:px-4 px-2' : 'px-4'} pb-4 pt-2`
-              : ''
-          } flex flex-col flex-1 w-full justify-between`}
-        >
-          <div className="flex flex-col">
-            {!hideUserPanel && (
-              <UserPanel
-                post={post}
-                multiGrid={multiGrid}
-                editable={editable}
-              />
-            )}
-            <PostCaption
-              post={post}
-              multiGrid={multiGrid}
-              editable={editable}
-              expandAll={expandAll}
-            />
-          </div>
-          <div className="flex flex-col">
-            {!hideComment && (
-              <CommentsSection post={post} multiGrid={multiGrid} />
-            )}
-            <span className="text-xs stat-desc pt-2">
-              {convertUTCTimeToDayMonth(post?.updatedAt || 0)}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 interface DisplayContentProps {
-  post: PostContent;
+  blinksDetail: PostBlinksDetail;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -182,7 +38,7 @@ interface DisplayContentProps {
 }
 
 export const DisplayContent: FC<DisplayContentProps> = ({
-  post: post,
+  blinksDetail,
   showMintDetails,
   editable,
   multiGrid,
@@ -193,28 +49,10 @@ export const DisplayContent: FC<DisplayContentProps> = ({
   hideCarousel,
   hideUserPanel,
 }) => {
-  const actionUrl = post.carousel.find((x) => x.fileType == 'blinks')?.uri;
-  return actionUrl ? (
-    checkUrlIsValid(actionUrl) ? (
-      <Blinks
-        actionUrl={new URL(actionUrl)}
-        post={post}
-        showMintDetails={showMintDetails}
-        editable={editable}
-        multiGrid={multiGrid}
-        expandAll={expandAll}
-        hideComment={hideComment}
-        hideBorder={hideBorder}
-        hideCaption={hideCaption}
-        hideCarousel={hideCarousel}
-        hideUserPanel={hideUserPanel}
-      />
-    ) : (
-      <></>
-    )
-  ) : (
+  return checkUrlIsValid(blinksDetail.url) ? (
     <Blinks
-      post={post}
+      actionUrl={new URL(blinksDetail.url)}
+      blinksDetail={blinksDetail}
       showMintDetails={showMintDetails}
       editable={editable}
       multiGrid={multiGrid}
@@ -225,20 +63,21 @@ export const DisplayContent: FC<DisplayContentProps> = ({
       hideCarousel={hideCarousel}
       hideUserPanel={hideUserPanel}
     />
+  ) : (
+    <></>
   );
 };
 
 export const UserProfile: FC<{
-  post: PostContent;
-}> = ({ post }) => {
+  blinksDetail: PostBlinksDetail;
+}> = ({ blinksDetail }) => {
   const { data: metadata } = useGetTokenDetails({
-    mint: new PublicKey(post.mint),
-    withContent: false,
+    mint: new PublicKey(blinksDetail.mint),
   });
   return (
     <div className="flex w-full items-center justify-between px-4 py-2 ">
       <Link
-        href={`/profile?mintId=${post.mint}`}
+        href={`/profile?mintId=${blinksDetail.mint}`}
         className="link link-hover flex items-center gap-2 "
       >
         <div className="relative w-8 h-8 rounded-full">
@@ -256,9 +95,9 @@ export const UserProfile: FC<{
         <div className="flex flex-col">
           <div className="text-sm flex gap-1 items-center">
             {metadata?.content?.metadata.name}
-            {post.verified && (
+            {/* {post?.verified && (
               <IconDiscountCheckFilled size={18} className="fill-secondary" />
-            )}
+            )} */}
           </div>
           <div className="text-xs">{metadata?.content?.metadata.name}</div>
         </div>
@@ -267,69 +106,26 @@ export const UserProfile: FC<{
   );
 };
 
-export const PostCaption: FC<{
-  post: PostContent;
-  multiGrid: boolean;
-  editable: boolean;
-  expandAll: boolean;
-}> = ({ post, multiGrid, expandAll }) => {
-  const [showMore, setShowMore] = useState(expandAll);
-  const captionRef = useRef<HTMLSpanElement>(null);
-  const router = useRouter();
-  return (
-    <>
-      <div className="flex flex-col gap-1 items-start">
-        <span
-          ref={captionRef}
-          className={`text-xs w-full ${
-            showMore
-              ? 'whitespace-pre-wrap'
-              : `${multiGrid ? 'line-clamp-1' : 'line-clamp-3'}`
-          }`}
-        >
-          {post.caption}
-        </span>
-        {checkIfTruncated(captionRef.current) && (
-          <button
-            onClick={() => {
-              if (!multiGrid) {
-                setShowMore(true);
-              } else {
-                router.push(`/post?mintId=${post.mint}&id=${post.id}`);
-              }
-            }}
-            className="text-xs stat-desc link link-hover w-fit"
-          >
-            {!showMore && 'Show More'}
-          </button>
-        )}
-      </div>
-    </>
-  );
-};
-
 export const UserPanel: FC<{
-  post: PostContent | undefined;
+  post?: PostContent;
+  blinksDetail?: PostBlinksDetail;
   multiGrid: boolean;
   editable: boolean;
-}> = ({ post, editable, multiGrid }) => {
+}> = ({ post, blinksDetail, editable, multiGrid }) => {
   const { publicKey } = useWallet();
   const { data } = useGetMintToken({
-    mint: post ? new PublicKey(post.mint) : null,
+    mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const [liked, setLiked] = useState(
     (publicKey && post?.likesUserTruncated?.includes(publicKey?.toBase58())) ||
       false
   );
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: post ? new PublicKey(post.mint) : null,
+    mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const removeContentMutation = useRemoveContentMutation({
-    mint: editable && post ? new PublicKey(post?.mint) : null,
-  });
-  const { data: metadata } = useGetTokenDetails({
-    mint: post ? new PublicKey(post.mint) : null,
-    withContent: false,
+    mint:
+      editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const closestUser =
     post?.likesUserTruncated && post?.likesUserTruncated?.length > 0
@@ -346,26 +142,25 @@ export const UserPanel: FC<{
       closestUserMint && closestUser !== publicKey?.toBase58()
         ? new PublicKey(closestUserMint.mint)
         : null,
-    withContent: false,
   });
 
   return (
     <div className="flex justify-between pb-1">
-      <div className="flex gap-2 text-sm items-center">
+      <div className="flex gap-2 text-sm items-start">
         <Link
-          href={`/profile?mintId=${post?.mint}`}
+          href={`/profile?mintId=${blinksDetail?.mint}`}
           className="link link-hover font-semibold"
         >
-          {metadata?.content?.metadata.name}
+          {post?.title}
         </Link>
 
         {!multiGrid && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
-                if (post && !liked) {
+                if (blinksDetail?.mint && blinksDetail?.id && !liked) {
                   try {
-                    sendLike(post.mint, post.id, 10);
+                    sendLike(blinksDetail.mint, blinksDetail.id, 10);
                   } catch (e) {
                     console.log(e);
                   } finally {
@@ -376,9 +171,9 @@ export const UserPanel: FC<{
               className=""
             >
               {liked ? (
-                <IconHeartFilled size={20} className="fill-primary" />
+                <IconHeartFilled size={18} className="fill-primary" />
               ) : (
-                <IconHeart size={20} />
+                <IconHeart size={18} />
               )}
             </button>
 
@@ -423,10 +218,10 @@ export const UserPanel: FC<{
               tabIndex={0}
               className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-28"
             >
-              {!editable && isLiquidityPoolFound && post && (
+              {!editable && isLiquidityPoolFound && blinksDetail && (
                 <li>
                   <Link
-                    href={`/profile?mintId=${post.mint}&tab=trade`}
+                    href={`/profile?mintId=${blinksDetail?.mint}&tab=trade`}
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                   >
                     <IconChartLine size={18} />
@@ -434,22 +229,24 @@ export const UserPanel: FC<{
                   </Link>
                 </li>
               )}
-              {editable && post && (
+              {editable && blinksDetail && (
                 <li>
                   <Link
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                    href={`/post/edit?mintId=${post.mint}&id=${post.id}`}
+                    href={`/post/edit?mintId=${blinksDetail.mint}&id=${blinksDetail.id}`}
                   >
                     <IconEdit size={18} />
                     Edit
                   </Link>
                 </li>
               )}
-              {editable && post && (
+              {editable && blinksDetail && (
                 <li>
                   <button
                     disabled={removeContentMutation.isPending}
-                    onClick={() => removeContentMutation.mutateAsync(post.id)}
+                    onClick={() =>
+                      removeContentMutation.mutateAsync(blinksDetail.id)
+                    }
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                   >
                     {removeContentMutation.isPending ? (
@@ -491,7 +288,7 @@ export const CarouselContent: FC<{
         ref={carouselRef}
         className="carousel w-full aspect-square h-auto bg-base-content"
       >
-        {!post ? (
+        {!post?.carousel || post.carousel.length == 0 ? (
           <BlinksStaticContent form={form} image={blinkImageUrl} />
         ) : (
           post.carousel.map((file, index) => (
@@ -523,11 +320,7 @@ export const CarouselContent: FC<{
                   Your browser does not support the video tag.
                 </video>
               )}
-              {file.fileType == 'blinks' && (
-                <BlinksStaticContent form={form} image={blinkImageUrl} />
-              )}
-
-              {!multiGrid && (
+              {!multiGrid && post.carousel && (
                 <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
                   {index !== 0 ? (
                     <button
@@ -555,7 +348,7 @@ export const CarouselContent: FC<{
           ))
         )}
       </div>
-      {post && post.carousel.length > 1 && (
+      {post?.carousel && post.carousel.length > 1 && (
         <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
           {post.carousel.map((y, index) => (
             <div

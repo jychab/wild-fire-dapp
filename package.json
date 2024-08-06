@@ -27,6 +27,7 @@
     "dexie": "^4.0.8",
     "encoding": "0.1.13",
     "firebase": "^10.12.2",
+    "intro.js": "^8.0.0-beta.1",
     "jotai": "2.8.3",
     "lightweight-charts": "^4.1.7",
     "next": "14.0.4",

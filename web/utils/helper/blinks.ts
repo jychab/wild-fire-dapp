@@ -4,7 +4,6 @@ import {
   ActionStateWithOrigin,
   ActionValue,
   ActionsJsonConfig,
-  ActionsSpecGetResponse,
   ActionsSpecPostRequestBody,
   ActionsSpecPostResponse,
   ExecutionState,
@@ -24,6 +23,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import toast from 'react-hot-toast';
+import { PostContent } from '../types/post';
 import { proxify } from './proxy';
 
 const solanaActionPrefix = /^(solana-action:|solana:)/;
@@ -306,6 +306,7 @@ export const execute = async (
       toast.error(e.message);
       return { error: e.message };
     });
+    console.log(tx);
 
     if (isPostRequestError(tx)) {
       executionState = executionReducer(executionState, {
@@ -356,7 +357,7 @@ export class Action {
 
   private constructor(
     private readonly _url: string,
-    private readonly _data: ActionsSpecGetResponse
+    private readonly _data: PostContent
   ) {
     // if no links present, fallback to original solana pay spec
     if (!_data.links?.actions) {
@@ -372,6 +373,10 @@ export class Action {
 
       return new ActionComponent(this, action.label, href, action.parameters);
     });
+  }
+
+  public get data() {
+    return this._data;
   }
 
   public get url() {
@@ -419,7 +424,7 @@ export class Action {
         );
         return null;
       }
-      const data = (await response.json()) as ActionsSpecGetResponse;
+      const data = (await response.json()) as PostContent;
       return new Action(apiUrl, data);
     } catch (e) {
       console.error(`Failed to fetch action ${apiUrl}, action url: ${apiUrl}`);
