@@ -1,10 +1,8 @@
 import { ExecutionType } from '@/utils/enums/blinks';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
 import {
-  ACTIONS_REGISTRY_URL_ALL,
   ActionStateWithOrigin,
   ActionsRegistry,
-  ExecutionState,
   ExecutionStatus,
   ExtendedActionState,
   NormalizedSecurityLevel,
@@ -17,7 +15,6 @@ import {
   IconAlertTriangleFilled,
   IconCheck,
   IconExclamationCircle,
-  IconProgress,
   IconShieldCheckFilled,
 } from '@tabler/icons-react';
 import Image from 'next/image';
@@ -29,6 +26,7 @@ import {
   ReactNode,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type ChangeEvent,
@@ -36,129 +34,15 @@ import {
 import {
   Action,
   ActionComponent,
-  checkSecurity,
   checkSecurityFromActionState,
   execute,
   executionReducer,
   isInterstitial,
   mergeActionStates,
-  normalizeOptions,
 } from '../../utils/helper/blinks';
 import { CommentsSection } from '../comments/comments-ui';
 import { CarouselContent, UserPanel, UserProfile } from '../content/content-ui';
-import {
-  useGetActionRegistry,
-  useGetActionRegistryLookUp,
-  useGetBlinkAction,
-  useGetBlinkActionJsonUrl,
-} from './blink-data-access';
-
-interface BlinksProps {
-  actionUrl: URL;
-  blinksDetail?: PostBlinksDetail;
-  showMintDetails?: boolean;
-  editable?: boolean;
-  multiGrid?: boolean;
-  hideComment?: boolean;
-  expandAll?: boolean;
-  hideUserPanel?: boolean;
-  hideCaption?: boolean;
-  hideCarousel?: boolean;
-  hideBorder?: boolean;
-}
-export const Blinks: FC<BlinksProps> = ({
-  actionUrl,
-  blinksDetail,
-  showMintDetails = true,
-  hideUserPanel = false,
-  editable = false,
-  multiGrid = false,
-  hideComment = false,
-  expandAll = false,
-  hideCaption = false,
-  hideCarousel = false,
-  hideBorder = false,
-}) => {
-  const { data: actionsRegistry } = useGetActionRegistry({
-    registryUrl: ACTIONS_REGISTRY_URL_ALL,
-  });
-  const mergedOptions = normalizeOptions({ securityLevel: 'only-trusted' });
-  const interstitialData = actionUrl
-    ? isInterstitial(actionUrl)
-    : { isInterstitial: false, decodedActionUrl: '' };
-
-  const { data: interstitialState } = useGetActionRegistryLookUp({
-    url: actionUrl,
-    type: 'interstitial',
-    actionsRegistry,
-    enabled: !!actionsRegistry && interstitialData.isInterstitial,
-  });
-
-  const actionApiUrl =
-    actionUrl &&
-    interstitialData.isInterstitial &&
-    interstitialState &&
-    checkSecurity(
-      interstitialState.state,
-      mergedOptions.securityLevel.interstitials
-    )
-      ? interstitialData.decodedActionUrl
-      : null;
-
-  const { data: websiteState } = useGetActionRegistryLookUp({
-    url: actionUrl,
-    type: 'website',
-    actionsRegistry,
-    enabled: !!actionsRegistry && !interstitialData.isInterstitial,
-  });
-  const { data: actionsUrlMapperApiUrl } = useGetBlinkActionJsonUrl({
-    actionUrl: actionUrl,
-    enabled:
-      !!actionsRegistry &&
-      !interstitialData.isInterstitial &&
-      !!websiteState &&
-      checkSecurity(websiteState.state, mergedOptions.securityLevel.websites),
-  });
-
-  const finalActionApiUrl = actionsUrlMapperApiUrl
-    ? actionsUrlMapperApiUrl
-    : actionApiUrl;
-
-  const { data: actionState } = useGetActionRegistryLookUp({
-    url: finalActionApiUrl,
-    type: 'action',
-    actionsRegistry,
-    enabled: !!actionsRegistry && !!finalActionApiUrl,
-  });
-
-  const { data: action } = useGetBlinkAction({
-    actionUrl: finalActionApiUrl,
-    enabled:
-      !!finalActionApiUrl &&
-      !!actionState &&
-      checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
-  });
-
-  return (
-    <ActionContainer
-      actionsRegistry={actionsRegistry}
-      action={action}
-      websiteText={actionUrl?.hostname}
-      websiteUrl={actionUrl?.toString()}
-      normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
-      blinksDetail={blinksDetail}
-      multiGrid={multiGrid}
-      showMintDetails={showMintDetails}
-      hideBorder={hideBorder}
-      hideCarousel={hideCarousel}
-      hideCaption={hideCaption}
-      hideUserPanel={hideUserPanel}
-      hideComment={hideComment}
-      expandAll={expandAll}
-      editable={editable}
-    />
-  );
-};
+import { useGetActionRegistryLookUp } from './blink-data-access';
 
 interface ActionContainerProps {
   actionsRegistry: ActionsRegistry | undefined;
@@ -197,6 +81,9 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
+  const [executionState, dispatchExecution] = useReducer(executionReducer, {
+    status: 'idle',
+  });
 
   let overallActionState: ActionStateWithOrigin | null = null;
 
@@ -271,12 +158,13 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     overallActionState &&
     checkSecurityFromActionState(overallActionState, normalizedSecurityLevel);
 
-  let executionState: ExecutionState = {
-    status:
-      overallState !== 'malicious' && isPassingSecurityCheck
-        ? 'idle'
-        : 'blocked',
-  };
+  useEffect(() => {
+    if (overallState === 'malicious' || isPassingSecurityCheck == false) {
+      dispatchExecution({
+        type: ExecutionType.BLOCK,
+      });
+    }
+  }, [overallState, isPassingSecurityCheck]);
 
   const buttons = useMemo(
     () =>
@@ -324,11 +212,12 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       overallActionState &&
       execute(
         connection,
-        executionState,
         overallActionState,
         publicKey,
         signTransaction,
         it,
+        normalizedSecurityLevel,
+        dispatchExecution,
         params
       ),
   });
@@ -379,7 +268,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
             <button
               className="mt-3 font-semibold transition-colors hover:text-error motion-reduce:transition-none"
               onClick={() =>
-                executionReducer(executionState, {
+                dispatchExecution({
                   type: ExecutionType.UNBLOCK,
                 })
               }
@@ -610,6 +499,7 @@ export const ActionLayout = ({
             post={post}
             multiGrid={multiGrid}
             blinkImageUrl={image}
+            blinksDetail={blinksDetail}
             form={form}
             handleScroll={handleScroll}
             carouselRef={carouselRef}
@@ -634,6 +524,7 @@ export const ActionLayout = ({
             )}
             {!hideCaption && (
               <BlinksCaption
+                blinksDetail={blinksDetail}
                 websiteUrl={websiteUrl}
                 websiteText={websiteText}
                 type={type}
@@ -675,9 +566,8 @@ const ActionContent = ({
   if (form) {
     return <ActionForm form={form} />;
   }
-
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {buttons && buttons.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {buttons?.map((it, index) => (
@@ -774,7 +664,8 @@ const ActionButton = ({
     if (loading)
       return (
         <span className="flex flex-row items-center justify-center gap-2">
-          {text} <IconProgress />
+          {text}
+          <div className="loading loading-spinner" />
         </span>
       );
     if (variant === 'success')
@@ -824,9 +715,15 @@ export const Button = ({
   variant?: 'success' | 'error' | 'default';
 } & PropsWithChildren) => {
   const buttonStyle = disabled ? 'btn-disabled ' : 'btn-primary';
+  const variantStlye =
+    variant == 'success'
+      ? 'btn-success '
+      : variant == 'error'
+      ? 'btn-error '
+      : '';
   return (
     <button
-      className={`${buttonStyle} btn btn-sm flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
+      className={`${buttonStyle} ${variantStlye} btn btn-sm flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
       disabled={disabled}
       onClick={onClick}
     >
@@ -849,6 +746,7 @@ export const BlinksCaption: FC<{
   multiGrid: boolean;
   expandAll: boolean;
   post: PostContent | undefined;
+  blinksDetail: PostBlinksDetail | undefined;
 }> = ({
   expandAll,
   websiteUrl,
@@ -864,6 +762,7 @@ export const BlinksCaption: FC<{
   multiGrid,
   post,
   disclaimer,
+  blinksDetail,
 }) => {
   const [showMore, setShowMore] = useState(expandAll);
   const router = useRouter();
@@ -897,12 +796,12 @@ export const BlinksCaption: FC<{
           {disclaimer && <div className="mb-4 pb-2">{disclaimer}</div>}
           <ActionContent form={form} inputs={inputs} buttons={buttons} />
           {success && (
-            <span className="mt-4 flex justify-center text-xs text-success">
+            <span className="mt-2 flex justify-center text-sm text-success">
               {success}
             </span>
           )}
           {error && !success && (
-            <span className="mt-4 flex justify-center text-subtext text-error">
+            <span className="mt-2 flex justify-center text-sm text-error">
               {error}
             </span>
           )}
@@ -922,8 +821,10 @@ export const BlinksCaption: FC<{
             onClick={() => {
               if (!multiGrid) {
                 setShowMore(true);
-              } else if (post?.mint && post?.id) {
-                router.push(`/post?mint=${post.mint}&id=${post.id}`);
+              } else if (blinksDetail?.mint && blinksDetail?.id) {
+                router.push(
+                  `/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`
+                );
               }
             }}
             className="text-xs stat-desc link link-hover w-fit"

@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { Blinks } from '../blinks/blinks-ui';
+import { Blinks } from '../blinks/blinks-feature';
 import { CreateAccountBtn } from '../create/create-ui';
 import { checkUrlIsValid, useUploadMutation } from './upload.data-access';
 
@@ -259,6 +259,7 @@ export const UploadPost: FC<{
                       hideUserPanel={false}
                       hideBorder={true}
                       hideComment={true}
+                      expandAll={true}
                     />
                   ) : (
                     <div className="flex gap-2 flex-col items-center ">

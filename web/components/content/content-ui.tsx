@@ -13,8 +13,10 @@ import {
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FC, RefObject, useState } from 'react';
-import { Blinks, BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
+import { Blinks } from '../blinks/blinks-feature';
+import { BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useGetToken,
@@ -145,7 +147,7 @@ export const UserPanel: FC<{
   });
 
   return (
-    <div className="flex justify-between pb-1">
+    <div className="flex justify-between pb-2">
       <div className="flex gap-2 text-sm items-start">
         <Link
           href={`/profile?mintId=${blinksDetail?.mint}`}
@@ -269,6 +271,7 @@ export const CarouselContent: FC<{
   blinkImageUrl?: string;
   form?: FormProps;
   post?: PostContent;
+  blinksDetail: PostBlinksDetail | undefined;
   multiGrid: boolean;
   handleScroll: (index: number) => void;
   currentIndex: number;
@@ -279,14 +282,23 @@ export const CarouselContent: FC<{
   blinkImageUrl,
   form,
   handleScroll,
+  blinksDetail,
   currentIndex,
   carouselRef,
 }) => {
+  const router = useRouter();
   return (
     <div className="relative leading-[0]">
       <div
         ref={carouselRef}
-        className="carousel w-full aspect-square h-auto bg-base-content"
+        onClick={() =>
+          multiGrid &&
+          blinksDetail &&
+          router.push(`/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`)
+        }
+        className={`carousel ${
+          multiGrid && blinksDetail ? 'cursor-pointer' : ''
+        } w-full aspect-square h-auto bg-base-content`}
       >
         {!post?.carousel || post.carousel.length == 0 ? (
           <BlinksStaticContent form={form} image={blinkImageUrl} />

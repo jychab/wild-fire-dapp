@@ -22,7 +22,7 @@ import {
   Transaction,
   VersionedTransaction,
 } from '@solana/web3.js';
-import toast from 'react-hot-toast';
+import { Dispatch } from 'react';
 import { PostContent } from '../types/post';
 import { proxify } from './proxy';
 
@@ -253,9 +253,9 @@ export const isSignTransactionError = (
 export const isPostRequestError = (
   data: ActionsSpecPostResponse | { error: string }
 ): data is { error: string } => !!(data as any).error;
+
 export const execute = async (
   connection: Connection,
-  executionState: ExecutionState,
   overallActionState: ActionStateWithOrigin,
   payer: PublicKey | null,
   signTransaction:
@@ -264,6 +264,8 @@ export const execute = async (
       ) => Promise<T>)
     | undefined,
   component: ActionComponent,
+  normalizedSecurityLevel: NormalizedSecurityLevel,
+  dispatchExecution: Dispatch<ActionValue>,
   params?: Record<string, string>
 ) => {
   if (component.parameters && params) {
@@ -271,11 +273,6 @@ export const execute = async (
       component.setValue(value, name)
     );
   }
-  const normalizedSecurityLevel: NormalizedSecurityLevel = {
-    websites: 'all',
-    interstitials: 'all',
-    actions: 'all',
-  };
 
   const newIsPassingSecurityCheck =
     overallActionState &&
@@ -283,33 +280,31 @@ export const execute = async (
 
   // if action state has changed or origin's state has changed, and it doesn't pass the security check or became malicious, block the action
   if (!newIsPassingSecurityCheck) {
-    executionState = executionReducer(executionState, {
+    dispatchExecution({
       type: ExecutionType.BLOCK,
     });
     return;
   }
 
-  executionState = executionReducer(executionState, {
+  dispatchExecution({
     type: ExecutionType.INITIATE,
     executingAction: component,
   });
 
   try {
     if (!payer || !signTransaction) {
-      executionState = executionReducer(executionState, {
+      dispatchExecution({
         type: ExecutionType.RESET,
       });
       return;
     }
 
     const tx = await component.post(payer.toBase58()).catch((e: Error) => {
-      toast.error(e.message);
       return { error: e.message };
     });
-    console.log(tx);
 
     if (isPostRequestError(tx)) {
-      executionState = executionReducer(executionState, {
+      dispatchExecution({
         type: ExecutionType.SOFT_RESET,
         errorMessage: tx.error,
       });
@@ -327,7 +322,7 @@ export const execute = async (
     });
 
     if (!txId || isSignTransactionError({ signature: txId })) {
-      executionState = executionReducer(executionState, {
+      dispatchExecution({
         type: ExecutionType.RESET,
       });
     } else {
@@ -340,13 +335,13 @@ export const execute = async (
         },
         'confirmed'
       );
-      executionState = executionReducer(executionState, {
+      dispatchExecution({
         type: ExecutionType.FINISH,
         successMessage: tx.message,
       });
     }
   } catch (e) {
-    executionState = executionReducer(executionState, {
+    dispatchExecution({
       type: ExecutionType.FAIL,
       errorMessage: (e as Error).message ?? 'Unknown error',
     });
