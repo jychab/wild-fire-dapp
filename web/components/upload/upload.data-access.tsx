@@ -11,10 +11,6 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
-interface UploadArgs {
-  post: any;
-}
-
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
@@ -30,11 +26,11 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         mint,
       },
     ],
-    mutationFn: async (input: UploadArgs) => {
+    mutationFn: async (input: any) => {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
 
       try {
-        await createOrEditPost(mint.toBase58(), input.post);
+        await createOrEditPost(mint.toBase58(), input);
         return 'Success';
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);
