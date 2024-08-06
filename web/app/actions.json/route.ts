@@ -5,7 +5,7 @@ export async function GET(request: any) {
     rules: [
       {
         pathPattern: '/post/**',
-        apiPath: 'http://api.hashfeed.social/post/**',
+        apiPath: 'http://api.hashfeed.social/post/actions/**',
       },
     ],
   };
