@@ -508,9 +508,7 @@ export const ActionLayout = ({
         )}
         <div
           className={`${
-            !hideUserPanel || !hideCaption || !hideComment
-              ? `${multiGrid ? 'sm:px-4 px-2' : 'px-4'} pb-4 pt-2`
-              : ''
+            !hideUserPanel || !hideCaption || !hideComment ? `p-2` : ''
           } flex flex-col flex-1 w-full justify-between`}
         >
           <div className="flex flex-col">
