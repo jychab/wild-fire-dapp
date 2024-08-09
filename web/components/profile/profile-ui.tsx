@@ -13,7 +13,6 @@ import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
-  useGetPrice,
   useGetTokenAccountInfo,
   useSubscriptionMutation,
 } from '../trading/trading-data-access';
@@ -188,13 +187,19 @@ const Profile: FC<ProfileProps> = ({
             new PublicKey(metadata.token_info!.token_program!)
           )
         : null,
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata?.token_info?.token_program)
+      : undefined,
   });
 
   const subscribeMutation = useSubscriptionMutation({
     mint: new PublicKey(mintId),
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata?.token_info?.token_program)
+      : undefined,
   });
 
-  const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
+  // const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
 
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
@@ -276,14 +281,12 @@ const Profile: FC<ProfileProps> = ({
             </>
           )}
           {mintSummaryDetails &&
-            (tokenDetails?.token_info?.price_info?.price_per_token || price) &&
+            tokenDetails?.token_info?.price_info?.price_per_token &&
             '||'}
-          {(tokenDetails?.token_info?.price_info?.price_per_token || price) && (
+          {tokenDetails?.token_info?.price_info?.price_per_token && (
             <>
               <span>{`$${(
-                tokenDetails?.token_info?.price_info?.price_per_token ||
-                price ||
-                0
+                tokenDetails?.token_info?.price_info?.price_per_token || 0
               ).toPrecision(6)}
               `}</span>
             </>

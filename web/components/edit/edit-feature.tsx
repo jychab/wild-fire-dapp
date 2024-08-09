@@ -8,7 +8,7 @@ interface EditFeatureProps {
 }
 export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
   return (
-    <div className="flex flex-col pb-[32px] w-full items-center">
+    <div className="flex flex-col h-full justify-center w-full items-center">
       {mintId ? <EditToken mintId={mintId} /> : 'Invalid mint id'}
     </div>
   );

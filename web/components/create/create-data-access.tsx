@@ -2,10 +2,8 @@
 
 import {
   AMOUNT_CREATOR,
-  AMOUNT_LIQUIDITY_POOL,
   AMOUNT_RESERVE,
   LONG_STALE_TIME,
-  OFF_SET,
   ONBOARDING_WALLET,
 } from '@/utils/consts';
 import {
@@ -21,7 +19,6 @@ import {
   createMint,
   createMintMetadata,
   initializeMint,
-  initializePool,
   program,
 } from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
@@ -111,7 +108,7 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
         ]);
         const sponsoredResult =
           onboardingWallet &&
-          onboardingWallet.lamports > 0.022 * LAMPORTS_PER_SOL
+          onboardingWallet.lamports > 0.012 * LAMPORTS_PER_SOL
             ? await getSponsoredDistributor(metadata)
             : null;
         if (sponsoredResult && sponsoredResult.partialTx) {
@@ -179,23 +176,23 @@ async function handleSelfDistributor(
   distributor: PublicKey,
   mint: PublicKey
 ): Promise<TransactionSignature> {
-  const [mintIx, metadataIx, initMintIx, initializePoolIx] = await Promise.all([
+  const [mintIx, metadataIx, initMintIx] = await Promise.all([
     createMint(distributor, 10, undefined, wallet.publicKey),
     createMintMetadata(connection, metadata, wallet.publicKey),
     initializeMint(AMOUNT_RESERVE, AMOUNT_CREATOR, mint, wallet.publicKey),
-    initializePool(
-      connection,
-      mint,
-      wallet.publicKey,
-      wallet.publicKey,
-      AMOUNT_LIQUIDITY_POOL,
-      Number(OFF_SET)
-    ),
+    // initializePool(
+    //   connection,
+    //   mint,
+    //   wallet.publicKey,
+    //   wallet.publicKey,
+    //   AMOUNT_LIQUIDITY_POOL,
+    //   Number(OFF_SET)
+    // ),
   ]);
 
   return await buildAndSendTransaction({
     connection: connection,
-    ixs: [mintIx, metadataIx, initMintIx, ...initializePoolIx],
+    ixs: [mintIx, metadataIx, initMintIx],
     publicKey: wallet.publicKey,
     signTransaction: wallet.signTransaction,
   });

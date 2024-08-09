@@ -234,96 +234,104 @@ export const UploadPost: FC<{
           onChange={handleInputChange(setUri)}
         />
       )}
-      {files.length == 0 ? (
-        <div className="flex flex-col w-full h-full aspect-square items-center justify-center bg-base-100 border border-base-300 z-0 rounded">
-          <span className="font-semibold">Add an Image / Video </span>
-        </div>
-      ) : (
-        <div
-          className={`flex flex-col ${
-            useExistingBlink ? 'border border-base-300' : ''
-          }`}
-        >
-          <div className="carousel w-full z-0">
-            {files.map((file) => (
-              <div
-                id={file.id}
-                key={file.id}
-                className="carousel-item relative z-0 items-center justify-center flex aspect-square w-full"
-              >
-                {file.fileType == 'blinks' &&
-                  (checkUrlIsValid(file.uri) ? (
-                    <Blinks
-                      actionUrl={new URL(file.uri)}
-                      hideCaption={false}
-                      hideUserPanel={false}
-                      hideBorder={true}
-                      hideComment={true}
-                      expandAll={true}
-                    />
-                  ) : (
-                    <div className="flex gap-2 flex-col items-center ">
-                      <span>Url Is Invalid</span>
-                      <div className="loading loading-dots" />
-                    </div>
-                  ))}
-                {file.fileType.startsWith('image/') && (
-                  <Image
-                    className={`object-contain bg-base-content`}
-                    fill={true}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    src={file.uri}
-                    alt={''}
-                  />
-                )}
-                {file.fileType.startsWith('video/') && (
-                  <video
-                    ref={handleVideoRef(file.id)}
-                    width="300"
-                    height="300"
-                    className="w-full h-full bg-base-content"
-                    autoPlay
-                    muted
-                    playsInline
-                    preload="auto"
-                    onLoadedMetadata={() => handleLoadedMetadata(file.id)}
-                  >
-                    <source src={file.uri} type={file.fileType} />
-                    Your browser does not support the video tag.
-                  </video>
-                )}
-                <button
-                  onClick={() => {
-                    if (useExistingBlink) {
-                      setUri('');
-                      const filteredFiles = files.filter(
-                        (x) => x.fileType !== 'blinks'
-                      );
-                      setFiles([
-                        ...filteredFiles,
-                        {
-                          fileType: 'blinks',
-                          uri: '',
-                          id: 'blinks',
-                        },
-                      ]);
-                    } else {
-                      setFiles((previous) =>
-                        previous.filter((x) => x.id != file.id)
-                      );
-                    }
-                  }}
-                  className="absolute btn rounded-full btn-sm px-2 z-1 top-4 right-4"
-                >
-                  <IconX />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <div className="flex flex-col gap-2">
-        {!useExistingBlink && (
+        {files.length == 0 ? (
+          <label className="btn btn-outline" htmlFor="file-upload">
+            <IconPlus />
+            <span>Upload an Image or Video</span>
+            <input
+              id="file-upload"
+              type="file"
+              className="hidden"
+              accept="image/*, video/*"
+              onChange={handleFilesAdd}
+            />
+          </label>
+        ) : (
+          <div
+            className={`flex flex-col ${
+              useExistingBlink ? 'border border-base-300' : ''
+            }`}
+          >
+            <div className="carousel w-full z-0">
+              {files.map((file) => (
+                <div
+                  id={file.id}
+                  key={file.id}
+                  className="carousel-item relative z-0 items-center justify-center flex aspect-square w-full"
+                >
+                  {file.fileType == 'blinks' &&
+                    (checkUrlIsValid(file.uri) ? (
+                      <Blinks
+                        actionUrl={new URL(file.uri)}
+                        hideCaption={false}
+                        hideUserPanel={false}
+                        hideBorder={true}
+                        hideComment={true}
+                        expandAll={true}
+                      />
+                    ) : (
+                      <div className="flex gap-2 flex-col items-center ">
+                        <span>Url Is Invalid</span>
+                        <div className="loading loading-dots" />
+                      </div>
+                    ))}
+                  {file.fileType.startsWith('image/') && (
+                    <Image
+                      className={`object-contain bg-base-content`}
+                      fill={true}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      src={file.uri}
+                      alt={''}
+                    />
+                  )}
+                  {file.fileType.startsWith('video/') && (
+                    <video
+                      ref={handleVideoRef(file.id)}
+                      width="300"
+                      height="300"
+                      className="w-full h-full bg-base-content"
+                      autoPlay
+                      muted
+                      playsInline
+                      preload="auto"
+                      onLoadedMetadata={() => handleLoadedMetadata(file.id)}
+                    >
+                      <source src={file.uri} type={file.fileType} />
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (useExistingBlink) {
+                        setUri('');
+                        const filteredFiles = files.filter(
+                          (x) => x.fileType !== 'blinks'
+                        );
+                        setFiles([
+                          ...filteredFiles,
+                          {
+                            fileType: 'blinks',
+                            uri: '',
+                            id: 'blinks',
+                          },
+                        ]);
+                      } else {
+                        setFiles((previous) =>
+                          previous.filter((x) => x.id != file.id)
+                        );
+                      }
+                    }}
+                    className="absolute btn rounded-full btn-sm px-2 z-1 top-4 right-4"
+                  >
+                    <IconX />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {!useExistingBlink && files.length > 0 && (
           <div className="flex items-center gap-2">
             {files.map((file) => (
               <button

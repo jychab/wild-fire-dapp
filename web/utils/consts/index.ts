@@ -18,6 +18,8 @@ export const USDC = new PublicKey(
 
 export const USDC_DECIMALS = 6;
 
+export const NATIVE_MINT_DECIMALS = 9;
+
 export const DEFAULT_MINT_DECIMALS = 0;
 
 export const OFF_SET = BigInt(1000 * 10 ** USDC_DECIMALS);
@@ -28,9 +30,9 @@ export const CONFIG = new PublicKey(
 
 export const ONE_BILLION = 1_000_000_000;
 
-export const AMOUNT_RESERVE = ONE_BILLION * 0.1;
+export const AMOUNT_RESERVE = 0;
 
-export const AMOUNT_CREATOR = ONE_BILLION * 0.9;
+export const AMOUNT_CREATOR = ONE_BILLION;
 
 export const AMOUNT_LIQUIDITY_POOL = ONE_BILLION * 0.85;
 

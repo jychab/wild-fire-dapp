@@ -3,7 +3,7 @@ export function formatLargeNumber(number: number | string) {
     number = parseInt(number);
   }
   if (number < 1000) {
-    return number;
+    return number.toFixed(2);
   } else if (number < 1_000_000) {
     return (number / 1000).toFixed(2) + 'K';
   } else if (number < 1_000_000_000) {

@@ -53,7 +53,7 @@ export const CreatePanel: FC = () => {
   }, [picture, publicKey, name, handle]);
 
   return (
-    <div className="flex flex-col gap-4 items-center justify-center pb-32">
+    <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
       <span className="text-3xl md:text-4xl text-center">
         Create your account
       </span>
@@ -184,7 +184,7 @@ export const CreateWithExistingPanel: FC = () => {
   const [selected, setSelected] = useState<DAS.GetAssetResponse>();
   const createMutation = useCreateMintWithExistingToken({ address: publicKey });
   return (
-    <div className="flex flex-col gap-4 items-center justify-center pb-32">
+    <div className="flex flex-col gap-4 items-center justify-center h-full">
       <span className="text-3xl md:text-4xl text-center">
         Create an account using an existing token
       </span>

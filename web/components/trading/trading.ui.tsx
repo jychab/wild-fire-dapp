@@ -1,17 +1,16 @@
-import TradingViewChart from '@/utils/charts';
-import { DEFAULT_MINT_DECIMALS, USDC, USDC_DECIMALS } from '@/utils/consts';
+import { DEFAULT_MINT_DECIMALS, NATIVE_MINT_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import {
   calculateFee,
   getAssociatedTokenAddressSync,
-  TOKEN_PROGRAM_ID,
+  NATIVE_MINT,
   TransferFee,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconCurrencyDollar } from '@tabler/icons-react';
+import { IconCurrencySolana } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useCallback, useMemo, useState } from 'react';
@@ -23,10 +22,8 @@ import {
 } from '../profile/profile-data-access';
 import {
   getAssociatedTokenStateAccount,
-  getMintVault,
   getQuote,
-  getUSDCVault,
-  useGetPoolState,
+  useGetAccountInfo,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
   useSwapMutation,
@@ -37,7 +34,7 @@ export const TradingPanel: FC<{
 }> = ({ mintId }) => {
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
-  const [showError, setShowError] = useState(false);
+  const [showError, setShowError] = useState('');
   const { data: metadata } = useGetTokenDetails({
     mint: new PublicKey(mintId),
   });
@@ -48,25 +45,15 @@ export const TradingPanel: FC<{
     mint: new PublicKey(mintId),
   });
 
-  const swapMutation = useSwapMutation({ mint: new PublicKey(mintId) });
+  const swapMutation = useSwapMutation({
+    mint: new PublicKey(mintId),
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata?.token_info?.token_program)
+      : undefined,
+  });
 
-  const chartProps = useMemo(
-    () => ({
-      mint: mintId,
-    }),
-    [mintId]
-  );
-
-  const { data: userUsdcInfo } = useGetTokenAccountInfo({
-    address: publicKey
-      ? getAssociatedTokenAddressSync(
-          new PublicKey(USDC),
-          publicKey,
-          false,
-          new PublicKey(TOKEN_PROGRAM_ID)
-        )
-      : null,
-    tokenProgram: TOKEN_PROGRAM_ID,
+  const { data: userAccountInfo } = useGetAccountInfo({
+    address: publicKey,
   });
   const { data: userMintInfo } = useGetTokenAccountInfo({
     address:
@@ -78,29 +65,32 @@ export const TradingPanel: FC<{
             new PublicKey(metadata.token_info!.token_program!)
           )
         : null,
+    tokenProgram: metadata?.token_info?.token_program
+      ? new PublicKey(metadata?.token_info?.token_program)
+      : undefined,
   });
 
-  const { data: usdcVault } = useGetTokenAccountInfo({
-    address: getUSDCVault(new PublicKey(mintId)),
-    tokenProgram: TOKEN_PROGRAM_ID,
-  });
-  const { data: mintVault } = useGetTokenAccountInfo({
-    address: getMintVault(new PublicKey(mintId)),
-  });
-  const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
+  // const { data: usdcVault } = useGetTokenAccountInfo({
+  //   address: getUSDCVault(new PublicKey(mintId)),
+  //   tokenProgram: TOKEN_PROGRAM_ID,
+  // });
+  // const { data: mintVault } = useGetTokenAccountInfo({
+  //   address: getMintVault(new PublicKey(mintId)),
+  // });
+  // const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
 
-  const liquidity =
-    Number(usdcVault?.amount) -
-    poolState?.creatorFeesTokenUsdc -
-    poolState?.protocolFeesTokenUsdc;
+  // const liquidity =
+  //   Number(usdcVault?.amount) -
+  //   poolState?.creatorFeesTokenUsdc -
+  //   poolState?.protocolFeesTokenUsdc;
 
   const inputToken = buy
-    ? Number(userUsdcInfo?.amount)
+    ? Number(userAccountInfo?.lamports)
     : Number(userMintInfo?.amount);
 
   const outputToken = buy
     ? Number(userMintInfo?.amount)
-    : Number(userUsdcInfo?.amount);
+    : Number(userAccountInfo?.lamports);
 
   const [inputAmount, setInputAmount] = useState('');
   const [outputAmount, setOutputAmount] = useState('');
@@ -110,7 +100,7 @@ export const TradingPanel: FC<{
           Number(inputAmount) /
           10 **
             (buy
-              ? USDC_DECIMALS
+              ? NATIVE_MINT_DECIMALS
               : metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS)
         ).toString()
       : '';
@@ -123,7 +113,7 @@ export const TradingPanel: FC<{
           10 **
             (buy
               ? metadata?.token_info?.decimals || DEFAULT_MINT_DECIMALS
-              : USDC_DECIMALS)
+              : NATIVE_MINT_DECIMALS)
         ).toString()
       : '';
   }, [buy, outputAmount]);
@@ -137,58 +127,58 @@ export const TradingPanel: FC<{
       } else {
         setShowWarning('');
       }
-      setShowError(false);
+      setShowError('');
+      try {
+        let transferFee: TransferFee | undefined;
+        const currentTransferFeeConfig =
+          metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
+        if (currentTransferFeeConfig) {
+          transferFee = {
+            epoch: BigInt(currentTransferFeeConfig.epoch),
+            maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
+            transferFeeBasisPoints: Number(
+              currentTransferFeeConfig.transfer_fee_basis_points
+            ),
+          };
+        }
+        let inputAmountWithoutFee = BigInt(amount);
+        if (!buy) {
+          inputAmountWithoutFee =
+            inputAmountWithoutFee -
+            (transferFee
+              ? calculateFee(transferFee, inputAmountWithoutFee)
+              : BigInt(0));
+        }
+        let outAmountWithoutFee = await getQuote(
+          // mintVault,
+          // usdcVault,
+          // poolState,
+          buy ? NATIVE_MINT.toBase58() : mintId,
+          buy ? mintId : NATIVE_MINT.toBase58(),
+          inputAmountWithoutFee,
+          'ExactIn'
+        );
 
-      let transferFee: TransferFee | undefined;
-      const currentTransferFeeConfig =
-        metadata?.mint_extensions?.transfer_fee_config?.older_transfer_fee;
-      if (currentTransferFeeConfig) {
-        transferFee = {
-          epoch: BigInt(currentTransferFeeConfig.epoch),
-          maximumFee: BigInt(currentTransferFeeConfig.maximum_fee),
-          transferFeeBasisPoints: Number(
-            currentTransferFeeConfig.transfer_fee_basis_points
-          ),
-        };
+        if (buy) {
+          outAmountWithoutFee =
+            outAmountWithoutFee -
+            (transferFee
+              ? calculateFee(transferFee, outAmountWithoutFee)
+              : BigInt(0));
+        }
+        setOutputAmount(outAmountWithoutFee.toString());
+      } catch (e: any) {
+        setShowError(e.message);
       }
-      let inputAmountWithoutFee = BigInt(amount);
-      if (!buy) {
-        inputAmountWithoutFee =
-          inputAmountWithoutFee -
-          (transferFee
-            ? calculateFee(transferFee, inputAmountWithoutFee)
-            : BigInt(0));
-      }
-      let outAmountWithoutFee = await getQuote(
-        mintVault,
-        usdcVault,
-        poolState,
-        buy ? USDC.toBase58() : mintId,
-        buy ? mintId : USDC.toBase58(),
-        inputAmountWithoutFee,
-        'ExactIn'
-      );
-      if (!buy && outAmountWithoutFee > liquidity) {
-        setShowError(true);
-        return;
-      }
-      if (buy) {
-        outAmountWithoutFee =
-          outAmountWithoutFee -
-          (transferFee
-            ? calculateFee(transferFee, outAmountWithoutFee)
-            : BigInt(0));
-      }
-      setOutputAmount(outAmountWithoutFee.toString());
     },
-    [mintId, publicKey, liquidity, metadata, connection, buy]
+    [mintId, publicKey, metadata, connection, buy]
   );
 
-  const USDCButton = (
+  const SOLButton = (
     <>
       <button className="btn btn-sm rounded-lg gap-1 px-2 flex items-center text-sm ">
-        <IconCurrencyDollar />
-        USDC
+        <IconCurrencySolana />
+        SOL
       </button>
       <input
         disabled={!buy}
@@ -197,7 +187,7 @@ export const TradingPanel: FC<{
         placeholder="0.00"
         value={buy ? formattedInputAmount : formattedOutputAmount}
         onChange={(e) => {
-          let amount = parseFloat(e.target.value) * 10 ** USDC_DECIMALS;
+          let amount = parseFloat(e.target.value) * 10 ** NATIVE_MINT_DECIMALS;
           if (Number.isNaN(amount)) {
             setInputAmount('');
             setOutputAmount('');
@@ -255,24 +245,18 @@ export const TradingPanel: FC<{
       ) : (
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col h-[500px] w-full">
-            {poolState ? (
+            {/* {poolState ? (
               <TradingViewChart {...chartProps} />
-            ) : (
-              <iframe
-                width="100%"
-                height="500"
-                src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
-              ></iframe>
-            )}
+            ) : ( */}
+            <iframe
+              width="100%"
+              height="500"
+              src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+            ></iframe>
+            {/* )} */}
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
-            {
-              <MintInfo
-                mintId={mintId}
-                metadata={metadata}
-                liquidity={liquidity}
-              />
-            }
+            {<MintInfo mintId={mintId} metadata={metadata} liquidity={NaN} />}
             <div className="flex flex-col gap-2 p-4 rounded">
               <div className="flex items-center w-full">
                 <button
@@ -306,13 +290,13 @@ export const TradingPanel: FC<{
                   <div className="label-text-alt flex items-end gap-2">
                     <span>{`${formatLargeNumber(
                       buy
-                        ? (inputToken || 0) / 10 ** USDC_DECIMALS
+                        ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
                         : (inputToken || 0) /
                             10 **
                               (metadata?.token_info?.decimals ||
                                 DEFAULT_MINT_DECIMALS)
                     )} ${
-                      buy ? 'USDC' : metadata?.content?.metadata.symbol
+                      buy ? 'SOL' : metadata?.content?.metadata.symbol
                     }`}</span>
                     <button
                       onClick={() =>
@@ -335,7 +319,7 @@ export const TradingPanel: FC<{
                   </div>
                 </div>
                 <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? USDCButton : MintButton}
+                  {buy ? SOLButton : MintButton}
                 </div>
               </label>
 
@@ -345,18 +329,18 @@ export const TradingPanel: FC<{
                   <div className="label-text-alt">
                     <span>{`${formatLargeNumber(
                       !buy
-                        ? (outputToken || 0) / 10 ** USDC_DECIMALS
+                        ? (outputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
                         : (outputToken || 0) /
                             10 **
                               (metadata?.token_info?.decimals ||
                                 DEFAULT_MINT_DECIMALS)
                     )} ${
-                      !buy ? 'USDC' : metadata?.content?.metadata.symbol
+                      !buy ? 'SOL' : metadata?.content?.metadata.symbol
                     }`}</span>
                   </div>
                 </div>
                 <div className=" input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? MintButton : USDCButton}
+                  {buy ? MintButton : SOLButton}
                 </div>
               </label>
               {showWarning != '' && (
@@ -364,18 +348,18 @@ export const TradingPanel: FC<{
                   {showWarning}
                 </span>
               )}
-              {showError && (
+              {showError != '' && (
                 <span className="text-right text-xs text-error">
-                  {'Insufficient liquidity in the pool for this trade'}
+                  {showError}
                 </span>
               )}
               <button
-                disabled={!isLiquidityPoolFound || showError}
+                disabled={!isLiquidityPoolFound || showError != ''}
                 onClick={() => {
                   swapMutation.mutateAsync({
-                    poolState,
-                    inputMint: buy ? USDC.toBase58() : mintId,
-                    outputMint: buy ? mintId : USDC.toBase58(),
+                    // poolState,
+                    inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
+                    outputMint: buy ? mintId : NATIVE_MINT.toBase58(),
                     amount: parseFloat(inputAmount),
                     swapMode: 'ExactIn',
                   });
@@ -404,7 +388,7 @@ export const TradingPanel: FC<{
                   className="btn btn-primary w-full text-center"
                   href={'https://raydium.io/liquidity/create-pool/'}
                 >
-                  Create your liquidity pool on Raydium
+                  Create a liquidity pool on Raydium
                 </Link>
               )}
             </div>
@@ -449,12 +433,13 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
               {largestTokenAccount.map((x, index) => (
                 <tr key={x.address.toBase58()}>
                   <td className="text-xs">{index + 1}</td>
+
                   <td className="max-w-[140px] md:w-full truncate text-xs">
                     <Link
                       className="link link-hover"
                       rel="noopener noreferrer"
                       target="_blank"
-                      href={`https://solscan.io/address/${x.owner.toBase58()}`}
+                      href={`https://solscan.io/address/${x.owner}`}
                     >
                       {`${
                         x.owner.toBase58() == tokenStateData?.admin
@@ -466,7 +451,7 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                           getAssociatedTokenStateAccount(
                             new PublicKey(tokenStateData.mint)
                           ).toBase58()
-                          ? '(Reserve)'
+                          ? '(Transfer Fee Wallet)'
                           : ''
                       } ${x.owner.toBase58()}`}
                     </Link>
@@ -552,7 +537,7 @@ export const MintInfo: FC<{
       )}
       {!Number.isNaN(liquidity) && (
         <span className="text-right col-span-3">
-          {`$${formatLargeNumber(liquidity / 10 ** USDC_DECIMALS)}`}
+          {`$${formatLargeNumber(liquidity / 10 ** NATIVE_MINT_DECIMALS)}`}
         </span>
       )}
 
