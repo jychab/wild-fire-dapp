@@ -30,23 +30,23 @@ import {
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
-  mintId: string;
+  mintId: string | null;
 }> = ({ mintId }) => {
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
   const [showError, setShowError] = useState('');
   const { data: metadata } = useGetTokenDetails({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
 
   const [buy, setBuy] = useState(true);
 
   const { data: isLiquidityPoolFound, isLoading } = useIsLiquidityPoolFound({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
 
   const swapMutation = useSwapMutation({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata?.token_info?.token_program)
       : undefined,
@@ -121,6 +121,7 @@ export const TradingPanel: FC<{
 
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
+      if (!mintId) return;
       setInputAmount(amount.toString());
       if (!inputToken || amount > inputToken) {
         setShowWarning('Input Amount Exceeds Balance');
@@ -356,6 +357,7 @@ export const TradingPanel: FC<{
               <button
                 disabled={!isLiquidityPoolFound || showError != ''}
                 onClick={() => {
+                  if (!mintId) return;
                   swapMutation.mutateAsync({
                     // poolState,
                     inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
@@ -401,19 +403,19 @@ export const TradingPanel: FC<{
 };
 
 interface ActivitiesProps {
-  mintId: string;
+  mintId: string | null;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
 export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
   const { data: largestTokenAccount } = useGetLargestAccountFromMint({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata.token_info.token_program)
       : null,
   });
   const { data: tokenStateData } = useGetMintToken({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
   return (
     <div className={`md:bg-base-200 flex flex-col w-full gap-2 rounded p-4`}>
@@ -481,15 +483,15 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
 };
 
 export const MintInfo: FC<{
-  mintId: string;
+  mintId: string | null;
   metadata: DAS.GetAssetResponse | null | undefined;
   liquidity: number;
 }> = ({ mintId, metadata, liquidity }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
   const { data: tokenStateData } = useGetMintToken({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">

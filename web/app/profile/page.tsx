@@ -7,5 +7,4 @@ export default function page() {
   const mintId = searchParams.get('mintId');
   const tab = searchParams.get('tab');
   return <ProfileFeature mintId={mintId} tab={tab} />;
-  // return <div></div>;
 }

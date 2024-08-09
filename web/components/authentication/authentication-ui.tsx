@@ -2,7 +2,6 @@ import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
-  IconGift,
   IconLogout,
   IconSquarePlus,
   IconUser,
@@ -13,7 +12,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, ReactNode } from 'react';
 import { DAS } from '../../utils/types/das';
-import { useGetDailyClaimAvailable } from '../notification/notification-data-access';
 import {
   useGetToken,
   useGetTokenDetails,
@@ -63,9 +61,6 @@ interface ProfileButtonProps {
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
   const { publicKey, disconnect } = useWallet();
-  const { data: isClaimAvailable } = useGetDailyClaimAvailable({
-    mint: metaDataQuery ? new PublicKey(metaDataQuery.id) : null,
-  });
 
   return (
     <div className="dropdown dropdown-end dropdown-bottom">
@@ -120,24 +115,6 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             </Link>
           </li>
         )}
-        <li className="w-full ">
-          <button
-            onClick={() =>
-              (
-                document.getElementById('notification') as HTMLDialogElement
-              ).showModal()
-            }
-          >
-            <div className="indicator">
-              {isClaimAvailable?.availability && (
-                <span className="indicator-item indicator-start badge w-2 h-2 px-0 bg-red-400 border-none"></span>
-              )}
-              <IconGift />
-            </div>
-            Claim Daily Bonus
-          </button>
-        </li>
-
         <li className="w-full">
           <ThemeComponent />
         </li>

@@ -21,7 +21,6 @@ import {
   verifyAndGetToken,
 } from '../../utils/firebase/functions';
 import { SignInBtn } from '../authentication/authentication-ui';
-import NotificationFeature from '../notification/notification-feature';
 import { UploadBtn } from '../upload/upload-ui';
 
 export function UiLayout({ children }: { children: ReactNode }) {
@@ -136,7 +135,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 }
               >
                 {children}
-                <NotificationFeature />
               </Suspense>
             </div>
 

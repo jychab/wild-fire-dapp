@@ -8,7 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 import { IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import { formatLargeNumber } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { useGetMintToken } from '../edit/edit-data-access';
@@ -16,72 +16,27 @@ import {
   useGetTokenAccountInfo,
   useSubscriptionMutation,
 } from '../trading/trading-data-access';
-import { TradingPanel } from '../trading/trading.ui';
 import { UploadBtn } from '../upload/upload-ui';
-import {
-  useGetMintSummaryDetails,
-  useGetPostsFromMint,
-  useGetTokenDetails,
-} from './profile-data-access';
+import { useGetPostsFromMint, useGetTokenDetails } from './profile-data-access';
 
-enum TabsEnum {
+export enum TabsEnum {
   POST = 'Posts',
   TRADE = 'Trade',
 }
 
-export const ProfilePage: FC<{
-  mintId: string;
-  tab: string | null;
-}> = ({ mintId, tab }) => {
-  const { data: metaDataQuery } = useGetTokenDetails({
-    mint: new PublicKey(mintId),
-  });
-
-  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: metaDataQuery ? new PublicKey(mintId) : null,
-  });
-
-  const [selectedTab, setSelectedTab] = useState(
-    tab
-      ? Object.entries(TabsEnum).find(
-          (x) => x[0].toLowerCase() == tab.toLowerCase()
-        )?.[1] || TabsEnum.POST
-      : TabsEnum.POST
-  );
-
-  return (
-    <div className="flex flex-col w-full items-center pb-32">
-      <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
-        <Profile
-          metadata={metaDataQuery}
-          mintId={mintId}
-          mintSummaryDetails={mintSummaryDetails}
-        />
-        <div className="flex flex-col flex-1 w-full">
-          <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b w-full md:p-4">
-            {selectedTab == TabsEnum.POST && (
-              <ContentPanel metadata={metaDataQuery} mintId={mintId} />
-            )}
-            {selectedTab == TabsEnum.TRADE && <TradingPanel mintId={mintId} />}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 interface ContentPanelProps {
-  mintId: string;
+  mintId: string | null;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
+export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
-  const { data: posts } = useGetPostsFromMint({ mint: new PublicKey(mintId) });
+  const { data: posts } = useGetPostsFromMint({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
 
   return (
     <>
@@ -93,6 +48,7 @@ const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
         posts={posts}
       />
       {posts?.posts.length == 0 &&
+        mintId &&
         ((tokenStateData &&
           publicKey &&
           publicKey.toBase58() == tokenStateData.admin) ||
@@ -121,7 +77,7 @@ interface TabsProps {
   setSelectedTab: (value: TabsEnum) => void;
 }
 
-const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
+export const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
   return (
     <div
       role="tablist"
@@ -160,10 +116,10 @@ interface ProfileProps {
     | null
     | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
-  mintId: string;
+  mintId: string | null;
 }
 
-const Profile: FC<ProfileProps> = ({
+export const Profile: FC<ProfileProps> = ({
   metadata,
   mintId,
   mintSummaryDetails,
@@ -171,10 +127,10 @@ const Profile: FC<ProfileProps> = ({
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
   const { data: tokenDetails } = useGetTokenDetails({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
   });
 
   const { data: tokenInfo } = useGetTokenAccountInfo({
@@ -193,7 +149,7 @@ const Profile: FC<ProfileProps> = ({
   });
 
   const subscribeMutation = useSubscriptionMutation({
-    mint: new PublicKey(mintId),
+    mint: mintId ? new PublicKey(mintId) : null,
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata?.token_info?.token_program)
       : undefined,
