@@ -64,7 +64,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         tabIndex={0}
         role="button"
         id="user-menu-button"
-        className="relative w-8 h-8 justify-center items-center flex indicator"
+        className="relative w-8 h-8 justify-center items-center flex"
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image

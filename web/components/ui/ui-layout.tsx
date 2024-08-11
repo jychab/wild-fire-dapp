@@ -21,6 +21,7 @@ import {
   verifyAndGetToken,
 } from '../../utils/firebase/functions';
 import { SignInBtn } from '../authentication/authentication-ui';
+import SearchBar from '../search/search-ui';
 import { UploadBtn } from '../upload/upload-ui';
 
 export function UiLayout({ children }: { children: ReactNode }) {
@@ -30,7 +31,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
       document.querySelector('html')!.setAttribute('data-theme', theme);
     }
   }, [theme]);
-  const links: { label: string; path: string }[] = [];
   const pathname = usePathname();
   const { publicKey, signMessage, disconnect } = useWallet();
   const isLoggingInRef = useRef(false);
@@ -95,33 +95,25 @@ export function UiLayout({ children }: { children: ReactNode }) {
       <div className="drawer drawer-end flex flex-1">
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col w-full items-center">
-          <div className="w-full px-4 navbar fixed z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
-            <Link className="flex items-end gap-1 w-[300px] max-w-1/4" href="/">
-              <Image
-                src={logo}
-                alt={'logo'}
-                width={30}
-                height={30}
-                priority={true}
-              />
-              <span className="text-xl font-bold uppercase">HashFeed</span>
+          <div className="w-full px-4 navbar fixed flex items-center justify-between gap-4 z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
+            <Link className="flex items-center gap-1 w-fit" href="/">
+              <div className="relative w-8 h-8 justify-center items-center flex">
+                <Image
+                  src={logo}
+                  alt={'logo'}
+                  priority={true}
+                  className={`object-cover rounded-full`}
+                  fill={true}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
+              <span className="hidden md:block text-xl font-bold uppercase">
+                HashFeed
+              </span>
             </Link>
-            <div className="hidden md:flex w-full">
-              <ul className="menu menu-horizontal gap-2">
-                {links.map(({ label, path }) => (
-                  <li key={path}>
-                    <Link
-                      className={pathname.startsWith(path) ? 'active' : ''}
-                      href={path}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="navbar-end w-full flex gap-2 items-center">
-              <div className="hidden sm:block">
+            {publicKey && <SearchBar />}
+            <div className="flex gap-2 w-fit items-center justify-end">
+              <div className="hidden md:flex w-36">
                 <UploadBtn />
               </div>
               <SignInBtn />
@@ -147,25 +139,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
             aria-label="close sidebar"
             className="drawer-overlay"
           />
-          <div className=" p-4 w-44 min-h-full bg-base-100 gap-4 flex flex-col justify-between">
-            <div>
-              <ul className="menu gap-2">
-                {links.map(({ label, path }) => (
-                  <li key={path}>
-                    <Link
-                      className={pathname.startsWith(path) ? 'active' : ''}
-                      href={path}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {/* <div className="block md:hidden">
-              <SocialComponent />
-            </div> */}
-          </div>
         </div>
       </div>
       {/* <footer className="hidden md:block p-4">

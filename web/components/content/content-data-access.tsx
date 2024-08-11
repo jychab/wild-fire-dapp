@@ -8,56 +8,6 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactionToast } from '../ui/ui-layout';
 
-export async function getAssetBatch({
-  ids,
-  connection,
-}: {
-  ids: string[];
-  connection: Connection;
-}) {
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: '',
-      method: 'getAssetBatch',
-      params: {
-        ids: ids,
-      },
-    }),
-  });
-  const data = (await response.json()).result as DAS.GetAssetResponse[];
-  return data;
-}
-
-export async function getAsset({
-  mint,
-  connection,
-}: {
-  mint: PublicKey;
-  connection: Connection;
-}) {
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: '',
-      method: 'getAsset',
-      params: {
-        id: mint.toBase58(),
-      },
-    }),
-  });
-  const data = (await response.json()).result as DAS.GetAssetResponse;
-  return data;
-}
-
 export async function getTokenBalancesFromOwner({
   address,
   connection,
