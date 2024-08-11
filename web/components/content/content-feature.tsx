@@ -27,6 +27,7 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
             expandAll={true}
             blinksDetail={post}
             showMintDetails={true}
+            editable={true}
           />
         </div>
       </div>
@@ -40,6 +41,7 @@ interface ContentGridProps {
   editable?: boolean;
   multiGrid?: boolean;
   hideComment?: boolean;
+  hideUserPanel?: boolean;
 }
 export const ContentGrid: FC<ContentGridProps> = ({
   posts,
@@ -47,6 +49,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
   showMintDetails = true,
   editable = false,
   multiGrid = false,
+  hideUserPanel = false,
 }) => {
   return posts ? (
     <div
@@ -58,6 +61,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
         <DisplayContent
           key={x.id}
           blinksDetail={x}
+          hideUserPanel={hideUserPanel}
           hideComment={hideComment}
           showMintDetails={showMintDetails}
           editable={editable}

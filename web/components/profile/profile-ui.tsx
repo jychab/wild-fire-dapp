@@ -43,6 +43,7 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
       <ContentGrid
         hideComment={true}
         multiGrid={true}
+        hideUserPanel={true}
         showMintDetails={false}
         editable={true}
         posts={posts}

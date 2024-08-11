@@ -513,11 +513,7 @@ export const ActionLayout = ({
         >
           <div className="flex flex-col">
             {!hideUserPanel && (
-              <UserPanel
-                multiGrid={multiGrid}
-                editable={editable}
-                blinksDetail={blinksDetail}
-              />
+              <UserPanel editable={editable} blinksDetail={blinksDetail} />
             )}
             {!hideCaption && (
               <BlinksCaption
@@ -808,10 +804,13 @@ export const BlinksCaption: FC<{
         </div>
       ) : (
         <div className="flex flex-col items-start gap-1">
+          {multiGrid && (
+            <p className="text-sm font-semibold whitespace-pre-wrap">{title}</p>
+          )}
           {description && (
             <p
               className={`text-xs w-full ${
-                multiGrid ? 'line-clamp-1' : 'line-clamp-3'
+                multiGrid ? 'line-clamp-2' : 'line-clamp-3'
               }`}
             >
               {description}

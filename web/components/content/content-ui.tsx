@@ -1,6 +1,6 @@
 import { sendLike } from '@/utils/firebase/functions';
 import { formatLargeNumber } from '@/utils/helper/format';
-import { getDerivedMint } from '@/utils/helper/mint';
+import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -108,12 +108,14 @@ export const UserProfile: FC<{
 
 export const UserPanel: FC<{
   blinksDetail?: PostBlinksDetail;
-  multiGrid: boolean;
   editable: boolean;
-}> = ({ blinksDetail, editable, multiGrid }) => {
+}> = ({ blinksDetail, editable }) => {
   const { publicKey } = useWallet();
-  const { data } = useGetMintToken({
+  const { data: tokenStateData } = useGetMintToken({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
+  });
+  const { data: metadata } = useGetTokenDetails({
+    mint: blinksDetail ? new PublicKey(blinksDetail.mint) : null,
   });
   const [liked, setLiked] = useState(
     (publicKey && blinksDetail?.likesUser?.includes(publicKey?.toBase58())) ||
@@ -141,67 +143,60 @@ export const UserPanel: FC<{
   return (
     <div className="flex justify-between pb-2">
       <div className="flex gap-2 text-sm items-start">
-        {!multiGrid && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                if (
-                  blinksDetail?.mint &&
-                  blinksDetail?.id &&
-                  !liked &&
-                  publicKey
-                ) {
-                  try {
-                    sendLike(blinksDetail.mint, blinksDetail.id, 10);
-                  } catch (e) {
-                    console.log(e);
-                  } finally {
-                    setLiked(true);
-                  }
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              if (
+                blinksDetail?.mint &&
+                blinksDetail?.id &&
+                !liked &&
+                publicKey
+              ) {
+                try {
+                  sendLike(blinksDetail.mint, blinksDetail.id, 10);
+                } catch (e) {
+                  console.log(e);
+                } finally {
+                  setLiked(true);
                 }
-              }}
-              className=""
-            >
-              {liked || (publicKey && closestUser == publicKey?.toBase58()) ? (
-                <IconHeartFilled size={18} className="fill-primary" />
-              ) : (
-                <IconHeart size={18} />
-              )}
-            </button>
-
-            {(liked ||
-              (blinksDetail?.likesCount != undefined &&
-                blinksDetail.likesCount > 0)) && (
-              <span className="text-xs stat-desc link link-hover">{`Liked by ${
-                closestUserMintMetadata?.content?.metadata.name ||
-                (closestUser == publicKey?.toBase58() || liked ? 'you' : '')
-              }${
-                (closestUser == publicKey?.toBase58() ||
-                  closestUserMintMetadata?.content?.metadata.name) &&
-                blinksDetail?.likesCount != undefined &&
-                blinksDetail.likesCount > 1
-                  ? ` and `
-                  : ''
-              }${
-                blinksDetail?.likesCount != undefined &&
-                blinksDetail.likesCount > 1
-                  ? formatLargeNumber(
-                      blinksDetail.likesCount -
-                        (closestUserMintMetadata ? 1 : 0)
-                    ) + ' others'
-                  : ''
-              }`}</span>
+              }
+            }}
+            className=""
+          >
+            {liked || (publicKey && closestUser == publicKey?.toBase58()) ? (
+              <IconHeartFilled size={18} className="fill-primary" />
+            ) : (
+              <IconHeart size={18} />
             )}
-          </div>
-        )}
+          </button>
+
+          {(liked ||
+            (blinksDetail?.likesCount != undefined &&
+              blinksDetail.likesCount > 0)) && (
+            <span className="text-xs stat-desc link link-hover">{`Liked by ${
+              closestUserMintMetadata?.content?.metadata.name ||
+              (closestUser == publicKey?.toBase58() || liked ? 'you' : '')
+            }${
+              (closestUser == publicKey?.toBase58() ||
+                closestUserMintMetadata?.content?.metadata.name) &&
+              blinksDetail?.likesCount != undefined &&
+              blinksDetail.likesCount > 1
+                ? ` and `
+                : ''
+            }${
+              blinksDetail?.likesCount != undefined &&
+              blinksDetail.likesCount > 1
+                ? formatLargeNumber(
+                    blinksDetail.likesCount - (closestUserMintMetadata ? 1 : 0)
+                  ) + ' others'
+                : ''
+            }`}</span>
+          )}
+        </div>
       </div>
 
       {(editable || isLiquidityPoolFound) &&
-        (!multiGrid ||
-          (multiGrid &&
-            data &&
-            publicKey &&
-            data.admin == publicKey.toBase58())) && (
+        isAuthorized(tokenStateData, publicKey, metadata) && (
           <div className="dropdown dropdown-left">
             <div tabIndex={0} role="button">
               {removeContentMutation.isPending ? (

@@ -1,8 +1,4 @@
-import {
-  LONG_STALE_TIME,
-  MEDIUM_STALE_TIME,
-  SHORT_STALE_TIME,
-} from '@/utils/consts';
+import { LONG_STALE_TIME, MEDIUM_STALE_TIME } from '@/utils/consts';
 import { proxify } from '@/utils/helper/proxy';
 import {
   ActionsJsonConfig,
@@ -28,7 +24,7 @@ export function useGetBlinkAction({
       return Action.fetch(actionUrl);
     },
     enabled: enabled,
-    staleTime: SHORT_STALE_TIME,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
