@@ -36,12 +36,12 @@ function SearchBar() {
   }, [search, metadatas]);
 
   return (
-    <div className="dropdown text-base w-full max-w-lg">
+    <div className="dropdown w-full max-w-lg">
       <div tabIndex={0} role="button">
         <input
           type="text"
           placeholder="Search"
-          className="input input-bordered focus-within:border-none input-sm md:input-md w-full rounded-full"
+          className="input input-bordered focus-within:border-none input-sm md:input-md text-base w-full rounded-full"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
