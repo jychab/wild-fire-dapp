@@ -1,5 +1,6 @@
 import { sendLike } from '@/utils/firebase/functions';
 import { formatLargeNumber } from '@/utils/helper/format';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -18,10 +19,7 @@ import { FC, RefObject, useState } from 'react';
 import { Blinks } from '../blinks/blinks-feature';
 import { BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import {
-  useGetToken,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import { checkUrlIsValid } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
@@ -109,17 +107,16 @@ export const UserProfile: FC<{
 };
 
 export const UserPanel: FC<{
-  post?: PostContent;
   blinksDetail?: PostBlinksDetail;
   multiGrid: boolean;
   editable: boolean;
-}> = ({ post, blinksDetail, editable, multiGrid }) => {
+}> = ({ blinksDetail, editable, multiGrid }) => {
   const { publicKey } = useWallet();
   const { data } = useGetMintToken({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const [liked, setLiked] = useState(
-    (publicKey && post?.likesUserTruncated?.includes(publicKey?.toBase58())) ||
+    (publicKey && blinksDetail?.likesUser?.includes(publicKey?.toBase58())) ||
       false
   );
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
@@ -130,37 +127,30 @@ export const UserPanel: FC<{
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const closestUser =
-    post?.likesUserTruncated && post?.likesUserTruncated?.length > 0
-      ? post.likesUserTruncated[0]
+    blinksDetail?.likesUser && blinksDetail?.likesUser?.length > 0
+      ? blinksDetail.likesUser[0]
       : undefined;
-  const { data: closestUserMint } = useGetToken({
-    address:
-      closestUser && closestUser !== publicKey?.toBase58()
-        ? new PublicKey(closestUser)
-        : null,
-  });
+
   const { data: closestUserMintMetadata } = useGetTokenDetails({
     mint:
-      closestUserMint && closestUser !== publicKey?.toBase58()
-        ? new PublicKey(closestUserMint.mint)
+      closestUser && closestUser !== publicKey?.toBase58()
+        ? getDerivedMint(new PublicKey(closestUser))
         : null,
   });
 
   return (
     <div className="flex justify-between pb-2">
       <div className="flex gap-2 text-sm items-start">
-        <Link
-          href={`/profile?mintId=${blinksDetail?.mint}`}
-          className="link link-hover font-semibold"
-        >
-          {post?.title}
-        </Link>
-
         {!multiGrid && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
-                if (blinksDetail?.mint && blinksDetail?.id && !liked) {
+                if (
+                  blinksDetail?.mint &&
+                  blinksDetail?.id &&
+                  !liked &&
+                  publicKey
+                ) {
                   try {
                     sendLike(blinksDetail.mint, blinksDetail.id, 10);
                   } catch (e) {
@@ -172,28 +162,32 @@ export const UserPanel: FC<{
               }}
               className=""
             >
-              {liked ? (
+              {liked || (publicKey && closestUser == publicKey?.toBase58()) ? (
                 <IconHeartFilled size={18} className="fill-primary" />
               ) : (
                 <IconHeart size={18} />
               )}
             </button>
 
-            {(liked || post?.likesCount) && (
+            {(liked ||
+              (blinksDetail?.likesCount != undefined &&
+                blinksDetail.likesCount > 0)) && (
               <span className="text-xs stat-desc link link-hover">{`Liked by ${
                 closestUserMintMetadata?.content?.metadata.name ||
                 (closestUser == publicKey?.toBase58() || liked ? 'you' : '')
               }${
                 (closestUser == publicKey?.toBase58() ||
                   closestUserMintMetadata?.content?.metadata.name) &&
-                post?.likesCount != undefined &&
-                post.likesCount > 1
+                blinksDetail?.likesCount != undefined &&
+                blinksDetail.likesCount > 1
                   ? ` and `
                   : ''
               }${
-                post?.likesCount != undefined && post.likesCount > 1
+                blinksDetail?.likesCount != undefined &&
+                blinksDetail.likesCount > 1
                   ? formatLargeNumber(
-                      post.likesCount - (closestUserMintMetadata ? 1 : 0)
+                      blinksDetail.likesCount -
+                        (closestUserMintMetadata ? 1 : 0)
                     ) + ' others'
                   : ''
               }`}</span>

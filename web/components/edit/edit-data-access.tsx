@@ -7,7 +7,6 @@ import { TokenState } from '@/utils/types/program';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
-  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   TransactionInstruction,
@@ -27,7 +26,6 @@ import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
 import {
   closeAuthorityAccount,
   getAdditionalRentForUpdatedMetadata,
-  program,
   updateMetadata,
 } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -37,13 +35,6 @@ interface EditMintArgs {
   symbol: string;
   picture: File | null;
   description: string;
-  // fee: number;
-  // admin: PublicKey;
-  previous: {
-    distributor: string;
-    // transferFeeBasisPoints: number;
-    // admin: PublicKey;
-  };
 }
 
 export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
@@ -112,19 +103,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
       let ixs: TransactionInstruction[] = [];
       let partialTx;
       try {
-        // if (input.previous.admin.toString() != input.admin.toString()) {
-        //   ixs.push(await changeAdmin(wallet.publicKey, mint, input.admin));
-        // }
-        // if (input.previous.transferFeeBasisPoints != input.fee) {
-        //   ixs.push(
-        //     await changeTransferFee(
-        //       wallet.publicKey,
-        //       mint,
-        //       input.fee,
-        //       Number.MAX_SAFE_INTEGER
-        //     )
-        //   );
-        // }
         const details = await getTokenMetadata(connection, mint);
         if (!details) return;
         const uriMetadata = await (
@@ -158,18 +136,10 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
         }
         if (fieldsToUpdate.length > 0) {
           if (ixs.length == 0) {
-            const distributor = await connection.getAccountInfo(
-              new PublicKey(input.previous.distributor)
+            partialTx = await getSponsoredUpdateMetadata(
+              mint.toBase58(),
+              fieldsToUpdate
             );
-            if (
-              distributor &&
-              distributor.lamports > 0.0001 * LAMPORTS_PER_SOL
-            ) {
-              partialTx = await getSponsoredUpdateMetadata(
-                mint.toBase58(),
-                fieldsToUpdate
-              );
-            }
           }
           if (!partialTx) {
             const lamports = await getAdditionalRentForUpdatedMetadata(
@@ -249,36 +219,14 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
     queryKey: ['get-mint-token', { endpoint: connection.rpcEndpoint, mint }],
     queryFn: async () => {
       if (!mint) return null;
-      const result = await connection.getProgramAccounts(program.programId, {
-        filters: [
-          {
-            dataSize: 123,
-          },
-          {
-            memcmp: {
-              offset: 40,
-              bytes: mint.toBase58(),
-            },
-          },
-        ],
-      });
-      if (result.length > 0) {
-        const tokenState: TokenState = program.coder.accounts.decode(
-          'tokenState',
-          result[0].account.data
-        );
-        return tokenState;
+      const mintData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
+      if (!mintData.exists) {
+        return null;
       } else {
-        const mintData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
-        if (!mintData.exists) {
-          return null;
-        } else {
-          return {
-            mint: mintData.data()!.mint,
-            admin: mintData.data()!.admin,
-            mutable: 0,
-          } as TokenState;
-        }
+        return {
+          mint: mintData.data()!.mint,
+          admin: mintData.data()!.admin,
+        } as TokenState;
       }
     },
     staleTime: LONG_STALE_TIME,

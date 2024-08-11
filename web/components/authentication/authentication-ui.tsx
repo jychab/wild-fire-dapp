@@ -1,6 +1,6 @@
+import { getDerivedMint } from '@/utils/helper/mint';
 import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import {
   IconLogout,
   IconSquarePlus,
@@ -12,17 +12,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, ReactNode } from 'react';
 import { DAS } from '../../utils/types/das';
-import {
-  useGetToken,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
   const { data: metaDataQuery } = useGetTokenDetails({
-    mint: data ? new PublicKey(data?.mint) : null,
+    mint: publicKey ? getDerivedMint(publicKey) : null,
   });
   return (
     <>

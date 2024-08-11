@@ -1,6 +1,7 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -18,10 +19,8 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
-import {
-  useGetToken,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import toast from 'react-hot-toast';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 
 interface Comment {
   commentId: string;
@@ -50,13 +49,12 @@ export const CommentsSection: FC<{
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const [loading, setLoading] = useState(false);
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
   const { data: metadata } = useGetTokenDetails({
-    mint: data ? new PublicKey(data.mint) : null,
+    mint: publicKey ? getDerivedMint(publicKey) : null,
   });
 
   const handleCommentSubmit = () => {
-    if (post?.mint && post.id && comment) {
+    if (post?.mint && post.id && comment && publicKey) {
       createOrEditComment(
         post?.mint,
         post?.id,
@@ -65,6 +63,8 @@ export const CommentsSection: FC<{
         []
       );
       setComment('');
+    } else if (!publicKey) {
+      toast.error('Connect a wallet first!');
     }
   };
 
@@ -265,9 +265,8 @@ export const CommentsSection: FC<{
 
 export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
   const [showMore, setShowMore] = useState(false);
-  const { data } = useGetToken({ address: new PublicKey(comment.user) });
   const { data: metadata } = useGetTokenDetails({
-    mint: data ? new PublicKey(data.mint) : null,
+    mint: getDerivedMint(new PublicKey(comment.user)),
   });
 
   const commentRef = useRef<HTMLSpanElement>(null);

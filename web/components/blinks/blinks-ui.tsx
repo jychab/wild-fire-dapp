@@ -514,7 +514,6 @@ export const ActionLayout = ({
           <div className="flex flex-col">
             {!hideUserPanel && (
               <UserPanel
-                post={post}
                 multiGrid={multiGrid}
                 editable={editable}
                 blinksDetail={blinksDetail}
@@ -790,6 +789,9 @@ export const BlinksCaption: FC<{
               {type === 'unknown' && <IconExclamationCircle size={14} />}
             </Link>
           </div>
+          <p className="text-sm font-semibold whitespace-pre-wrap pt-2 ">
+            {title}
+          </p>
           <p className="text-xs whitespace-pre-wrap pb-2 ">{description}</p>
           {disclaimer && <div className="mb-4 pb-2">{disclaimer}</div>}
           <ActionContent form={form} inputs={inputs} buttons={buttons} />

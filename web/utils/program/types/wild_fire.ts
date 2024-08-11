@@ -14,101 +14,13 @@ export type WildFire = {
   };
   instructions: [
     {
-      name: 'changeAdmin';
-      discriminator: [193, 151, 203, 161, 200, 202, 32, 146];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'tokenState';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [116, 111, 107, 101, 110];
-              },
-              {
-                kind: 'account';
-                path: 'mint';
-              }
-            ];
-          };
-        },
-        {
-          name: 'mint';
-        },
-        {
-          name: 'newAdminMint';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [109, 105, 110, 116];
-              },
-              {
-                kind: 'arg';
-                path: 'newAdmin';
-              }
-            ];
-          };
-        },
-        {
-          name: 'systemProgram';
-          address: '11111111111111111111111111111111';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
-        }
-      ];
-      args: [
-        {
-          name: 'newAdmin';
-          type: 'pubkey';
-        }
-      ];
-    },
-    {
       name: 'changeDistributor';
       discriminator: [165, 66, 159, 81, 14, 26, 77, 145];
       accounts: [
         {
-          name: 'payer';
-          writable: true;
+          name: 'protocol';
           signer: true;
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'tokenState';
@@ -174,9 +86,9 @@ export type WildFire = {
       discriminator: [80, 16, 175, 186, 185, 22, 46, 194];
       accounts: [
         {
-          name: 'payer';
-          writable: true;
+          name: 'protocol';
           signer: true;
+          address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
         {
           name: 'tokenState';
@@ -200,6 +112,38 @@ export type WildFire = {
         {
           name: 'tokenProgramMint';
           address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
         }
       ];
       args: [
@@ -218,8 +162,7 @@ export type WildFire = {
       discriminator: [84, 158, 113, 105, 220, 157, 204, 173];
       accounts: [
         {
-          name: 'payer';
-          writable: true;
+          name: 'protocol';
           signer: true;
           address: 'G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF';
         },
@@ -690,7 +633,7 @@ export type WildFire = {
           type: 'u64';
         },
         {
-          name: 'docId';
+          name: 'id';
           type: 'string';
         }
       ];
@@ -899,138 +842,6 @@ export type WildFire = {
       ];
     },
     {
-      name: 'removeKeyFromMetadata';
-      discriminator: [212, 198, 93, 174, 2, 22, 50, 81];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'mint';
-          writable: true;
-        },
-        {
-          name: 'tokenState';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [116, 111, 107, 101, 110];
-              },
-              {
-                kind: 'account';
-                path: 'mint';
-              }
-            ];
-          };
-        },
-        {
-          name: 'tokenProgramMint';
-          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
-        },
-        {
-          name: 'systemProgram';
-          address: '11111111111111111111111111111111';
-        }
-      ];
-      args: [
-        {
-          name: 'field';
-          type: 'string';
-        }
-      ];
-    },
-    {
-      name: 'setToImmutable';
-      discriminator: [45, 78, 226, 162, 241, 210, 225, 177];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'tokenState';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [116, 111, 107, 101, 110];
-              },
-              {
-                kind: 'account';
-                path: 'mint';
-              }
-            ];
-          };
-        },
-        {
-          name: 'mint';
-          writable: true;
-        },
-        {
-          name: 'tokenProgramMint';
-          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
-        }
-      ];
-      args: [];
-    },
-    {
-      name: 'updateMintMetadata';
-      discriminator: [46, 244, 2, 123, 67, 219, 22, 121];
-      accounts: [
-        {
-          name: 'payer';
-          writable: true;
-          signer: true;
-        },
-        {
-          name: 'admin';
-          signer: true;
-        },
-        {
-          name: 'mint';
-          writable: true;
-        },
-        {
-          name: 'tokenState';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [116, 111, 107, 101, 110];
-              },
-              {
-                kind: 'account';
-                path: 'mint';
-              }
-            ];
-          };
-        },
-        {
-          name: 'tokenProgramMint';
-          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
-        },
-        {
-          name: 'systemProgram';
-          address: '11111111111111111111111111111111';
-        }
-      ];
-      args: [
-        {
-          name: 'field';
-          type: 'string';
-        },
-        {
-          name: 'value';
-          type: 'string';
-        }
-      ];
-    },
-    {
       name: 'withdrawFees';
       discriminator: [198, 212, 171, 109, 144, 215, 174, 89];
       accounts: [
@@ -1167,12 +978,12 @@ export type WildFire = {
   ];
   events: [
     {
-      name: 'changeAdmin';
-      discriminator: [231, 73, 8, 168, 43, 125, 226, 99];
-    },
-    {
       name: 'changeDistributor';
       discriminator: [226, 198, 51, 180, 136, 197, 218, 191];
+    },
+    {
+      name: 'changeTransferFee';
+      discriminator: [214, 104, 141, 21, 224, 89, 200, 44];
     },
     {
       name: 'createMint';
@@ -1203,32 +1014,11 @@ export type WildFire = {
     },
     {
       code: 6001;
-      name: 'mintIsImmutable';
-      msg: 'Mint account can no longer be changed';
-    },
-    {
-      code: 6002;
       name: 'mintIsNotZero';
       msg: 'Mint supply that is non zero is not allowed to close this account';
     }
   ];
   types: [
-    {
-      name: 'changeAdmin';
-      type: {
-        kind: 'struct';
-        fields: [
-          {
-            name: 'mint';
-            type: 'pubkey';
-          },
-          {
-            name: 'newAdmin';
-            type: 'pubkey';
-          }
-        ];
-      };
-    },
     {
       name: 'changeDistributor';
       type: {
@@ -1241,6 +1031,26 @@ export type WildFire = {
           {
             name: 'newDistributor';
             type: 'pubkey';
+          }
+        ];
+      };
+    },
+    {
+      name: 'changeTransferFee';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'feeBasisPts';
+            type: 'u16';
+          },
+          {
+            name: 'maxFee';
+            type: 'u64';
           }
         ];
       };
@@ -1315,7 +1125,7 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'docId';
+            name: 'id';
             type: 'string';
           }
         ];
@@ -1376,14 +1186,9 @@ export type WildFire = {
             type: 'u8';
           },
           {
-            name: 'mutable';
-            docs: ['state to check if token mint metadata is editable'];
-            type: 'u8';
-          },
-          {
             name: 'padding';
             type: {
-              array: ['u8', 16];
+              array: ['u8', 17];
             };
           }
         ];

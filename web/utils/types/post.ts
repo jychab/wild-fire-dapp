@@ -10,6 +10,9 @@ export interface PostBlinksDetail {
   id: string;
   createdAt: number;
   updatedAt: number;
+  likesCount?: number;
+  likesUser?: string[];
+  commentsCount?: number;
 }
 
 export interface PostContent extends ActionGetResponse, PostDetails {
@@ -20,9 +23,6 @@ export interface PostContent extends ActionGetResponse, PostDetails {
 }
 
 export interface PostDetails extends PostBlinksDetail {
-  likesCount?: number;
-  likesUserTruncated?: string[];
-  commentsCount?: number;
   tags?: string[];
 }
 

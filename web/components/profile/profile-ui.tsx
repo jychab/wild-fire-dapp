@@ -1,6 +1,6 @@
 'use client';
 
-import { Scope } from '@/utils/enums/das';
+import { isAuthorized } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -48,15 +48,7 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
         posts={posts}
       />
       {posts?.posts.length == 0 &&
-        mintId &&
-        ((tokenStateData &&
-          publicKey &&
-          publicKey.toBase58() == tokenStateData.admin) ||
-        (publicKey &&
-          metadata?.authorities?.find(
-            (x) =>
-              x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
-          )?.address == publicKey.toBase58()) ? (
+        (isAuthorized(tokenStateData, publicKey, metadata) && mintId ? (
           <div className="p-4 flex flex-col gap-4 items-center w-full h-full justify-center text-center text-lg">
             Create your first post!
             <div className="w-36">
@@ -205,7 +197,7 @@ export const Profile: FC<ProfileProps> = ({
                 <span>Subscribe</span>
               ))}
           </button>
-          {tokenStateData && publicKey && tokenStateData.mutable == 1 && (
+          {isAuthorized(tokenStateData, publicKey, metadata) && (
             <button
               className="btn btn-outline btn-sm items-center"
               onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}

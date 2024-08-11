@@ -8,86 +8,13 @@
   },
   "instructions": [
     {
-      "name": "change_admin",
-      "discriminator": [193, 151, 203, 161, 200, 202, 32, 146],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 111, 107, 101, 110]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "new_admin_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [109, 105, 110, 116]
-              },
-              {
-                "kind": "arg",
-                "path": "new_admin"
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_admin",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
       "name": "change_distributor",
       "discriminator": [165, 66, 159, 81, 14, 26, 77, 145],
       "accounts": [
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "protocol",
+          "signer": true,
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "token_state",
@@ -138,9 +65,9 @@
       "discriminator": [80, 16, 175, 186, 185, 22, 46, 194],
       "accounts": [
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "protocol",
+          "signer": true,
+          "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
         {
           "name": "token_state",
@@ -164,6 +91,23 @@
         {
           "name": "token_program_mint",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
+                  114, 105, 116, 121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -182,8 +126,7 @@
       "discriminator": [84, 158, 113, 105, 220, 157, 204, 173],
       "accounts": [
         {
-          "name": "payer",
-          "writable": true,
+          "name": "protocol",
           "signer": true,
           "address": "G6kBnedts6uAivtY72ToaFHBs1UVbT9udiXmQZgMEjoF"
         },
@@ -551,7 +494,7 @@
           "type": "u64"
         },
         {
-          "name": "doc_id",
+          "name": "id",
           "type": "string"
         }
       ]
@@ -687,138 +630,6 @@
       ]
     },
     {
-      "name": "remove_key_from_metadata",
-      "discriminator": [212, 198, 93, 174, 2, 22, 50, 81],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "token_state",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 111, 107, 101, 110]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "token_program_mint",
-          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "field",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "set_to_immutable",
-      "discriminator": [45, 78, 226, 162, 241, 210, 225, 177],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 111, 107, 101, 110]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "token_program_mint",
-          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "update_mint_metadata",
-      "discriminator": [46, 244, 2, 123, 67, 219, 22, 121],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "admin",
-          "signer": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "token_state",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 111, 107, 101, 110]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "token_program_mint",
-          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "field",
-          "type": "string"
-        },
-        {
-          "name": "value",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "withdraw_fees",
       "discriminator": [198, 212, 171, 109, 144, 215, 174, 89],
       "accounts": [
@@ -911,12 +722,12 @@
   ],
   "events": [
     {
-      "name": "ChangeAdmin",
-      "discriminator": [231, 73, 8, 168, 43, 125, 226, 99]
-    },
-    {
       "name": "ChangeDistributor",
       "discriminator": [226, 198, 51, 180, 136, 197, 218, 191]
+    },
+    {
+      "name": "ChangeTransferFee",
+      "discriminator": [214, 104, 141, 21, 224, 89, 200, 44]
     },
     {
       "name": "CreateMint",
@@ -947,32 +758,11 @@
     },
     {
       "code": 6001,
-      "name": "MintIsImmutable",
-      "msg": "Mint account can no longer be changed"
-    },
-    {
-      "code": 6002,
       "name": "MintIsNotZero",
       "msg": "Mint supply that is non zero is not allowed to close this account"
     }
   ],
   "types": [
-    {
-      "name": "ChangeAdmin",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
     {
       "name": "ChangeDistributor",
       "type": {
@@ -985,6 +775,26 @@
           {
             "name": "new_distributor",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ChangeTransferFee",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_basis_pts",
+            "type": "u16"
+          },
+          {
+            "name": "max_fee",
+            "type": "u64"
           }
         ]
       }
@@ -1059,7 +869,7 @@
             "type": "pubkey"
           },
           {
-            "name": "doc_id",
+            "name": "id",
             "type": "string"
           }
         ]
@@ -1120,14 +930,9 @@
             "type": "u8"
           },
           {
-            "name": "mutable",
-            "docs": ["state to check if token mint metadata is editable"],
-            "type": "u8"
-          },
-          {
             "name": "padding",
             "type": {
-              "array": ["u8", 16]
+              "array": ["u8", 17]
             }
           }
         ]

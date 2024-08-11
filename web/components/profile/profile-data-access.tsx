@@ -6,21 +6,11 @@ import { getAccount } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  where,
-} from 'firebase/firestore';
-import { program } from '../../utils/helper/transcationInstructions';
+import { doc, getDoc } from 'firebase/firestore';
 
-import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { GetPostsResponse } from '@/utils/types/post';
-import { TokenState } from '@/utils/types/program';
 
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
@@ -45,56 +35,6 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
     },
     enabled: !!mint,
     staleTime: SHORT_STALE_TIME,
-  });
-}
-
-export function useGetToken({ address }: { address: PublicKey | null }) {
-  const { connection } = useConnection();
-  return useQuery({
-    queryKey: ['get-token', { endpoint: connection.rpcEndpoint, address }],
-    queryFn: async () => {
-      if (!address) return null;
-      const result = await connection.getProgramAccounts(program.programId, {
-        filters: [
-          {
-            dataSize: 123,
-          },
-          {
-            memcmp: {
-              offset: 8,
-              bytes: address.toBase58(),
-            },
-          },
-        ],
-      });
-      if (result.length > 0) {
-        const tokenState: TokenState = program.coder.accounts.decode(
-          'tokenState',
-          result[0].account.data
-        );
-        return tokenState;
-      } else {
-        const mintData = await getDocs(
-          query(
-            collection(db, `Mint`),
-            where('admin', '==', address.toBase58()),
-            limit(1)
-          )
-        );
-        if (mintData.empty) {
-          return null;
-        } else {
-          return {
-            mint: mintData.docs[0].data().mint,
-            admin: mintData.docs[0].data().admin,
-            mutable: 0,
-          } as TokenState;
-        }
-      }
-    },
-
-    enabled: !!address,
-    staleTime: LONG_STALE_TIME,
   });
 }
 

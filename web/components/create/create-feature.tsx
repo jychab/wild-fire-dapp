@@ -189,7 +189,7 @@ export const CreateWithExistingPanel: FC = () => {
         Create an account using an existing token
       </span>
       <span className="text-md md:text-base text-center px-4">
-        Select an existing token created by you.
+        Select a token you have previously created.
       </span>
       {isLoading && <div className="loading loading-dots" />}
       {assets && assets.length == 0 && <div>No Tokens Found</div>}

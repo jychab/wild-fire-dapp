@@ -1,11 +1,9 @@
 import { Scope } from '@/utils/enums/das';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
-import {
-  useGetToken,
-  useGetTokenDetails,
-} from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { UploadPost } from './upload-ui';
 import { useGetPost } from './upload.data-access';
 
@@ -16,18 +14,17 @@ interface UploadFeatureProps {
 
 export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
   const { publicKey } = useWallet();
-  const { data } = useGetToken({ address: publicKey });
   const { data: metadataQuery } = useGetTokenDetails({
-    mint: data ? new PublicKey(data.mint) : null,
+    mint: publicKey ? getDerivedMint(publicKey) : null,
   });
   const { data: post } = useGetPost({
     mint: mintId ? new PublicKey(mintId) : null,
     postId: id,
   });
   if (
-    data &&
+    publicKey &&
     mintId &&
-    data.mint != mintId &&
+    getDerivedMint(publicKey).toBase58() != mintId &&
     !(
       publicKey &&
       metadataQuery?.authorities?.find(
@@ -46,13 +43,13 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
   return (
     <div className="flex flex-col h-full w-full items-center">
       <div className="flex flex-col gap-8 my-4 items-center w-full p-4 pb-32">
-        <span className="text-2xl md:text-3xl lg:text-4xl text-base-content">
+        <span className="text-3xl md:text-4xl lg:text-4xl text-base-content">
           {id ? 'Edit Post' : 'Create a New Post'}
         </span>
         <div className="flex flex-col gap-4 items-center max-w-md w-full">
           <UploadPost
             id={id}
-            mint={data ? new PublicKey(data?.mint) : null}
+            mint={publicKey ? getDerivedMint(publicKey) : null}
             post={post}
           />
         </div>
