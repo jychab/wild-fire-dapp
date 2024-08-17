@@ -200,11 +200,13 @@ export const UploadPost: FC<{
   return (
     <div className="flex flex-col w-full gap-4">
       {!id && (
-        <label className="label flex w-fit gap-4">
-          <span className="label-text">Use an Existing Blink</span>
+        <label className="label flex justify-between w-full gap-4">
+          <span className="label-text">
+            Do you want to use an existing Blink?
+          </span>
           <input
             type="checkbox"
-            className="toggle "
+            className="checkbox checkbox-primary"
             checked={useExistingBlink}
             onChange={(e) => {
               if (e.target.checked) {
@@ -238,7 +240,7 @@ export const UploadPost: FC<{
         {files.length == 0 ? (
           <label className="btn btn-outline" htmlFor="file-upload">
             <IconPlus />
-            <span>Upload an Image or Video</span>
+            <span>Add Image / Video</span>
             <input
               id="file-upload"
               type="file"
@@ -439,14 +441,14 @@ const UploadContentBtn: FC<{
     setLoading(true);
 
     try {
-      const randomId = crypto.randomUUID();
+      const postId = id || crypto.randomUUID();
       if (useExistingBlink) {
         const mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
         if (mediaUrl) {
           await uploadMutation.mutateAsync({
             url: mediaUrl,
             mint: mint.toBase58(),
-            id: id || randomId,
+            id: postId,
           });
         } else {
           toast.error('No Blinks Url Found');
@@ -469,7 +471,6 @@ const UploadContentBtn: FC<{
               return null;
             })
         ).then((results) => results.filter((x) => x != null));
-
         if (carousel.length > 0) {
           const iconUrl = carousel[0]!.fileType.startsWith('video/')
             ? await uploadMedia(
@@ -478,23 +479,19 @@ const UploadContentBtn: FC<{
                 mint
               )
             : carousel[0]!.uri;
-
           await uploadMutation.mutateAsync({
             icon: iconUrl,
             title,
             description,
-            label: 'Subscribe',
-            url: generatePostEndPoint(mint.toBase58(), id || randomId),
+            label: 'Subscribe', // default
+            url: generatePostEndPoint(mint.toBase58(), postId),
             mint: mint.toBase58(),
-            id: id || randomId,
+            id: postId,
             carousel,
             links: {
               actions: [
                 {
-                  href: generatePostActionApiEndPoint(
-                    mint.toBase58(),
-                    id || randomId
-                  ),
+                  href: generatePostActionApiEndPoint(mint.toBase58(), postId),
                   label: 'Subscribe',
                 },
               ],

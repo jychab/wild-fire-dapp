@@ -54,7 +54,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
   return posts ? (
     <div
       className={`grid grid-cols-1 sm:gap-2 ${
-        multiGrid ? 'grid-cols-2 lg:grid-cols-5' : 'pb-32'
+        multiGrid ? 'grid-cols-2 lg:grid-cols-5' : ''
       }`}
     >
       {posts.posts.map((x) => (
@@ -66,6 +66,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
           showMintDetails={showMintDetails}
           editable={editable}
           multiGrid={multiGrid}
+          expandAll={!multiGrid}
         />
       ))}
     </div>

@@ -95,8 +95,8 @@ export function UiLayout({ children }: { children: ReactNode }) {
       <div className="drawer drawer-end flex flex-1">
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col w-full items-center">
-          <div className="w-full px-4 navbar fixed flex items-center justify-between gap-4 z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
-            <Link className="flex items-center gap-1 w-fit" href="/">
+          <div className="w-full navbar fixed flex items-center justify-between gap-4 z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
+            <Link className="flex items-end gap-1 w-fit" href="/">
               <div className="relative w-8 h-8 justify-center items-center flex">
                 <Image
                   src={logo}
@@ -107,20 +107,20 @@ export function UiLayout({ children }: { children: ReactNode }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
-              <span className="hidden md:block text-xl font-bold uppercase">
+              <span className="hidden md:block text-2xl font-bold uppercase">
                 HashFeed
               </span>
             </Link>
             {publicKey && <SearchBar />}
-            <div className="flex gap-2 w-fit items-center justify-end">
+            <div className="flex gap-1 w-fit items-center">
               <div className="hidden md:flex w-36">
                 <UploadBtn />
               </div>
               <SignInBtn />
             </div>
           </div>
-          <div className="flex flex-1 mx-4 w-full mx-auto mt-16">
-            <div className="w-full bg-base-100 text-base-content flex flex-col items-center">
+          <div className="flex flex-1 w-full mt-16">
+            <div className="w-full bg-base-100 text-base-content flex flex-1 justify-center items-center">
               <Suspense
                 fallback={
                   <span className="loading loading-spinner loading-lg"></span>
@@ -129,7 +129,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 {children}
               </Suspense>
             </div>
-
             <Toaster position="bottom-right" />
           </div>
         </div>

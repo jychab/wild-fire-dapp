@@ -95,7 +95,7 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
         }),
       });
       const data = (await response.json()).result as DAS.GetAssetResponse;
-      return data;
+      return data || null;
     },
     enabled: !!mint,
     staleTime: SHORT_STALE_TIME,
