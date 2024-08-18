@@ -19,8 +19,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  editProfileSettings,
   getSponsoredUpdateMetadata,
+  setTemporaryProfile,
   uploadMedia,
   uploadMetadata,
 } from '../../utils/firebase/functions';
@@ -111,7 +111,7 @@ export function useEditData({
         imageUrl = await uploadMedia(input.picture, wallet.publicKey);
       }
       if (metadata?.content?.json_uri == undefined) {
-        await editProfileSettings(input.name, input.description, imageUrl);
+        await setTemporaryProfile(input.name, input.description, imageUrl);
         return 'Success';
       }
       let signature: TransactionSignature = '';

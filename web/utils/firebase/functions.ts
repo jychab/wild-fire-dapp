@@ -33,13 +33,13 @@ export async function createOrUpdateAdminForExternalMint(mint: string) {
   await createOrUpdateAdminForExternalMint({ mint });
 }
 
-export async function editProfileSettings(
+export async function setTemporaryProfile(
   displayName: string,
   description: string,
   imageUrl?: string
 ) {
-  const editProfileSettings = httpsCallable(functions, 'editProfileSettings');
-  await editProfileSettings({
+  const setTemporaryProfile = httpsCallable(functions, 'setTemporaryProfile');
+  await setTemporaryProfile({
     displayName,
     description,
     imageUrl,

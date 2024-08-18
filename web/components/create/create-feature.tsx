@@ -1,5 +1,6 @@
 'use client';
 
+import { getDerivedMint } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -8,6 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import {
   useCreateMint,
   useCreateMintWithExistingToken,
@@ -18,10 +20,27 @@ import {
 export const CreatePanel: FC = () => {
   const [picture, setPicture] = useState<File | null>(null);
   const [name, setName] = useState('');
-  const [handle, setHandle] = useState('');
+  const [symbol, setSymbol] = useState('');
   const [description, setDescription] = useState('');
-
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+  const { publicKey } = useWallet();
+  const { data: metadata } = useGetTokenDetails({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
+
+  const [metaDataLoaded, setMetadataLoaded] = useState(false);
+  useEffect(() => {
+    if (metadata && !metaDataLoaded && metadata.content?.links?.image) {
+      setTempImageUrl(metadata.content.links?.image);
+
+      setName(metadata.content?.metadata.name || '');
+
+      if (description == '' && metadata.content.metadata?.description) {
+        setDescription(metadata.content.metadata?.description);
+      }
+      setMetadataLoaded(true);
+    }
+  }, [metadata, metaDataLoaded, tempImageUrl, name, symbol, description]);
 
   const handlePictureChange = (e: any) => {
     const selectedFile = e.target.files[0];
@@ -36,21 +55,22 @@ export const CreatePanel: FC = () => {
   };
 
   const handleHandleChange = (e: any) => {
-    setHandle(e.target.value);
+    setSymbol(e.target.value);
   };
 
   const handleDescriptionChange = (e: any) => {
     setDescription(e.target.value);
   };
 
-  const { publicKey } = useWallet();
   const createMutation = useCreateMint({
     address: publicKey,
   });
   const [valid, setValid] = useState(false);
   useEffect(() => {
-    setValid(!(!picture || !name || !handle));
-  }, [picture, publicKey, name, handle]);
+    setValid(
+      (!!picture || !!metadata?.content?.links?.image) && !!name && !!symbol
+    );
+  }, [picture, publicKey, name, symbol]);
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
@@ -107,7 +127,7 @@ export const CreatePanel: FC = () => {
               placeholder="Username"
               maxLength={20}
               className="input input-bordered w-full text-base rounded"
-              value={handle}
+              value={symbol}
               onChange={handleHandleChange}
             />
           </div>
@@ -132,8 +152,8 @@ export const CreatePanel: FC = () => {
               onClick={async () => {
                 await createMutation.mutateAsync({
                   name: name,
-                  symbol: handle,
-                  picture: picture!,
+                  symbol: symbol,
+                  picture: picture || metadata?.content?.links?.image,
                   description: description,
                 });
               }}
@@ -145,7 +165,7 @@ export const CreatePanel: FC = () => {
                 ) : (
                   'Create'
                 )
-              ) : picture ? (
+              ) : picture || metadata?.content?.links?.image ? (
                 'Missing Fields!'
               ) : (
                 'Missing Profile Picture!'

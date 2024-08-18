@@ -75,7 +75,7 @@ export function useCreateMintWithExistingToken({
 interface CreateMintArgs {
   name: string;
   symbol: string;
-  picture: File | string;
+  picture: File | string | undefined;
   description: string;
 }
 
@@ -94,7 +94,8 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
       },
     ],
     mutationFn: async (input: CreateMintArgs) => {
-      if (!wallet.publicKey || !wallet.signTransaction) return;
+      if (!wallet.publicKey || !wallet.signTransaction || !input.picture)
+        return;
       let signature: TransactionSignature = '';
       try {
         const [mint] = PublicKey.findProgramAddressSync(
@@ -204,7 +205,7 @@ export async function buildTokenMetadata(
 ): Promise<TokenMetadata> {
   let imageUrl;
   if (typeof input.picture != 'string') {
-    imageUrl = await uploadMedia(input.picture, publicKey);
+    imageUrl = await uploadMedia(input.picture!, publicKey);
   } else {
     imageUrl = input.picture;
   }

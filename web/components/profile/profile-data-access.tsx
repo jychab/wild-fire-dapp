@@ -97,7 +97,7 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
       const data = (await response.json()).result as DAS.GetAssetResponse;
       if (!data) {
         const docData = await getDoc(
-          doc(db, `Mint/${mint.toBase58()}/Profile/Settings`)
+          doc(db, `Mint/${mint.toBase58()}/Temporary/Profile`)
         );
         if (docData.exists()) {
           return docData.data() as DAS.GetAssetResponse;
