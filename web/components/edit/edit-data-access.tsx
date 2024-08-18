@@ -3,6 +3,7 @@
 import { LONG_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/proxy';
+import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
 import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -18,6 +19,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
+  editProfileSettings,
   getSponsoredUpdateMetadata,
   uploadMedia,
   uploadMetadata,
@@ -41,7 +43,6 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
-  const client = useQueryClient();
 
   return useMutation({
     mutationKey: [
@@ -82,7 +83,13 @@ export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useEditData({ mint }: { mint: PublicKey | null }) {
+export function useEditData({
+  mint,
+  metadata,
+}: {
+  mint: PublicKey | null;
+  metadata: DAS.GetAssetResponse | null | undefined;
+}) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
@@ -99,12 +106,27 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async (input: EditMintArgs) => {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
+      let imageUrl;
+      if (input.picture) {
+        imageUrl = await uploadMedia(input.picture, wallet.publicKey);
+      }
+      if (metadata?.content?.json_uri == undefined) {
+        await editProfileSettings(input.name, input.description, imageUrl);
+        return 'Success';
+      }
       let signature: TransactionSignature = '';
       let ixs: TransactionInstruction[] = [];
       let partialTx;
       try {
-        const details = await getTokenMetadata(connection, mint);
-        if (!details) return;
+        const details = await getTokenMetadata(
+          connection,
+          mint,
+          undefined,
+          metadata.token_info?.token_program
+            ? new PublicKey(metadata.token_info?.token_program)
+            : undefined
+        );
+        if (!details) return; // update token metadata with using old token program
         const uriMetadata = await (
           await fetch(proxify(details.uri, true))
         ).json();
@@ -120,10 +142,6 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
           input.description != uriMetadata.description ||
           fieldsToUpdate.length != 0
         ) {
-          let imageUrl;
-          if (input.picture) {
-            imageUrl = await uploadMedia(input.picture, mint);
-          }
           const payload = {
             ...uriMetadata,
             name: input.name,
@@ -131,7 +149,10 @@ export function useEditData({ mint }: { mint: PublicKey | null }) {
             description: input.description,
             image: imageUrl ? imageUrl : uriMetadata.image,
           };
-          const uri = await uploadMetadata(JSON.stringify(payload), mint);
+          const uri = await uploadMetadata(
+            JSON.stringify(payload),
+            wallet.publicKey
+          );
           fieldsToUpdate.push(['uri', uri]);
         }
         if (fieldsToUpdate.length > 0) {

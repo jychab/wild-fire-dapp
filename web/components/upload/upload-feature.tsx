@@ -49,7 +49,11 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
         <div className="flex flex-col gap-4 items-center max-w-md w-full">
           <UploadPost
             id={id}
-            mint={publicKey ? getDerivedMint(publicKey) : null}
+            mint={
+              metadataQuery?.content?.json_uri
+                ? new PublicKey(metadataQuery.id)
+                : null
+            }
             post={post}
           />
         </div>

@@ -2,8 +2,8 @@
 
 import { uploadMedia } from '@/utils/firebase/functions';
 import {
-  generatePostActionApiEndPoint,
   generatePostEndPoint,
+  generatePostSubscribeApiEndPoint,
 } from '@/utils/helper/proxy';
 import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -453,12 +453,14 @@ const UploadContentBtn: FC<{
         } else {
           toast.error('No Blinks Url Found');
         }
-      } else {
+      } else if (publicKey) {
         const carousel = await Promise.all(
           files
             .filter((x) => x.id !== 'blinks')
             .map(async (x) => {
-              const mediaUrl = x.file ? await uploadMedia(x.file, mint) : x.uri;
+              const mediaUrl = x.file
+                ? await uploadMedia(x.file, publicKey)
+                : x.uri;
               if (x.fileType.startsWith('image/')) {
                 return { uri: mediaUrl, fileType: x.fileType };
               } else if (x.fileType.startsWith('video/')) {
@@ -491,7 +493,10 @@ const UploadContentBtn: FC<{
             links: {
               actions: [
                 {
-                  href: generatePostActionApiEndPoint(mint.toBase58(), postId),
+                  href: generatePostSubscribeApiEndPoint(
+                    mint.toBase58(),
+                    postId
+                  ),
                   label: 'Subscribe',
                 },
               ],

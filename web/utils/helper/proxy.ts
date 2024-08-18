@@ -27,6 +27,6 @@ export function generatePostApiEndPoint(mint: string, id: string) {
   return `https://api.hashfeed.social/post/?mint=${mint}&id=${id}`;
 }
 
-export function generatePostActionApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post/actions?mint=${mint}&id=${id}`;
+export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
+  return `https://api.hashfeed.social/post/actions/subscribe?mint=${mint}&id=${id}`;
 }

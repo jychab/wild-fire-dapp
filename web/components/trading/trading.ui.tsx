@@ -20,6 +20,7 @@ import {
   useGetMintSummaryDetails,
   useGetTokenDetails,
 } from '../profile/profile-data-access';
+import { LockedContent } from '../profile/profile-ui';
 import {
   getAssociatedTokenStateAccount,
   getQuote,
@@ -35,13 +36,13 @@ export const TradingPanel: FC<{
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
   const [showError, setShowError] = useState('');
-  const { data: metadata } = useGetTokenDetails({
+  const { data: metadata, isLoading } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
 
   const [buy, setBuy] = useState(true);
 
-  const { data: isLiquidityPoolFound, isLoading } = useIsLiquidityPoolFound({
+  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: mintId ? new PublicKey(mintId) : null,
   });
 
@@ -57,12 +58,12 @@ export const TradingPanel: FC<{
   });
   const { data: userMintInfo } = useGetTokenAccountInfo({
     address:
-      metadata && publicKey
+      metadata && publicKey && metadata.token_info
         ? getAssociatedTokenAddressSync(
-            new PublicKey(metadata!.id),
+            new PublicKey(metadata.id),
             publicKey,
             false,
-            new PublicKey(metadata.token_info!.token_program!)
+            new PublicKey(metadata.token_info?.token_program!)
           )
         : null,
     tokenProgram: metadata?.token_info?.token_program
@@ -240,10 +241,9 @@ export const TradingPanel: FC<{
   );
 
   return (
-    <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
-      {isLoading ? (
-        <div className="loading loading-dots loading-lg" />
-      ) : (
+    <div className="stack w-full h-full">
+      <LockedContent metaDataQuery={metadata} isLoading={isLoading} />
+      <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col h-[500px] w-full">
             {/* {poolState ? (
@@ -288,7 +288,7 @@ export const TradingPanel: FC<{
               <label>
                 <div className="label">
                   <span className="label-text text-xs">You're Paying</span>
-                  <div className="label-text-alt flex items-end gap-2">
+                  <div className="label-text-alt flex items-end gap-2 max-w-[200px] truncate">
                     <span>{`${formatLargeNumber(
                       buy
                         ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
@@ -327,7 +327,7 @@ export const TradingPanel: FC<{
               <label>
                 <div className="label">
                   <span className="label-text text-xs">To Receive</span>
-                  <div className="label-text-alt">
+                  <div className="label-text-alt max-w-[100px] truncate">
                     <span>{`${formatLargeNumber(
                       !buy
                         ? (outputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
@@ -396,8 +396,9 @@ export const TradingPanel: FC<{
             </div>
           </div>
         </div>
-      )}
-      <Activities metadata={metadata} mintId={mintId} />
+
+        <Activities metadata={metadata} mintId={mintId} />
+      </div>
     </div>
   );
 };

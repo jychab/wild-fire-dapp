@@ -55,14 +55,14 @@ export const CreatePanel: FC = () => {
   return (
     <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
       <span className="text-3xl md:text-4xl text-center">
-        Create your account
+        Create your profile
       </span>
       <span className="text-md md:text-base text-center px-4">
         Add a profile picture, display name and username. You can always edit it
         later.
       </span>
       <div className="px-4 pb-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
-        <span className="hidden md:block pt-4">Create your account</span>
+        <span className="hidden md:block pt-4">Create your profile</span>
         <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content md:pt-4">
           <div className="flex w-40 h-40 items-center justify-center">
             <label
@@ -114,7 +114,7 @@ export const CreatePanel: FC = () => {
         </div>
         <div className="flex flex-col w-full gap-2">
           <div className="label">
-            <span className="label-text">Bio (Optional)</span>
+            <span className="label-text">Description</span>
           </div>
           <textarea
             maxLength={200}

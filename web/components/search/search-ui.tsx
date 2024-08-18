@@ -1,3 +1,4 @@
+import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -63,10 +64,7 @@ function SearchBar() {
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
-                  src={
-                    x?.content?.links?.image ||
-                    'https://buckets.hashfeed.social/placeholder.png'
-                  }
+                  src={x?.content?.links?.image || placeholderImage}
                 />
               </div>
               <div className="flex flex-col">

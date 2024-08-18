@@ -2,7 +2,8 @@ import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
-import { PostContent } from '@/utils/types/post';
+import { placeholderImage } from '@/utils/helper/placeholder';
+import { PostBlinksDetail } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconSend, IconX } from '@tabler/icons-react';
@@ -35,9 +36,9 @@ interface Comment {
 }
 
 export const CommentsSection: FC<{
-  post: PostContent;
+  blinksDetail: PostBlinksDetail;
   multiGrid: boolean;
-}> = ({ post, multiGrid }) => {
+}> = ({ blinksDetail: post, multiGrid }) => {
   const [commentsLimit, setCommentsLimit] = useState(20);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -232,10 +233,7 @@ export const CommentsSection: FC<{
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
-                  src={
-                    metadata?.content?.links?.image ||
-                    'https://buckets.hashfeed.social/placeholder.png'
-                  }
+                  src={metadata?.content?.links?.image || placeholderImage}
                 />
               </div>
             </div>
@@ -286,10 +284,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt=""
-              src={
-                metadata?.content?.links?.image ||
-                'https://buckets.hashfeed.social/placeholder.png'
-              }
+              src={metadata?.content?.links?.image || placeholderImage}
             />
           </div>
         </button>

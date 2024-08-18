@@ -103,7 +103,7 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
         );
         const distributor = await getDistributor();
         const [metadata, onboardingWallet] = await Promise.all([
-          buildTokenMetadata(input, mint),
+          buildTokenMetadata(input, mint, wallet.publicKey),
           connection.getAccountInfo(ONBOARDING_WALLET),
         ]);
         const sponsoredResult =
@@ -199,11 +199,12 @@ async function handleSelfDistributor(
 }
 export async function buildTokenMetadata(
   input: CreateMintArgs,
-  mint: PublicKey
+  mint: PublicKey,
+  publicKey: PublicKey
 ): Promise<TokenMetadata> {
   let imageUrl;
   if (typeof input.picture != 'string') {
-    imageUrl = await uploadMedia(input.picture, mint);
+    imageUrl = await uploadMedia(input.picture, publicKey);
   } else {
     imageUrl = input.picture;
   }
@@ -213,7 +214,7 @@ export async function buildTokenMetadata(
     description: input.description,
     image: imageUrl,
   };
-  const uri = await uploadMetadata(JSON.stringify(payload), mint);
+  const uri = await uploadMetadata(JSON.stringify(payload), publicKey);
   return {
     name: input.name,
     symbol: input.symbol,

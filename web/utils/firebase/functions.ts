@@ -33,6 +33,19 @@ export async function createOrUpdateAdminForExternalMint(mint: string) {
   await createOrUpdateAdminForExternalMint({ mint });
 }
 
+export async function editProfileSettings(
+  displayName: string,
+  description: string,
+  imageUrl?: string
+) {
+  const editProfileSettings = httpsCallable(functions, 'editProfileSettings');
+  await editProfileSettings({
+    displayName,
+    description,
+    imageUrl,
+  });
+}
+
 export async function getDistributor() {
   const getDistributor = httpsCallable(functions, 'getDistributor');
   const result = await getDistributor();
@@ -107,15 +120,15 @@ export function createLoginMessage(sessionKey: string) {
   return `Sign Message to Log In! \n\nSession Key: ${sessionKey}}`;
 }
 
-export async function uploadMetadata(payload: string, mint: PublicKey) {
-  const path = `${mint.toBase58()}/${crypto.randomUUID()}/metadata.json`;
+export async function uploadMetadata(payload: string, address: PublicKey) {
+  const path = `${address.toBase58()}/${crypto.randomUUID()}/metadata.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload);
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 
-export async function uploadMedia(picture: File, mint: PublicKey) {
-  const path = `${mint.toBase58()}/media/${crypto.randomUUID()}`;
+export async function uploadMedia(picture: File, address: PublicKey) {
+  const path = `${address.toBase58()}/media/${crypto.randomUUID()}`;
   const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture);
   return 'https://' + imageRef.bucket + '/' + path;

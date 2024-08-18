@@ -1,12 +1,11 @@
 'use client';
 
-import { isAuthorized } from '@/utils/helper/mint';
+import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import {
   useCloseAccount,
@@ -32,6 +31,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
   });
   const editMutation = useEditData({
     mint: mintId ? new PublicKey(mintId) : null,
+    metadata: metadata,
   });
   const closeMutation = useCloseAccount({
     mint: mintId ? new PublicKey(mintId) : null,
@@ -120,6 +120,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
                 type="file"
                 className="hidden text-base"
                 name="dropzone-file"
+                accept="image/*"
                 onChange={handlePictureChange}
               />
             </label>
@@ -132,18 +133,20 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
               className="input input-bordered w-full text-base rounded"
               onChange={handleNameChange}
             />
-            <input
-              type="text"
-              placeholder="Username"
-              className="input input-bordered w-full text-base rounded"
-              value={symbol}
-              onChange={handleSymbolChange}
-            />
+            {isAuthorized(tokenStateData, publicKey, metadata) && (
+              <input
+                type="text"
+                placeholder="Username"
+                className="input input-bordered w-full text-base rounded"
+                value={symbol}
+                onChange={handleSymbolChange}
+              />
+            )}
           </div>
         </div>
         <div className="flex flex-col w-full gap-2">
           <div className="label">
-            <span className="label-text">Bio (optional)</span>
+            <span className="label-text">Description</span>
           </div>
           <textarea
             maxLength={200}
@@ -158,13 +161,12 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
           disabled={
             !publicKey ||
             editMutation.isPending ||
-            !isAuthorized(tokenStateData, publicKey, metadata)
+            !(
+              isAuthorized(tokenStateData, publicKey, metadata) ||
+              (publicKey && mintId == getDerivedMint(publicKey).toBase58())
+            )
           }
           onClick={async () => {
-            if (!metadata) {
-              toast.error('Unable to fetch current mint metadata.');
-              return;
-            }
             await editMutation.mutateAsync({
               name: name,
               symbol: symbol,
@@ -178,7 +180,8 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
           {publicKey &&
             (editMutation.isPending ? (
               <div className="loading loading-spinner loading-sm" />
-            ) : isAuthorized(tokenStateData, publicKey, metadata) ? (
+            ) : isAuthorized(tokenStateData, publicKey, metadata) ||
+              (publicKey && mintId == getDerivedMint(publicKey).toBase58()) ? (
               'Confirm'
             ) : (
               'Unauthorized'

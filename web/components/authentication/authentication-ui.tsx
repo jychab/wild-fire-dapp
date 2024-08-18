@@ -4,9 +4,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconLogout,
   IconSquarePlus,
+  IconStar,
   IconUser,
   IconUserCircle,
-  IconUserPlus,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -68,7 +68,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
-            src={metaDataQuery?.content?.links?.image!}
+            src={metaDataQuery?.content?.links?.image}
             priority={true}
             className={`object-cover rounded-full`}
             fill={true}
@@ -95,19 +95,21 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             Create Post
           </Link>
         </li>
-        {metaDataQuery && (
+        {publicKey && (
           <li className="w-full">
-            <Link href={`/profile?mintId=${metaDataQuery.id}`}>
+            <Link
+              href={`/profile?mintId=${getDerivedMint(publicKey).toBase58()}`}
+            >
               <IconUser />
               Profile
             </Link>
           </li>
         )}
-        {!metaDataQuery && (
+        {metaDataQuery?.content?.json_uri == undefined && (
           <li className="w-full">
             <Link href={`/mint/create`}>
-              <IconUserPlus />
-              Create New Account
+              <IconStar />
+              Become a Creator
             </Link>
           </li>
         )}

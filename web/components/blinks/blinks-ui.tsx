@@ -536,8 +536,11 @@ export const ActionLayout = ({
             )}
           </div>
           <div className="flex flex-col ">
-            {!hideComment && post && (
-              <CommentsSection post={post} multiGrid={multiGrid} />
+            {!hideComment && blinksDetail && (
+              <CommentsSection
+                blinksDetail={blinksDetail}
+                multiGrid={multiGrid}
+              />
             )}
             {!hideUserPanel && blinksDetail && (
               <span className="text-xs stat-desc pt-2">

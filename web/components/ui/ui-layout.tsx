@@ -120,7 +120,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex flex-1 w-full mt-16">
-            <div className="w-full bg-base-100 text-base-content flex flex-1 justify-center items-center">
+            <div className="w-full bg-base-100 text-base-content flex flex-1 justify-center">
               <Suspense
                 fallback={
                   <span className="loading loading-spinner loading-lg"></span>

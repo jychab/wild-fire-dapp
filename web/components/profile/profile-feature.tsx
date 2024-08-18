@@ -30,16 +30,16 @@ export const ProfileFeature: FC<{
   );
 
   return (
-    <div className="flex flex-col w-full items-center pb-32">
-      <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8">
+    <div className="flex flex-col w-full h-full items-center">
+      <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8 h-full">
         <Profile
           metadata={metaDataQuery}
           mintId={mintId}
           mintSummaryDetails={mintSummaryDetails}
         />
-        <div className="flex flex-col flex-1 w-full">
+        <div className="flex flex-col flex-1 h-full w-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b w-full md:p-4">
+          <div className="border-base-200 rounded border-x border-b h-full md:p-4">
             {selectedTab == TabsEnum.POST && (
               <ContentPanel metadata={metaDataQuery} mintId={mintId} />
             )}
