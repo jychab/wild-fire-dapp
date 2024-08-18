@@ -1,5 +1,6 @@
 import { ExecutionType } from '@/utils/enums/blinks';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
+import { generatePostSubscribeApiEndPoint } from '@/utils/helper/proxy';
 import {
   ActionStateWithOrigin,
   ActionsRegistry,
@@ -42,6 +43,7 @@ import {
 } from '../../utils/helper/blinks';
 import { CommentsSection } from '../comments/comments-ui';
 import { CarouselContent, UserPanel, UserProfile } from '../content/content-ui';
+import { useGetTokenAccountFromAddress } from '../profile/profile-data-access';
 import { useGetActionRegistryLookUp } from './blink-data-access';
 
 interface ActionContainerProps {
@@ -81,6 +83,9 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 }) => {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
+  const { data: tokenAccounts } = useGetTokenAccountFromAddress({
+    address: publicKey,
+  });
   const [executionState, dispatchExecution] = useReducer(executionReducer, {
     status: 'idle',
   });
@@ -166,10 +171,25 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     }
   }, [overallState, isPassingSecurityCheck]);
 
+  const filteredActions = action?.actions.filter(
+    (x) =>
+      blinksDetail &&
+      !(
+        x.href ==
+          generatePostSubscribeApiEndPoint(
+            blinksDetail.mint,
+            blinksDetail.id
+          ) &&
+        tokenAccounts?.token_accounts?.findIndex(
+          (x) => x.mint == blinksDetail.mint
+        ) != -1
+      )
+  );
+
   const buttons = useMemo(
     () =>
-      action?.actions
-        .filter((it) => !it.parameter)
+      filteredActions
+        ?.filter((it) => !it.parameter)
         .filter((it) =>
           executionState.executingAction
             ? executionState.executingAction === it
@@ -180,8 +200,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   );
   const inputs = useMemo(
     () =>
-      action?.actions
-        .filter((it) => it.parameters.length === 1)
+      filteredActions
+        ?.filter((it) => it.parameters.length === 1)
         .filter((it) =>
           executionState.executingAction
             ? executionState.executingAction === it
@@ -191,8 +211,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   );
   const form = useMemo(() => {
     const [formComponent] =
-      action?.actions
-        .filter((it) => it.parameters.length > 1)
+      filteredActions
+        ?.filter((it) => it.parameters.length > 1)
         .filter((it) =>
           executionState.executingAction
             ? executionState.executingAction === it
@@ -765,7 +785,7 @@ export const BlinksCaption: FC<{
   return (
     <div>
       {showMore ? (
-        <div className="flex flex-col pb-2">
+        <div className="flex flex-col">
           <div className="flex items-center gap-1">
             {websiteUrl && (
               <Link

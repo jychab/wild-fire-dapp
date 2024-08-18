@@ -2,6 +2,7 @@
 
 import { LONG_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
+import { checkIfMetadataExist } from '@/utils/helper/format';
 import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
@@ -110,7 +111,7 @@ export function useEditData({
       if (input.picture) {
         imageUrl = await uploadMedia(input.picture, wallet.publicKey);
       }
-      if (metadata?.content?.json_uri == undefined) {
+      if (checkIfMetadataExist(metadata)) {
         await setTemporaryProfile(input.name, input.description, imageUrl);
         return 'Success';
       }
@@ -122,8 +123,8 @@ export function useEditData({
           connection,
           mint,
           undefined,
-          metadata.token_info?.token_program
-            ? new PublicKey(metadata.token_info?.token_program)
+          metadata?.token_info?.token_program
+            ? new PublicKey(metadata.token_info.token_program)
             : undefined
         );
         if (!details) return; // update token metadata with using old token program

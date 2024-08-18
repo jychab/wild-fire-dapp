@@ -1,3 +1,5 @@
+import { DAS } from '../types/das';
+
 export function formatLargeNumber(number: number | string) {
   if (typeof number == 'string') {
     number = parseInt(number);
@@ -72,4 +74,10 @@ export function checkIfTruncated(element: HTMLSpanElement | null) {
   if (!element) return null;
   const isTextClamped = element.scrollHeight > element.clientHeight;
   return isTextClamped;
+}
+
+export function checkIfMetadataExist(
+  metadata: DAS.GetAssetResponse | null | undefined
+) {
+  return !metadata || metadata.temporary;
 }

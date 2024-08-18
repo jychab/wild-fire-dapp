@@ -121,6 +121,7 @@ export declare namespace DAS {
     burnt: boolean;
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
+    temporary?: boolean;
   };
   type GetRwaAssetResponse = {
     items: FullRwaAccount;

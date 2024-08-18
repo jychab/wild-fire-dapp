@@ -1,4 +1,5 @@
 import { Scope } from '@/utils/enums/das';
+import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -50,8 +51,8 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
           <UploadPost
             id={id}
             mint={
-              metadataQuery?.content?.json_uri
-                ? new PublicKey(metadataQuery.id)
+              !checkIfMetadataExist(metadataQuery)
+                ? new PublicKey(metadataQuery!.id)
                 : null
             }
             post={post}

@@ -1,3 +1,4 @@
+import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -105,7 +106,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             </Link>
           </li>
         )}
-        {metaDataQuery?.content?.json_uri == undefined && (
+        {checkIfMetadataExist(metaDataQuery) && (
           <li className="w-full">
             <Link href={`/mint/create`}>
               <IconStar />

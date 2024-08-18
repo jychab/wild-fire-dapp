@@ -10,7 +10,10 @@ import { IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
-import { formatLargeNumber } from '../../utils/helper/format';
+import {
+  checkIfMetadataExist,
+  formatLargeNumber,
+} from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { CreateAccountBtn } from '../create/create-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
@@ -263,7 +266,7 @@ export const LockedContent: FC<{
 }> = ({ metaDataQuery, isLoading }) => {
   const [locked, setLocked] = useState(false);
   useEffect(() => {
-    if (metaDataQuery?.content?.json_uri == undefined && !isLoading) {
+    if (!isLoading && checkIfMetadataExist(metaDataQuery)) {
       setLocked(true);
     }
   }, [metaDataQuery, isLoading]);

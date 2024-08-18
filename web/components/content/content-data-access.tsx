@@ -1,43 +1,11 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/proxy';
-import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTransactionToast } from '../ui/ui-layout';
-
-export async function getTokenBalancesFromOwner({
-  address,
-  connection,
-}: {
-  address: PublicKey;
-  connection: Connection;
-}) {
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'getTokenAccounts',
-      id: '',
-      params: {
-        page: 1,
-        limit: 100,
-        displayOptions: {
-          showZeroBalance: false,
-        },
-        owner: address.toBase58(),
-      },
-    }),
-  });
-  const data = (await response.json()).result as DAS.GetTokenAccountsResponse;
-
-  return data;
-}
 
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();

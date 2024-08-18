@@ -100,7 +100,7 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
           doc(db, `Mint/${mint.toBase58()}/Temporary/Profile`)
         );
         if (docData.exists()) {
-          return docData.data() as DAS.GetAssetResponse;
+          return { ...docData.data(), temporary: true } as DAS.GetAssetResponse;
         }
       }
       return data || null;
@@ -122,6 +122,44 @@ export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
       return posts;
     },
     enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
+  });
+}
+
+export function useGetTokenAccountFromAddress({
+  address,
+}: {
+  address: PublicKey | null;
+}) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: ['get-token-accounts-from-address', { address }],
+    queryFn: async () => {
+      if (!address) return null;
+      const response = await fetch(connection.rpcEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'getTokenAccounts',
+          id: '',
+          params: {
+            page: 1,
+            limit: 1000,
+            displayOptions: {
+              showZeroBalance: true,
+            },
+            owner: address.toBase58(),
+          },
+        }),
+      });
+      const data = (await response.json())
+        .result as DAS.GetTokenAccountsResponse;
+      return data || null;
+    },
+    enabled: !!address,
     staleTime: SHORT_STALE_TIME,
   });
 }
