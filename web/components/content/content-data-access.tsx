@@ -1,10 +1,11 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
-import { proxify } from '@/utils/helper/proxy';
+import { generateAddressApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
@@ -12,6 +13,7 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
   const wallet = useWallet();
   const transactionToast = useTransactionToast();
   const client = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationKey: [
@@ -30,18 +32,13 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
     onSuccess: (signature) => {
       if (signature) {
         transactionToast(signature);
+        router.push(`profile/?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
+            queryKey: ['get-posts-from-mint', { mint }],
           }),
           client.invalidateQueries({
-            queryKey: [
-              'get-posts-from-address',
-              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
-            ],
+            queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
           }),
         ]);
       }
@@ -57,19 +54,11 @@ export const useGetPostsFromAddress = ({
 }: {
   address: PublicKey | null;
 }) => {
-  const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'get-posts-from-address',
-      { endpoint: connection.rpcEndpoint, address },
-    ],
+    queryKey: ['get-posts-from-address', { address }],
     queryFn: async () => {
       if (!address) return null;
-      const result = await fetch(
-        proxify(
-          `https://api.hashfeed.social/getPosts?address=${address.toBase58()}`
-        )
-      );
+      const result = await fetch(proxify(generateAddressApiEndPoint(address)));
       const posts = (await result.json()) as GetPostsResponse | undefined;
       return posts;
     },

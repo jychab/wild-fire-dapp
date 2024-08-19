@@ -180,7 +180,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
             blinksDetail.mint,
             blinksDetail.id
           ) &&
-        tokenAccounts?.token_accounts?.findIndex(
+        tokenAccounts?.token_accounts &&
+        tokenAccounts.token_accounts.findIndex(
           (x) => x.mint == blinksDetail.mint
         ) != -1
       )

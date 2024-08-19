@@ -27,32 +27,28 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       },
     ],
     mutationFn: async (input: any) => {
-      if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
-
+      if (!wallet.publicKey || !mint) return;
       try {
         await createOrEditPost(mint.toBase58(), input);
-        return 'Success';
+        return input;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);
         return;
       }
     },
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
+    onSuccess: (input) => {
+      if (input) {
+        transactionToast('Success');
         router.push(`/profile?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
+            queryKey: ['get-post', { mint, postId: input.id }],
           }),
           client.invalidateQueries({
-            queryKey: [
-              'get-posts-from-address',
-              { endpoint: connection.rpcEndpoint, address: wallet.publicKey },
-            ],
+            queryKey: ['get-posts-from-mint', { mint }],
+          }),
+          client.invalidateQueries({
+            queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
           }),
         ]);
       }

@@ -57,23 +57,20 @@ export const UploadPost: FC<{
   const [filesLoaded, setFilesLoaded] = useState(false);
   const [uri, setUri] = useState('');
 
-  const updateFiles = useCallback(
-    (newFiles: any) => {
-      setFiles((prevFiles) =>
-        prevFiles.map((file) => {
-          if (file.id == newFiles.id) {
-            return {
-              ...file,
-              ...newFiles,
-            };
-          } else {
-            return file;
-          }
-        })
-      );
-    },
-    [setFiles]
-  );
+  const updateFiles = useCallback((newFiles: any) => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => {
+        if (file.id == newFiles.id) {
+          return {
+            ...file,
+            ...newFiles,
+          };
+        } else {
+          return file;
+        }
+      })
+    );
+  }, []);
 
   useEffect(() => {
     if (post && !filesLoaded && files.length === 0) {
@@ -99,17 +96,20 @@ export const UploadPost: FC<{
       }
       setFilesLoaded(true);
     }
-  }, [post, filesLoaded, files]);
+  }, [post, filesLoaded]);
 
   useEffect(() => {
     if (uri) {
       updateFiles({ id: 'blinks', uri });
     }
-  }, [uri, files, updateFiles]);
+  }, [uri, updateFiles]);
 
-  const handleInputChange = (setter: (value: string) => void) => (e: any) => {
-    setter(e.target.value);
-  };
+  const handleInputChange = useCallback(
+    (setter: (value: string) => void) => (e: any) => {
+      setter(e.target.value);
+    },
+    []
+  );
 
   const captureThumbnail = useCallback(
     (id: string) => {
@@ -167,25 +167,28 @@ export const UploadPost: FC<{
     previousFilesRef.current = files;
   }, [files]);
 
-  const handleFilesAdd = (e: any) => {
-    if (files.length >= 3) {
-      toast.error('A maximum of 3 files can be added in a post');
-      return;
-    }
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      if (selectedFile.size > 1e8) {
-        toast.error('File size exceeded maximum allowed 100MB');
+  const handleFilesAdd = useCallback(
+    (e: any) => {
+      if (files.length >= 3) {
+        toast.error('A maximum of 3 files can be added in a post');
         return;
       }
-      const url = URL.createObjectURL(selectedFile);
-      const id = crypto.randomUUID();
-      setFiles((prevFiles) => [
-        ...prevFiles,
-        { fileType: selectedFile.type, file: selectedFile, uri: url, id },
-      ]);
-    }
-  };
+      const selectedFile = e.target.files[0];
+      if (selectedFile) {
+        if (selectedFile.size > 1e8) {
+          toast.error('File size exceeded maximum allowed 100MB');
+          return;
+        }
+        const url = URL.createObjectURL(selectedFile);
+        const id = crypto.randomUUID();
+        setFiles((prevFiles) => [
+          ...prevFiles,
+          { fileType: selectedFile.type, file: selectedFile, uri: url, id },
+        ]);
+      }
+    },
+    [files]
+  );
 
   const handleVideoRef = useCallback(
     (id: string) => (el: HTMLVideoElement | null) => {
