@@ -1,5 +1,5 @@
 'use client';
-import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
+import { LONG_STALE_TIME } from '@/utils/consts';
 import { Criteria, Eligibility } from '@/utils/enums/campaign';
 import { db } from '@/utils/firebase/firebase';
 import {
@@ -10,7 +10,6 @@ import {
 import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { Campaign } from '@/utils/types/campaigns';
-import { Transaction } from '@/utils/types/transactions';
 import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
@@ -166,21 +165,6 @@ export function useGetCampaigns({ mint }: { mint: PublicKey | null }) {
     },
     enabled: !!mint,
     staleTime: LONG_STALE_TIME,
-  });
-}
-
-export function useGetTransactions({ mint }: { mint: PublicKey | null }) {
-  return useQuery({
-    queryKey: ['get-transactions', { mint }],
-    queryFn: async () => {
-      if (!mint) return null;
-      const docData = await getDocs(
-        collection(db, `Mint/${mint.toBase58()}/Transactions`)
-      );
-      return docData.docs.map((x) => x.data() as Transaction);
-    },
-    enabled: !!mint,
-    staleTime: SHORT_STALE_TIME,
   });
 }
 

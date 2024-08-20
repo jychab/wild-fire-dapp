@@ -7,6 +7,7 @@ import {
   IconRocket,
   IconSquarePlus,
   IconStar,
+  IconTransactionBitcoin,
   IconUser,
   IconUserCircle,
 } from '@tabler/icons-react';
@@ -86,10 +87,14 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-56"
       >
         <li className="text-left">
-          <span className="block text-sm truncate w-full max-w-[200px]">
-            {publicKey ? publicKey.toString() : ''}
-          </span>
+          <div className="flex items-center justify-between w-full">
+            <span className="block text-sm truncate max-w-[130px] ">
+              {publicKey?.toString()}
+            </span>
+            <ThemeComponent />
+          </div>
         </li>
+
         {publicKey && (
           <li className="w-full">
             <Link
@@ -114,16 +119,22 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             </Link>
           </li>
         ) : (
-          <li className="w-full">
-            <Link href={`/airdrop`}>
-              <IconRocket />
-              Airdrop Campaign
-            </Link>
-          </li>
+          <>
+            <li className="w-full">
+              <Link href={`/airdrop`}>
+                <IconRocket />
+                Airdrop Campaigns
+              </Link>
+            </li>
+            <li className="w-full">
+              <Link href={`/transactions`}>
+                <IconTransactionBitcoin />
+                Transactions
+              </Link>
+            </li>
+          </>
         )}
-        <li className="w-full">
-          <ThemeComponent />
-        </li>
+
         <li className="w-full">
           <div
             onClick={async () => {
