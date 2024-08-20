@@ -26,3 +26,11 @@ export function isAuthorized(
     )?.address == publicKey.toBase58()
   );
 }
+export function getAssociatedTokenStateAccount(mint: PublicKey) {
+  const [tokenState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('token'), mint.toBuffer()],
+    program.programId
+  );
+
+  return tokenState;
+}

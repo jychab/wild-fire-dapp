@@ -494,6 +494,10 @@
           "type": "u64"
         },
         {
+          "name": "event",
+          "type": "string"
+        },
+        {
           "name": "id",
           "type": "string"
         }
@@ -867,6 +871,10 @@
           {
             "name": "to",
             "type": "pubkey"
+          },
+          {
+            "name": "event",
+            "type": "string"
           },
           {
             "name": "id",

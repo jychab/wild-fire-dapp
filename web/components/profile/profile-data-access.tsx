@@ -1,16 +1,15 @@
 'use client';
 
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
+import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
+import { GetPostsResponse } from '@/utils/types/post';
 import { getAccount } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
-
-import { SHORT_STALE_TIME } from '@/utils/consts';
-import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
-import { GetPostsResponse } from '@/utils/types/post';
 
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
   const { connection } = useConnection();

@@ -1,6 +1,7 @@
 import { DEFAULT_MINT_DECIMALS, NATIVE_MINT_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
 import { formatLargeNumber } from '@/utils/helper/format';
+import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import {
   calculateFee,
@@ -22,7 +23,6 @@ import {
 } from '../profile/profile-data-access';
 import { LockedContent } from '../profile/profile-ui';
 import {
-  getAssociatedTokenStateAccount,
   getQuote,
   useGetAccountInfo,
   useGetTokenAccountInfo,
@@ -36,7 +36,7 @@ export const TradingPanel: FC<{
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
   const [showError, setShowError] = useState('');
-  const { data: metadata, isLoading } = useGetTokenDetails({
+  const { data: metadata } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
 
@@ -70,20 +70,6 @@ export const TradingPanel: FC<{
       ? new PublicKey(metadata?.token_info?.token_program)
       : undefined,
   });
-
-  // const { data: usdcVault } = useGetTokenAccountInfo({
-  //   address: getUSDCVault(new PublicKey(mintId)),
-  //   tokenProgram: TOKEN_PROGRAM_ID,
-  // });
-  // const { data: mintVault } = useGetTokenAccountInfo({
-  //   address: getMintVault(new PublicKey(mintId)),
-  // });
-  // const { data: poolState } = useGetPoolState({ mint: new PublicKey(mintId) });
-
-  // const liquidity =
-  //   Number(usdcVault?.amount) -
-  //   poolState?.creatorFeesTokenUsdc -
-  //   poolState?.protocolFeesTokenUsdc;
 
   const inputToken = buy
     ? Number(userAccountInfo?.lamports)
@@ -152,9 +138,6 @@ export const TradingPanel: FC<{
               : BigInt(0));
         }
         let outAmountWithoutFee = await getQuote(
-          // mintVault,
-          // usdcVault,
-          // poolState,
           buy ? NATIVE_MINT.toBase58() : mintId,
           buy ? mintId : NATIVE_MINT.toBase58(),
           inputAmountWithoutFee,
@@ -242,19 +225,15 @@ export const TradingPanel: FC<{
 
   return (
     <div className="stack w-full h-full">
-      <LockedContent metaDataQuery={metadata} isLoading={isLoading} />
+      <LockedContent mintId={mintId} />
       <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col h-[500px] w-full">
-            {/* {poolState ? (
-              <TradingViewChart {...chartProps} />
-            ) : ( */}
             <iframe
               width="100%"
               height="500"
               src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
             ></iframe>
-            {/* )} */}
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
             {<MintInfo mintId={mintId} metadata={metadata} liquidity={NaN} />}
@@ -359,7 +338,6 @@ export const TradingPanel: FC<{
                 onClick={() => {
                   if (!mintId) return;
                   swapMutation.mutateAsync({
-                    // poolState,
                     inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
                     outputMint: buy ? mintId : NATIVE_MINT.toBase58(),
                     amount: parseFloat(inputAmount),
@@ -454,7 +432,7 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                           getAssociatedTokenStateAccount(
                             new PublicKey(tokenStateData.mint)
                           ).toBase58()
-                          ? '(Transfer Fee Wallet)'
+                          ? '(Distribution Wallet)'
                           : ''
                       } ${x.owner.toBase58()}`}
                     </Link>

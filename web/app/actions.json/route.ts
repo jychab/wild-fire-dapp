@@ -1,5 +1,3 @@
-// app/actions.json/route.js
-
 export async function GET(request: any) {
   const data = {
     rules: [

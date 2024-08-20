@@ -4,6 +4,7 @@ import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconLogout,
+  IconRocket,
   IconSquarePlus,
   IconStar,
   IconUser,
@@ -85,16 +86,9 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-56"
       >
         <li className="text-left">
-          <span className="block text-sm truncate w-48 ">
+          <span className="block text-sm truncate w-full max-w-[200px]">
             {publicKey ? publicKey.toString() : ''}
           </span>
-          <span className="block text-sm truncate ">{'mainnet-beta'}</span>
-        </li>
-        <li className="w-full">
-          <Link href={`/post/create`}>
-            <IconSquarePlus />
-            Create Post
-          </Link>
         </li>
         {publicKey && (
           <li className="w-full">
@@ -106,11 +100,24 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             </Link>
           </li>
         )}
-        {checkIfMetadataExist(metaDataQuery) && (
+        <li className="w-full">
+          <Link href={`/post/create`}>
+            <IconSquarePlus />
+            Create Post
+          </Link>
+        </li>
+        {checkIfMetadataExist(metaDataQuery) ? (
           <li className="w-full">
             <Link href={`/mint/create`}>
               <IconStar />
               Become a Creator
+            </Link>
+          </li>
+        ) : (
+          <li className="w-full">
+            <Link href={`/airdrop`}>
+              <IconRocket />
+              Airdrop Campaign
             </Link>
           </li>
         )}
@@ -124,7 +131,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             }}
           >
             <IconLogout />
-            Log Out
+            Disconnect
           </div>
         </li>
       </ul>

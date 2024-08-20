@@ -4,7 +4,7 @@ export function formatLargeNumber(number: number | string) {
   if (typeof number == 'string') {
     number = parseInt(number);
   }
-  if (number < 1) {
+  if (number < 1 && number > 0) {
     return number.toPrecision(3);
   } else if (number < 1000) {
     return number;
@@ -44,6 +44,15 @@ export function convertUTCTimeToDayMonth(seconds: number) {
   const month = monthNames[monthIndex];
 
   return `${day} ${month}`;
+}
+
+export function getDDMMYYYY(date: Date) {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0'); // January is 0!
+  const yyyy = date.getFullYear();
+
+  const formattedDate = `${yyyy}-${mm}-${dd}`;
+  return formattedDate;
 }
 
 export function getTimeAgo(timestamp: number) {

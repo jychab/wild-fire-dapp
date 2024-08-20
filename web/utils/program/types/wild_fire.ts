@@ -633,6 +633,10 @@ export type WildFire = {
           type: 'u64';
         },
         {
+          name: 'event';
+          type: 'string';
+        },
+        {
           name: 'id';
           type: 'string';
         }
@@ -1123,6 +1127,10 @@ export type WildFire = {
           {
             name: 'to';
             type: 'pubkey';
+          },
+          {
+            name: 'event';
+            type: 'string';
           },
           {
             name: 'id';

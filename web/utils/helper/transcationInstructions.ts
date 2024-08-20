@@ -16,7 +16,7 @@ import {
 } from '@solana/spl-token';
 import { TokenMetadata, pack, unpack } from '@solana/spl-token-metadata';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { CONFIG, DEFAULT_MINT_DECIMALS } from '../consts';
+import { CONFIG, DEFAULT_MINT_DECIMALS, USDC } from '../consts';
 import swapIdl from '../program/idl/raydium_cp_swap.json';
 import Idl from '../program/idl/wild_fire.json';
 import { RaydiumCpSwap } from '../program/types/raydium_cp_swap';
@@ -99,6 +99,41 @@ export async function initializeMint(
       payer: payer,
       admin: payer,
       program: program.programId,
+    })
+    .instruction();
+}
+
+export async function withdrawTokens(payer: PublicKey, mint: PublicKey) {
+  const [poolAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool'), mint.toBuffer()],
+    swapProgram.programId
+  );
+  const [mintVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), mint.toBuffer()],
+    swapProgram.programId
+  );
+
+  const [usdcVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_vault'), poolAddress.toBuffer(), USDC.toBuffer()],
+    swapProgram.programId
+  );
+  return await swapProgram.methods
+    .withdrawAllTokens()
+    .accounts({
+      payer: payer,
+      program: swapProgram.programId,
+      poolCreator: payer,
+      poolState: poolAddress,
+      tokenMintVault: mintVault,
+      tokenUsdcVault: usdcVault,
+      vaultMint: mint,
+      recipientTokenMintAccount: getAssociatedTokenAddressSync(
+        mint,
+        payer,
+        false,
+        TOKEN_2022_PROGRAM_ID
+      ),
+      recipientTokenUsdcAccount: getAssociatedTokenAddressSync(USDC, payer),
     })
     .instruction();
 }

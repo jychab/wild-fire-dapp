@@ -2,14 +2,13 @@
 
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
-import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FC, useEffect, useState } from 'react';
+import { FC } from 'react';
 import {
   checkIfMetadataExist,
   formatLargeNumber,
@@ -22,7 +21,11 @@ import {
   useSubscriptionMutation,
 } from '../trading/trading-data-access';
 import { UploadBtn } from '../upload/upload-ui';
-import { useGetPostsFromMint, useGetTokenDetails } from './profile-data-access';
+import {
+  useGetMintSummaryDetails,
+  useGetPostsFromMint,
+  useGetTokenDetails,
+} from './profile-data-access';
 
 export enum TabsEnum {
   POST = 'Posts',
@@ -31,11 +34,13 @@ export enum TabsEnum {
 
 interface ContentPanelProps {
   mintId: string | null;
-  metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
+export const ContentPanel: FC<ContentPanelProps> = ({ mintId }) => {
   const { publicKey } = useWallet();
+  const { data: metadata } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
   const { data: tokenStateData } = useGetMintToken({
     mint: mintId ? new PublicKey(mintId) : null,
   });
@@ -45,7 +50,7 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
 
   return (
     <>
-      {metadata && (
+      {!checkIfMetadataExist(metadata) && (
         <ContentGrid
           hideComment={true}
           multiGrid={true}
@@ -56,7 +61,8 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId, metadata }) => {
         />
       )}
       {posts?.posts.length == 0 &&
-        ((isAuthorized(tokenStateData, publicKey, metadata) || !metadata) &&
+        ((isAuthorized(tokenStateData, publicKey, metadata) ||
+          checkIfMetadataExist(metadata)) &&
         mintId ? (
           <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
             <div className="w-36">
@@ -108,30 +114,25 @@ export const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
 };
 
 interface ProfileProps {
-  mintSummaryDetails:
-    | {
-        currentHoldersCount: number;
-        holdersChange24hPercent: number;
-      }
-    | null
-    | undefined;
-  metadata: DAS.GetAssetResponse | null | undefined;
   mintId: string | null;
 }
 
-export const Profile: FC<ProfileProps> = ({
-  metadata,
-  mintId,
-  mintSummaryDetails,
-}) => {
+export const Profile: FC<ProfileProps> = ({ mintId }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
     mint: mintId ? new PublicKey(mintId) : null,
   });
-  const { data: tokenDetails } = useGetTokenDetails({
+  const { data: metadata, isLoading } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
+
+  const tokenProgram = metadata?.token_info?.token_program
+    ? new PublicKey(metadata?.token_info?.token_program)
+    : undefined;
 
   const { data: tokenInfo } = useGetTokenAccountInfo({
     address:
@@ -143,45 +144,44 @@ export const Profile: FC<ProfileProps> = ({
             new PublicKey(metadata.token_info?.token_program!)
           )
         : null,
-    tokenProgram: metadata?.token_info?.token_program
-      ? new PublicKey(metadata?.token_info?.token_program)
-      : undefined,
+    tokenProgram: tokenProgram,
   });
 
   const subscribeMutation = useSubscriptionMutation({
     mint: mintId ? new PublicKey(mintId) : null,
-    tokenProgram: metadata?.token_info?.token_program
-      ? new PublicKey(metadata?.token_info?.token_program)
-      : undefined,
+    tokenProgram: tokenProgram,
   });
-
-  // const { data: price } = useGetPrice({ mint: new PublicKey(mintId) });
 
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
-      <div className="w-40 h-40">
-        <div className="relative h-full w-full">
-          <Image
-            priority={true}
-            className={`object-cover rounded-full`}
-            fill={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            src={metadata?.content?.links?.image || placeholderImage}
-            alt={''}
-          />
-        </div>
+      <div className="w-40 h-40 items-center justify-center flex">
+        {!isLoading && (
+          <div className="relative h-full w-full">
+            <Image
+              priority={true}
+              className={`object-cover rounded-full`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              src={metadata?.content?.links?.image || placeholderImage}
+              alt={''}
+            />
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start">
         <div className="flex flex-col">
-          <div className="flex gap-2 items-center">
+          {!isLoading && (
             <span className="text-2xl lg:text-3xl font-bold truncate max-w-sm">
               {metadata?.content?.metadata.name || mintId}
             </span>
-          </div>
-          <span className="truncate max-w-xs">
-            {metadata?.content?.metadata.symbol || publicKey?.toBase58()}
-          </span>
+          )}
+          {!isLoading && (
+            <span className="truncate max-w-xs">
+              {metadata?.content?.metadata.symbol || publicKey?.toBase58()}
+            </span>
+          )}
         </div>
+
         <div className="flex items-center gap-2 ">
           {metadata?.token_info && (
             <button
@@ -226,7 +226,7 @@ export const Profile: FC<ProfileProps> = ({
               <span>
                 {formatLargeNumber(
                   mintSummaryDetails?.currentHoldersCount || 0
-                ) + ' Followers'}
+                ) + ' Subscribers'}
               </span>
               <span
                 className={`${
@@ -242,12 +242,12 @@ export const Profile: FC<ProfileProps> = ({
             </>
           )}
           {mintSummaryDetails &&
-            tokenDetails?.token_info?.price_info?.price_per_token &&
+            metadata?.token_info?.price_info?.price_per_token &&
             '||'}
-          {tokenDetails?.token_info?.price_info?.price_per_token && (
+          {metadata?.token_info?.price_info?.price_per_token && (
             <>
               <span>{`$${(
-                tokenDetails?.token_info?.price_info?.price_per_token || 0
+                metadata?.token_info?.price_info?.price_per_token || 0
               ).toPrecision(6)}
               `}</span>
             </>
@@ -261,15 +261,13 @@ export const Profile: FC<ProfileProps> = ({
   );
 };
 export const LockedContent: FC<{
-  metaDataQuery: DAS.GetAssetResponse | null | undefined;
-  isLoading: boolean;
-}> = ({ metaDataQuery, isLoading }) => {
-  const [locked, setLocked] = useState(false);
-  useEffect(() => {
-    if (!isLoading && checkIfMetadataExist(metaDataQuery)) {
-      setLocked(true);
-    }
-  }, [metaDataQuery, isLoading]);
+  mintId: string | null;
+}> = ({ mintId }) => {
+  const { data: metadata, isLoading } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
+  const locked = !isLoading && checkIfMetadataExist(metadata);
+
   return (
     locked && (
       <div className="flex flex-col flex-1 justify-center items-center bg-base-100 bg-opacity-80 p-4 h-full w-full">
@@ -295,7 +293,7 @@ export const LockedContent: FC<{
             <div className="flex gap-8 items-center">
               <i className="text-xl text-secondary"></i>
               <div className="flex flex-col">
-                <h2 className="font-bold">Tokenize your Content</h2>
+                <h2 className="font-bold">Monetize your Content</h2>
                 <span className="text-sm">Earn trading fees</span>
               </div>
             </div>
@@ -305,7 +303,7 @@ export const LockedContent: FC<{
               <div className="flex flex-col">
                 <h2 className="font-bold">Airdrop to Share</h2>
                 <span className="text-sm">
-                  Utilize our tools to identify users to distribute your tokens
+                  Utilize our tools to identify users to airdrop your tokens
                 </span>
               </div>
             </div>

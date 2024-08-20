@@ -21,8 +21,6 @@ export type RaydiumCpSwap = {
         '# Arguments',
         '',
         '* `ctx` - The context of accounts',
-        '* `amount_0_requested` - The maximum amount of token_0 to send, can be 0 to collect fees in only token_1',
-        '* `amount_1_requested` - The maximum amount of token_1 to send, can be 0 to collect fees in only token_0',
         ''
       ];
       discriminator: [164, 152, 207, 99, 30, 186, 19, 182];
@@ -293,7 +291,7 @@ export type RaydiumCpSwap = {
         '* `index` - The index of amm config, there may be multiple config.',
         '* `trade_fee_rate` - Trade fee rate, can be changed.',
         '* `protocol_fee_rate` - The rate of protocol fee within tarde fee.',
-        '* `fund_fee_rate` - The rate of fund fee within tarde fee.',
+        '* `protocol_owner` - The protocol owner in charge of sweeping fees.',
         ''
       ];
       discriminator: [137, 52, 237, 212, 215, 117, 108, 104];
@@ -356,8 +354,8 @@ export type RaydiumCpSwap = {
         '# Arguments',
         '',
         '* `ctx`- The context of accounts',
-        '* `init_amount_0` - the initial amount_0 to deposit',
-        '* `init_amount_1` - the initial amount_1 to deposit',
+        '* `mint_amount` - the initial mint to deposit',
+        '* `off_set` - the initial off_set for usdc',
         '* `open_time` - the timestamp allowed for swap',
         ''
       ];
@@ -553,11 +551,11 @@ export type RaydiumCpSwap = {
       ];
       args: [
         {
-          name: 'initAmount0';
+          name: 'mintAmount';
           type: 'u64';
         },
         {
-          name: 'initAmount1';
+          name: 'offSet';
           type: 'u64';
         },
         {
@@ -875,10 +873,8 @@ export type RaydiumCpSwap = {
         '* `ctx`- The context of accounts',
         '* `trade_fee_rate`- The new trade fee rate of amm config, be set when `param` is 0',
         '* `protocol_fee_rate`- The new protocol fee rate of amm config, be set when `param` is 1',
-        '* `fund_fee_rate`- The new fund fee rate of amm config, be set when `param` is 2',
-        "* `new_owner`- The config's new owner, be set when `param` is 3",
-        "* `new_fund_owner`- The config's new fund owner, be set when `param` is 4",
-        '* `param`- The vaule can be 0 | 1 | 2 | 3 | 4, otherwise will report a error',
+        "* `new_owner`- The config's new owner, be set when `param` is 2",
+        '* `param`- The vaule can be 0 | 1 | 2 , otherwise will report a error',
         ''
       ];
       discriminator: [49, 60, 174, 136, 154, 28, 116, 200];
@@ -956,6 +952,144 @@ export type RaydiumCpSwap = {
           type: 'u8';
         }
       ];
+    },
+    {
+      name: 'withdrawAllTokens';
+      discriminator: [168, 208, 244, 110, 148, 179, 49, 95];
+      accounts: [
+        {
+          name: 'payer';
+          writable: true;
+          signer: true;
+        },
+        {
+          name: 'poolCreator';
+        },
+        {
+          name: 'authority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  110,
+                  100,
+                  95,
+                  108,
+                  112,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  95,
+                  115,
+                  101,
+                  101,
+                  100
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'poolState';
+          docs: ['Pool state stores accumulated protocol fee amount'];
+          writable: true;
+        },
+        {
+          name: 'tokenMintVault';
+          docs: ['The address that holds pool tokens for token_0'];
+          writable: true;
+        },
+        {
+          name: 'tokenUsdcVault';
+          docs: ['The address that holds pool tokens for token_1'];
+          writable: true;
+        },
+        {
+          name: 'vaultMint';
+          docs: ['The mint of token_0 vault'];
+        },
+        {
+          name: 'vaultUsdcMint';
+          docs: ['The mint of token_1 vault'];
+          address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+        },
+        {
+          name: 'recipientTokenMintAccount';
+          docs: ['The address that receives the collected token_0 fund fees'];
+          writable: true;
+        },
+        {
+          name: 'recipientTokenUsdcAccount';
+          docs: ['The address that receives the collected token_1 fund fees'];
+          writable: true;
+        },
+        {
+          name: 'tokenProgram';
+          docs: ['The SPL program to perform token transfers'];
+          address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+        },
+        {
+          name: 'tokenProgram2022';
+          docs: ['The SPL program 2022 to perform token transfers'];
+          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        },
+        {
+          name: 'systemProgram';
+          address: '11111111111111111111111111111111';
+        },
+        {
+          name: 'associatedTokenProgram';
+          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+        },
+        {
+          name: 'eventAuthority';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ];
+              }
+            ];
+          };
+        },
+        {
+          name: 'program';
+        }
+      ];
+      args: [];
     }
   ];
   accounts: [
