@@ -1,5 +1,5 @@
 'use client';
-import { LONG_STALE_TIME } from '@/utils/consts';
+import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
 import { Criteria, Eligibility } from '@/utils/enums/campaign';
 import { db } from '@/utils/firebase/firebase';
 import {
@@ -180,7 +180,7 @@ export function useGetTransactions({ mint }: { mint: PublicKey | null }) {
       return docData.docs.map((x) => x.data() as Transaction);
     },
     enabled: !!mint,
-    staleTime: LONG_STALE_TIME,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
