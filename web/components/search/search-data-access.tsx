@@ -13,6 +13,10 @@ export function useGetSummary() {
       if (result.exists()) {
         return result.data() as {
           all: string[];
+          allTokenPrices: {
+            marketCap: number;
+            mint: string;
+          }[];
         };
       } else {
         return null;

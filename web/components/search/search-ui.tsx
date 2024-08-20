@@ -27,10 +27,9 @@ function SearchBar() {
           )
           .sort(
             (a, b) =>
-              (b.token_info?.price_info?.price_per_token || 0) *
-                (b.token_info?.supply || 0) -
-              (a.token_info?.price_info?.price_per_token || 0) *
-                (a.token_info?.supply || 0)
+              (data?.allTokenPrices.find((x) => x.mint == b.id)?.marketCap ||
+                0) -
+              (data?.allTokenPrices.find((x) => x.mint == a.id)?.marketCap || 0)
           )
       );
     }

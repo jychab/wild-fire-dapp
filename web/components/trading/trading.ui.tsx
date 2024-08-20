@@ -232,7 +232,7 @@ export const TradingPanel: FC<{
             <iframe
               width="100%"
               height="500"
-              src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=show&theme=dark`}
+              src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=hide&theme=dark`}
             ></iframe>
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
