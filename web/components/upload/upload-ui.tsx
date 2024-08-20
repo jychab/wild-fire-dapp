@@ -481,7 +481,7 @@ const UploadContentBtn: FC<{
             ? await uploadMedia(
                 files.find((x) => x.fileType === carousel[0]!.fileType)
                   ?.thumbnailFile!,
-                mint
+                publicKey
               )
             : carousel[0]!.uri;
           await uploadMutation.mutateAsync({
