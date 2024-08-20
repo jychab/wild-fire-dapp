@@ -8,6 +8,6 @@ export enum Eligibility {
 }
 
 export enum Duration {
-  WHEN_TOKEN_BUDGET_FINISHES = 'When token budget finishes',
-  CUSTOM = 'Custom',
+  UNTILL_BUDGET_FINISHES = 'Until Budget Finishes',
+  CUSTOM_DATE = 'Custom Date',
 }

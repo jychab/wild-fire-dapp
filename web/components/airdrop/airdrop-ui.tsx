@@ -129,7 +129,7 @@ export const CampaignTable: FC<{
                       ? 'Ended'
                       : getDDMMYYYY(new Date(x.startDate * 1000))
                     : x.tokensRemaining > 0
-                    ? Duration.WHEN_TOKEN_BUDGET_FINISHES
+                    ? Duration.UNTILL_BUDGET_FINISHES
                     : 'Ended'}
                 </td>
               </tr>
@@ -190,7 +190,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
   const [eligibility, setEligibility] = useState(Eligibility.REFRESHES_DAILY);
   const [startDate, setStartDate] = useState(currentTime);
   const [endDate, setEndDate] = useState(currentTime);
-  const [duration, setDuration] = useState(Duration.WHEN_TOKEN_BUDGET_FINISHES);
+  const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
   const { publicKey } = useWallet();
   const campaignMutation = useCreateOrEditCampaign({
     mint: publicKey ? getDerivedMint(publicKey) : null,
@@ -213,7 +213,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
       setEligibility(campaign.eligibility);
       setStartDate(campaign.startDate * 1000);
       if (campaign.endDate) {
-        setDuration(Duration.CUSTOM);
+        setDuration(Duration.CUSTOM_DATE);
         setEndDate(campaign.endDate * 1000);
       }
     } else if (!id) {
@@ -224,7 +224,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
       setEligibility(Eligibility.REFRESHES_DAILY);
       setStartDate(currentTime);
       setEndDate(currentTime);
-      setDuration(Duration.WHEN_TOKEN_BUDGET_FINISHES);
+      setDuration(Duration.UNTILL_BUDGET_FINISHES);
     }
   }, [campaign, id]);
 
@@ -241,18 +241,18 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
             </button>
           </form>
         </div>
-        <label className="input input-bordered flex items-center gap-2">
+        <label className="input input-bordered text-base flex items-center gap-2">
           Name
           <input
             type="text"
-            className="grow"
+            className="grow text-end"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Campaign Name"
           />
         </label>
-        <label className="input input-bordered flex items-center gap-2">
-          Allocated Budget
+        <label className="input input-bordered text-base flex items-center gap-2">
+          Budget
           <input
             type="number"
             className="grow text-end"
@@ -261,7 +261,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
             placeholder=""
           />
         </label>
-        <label className="input input-bordered flex items-center gap-2">
+        <label className="input input-bordered text-base flex items-center gap-2">
           Amount
           <input
             value={amount}
@@ -318,7 +318,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
             min={getDDMMYYYY(new Date(currentTime))}
           />
         </label>
-        {duration == Duration.CUSTOM && (
+        {duration == Duration.CUSTOM_DATE && (
           <label className="flex px-2 justify-between items-center gap-2">
             End Date
             <input
@@ -365,7 +365,7 @@ export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
                   startDate:
                     (startDate < currentTime ? currentTime : startDate) / 1000,
                   duration:
-                    duration == Duration.CUSTOM
+                    duration == Duration.CUSTOM_DATE
                       ? (endDate -
                           (startDate < currentTime ? currentTime : startDate)) /
                         1000
