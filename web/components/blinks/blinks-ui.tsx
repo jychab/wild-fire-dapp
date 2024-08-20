@@ -197,7 +197,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
             : true
         ) ?? [],
 
-    [action, executionState.executingAction]
+    [filteredActions, executionState.executingAction]
   );
   const inputs = useMemo(
     () =>
@@ -208,7 +208,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
             ? executionState.executingAction === it
             : true
         ) ?? [],
-    [action, executionState.executingAction]
+    [filteredActions, executionState.executingAction]
   );
   const form = useMemo(() => {
     const [formComponent] =
@@ -220,7 +220,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
             : true
         ) ?? [];
     return formComponent;
-  }, [action, executionState.executingAction]);
+  }, [filteredActions, executionState.executingAction]);
 
   const asButtonProps = (it: ActionComponent): ButtonProps => ({
     text: buttonLabelMap[executionState.status] ?? it.label,
