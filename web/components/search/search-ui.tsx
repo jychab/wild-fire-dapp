@@ -14,22 +14,16 @@ function SearchBar() {
   useEffect(() => {
     if (metadatas) {
       setList(
-        metadatas
-          .filter(
-            (x) =>
-              search == '' ||
-              x.content?.metadata.name
-                .toLowerCase()
-                .includes(search.toLowerCase()) ||
-              x.content?.metadata.symbol
-                .toLowerCase()
-                .includes(search.toLowerCase())
-          )
-          .sort(
-            (a, b) =>
-              (data?.allTokenPrices.get(b.id) || 0) -
-              (data?.allTokenPrices.get(a.id) || 0)
-          )
+        metadatas.filter(
+          (x) =>
+            search == '' ||
+            x.content?.metadata.name
+              .toLowerCase()
+              .includes(search.toLowerCase()) ||
+            x.content?.metadata.symbol
+              .toLowerCase()
+              .includes(search.toLowerCase())
+        )
       );
     }
   }, [search, metadatas]);
