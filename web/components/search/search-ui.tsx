@@ -27,9 +27,8 @@ function SearchBar() {
           )
           .sort(
             (a, b) =>
-              (data?.allTokenPrices.find((x) => x.mint == b.id)?.marketCap ||
-                0) -
-              (data?.allTokenPrices.find((x) => x.mint == a.id)?.marketCap || 0)
+              (data?.allTokenPrices.get(b.id) || 0) -
+              (data?.allTokenPrices.get(a.id) || 0)
           )
       );
     }

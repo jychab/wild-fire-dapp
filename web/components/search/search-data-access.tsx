@@ -11,13 +11,17 @@ export function useGetSummary() {
     queryFn: async () => {
       const result = await getDoc(doc(db, `Summary/mints`));
       if (result.exists()) {
-        return result.data() as {
+        const summary = result.data() as {
           all: string[];
           allTokenPrices: {
             marketCap: number;
             mint: string;
           }[];
         };
+        const tokenMap = new Map(
+          summary.allTokenPrices.map(({ mint, marketCap }) => [mint, marketCap])
+        );
+        return { ...summary, allTokenPrices: tokenMap };
       } else {
         return null;
       }
