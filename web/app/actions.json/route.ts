@@ -2,8 +2,8 @@ export async function GET(request: any) {
   const data = {
     rules: [
       {
-        pathPattern: '/post/**',
-        apiPath: 'http://api.hashfeed.social/post/**',
+        pathPattern: '/post',
+        apiPath: 'http://api.hashfeed.social/post',
       },
     ],
   };
