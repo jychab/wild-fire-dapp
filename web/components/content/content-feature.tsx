@@ -1,37 +1,25 @@
 'use client';
 
-import { GetPostsResponse } from '@/utils/types/post';
-import { PublicKey } from '@solana/web3.js';
+import { GetPostsResponse, PostContent } from '@/utils/types/post';
 import { FC } from 'react';
-import { useGetPost } from '../upload/upload.data-access';
 import { DisplayContent } from './content-ui';
 
 interface ContentCardFeatureProps {
-  mintId: string;
-  id: string;
+  post: PostContent | undefined | null;
 }
 
-export const ContentCardFeature: FC<ContentCardFeatureProps> = ({
-  mintId,
-  id,
-}) => {
-  const { data: post } = useGetPost({
-    mint: new PublicKey(mintId),
-    postId: id,
-  });
+export const ContentCardFeature: FC<ContentCardFeatureProps> = ({ post }) => {
   return (
-    post && (
-      <div className="flex flex-col w-full items-center sm:py-4">
-        <div className="max-w-lg w-full">
-          <DisplayContent
-            expandAll={true}
-            blinksDetail={post}
-            showMintDetails={true}
-            editable={true}
-          />
-        </div>
+    <div className="flex flex-col w-full items-center sm:py-4">
+      <div className="max-w-lg w-full">
+        <DisplayContent
+          expandAll={true}
+          blinksDetail={post}
+          showMintDetails={true}
+          editable={true}
+        />
       </div>
-    )
+    </div>
   );
 };
 

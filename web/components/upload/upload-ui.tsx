@@ -23,7 +23,7 @@ export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   return (
     <button
       onClick={() =>
-        router.push(`/post/create${mintId ? `?mintId=${mintId}` : ''}`)
+        router.push(`/post/create${mintId ? `?mint=${mintId}` : ''}`)
       }
       className="btn btn-sm btn-outline "
     >

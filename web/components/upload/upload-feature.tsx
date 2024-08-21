@@ -1,26 +1,25 @@
+'use client';
+
 import { Scope } from '@/utils/enums/das';
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
+import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { UploadPost } from './upload-ui';
-import { useGetPost } from './upload.data-access';
 
 interface UploadFeatureProps {
   mintId?: string;
   id?: string;
+  post: PostContent | undefined | null;
 }
 
-export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id }) => {
+export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
   const { publicKey } = useWallet();
   const { data: metadataQuery } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
-  });
-  const { data: post } = useGetPost({
-    mint: mintId ? new PublicKey(mintId) : null,
-    postId: id,
   });
   if (
     publicKey &&

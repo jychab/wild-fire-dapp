@@ -6,6 +6,7 @@ export const metadata = {
   title: 'HashFeed - Aidrop To Share',
   description:
     'Create a post and airdrop it directly to your audience wallets.',
+  metadataBase: new URL('https://hashfeed.social'),
 };
 
 export default function RootLayout({

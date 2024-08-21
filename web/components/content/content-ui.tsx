@@ -1,3 +1,5 @@
+'use client';
+
 import { sendLike } from '@/utils/firebase/functions';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
@@ -25,7 +27,7 @@ import { checkUrlIsValid } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
 interface DisplayContentProps {
-  blinksDetail: PostBlinksDetail;
+  blinksDetail: PostBlinksDetail | null | undefined;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -49,7 +51,7 @@ export const DisplayContent: FC<DisplayContentProps> = ({
   hideCarousel,
   hideUserPanel,
 }) => {
-  return checkUrlIsValid(blinksDetail.url) ? (
+  return blinksDetail && checkUrlIsValid(blinksDetail.url) ? (
     <Blinks
       actionUrl={new URL(blinksDetail.url)}
       blinksDetail={blinksDetail}
@@ -224,7 +226,7 @@ export const UserPanel: FC<{
                 <li>
                   <Link
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                    href={`/post/edit?mintId=${blinksDetail.mint}&id=${blinksDetail.id}`}
+                    href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
                   >
                     <IconEdit size={18} />
                     Edit

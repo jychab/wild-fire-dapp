@@ -1,11 +1,17 @@
-'use client';
-
 import UploadFeature from '@/components/upload/upload-feature';
-import { useSearchParams } from 'next/navigation';
+import { fetchPost } from '@/utils/helper/post';
 
-export default function page() {
-  const searchParams = useSearchParams();
-  const mintId = searchParams.get('mintId');
-  const id = searchParams.get('id');
-  return mintId && id && <UploadFeature mintId={mintId} id={id} />;
+type Props = {
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+export default async function Page({ searchParams }: Props) {
+  const { mint, id } = searchParams;
+  const post = await fetchPost(mint as string, id as string);
+  return (
+    <UploadFeature
+      mintId={mint as string | undefined}
+      id={id as string | undefined}
+      post={post}
+    />
+  );
 }

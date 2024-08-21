@@ -1,9 +1,9 @@
-'use client';
 import UploadFeature from '@/components/upload/upload-feature';
-import { useSearchParams } from 'next/navigation';
 
-export default function page() {
-  const searchParams = useSearchParams();
-  const mintId = searchParams.get('mintId');
-  return <UploadFeature mintId={mintId ? mintId : undefined} />;
+type Props = {
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+export default function Page({ searchParams }: Props) {
+  const { mint } = searchParams;
+  return <UploadFeature mintId={mint as string | undefined} post={undefined} />;
 }
