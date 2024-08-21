@@ -2,7 +2,7 @@
 
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { generateMintApiEndPoint, proxify } from '@/utils/helper/proxy';
+import { generateMintApiEndPoint } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
 import { getAccount } from '@solana/spl-token';
@@ -115,7 +115,7 @@ export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
     queryFn: async () => {
       if (!mint) return null;
       const uriMetadata = await (
-        await fetch(proxify(generateMintApiEndPoint(mint)))
+        await fetch(generateMintApiEndPoint(mint))
       ).json();
       let posts = uriMetadata as GetPostsResponse | undefined;
       return posts;
