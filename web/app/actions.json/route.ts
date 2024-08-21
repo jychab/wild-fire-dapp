@@ -3,7 +3,7 @@ export async function GET(request: any) {
     rules: [
       {
         pathPattern: '/post',
-        apiPath: 'http://api.hashfeed.social/post',
+        apiPath: 'https://api.hashfeed.social/post',
       },
     ],
   };
