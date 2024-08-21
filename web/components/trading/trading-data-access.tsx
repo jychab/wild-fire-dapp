@@ -1,5 +1,4 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
-import { proxify } from '@/utils/helper/proxy';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
@@ -100,9 +99,7 @@ export function useSwapMutation({
           // quoteResponse from /quote api
           quoteResponse: await (
             await fetch(
-              proxify(
-                `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
-              )
+              `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
             )
           ).json(),
           // user public key to be used for the swap
@@ -233,9 +230,7 @@ export function useSubscriptionMutation({
             // quoteResponse from /quote api
             quoteResponse: await (
               await fetch(
-                proxify(
-                  `https://quote-api.jup.ag/v6/quote?inputMint=${mint.toBase58()}&outputMint=${NATIVE_MINT.toBase58()}&amount=${account.amount.toString()}&slippageBps=50&swapMode=ExactIn`
-                )
+                `https://quote-api.jup.ag/v6/quote?inputMint=${mint.toBase58()}&outputMint=${NATIVE_MINT.toBase58()}&amount=${account.amount.toString()}&slippageBps=50&swapMode=ExactIn`
               )
             ).json(),
             // user public key to be used for the swap
@@ -395,9 +390,7 @@ export async function getQuote(
       return BigInt(0);
     }
     const response = await fetch(
-      proxify(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
-      )
+      `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
     );
     if (response.status == 200) {
       return BigInt((await response.json()).outAmount);
@@ -419,9 +412,7 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
     queryFn: async () => {
       if (!mint) return false;
       const result = await (
-        await fetch(
-          proxify(`https://price.jup.ag/v6/price?ids=${mint.toBase58()}`)
-        )
+        await fetch(`https://price.jup.ag/v6/price?ids=${mint.toBase58()}`)
       ).json();
       return result.data[mint.toBase58()] != undefined;
     },

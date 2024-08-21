@@ -495,7 +495,7 @@ export class ActionComponent {
   }
 
   public async post(account: string) {
-    const response = await fetch(proxify(this.href), {
+    const response = await fetch(this.href, {
       method: 'POST',
       body: JSON.stringify({ account } as ActionsSpecPostRequestBody),
       headers: {
