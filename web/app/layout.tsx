@@ -15,16 +15,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <title>HashFeed</title>
-        <meta property="og:title" content="Airdrop to share content" />
-        <meta property="og:type" content="blinks" />
-        <meta property="og:url" content="https://hashfeed.social" />
-        <meta
-          property="og:image"
-          content="https://buckets.hashfeed.social/CtiPMWDvrYm8SaWwuVJWWbq9qHCsGZjxVi4RShrgtyCY/media/9d441cd6-a8d0-499c-847d-5c399ef7c0ff"
-        />
-      </head>
       <body>
         <ReactQueryProvider>
           <SolanaProvider>

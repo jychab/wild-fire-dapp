@@ -32,5 +32,5 @@ export function generatePostApiEndPoint(mint: string, id: string) {
 }
 
 export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post/actions/subscribe?mint=${mint}&id=${id}`;
+  return `http://api.hashfeed.social/post/actions/subscribe?mint=${mint}&id=${id}`;
 }
