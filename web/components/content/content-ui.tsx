@@ -3,7 +3,7 @@
 import { sendLike } from '@/utils/firebase/functions';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
-import { PostBlinksDetail, PostContent } from '@/utils/types/post';
+import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
@@ -17,7 +17,7 @@ import {
 import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FC, RefObject, useState } from 'react';
+import { FC, RefObject, useCallback, useState } from 'react';
 import { Blinks } from '../blinks/blinks-feature';
 import { BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
@@ -278,91 +278,129 @@ export const CarouselContent: FC<{
   carouselRef,
 }) => {
   const router = useRouter();
+  const handleClick = useCallback(() => {
+    if (multiGrid && blinksDetail) {
+      router.push(`/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`);
+    }
+  }, [multiGrid, blinksDetail, router]);
+
+  if (
+    !post?.carousel ||
+    post.carousel.length === 0 ||
+    (multiGrid &&
+      post.carousel.length == 1 &&
+      post.carousel[0].fileType.startsWith('video/'))
+  ) {
+    return (
+      <div
+        onClick={handleClick}
+        className={`carousel ${
+          multiGrid && blinksDetail ? 'cursor-pointer' : ''
+        } w-full aspect-square h-auto bg-black`}
+      >
+        <BlinksStaticContent form={form} image={blinkImageUrl || post?.icon} />
+      </div>
+    );
+  }
+
   return (
     <div className="relative leading-[0]">
       <div
         ref={carouselRef}
-        onClick={() =>
-          multiGrid &&
-          blinksDetail &&
-          router.push(`/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`)
-        }
+        onClick={handleClick}
         className={`carousel ${
           multiGrid && blinksDetail ? 'cursor-pointer' : ''
-        } w-full aspect-square h-auto bg-base-content`}
+        } w-full aspect-square h-auto bg-black`}
       >
-        {!post?.carousel || post.carousel.length == 0 ? (
-          <BlinksStaticContent form={form} image={blinkImageUrl} />
-        ) : (
-          post.carousel.map((file, index) => (
-            <div
-              id={`${post.id}/${index}`}
-              key={file.uri}
-              className="carousel-item relative aspect-square items-center h-auto flex w-full"
-            >
-              {file.fileType.startsWith('image/') && (
-                <Image
-                  className={`object-contain`}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  src={file.uri}
-                  alt={''}
-                />
-              )}
-              {file.fileType.startsWith('video/') && (
-                <video
-                  width="300"
-                  height="300"
-                  className="w-full h-full rounded"
-                  autoPlay
-                  muted
-                  playsInline
-                  preload="auto"
-                >
-                  <source src={file.uri} type={file.fileType} />
-                  Your browser does not support the video tag.
-                </video>
-              )}
-              {!multiGrid && post.carousel && (
-                <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
-                  {index !== 0 ? (
-                    <button
-                      onClick={() => handleScroll(index - 1)}
-                      className="btn btn-circle btn-sm"
-                    >
-                      ❮
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-                  {index !== post.carousel.length - 1 ? (
-                    <button
-                      onClick={() => handleScroll(index + 1)}
-                      className="btn btn-circle btn-sm"
-                    >
-                      ❯
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-                </div>
-              )}
-            </div>
-          ))
-        )}
+        {post.carousel.map((file, index) => (
+          <CarouselItem
+            key={file.uri}
+            file={file}
+            index={index}
+            postId={post.id}
+            handleScroll={handleScroll}
+            showControls={
+              !multiGrid && !!post.carousel && post.carousel.length > 1
+            }
+            postLength={post.carousel?.length || 0}
+          />
+        ))}
       </div>
-      {post?.carousel && post.carousel.length > 1 && (
-        <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
-          {post.carousel.map((y, index) => (
-            <div
-              key={y.uri}
-              className={`w-2 h-2 rounded-full ${
-                index == currentIndex ? 'bg-base-300' : 'border border-base-300'
-              }`}
-            />
-          ))}
-        </div>
+      {post.carousel.length > 1 && (
+        <CarouselIndicators items={post.carousel} currentIndex={currentIndex} />
       )}
     </div>
   );
 };
+
+const CarouselItem: FC<{
+  file: Carousel;
+  index: number;
+  postId: string;
+  handleScroll: (index: number) => void;
+  showControls: boolean;
+  postLength: number;
+}> = ({ file, index, postId, handleScroll, showControls, postLength }) => (
+  <div
+    id={`${postId}/${index}`}
+    className="carousel-item relative aspect-square items-center h-auto flex w-full"
+  >
+    {file.fileType.startsWith('image/') && (
+      <Image
+        className="object-contain"
+        fill={true}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        src={file.uri}
+        alt=""
+      />
+    )}
+    {file.fileType.startsWith('video/') && (
+      <video
+        className="w-full h-full rounded"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+      >
+        <source src={file.uri} type={file.fileType} />
+        Your browser does not support the video tag.
+      </video>
+    )}
+    {showControls && (
+      <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
+        {index !== 0 && (
+          <button
+            onClick={() => handleScroll(index - 1)}
+            className="btn btn-circle btn-sm"
+          >
+            ❮
+          </button>
+        )}
+        {index !== postLength - 1 && (
+          <button
+            onClick={() => handleScroll(index + 1)}
+            className="btn btn-circle btn-sm"
+          >
+            ❯
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+);
+
+const CarouselIndicators: FC<{
+  items: Carousel[];
+  currentIndex: number;
+}> = ({ items, currentIndex }) => (
+  <div className="flex sm:hidden absolute bottom-4 left-1/2 -translate-x-1/2 transform gap-2 z-2 rounded">
+    {items.map((_, index) => (
+      <div
+        key={index}
+        className={`w-2 h-2 rounded-full ${
+          index === currentIndex ? 'bg-base-300' : 'border border-base-300'
+        }`}
+      />
+    ))}
+  </div>
+);

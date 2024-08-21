@@ -114,13 +114,25 @@ export const UploadPost: FC<{
   const captureThumbnail = useCallback(
     (id: string) => {
       const video = videoRefs.current[id];
-      if (video) {
+      if (video && video.readyState >= 2) {
+        const canvasSize = Math.max(video.videoWidth, video.videoHeight);
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.width = canvasSize;
+          canvas.height = canvasSize;
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const offsetX = (canvasSize - video.videoWidth) / 2;
+          const offsetY = (canvasSize - video.videoHeight) / 2;
+          ctx.drawImage(
+            video,
+            offsetX,
+            offsetY,
+            video.videoWidth,
+            video.videoHeight
+          );
+
           canvas.toBlob((blob) => {
             if (blob) {
               const thumbnail = new File([blob], `${id}-thumbnail.png`, {
@@ -145,6 +157,7 @@ export const UploadPost: FC<{
   const handleLoadedMetadata = useCallback(
     (id: string) => {
       const video = videoRefs.current[id];
+
       if (video) {
         video.currentTime = 1; // Seek to 1 second to capture the thumbnail
         video.addEventListener('seeked', () => captureThumbnail(id), {
@@ -283,7 +296,7 @@ export const UploadPost: FC<{
                     ))}
                   {file.fileType.startsWith('image/') && (
                     <Image
-                      className={`object-contain bg-base-content`}
+                      className={`object-contain bg-black`}
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       src={file.uri}
@@ -293,9 +306,7 @@ export const UploadPost: FC<{
                   {file.fileType.startsWith('video/') && (
                     <video
                       ref={handleVideoRef(file.id)}
-                      width="300"
-                      height="300"
-                      className="w-full h-full bg-base-content"
+                      className="w-full h-full bg-black"
                       autoPlay
                       muted
                       playsInline
@@ -353,7 +364,7 @@ export const UploadPost: FC<{
                 {file.fileType.startsWith('image') && (
                   <>
                     <Image
-                      className="cursor-pointer bg-base-content object-contain"
+                      className="cursor-pointer bg-black object-contain"
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       src={file.uri}
@@ -367,7 +378,7 @@ export const UploadPost: FC<{
                 {file.fileType.startsWith('video') && file.thumbnail && (
                   <>
                     <Image
-                      className="cursor-pointer bg-base-content object-contain"
+                      className="cursor-pointer bg-black object-contain"
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       src={file.thumbnail}
