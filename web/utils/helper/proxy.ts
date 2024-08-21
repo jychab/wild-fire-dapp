@@ -24,11 +24,11 @@ export function generateAddressApiEndPoint(address: PublicKey) {
 }
 
 export function generatePostEndPoint(mint: string, id: string) {
-  return `https://hashfeed.social/post/?mint=${mint}&id=${id}`;
+  return `https://hashfeed.social/post?mint=${mint}&id=${id}`;
 }
 
 export function generatePostApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post/?mint=${mint}&id=${id}`;
+  return `https://api.hashfeed.social/post?mint=${mint}&id=${id}`;
 }
 
 export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
