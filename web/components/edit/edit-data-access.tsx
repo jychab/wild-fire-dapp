@@ -127,9 +127,7 @@ export function useEditData({
             : undefined
         );
         if (!details) return; // update token metadata with using old token program
-        const uriMetadata = await (
-          await fetch(details.uri, { cache: 'no-cache' })
-        ).json();
+        const uriMetadata = await (await fetch(details.uri)).json();
         let fieldsToUpdate: [string, string][] = [];
         if (uriMetadata.name !== input.name) {
           fieldsToUpdate.push(['name', input.name]);

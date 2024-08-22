@@ -115,7 +115,7 @@ export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
     queryFn: async () => {
       if (!mint) return null;
       const uriMetadata = await (
-        await fetch(generateMintApiEndPoint(mint), { cache: 'no-cache' })
+        await fetch(generateMintApiEndPoint(mint))
       ).json();
       let posts = uriMetadata as GetPostsResponse | undefined;
       return posts;
