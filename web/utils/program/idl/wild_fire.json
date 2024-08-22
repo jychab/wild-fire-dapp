@@ -495,11 +495,11 @@
         },
         {
           "name": "event",
-          "type": "string"
+          "type": "u8"
         },
         {
           "name": "id",
-          "type": "string"
+          "type": "u32"
         }
       ]
     },
@@ -874,11 +874,11 @@
           },
           {
             "name": "event",
-            "type": "string"
+            "type": "u8"
           },
           {
             "name": "id",
-            "type": "string"
+            "type": "u32"
           }
         ]
       }

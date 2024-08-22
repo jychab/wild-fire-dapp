@@ -30,7 +30,7 @@ export const AirdropFeature: FC = () => {
 };
 
 export const AirdropCampaign: FC = () => {
-  const [id, setId] = useState<string | null>(null);
+  const [id, setId] = useState<number | null>(null);
   return (
     <div className="flex flex-col w-full gap-8 p-4">
       <CreateCampaignButton setId={setId} />

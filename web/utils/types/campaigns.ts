@@ -1,7 +1,7 @@
 import { Criteria, Eligibility } from '../enums/campaign';
 
 export interface Campaign {
-  id: string;
+  id: number;
   name: string;
   allocatedBudget: number;
   amount: number;

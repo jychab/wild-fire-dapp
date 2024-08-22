@@ -1,7 +1,7 @@
 export interface Transaction {
-  id: string;
+  id: number;
   amount: number;
-  event: string;
+  event: number;
   mint: string;
   to: string;
   createdAt: number;

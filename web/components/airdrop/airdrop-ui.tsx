@@ -13,7 +13,7 @@ import {
 } from './airdrop-data-access';
 
 export const CreateCampaignButton: FC<{
-  setId: Dispatch<SetStateAction<string | null>>;
+  setId: Dispatch<SetStateAction<number | null>>;
 }> = ({ setId }) => {
   return (
     <button
@@ -35,7 +35,7 @@ function openCampaignModal(): void {
 }
 
 export const CampaignTable: FC<{
-  setId: Dispatch<SetStateAction<string | null>>;
+  setId: Dispatch<SetStateAction<number | null>>;
 }> = ({ setId }) => {
   const { publicKey } = useWallet();
   const { data: campaigns, isLoading } = useGetCampaigns({
@@ -100,7 +100,7 @@ export const CampaignTable: FC<{
   );
 };
 
-export const CampaignModal: FC<{ id: string | null }> = ({ id }) => {
+export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
   const currentTime = Date.now();
   const [name, setName] = useState('');
   const [allocatedBudget, setAllocatedBudget] = useState('');

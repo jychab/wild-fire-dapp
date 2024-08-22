@@ -27,7 +27,7 @@ import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface CreateOrEditCampaignArgs {
-  id: string | null;
+  id: number | null;
   name: string;
   allocatedBudget: number;
   amount: number;
@@ -118,7 +118,7 @@ export function useCreateOrEditCampaign({
           });
         }
         await createOrEditCampaign(
-          input.id ? input.id : crypto.randomUUID(),
+          input.id ? input.id : Math.floor(Math.random() * 65536),
           input.name,
           input.allocatedBudget,
           input.amount,
@@ -182,7 +182,7 @@ export function useStopCampaign({ mint }: { mint: PublicKey | null }) {
         mint,
       },
     ],
-    mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
+    mutationFn: async ({ id, amount }: { id: number; amount: number }) => {
       if (!mint || !id || !wallet.publicKey || !wallet.signTransaction) return;
       let signature: TransactionSignature = 'Success';
       try {

@@ -1,5 +1,6 @@
 'use client';
 
+import { TransactionType } from '@/utils/enums/transactions';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -34,7 +35,13 @@ export const TransactionsTable: FC = () => {
             .map((x, index) => (
               <tr className="hover:bg-base-200" key={x.id}>
                 <th>{index + 1}</th>
-                <td>{x.event}</td>
+                <td>
+                  {
+                    Object.entries(TransactionType).find(
+                      (y) => y[0] == x.event.toString()
+                    )?.[1]
+                  }
+                </td>
                 <td>{formatLargeNumber(x.amount)}</td>
                 <td>{x.to}</td>
                 <td>{x.pending ? 'Yes' : 'No'}</td>

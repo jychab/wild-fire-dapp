@@ -6,7 +6,7 @@ import { Criteria, Eligibility } from '../enums/campaign';
 import { functions, storage } from './firebase';
 
 export async function createOrEditCampaign(
-  id: string,
+  id: number,
   name: string,
   allocatedBudget: number,
   amount: number,
@@ -28,12 +28,12 @@ export async function createOrEditCampaign(
   });
 }
 
-export async function deleteCampaign(id: string) {
+export async function deleteCampaign(id: number) {
   const deleteCampaign = httpsCallable(functions, 'deleteCampaign');
   await deleteCampaign({ id });
 }
 
-export async function withdrawFromCampaign(id: string, amount: number) {
+export async function withdrawFromCampaign(id: number, amount: number) {
   const withdrawFromCampaign = httpsCallable(functions, 'withdrawFromCampaign');
   const result = await withdrawFromCampaign({ id, amount });
   return result.data as { partialTx: string };

@@ -634,11 +634,11 @@ export type WildFire = {
         },
         {
           name: 'event';
-          type: 'string';
+          type: 'u8';
         },
         {
           name: 'id';
-          type: 'string';
+          type: 'u32';
         }
       ];
     },
@@ -1130,11 +1130,11 @@ export type WildFire = {
           },
           {
             name: 'event';
-            type: 'string';
+            type: 'u8';
           },
           {
             name: 'id';
-            type: 'string';
+            type: 'u32';
           }
         ];
       };
