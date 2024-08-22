@@ -1,3 +1,4 @@
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { generateAddressApiEndPoint } from '@/utils/helper/endpoints';
 import { GetPostsResponse } from '@/utils/types/post';
@@ -28,11 +29,9 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
       return 'Success';
     },
 
-    onSuccess: (signature) => {
+    onSuccess: async (signature) => {
       if (signature) {
-        transactionToast(signature);
-        router.push(`profile/?mintId=${mint?.toBase58()}`);
-        return Promise.all([
+        await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-posts-from-mint', { mint }],
           }),
@@ -40,6 +39,8 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
             queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
           }),
         ]);
+        transactionToast(signature);
+        router.push(`profile/?mintId=${mint?.toBase58()}`);
       }
     },
     onError: (error) => {
@@ -57,12 +58,11 @@ export const useGetPostsFromAddress = ({
     queryKey: ['get-posts-from-address', { address }],
     queryFn: async () => {
       if (!address) return null;
-      const result = await fetch(generateAddressApiEndPoint(address), {
-        cache: 'no-cache',
-      });
+      const result = await fetch(generateAddressApiEndPoint(address));
       const posts = (await result.json()) as GetPostsResponse | undefined;
       return posts;
     },
     enabled: !!address,
+    staleTime: SHORT_STALE_TIME,
   });
 };

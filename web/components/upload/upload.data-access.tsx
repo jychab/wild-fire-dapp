@@ -34,11 +34,9 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         return;
       }
     },
-    onSuccess: (input) => {
+    onSuccess: async (input) => {
       if (input) {
-        transactionToast('Success');
-        router.push(`/profile?mintId=${mint?.toBase58()}`);
-        return Promise.all([
+        await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-posts-from-mint', { mint }],
           }),
@@ -54,6 +52,8 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
           }),
         ]);
+        transactionToast('Success');
+        router.push(`/profile?mintId=${mint?.toBase58()}`);
       }
     },
     onError: (error) => {
