@@ -12,6 +12,7 @@ import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { Campaign } from '@/utils/types/campaigns';
 import {
   createTransferCheckedInstruction,
+  getAccount,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
@@ -85,22 +86,31 @@ export function useCreateOrEditCampaign({
             true,
             tokenProgram
           );
-          const ix = createTransferCheckedInstruction(
-            source,
-            mint,
+          const amount = input.allocatedBudget - (input.tokensRemaining || 0);
+          const destinationAccount = await getAccount(
+            connection,
             destination,
-            wallet.publicKey,
-            input.allocatedBudget - (input.tokensRemaining || 0),
-            0,
             undefined,
             tokenProgram
           );
-          signature = await buildAndSendTransaction({
-            connection,
-            ixs: [ix],
-            signTransaction: wallet.signTransaction,
-            publicKey: wallet.publicKey,
-          });
+          if (destinationAccount.amount < amount) {
+            const ix = createTransferCheckedInstruction(
+              source,
+              mint,
+              destination,
+              wallet.publicKey,
+              amount,
+              0,
+              undefined,
+              tokenProgram
+            );
+            signature = await buildAndSendTransaction({
+              connection,
+              ixs: [ix],
+              signTransaction: wallet.signTransaction,
+              publicKey: wallet.publicKey,
+            });
+          }
         } else if (input.id && input.tokensRemaining > input.allocatedBudget) {
           const difference = input.tokensRemaining - input.allocatedBudget;
           const { partialTx } = await withdrawFromCampaign(

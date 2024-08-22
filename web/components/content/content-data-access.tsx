@@ -1,6 +1,6 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
-import { generateAddressApiEndPoint } from '@/utils/helper/endpoints';
+import { generateAddressApiEndPoint, proxify } from '@/utils/helper/endpoints';
 import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -58,7 +58,7 @@ export const useGetPostsFromAddress = ({
     queryKey: ['get-posts-from-address', { address }],
     queryFn: async () => {
       if (!address) return null;
-      const result = await fetch(generateAddressApiEndPoint(address));
+      const result = await fetch(proxify(generateAddressApiEndPoint(address)));
       const posts = (await result.json()) as GetPostsResponse | undefined;
       return posts;
     },
