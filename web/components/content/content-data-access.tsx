@@ -1,4 +1,3 @@
-import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { generateAddressApiEndPoint } from '@/utils/helper/endpoints';
 import { GetPostsResponse } from '@/utils/types/post';
@@ -63,6 +62,5 @@ export const useGetPostsFromAddress = ({
       return posts;
     },
     enabled: !!address,
-    staleTime: SHORT_STALE_TIME, // 15 minutes
   });
 };

@@ -24,7 +24,6 @@ export function useGetBlinkAction({
       return Action.fetch(actionUrl);
     },
     enabled: enabled,
-    staleTime: LONG_STALE_TIME,
   });
 }
 

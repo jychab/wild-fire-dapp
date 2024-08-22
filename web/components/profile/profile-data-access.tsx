@@ -121,7 +121,6 @@ export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
       return posts;
     },
     enabled: !!mint,
-    staleTime: SHORT_STALE_TIME,
   });
 }
 
