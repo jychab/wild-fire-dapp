@@ -1,6 +1,7 @@
 'use client';
 
 import { createOrEditPost } from '@/utils/firebase/functions';
+import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -39,10 +40,15 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         router.push(`/profile?mintId=${mint?.toBase58()}`);
         return Promise.all([
           client.invalidateQueries({
-            queryKey: ['get-post', { mint, postId: input.id }],
+            queryKey: ['get-posts-from-mint', { mint }],
           }),
           client.invalidateQueries({
-            queryKey: ['get-posts-from-mint', { mint }],
+            queryKey: [
+              'get-blink-action',
+              {
+                actionUrl: generatePostApiEndPoint(mint!.toBase58(), input.id),
+              },
+            ],
           }),
           client.invalidateQueries({
             queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
