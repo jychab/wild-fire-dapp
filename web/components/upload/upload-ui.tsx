@@ -4,7 +4,7 @@ import { uploadMedia } from '@/utils/firebase/functions';
 import {
   generatePostEndPoint,
   generatePostSubscribeApiEndPoint,
-} from '@/utils/helper/proxy';
+} from '@/utils/helper/endpoints';
 import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';

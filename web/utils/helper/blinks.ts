@@ -24,7 +24,6 @@ import {
 } from '@solana/web3.js';
 import { Dispatch } from 'react';
 import { PostContent } from '../types/post';
-import { proxify } from './proxy';
 
 const solanaActionPrefix = /^(solana-action:|solana:)/;
 
@@ -408,7 +407,7 @@ export class Action {
 
   static async fetch(apiUrl: string) {
     try {
-      const response = await fetch(proxify(apiUrl), {
+      const response = await fetch(apiUrl, {
         headers: {
           Accept: 'application/json',
         },

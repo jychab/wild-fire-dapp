@@ -13,7 +13,7 @@ import {
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
-import { generateMintApiEndPoint } from '@/utils/helper/proxy';
+import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createMint,

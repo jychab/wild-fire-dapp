@@ -1,6 +1,6 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
-import { generateAddressApiEndPoint } from '@/utils/helper/proxy';
+import { generateAddressApiEndPoint } from '@/utils/helper/endpoints';
 import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';

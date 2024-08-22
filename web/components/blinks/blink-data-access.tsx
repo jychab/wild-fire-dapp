@@ -1,5 +1,4 @@
 import { LONG_STALE_TIME, MEDIUM_STALE_TIME } from '@/utils/consts';
-import { proxify } from '@/utils/helper/proxy';
 import {
   ActionsJsonConfig,
   ActionsRegistry,
@@ -41,7 +40,7 @@ export function useGetBlinkActionJsonUrl({
       const origin = actionUrl?.origin;
       const actionsJsonUrl = origin + '/actions.json';
       try {
-        const res = await fetch(proxify(actionsJsonUrl));
+        const res = await fetch(actionsJsonUrl);
         const actionsJson = (await res.json()) as ActionsJsonConfig;
         const actionUrlMapper = new ActionsURLMapper(actionsJson);
         return actionUrlMapper.mapUrl(actionUrl!);
@@ -141,8 +140,7 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
         interstitialsByHost: {},
       };
       try {
-        const response = await fetch(proxify(registryUrl));
-
+        const response = await fetch(registryUrl);
         let config;
         if (!response.ok) {
           console.error(

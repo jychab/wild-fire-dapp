@@ -2,7 +2,7 @@
 
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { generateMintApiEndPoint } from '@/utils/helper/proxy';
+import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
 import { getAccount } from '@solana/spl-token';

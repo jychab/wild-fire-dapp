@@ -3,7 +3,6 @@
 import { LONG_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { checkIfMetadataExist } from '@/utils/helper/format';
-import { proxify } from '@/utils/helper/proxy';
 import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
 import { getTokenMetadata } from '@solana/spl-token';
@@ -129,7 +128,7 @@ export function useEditData({
         );
         if (!details) return; // update token metadata with using old token program
         const uriMetadata = await (
-          await fetch(proxify(details.uri, true))
+          await fetch(details.uri, { cache: 'no-cache' })
         ).json();
         let fieldsToUpdate: [string, string][] = [];
         if (uriMetadata.name !== input.name) {

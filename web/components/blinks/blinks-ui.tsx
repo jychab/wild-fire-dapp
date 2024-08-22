@@ -1,6 +1,6 @@
 import { ExecutionType } from '@/utils/enums/blinks';
+import { generatePostSubscribeApiEndPoint } from '@/utils/helper/endpoints';
 import { convertUTCTimeToDayMonth } from '@/utils/helper/format';
-import { generatePostSubscribeApiEndPoint } from '@/utils/helper/proxy';
 import {
   ActionStateWithOrigin,
   ActionsRegistry,

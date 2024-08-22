@@ -1,5 +1,5 @@
 import { PostContent } from '../types/post';
-import { generatePostApiEndPoint } from './proxy';
+import { generatePostApiEndPoint } from './endpoints';
 
 export async function fetchPost(mint: string | null, postId: string | null) {
   if (!mint || !postId) return null;
