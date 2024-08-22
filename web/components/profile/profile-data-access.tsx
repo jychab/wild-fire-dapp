@@ -1,6 +1,6 @@
 'use client';
 
-import { SHORT_STALE_TIME } from '@/utils/consts';
+import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { DAS } from '@/utils/types/das';
@@ -105,7 +105,7 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
       return data || null;
     },
     enabled: !!mint,
-    staleTime: SHORT_STALE_TIME,
+    staleTime: LONG_STALE_TIME,
   });
 }
 
@@ -115,7 +115,7 @@ export function useGetPostsFromMint({ mint }: { mint: PublicKey | null }) {
     queryFn: async () => {
       if (!mint) return null;
       const uriMetadata = await (
-        await fetch(generateMintApiEndPoint(mint))
+        await fetch(generateMintApiEndPoint(mint), { cache: 'no-cache' })
       ).json();
       let posts = uriMetadata as GetPostsResponse | undefined;
       return posts;

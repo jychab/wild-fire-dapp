@@ -57,7 +57,9 @@ export const useGetPostsFromAddress = ({
     queryKey: ['get-posts-from-address', { address }],
     queryFn: async () => {
       if (!address) return null;
-      const result = await fetch(generateAddressApiEndPoint(address));
+      const result = await fetch(generateAddressApiEndPoint(address), {
+        cache: 'no-cache',
+      });
       const posts = (await result.json()) as GetPostsResponse | undefined;
       return posts;
     },
