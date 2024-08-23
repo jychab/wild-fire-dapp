@@ -638,7 +638,7 @@ export type WildFire = {
         },
         {
           name: 'id';
-          type: 'u32';
+          type: 'u64';
         }
       ];
     },
@@ -1134,7 +1134,7 @@ export type WildFire = {
           },
           {
             name: 'id';
-            type: 'u32';
+            type: 'u64';
           }
         ];
       };
