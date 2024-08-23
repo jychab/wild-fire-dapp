@@ -2,24 +2,21 @@ import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost } from '@/utils/firebase/functions';
 import { generateAddressApiEndPoint, proxify } from '@/utils/helper/endpoints';
 import { GetPostsResponse } from '@/utils/types/post';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
   const wallet = useWallet();
   const transactionToast = useTransactionToast();
   const client = useQueryClient();
   const router = useRouter();
-
   return useMutation({
     mutationKey: [
       'remove-mint-content',
       {
-        endpoint: connection.rpcEndpoint,
         mint,
       },
     ],

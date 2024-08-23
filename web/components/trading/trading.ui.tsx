@@ -438,11 +438,16 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                     </Link>
                   </td>
                   <td className="w-auto text-xs">
-                    {formatLargeNumber(x.uiAmount!)}
+                    {formatLargeNumber(
+                      Number(x.amount) /
+                        10 **
+                          (metadata?.token_info?.decimals ||
+                            DEFAULT_MINT_DECIMALS)
+                    )}
                   </td>
                   <td className="w-auto text-xs">
                     {`${(metadata.token_info?.supply
-                      ? (x.uiAmount! /
+                      ? (Number(x.amount) /
                           (metadata?.token_info?.supply /
                             10 **
                               (metadata?.token_info?.decimals ||

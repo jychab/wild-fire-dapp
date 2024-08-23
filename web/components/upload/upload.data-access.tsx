@@ -2,7 +2,7 @@
 
 import { createOrEditPost } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,6 @@ import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
   const transactionToast = useTransactionToast();
   const wallet = useWallet();
   const client = useQueryClient();
@@ -20,7 +19,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
     mutationKey: [
       'upload-mint-post',
       {
-        endpoint: connection.rpcEndpoint,
         mint,
       },
     ],

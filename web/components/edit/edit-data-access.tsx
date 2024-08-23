@@ -1,6 +1,5 @@
 'use client';
 
-import { LONG_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
@@ -215,14 +214,7 @@ export function useEditData({
       if (signature) {
         transactionToast(signature);
         router.push(`/profile?mintId=${mint?.toBase58()}`);
-        return Promise.all([
-          client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint },
-            ],
-          }),
-        ]);
+        return;
       }
     },
     onError: (error) => {
@@ -232,10 +224,8 @@ export function useEditData({
 }
 
 export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
-
   return useQuery({
-    queryKey: ['get-mint-token', { endpoint: connection.rpcEndpoint, mint }],
+    queryKey: ['get-mint-token', { mint }],
     queryFn: async () => {
       if (!mint) return null;
       const mintData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
@@ -248,7 +238,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         } as TokenState;
       }
     },
-    staleTime: LONG_STALE_TIME,
+    staleTime: Infinity,
     enabled: !!mint,
   });
 }

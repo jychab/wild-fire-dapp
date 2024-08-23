@@ -1,23 +1,19 @@
 'use client';
 
-import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { generateMintApiEndPoint, proxify } from '@/utils/helper/endpoints';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
-import { getAccount } from '@solana/spl-token';
+import { getMultipleAccounts } from '@solana/spl-token';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'get-mint-summary-details',
-      { endpoint: connection.rpcEndpoint, mint },
-    ],
+    queryKey: ['get-mint-summary-details', { mint }],
     queryFn: async () => {
       if (!mint) return null;
       const result = await getDoc(
@@ -56,17 +52,13 @@ export function useGetLargestAccountFromMint({
         mint,
         'confirmed'
       );
-      return Promise.all(
-        result.value.map(async (x) => {
-          const owner = (
-            await getAccount(connection, x.address, undefined, tokenProgram)
-          )?.owner;
-          return {
-            ...x,
-            owner,
-          };
-        })
+      const accounts = await getMultipleAccounts(
+        connection,
+        result.value.map((x) => x.address),
+        undefined,
+        tokenProgram
       );
+      return accounts;
     },
     staleTime: SHORT_STALE_TIME,
     enabled: !!mint && !!tokenProgram,
@@ -74,27 +66,14 @@ export function useGetLargestAccountFromMint({
 }
 
 export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-token-details', { endpoint: connection.rpcEndpoint, mint }],
+    queryKey: ['get-token-details', { mint }],
     queryFn: async () => {
       if (!mint) return null;
-      const response = await fetch(connection.rpcEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: '',
-          method: 'getAsset',
-          params: {
-            id: mint.toBase58(),
-          },
-        }),
-      });
-      const data = (await response.json()).result as DAS.GetAssetResponse;
-      if (!data) {
+      const docData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
+      if (docData.exists()) {
+        return JSON.parse(docData.data().das) as DAS.GetAssetResponse;
+      } else {
         const docData = await getDoc(
           doc(db, `Mint/${mint.toBase58()}/Temporary/Profile`)
         );
@@ -102,10 +81,10 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
           return { ...docData.data(), temporary: true } as DAS.GetAssetResponse;
         }
       }
-      return data || null;
+      return null;
     },
     enabled: !!mint,
-    staleTime: LONG_STALE_TIME,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 

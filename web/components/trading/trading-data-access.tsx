@@ -1,4 +1,3 @@
-import { SHORT_STALE_TIME } from '@/utils/consts';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
@@ -403,12 +402,8 @@ export async function getQuote(
 }
 
 export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
   return useQuery({
-    queryKey: [
-      'check-liquidity-pool-status',
-      { endpoint: connection.rpcEndpoint, mint },
-    ],
+    queryKey: ['check-liquidity-pool-status', { mint }],
     queryFn: async () => {
       if (!mint) return false;
       const result = await (
@@ -417,6 +412,5 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
       return result.data[mint.toBase58()] != undefined;
     },
     enabled: !!mint,
-    staleTime: SHORT_STALE_TIME,
   });
 }

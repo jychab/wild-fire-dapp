@@ -41,7 +41,6 @@ export function useCreateMintWithExistingToken({
 }: {
   address: PublicKey | null;
 }) {
-  const { connection } = useConnection();
   const router = useRouter();
   const client = useQueryClient();
   return useMutation({
@@ -59,10 +58,7 @@ export function useCreateMintWithExistingToken({
       router.push(`/profile?mintId=${result.toBase58()}`);
       return await Promise.all([
         client.invalidateQueries({
-          queryKey: [
-            'get-token-details',
-            { endpoint: connection.rpcEndpoint, mint: result },
-          ],
+          queryKey: ['get-token-details', { mint: result }],
         }),
       ]);
     },
@@ -139,10 +135,7 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
         router.push(`/profile?mintId=${result.mint.toBase58()}`);
         return await Promise.all([
           client.invalidateQueries({
-            queryKey: [
-              'get-token-details',
-              { endpoint: connection.rpcEndpoint, mint: result.mint },
-            ],
+            queryKey: ['get-token-details', { mint: result.mint }],
           }),
         ]);
       }
