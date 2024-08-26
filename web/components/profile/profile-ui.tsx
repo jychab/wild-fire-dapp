@@ -60,7 +60,8 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId }) => {
           posts={posts}
         />
       )}
-      {posts?.posts.length == 0 &&
+      {posts?.posts &&
+        posts?.posts.length == 0 &&
         ((isAuthorized(tokenStateData, publicKey, metadata) ||
           checkIfMetadataExist(metadata)) &&
         mintId ? (

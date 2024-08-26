@@ -45,7 +45,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
         multiGrid ? 'grid-cols-2 lg:grid-cols-5' : ''
       }`}
     >
-      {posts.posts.map((x) => (
+      {posts.posts?.map((x) => (
         <DisplayContent
           key={x.id}
           blinksDetail={x}

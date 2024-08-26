@@ -3,7 +3,7 @@ import { Eligibility } from '../enums/campaign';
 import { ActionCostEnum } from '../enums/post';
 
 export interface GetPostsResponse {
-  posts: PostBlinksDetail[]; // sorted actionUrls for a particular mint/address
+  posts: PostBlinksDetail[] | undefined; // sorted actionUrls for a particular mint/address
 }
 
 export interface PostBlinksDetail {
