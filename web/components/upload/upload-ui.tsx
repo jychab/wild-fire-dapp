@@ -101,7 +101,7 @@ export const UploadPost: FC<{
   }, []);
 
   useEffect(() => {
-    if (post && !filesLoaded && files.length === 0 && mint) {
+    if (post && !filesLoaded && files.length === 0) {
       if (post.carousel?.length) {
         const newFiles = post.carousel.map((x) =>
           x.fileType.startsWith('image/')
@@ -116,11 +116,6 @@ export const UploadPost: FC<{
         setFiles(newFiles);
         setDescription(post.description || '');
         setTitle(post.title || '');
-        setTempPost({
-          ...post,
-          id: id || crypto.randomUUID(),
-          mint: mint.toBase58(),
-        });
         setUseExistingBlink(false);
       } else if (post.url) {
         setUri(post.url);
@@ -128,6 +123,13 @@ export const UploadPost: FC<{
         setUseExistingBlink(true);
       }
       setFilesLoaded(true);
+    }
+    if (mint) {
+      setTempPost({
+        ...post,
+        id: id || crypto.randomUUID(),
+        mint: mint.toBase58(),
+      });
     }
   }, [post, filesLoaded, mint, id]);
 
@@ -661,6 +663,13 @@ export const AddActions: FC<{
         </button>
         <button
           onClick={() => {
+            if (
+              tempPost &&
+              tempPost.links?.actions[0].href ==
+                generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
+            ) {
+              tempPost.links.actions = [];
+            }
             setAction(ActionTypeEnum.REWARD);
           }}
           className={`badge badge-primary ${
@@ -827,7 +836,7 @@ export const OverallPostCampaignModal: FC<{
             placeholder="How many tokens do you want to give out?"
           />
           {`${
-            tempPost.campaign.budget
+            tempPost?.campaign?.budget
               ? `/ ${formatLargeNumber(tempPost.campaign.budget)} left`
               : ''
           }`}
@@ -872,9 +881,10 @@ export const OverallPostCampaignModal: FC<{
         <div className="flex items-center justify-end">
           <button
             onClick={() => {
+              if (!tempPost) return;
               const difference =
-                parseInt(allocatedBudget) -
-                (tempPost.campaign.tokensRemaining || 0);
+                (allocatedBudget != '' ? parseInt(allocatedBudget) : 0) -
+                  tempPost.campaign?.tokensRemaining || 0;
               setTempPost({
                 ...(tempPost || {}),
                 campaign: {
@@ -883,11 +893,11 @@ export const OverallPostCampaignModal: FC<{
                   mint: mint,
                   endDate: endDate,
                   eligibility: eligibility,
-                  budget: tempPost.campaign.budget
+                  budget: tempPost.campaign?.budget
                     ? tempPost.campaign.budget + difference
                     : difference,
                   tokensRemaining:
-                    (tempPost.campaign.tokensRemaining || 0) + difference,
+                    (tempPost.campaign?.tokensRemaining || 0) + difference,
                   amount: difference,
                 },
               });
@@ -1167,14 +1177,16 @@ export const ActionModal: FC<{
           <button
             onClick={() => {
               if (!tempPost) return;
-              const newActionQuery = buildActionQuery(additionalFields, amount);
+              if (
+                !query &&
+                tempPost.links?.actions.findIndex((x) => x.label == label) != -1
+              ) {
+                toast.error('Label needs to be unique!');
+                return;
+              }
+              const newActionQuery = buildActionQuery(additionalFields, label);
               let newLinkedAction = {
-                href:
-                  generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
-                  '&' +
-                  newActionQuery
-                    .map((q) => q.key + '=' + q.value || `{${q.key}}`)
-                    .join('&'),
+                href: createHref(tempPost, label, newActionQuery),
                 label: label,
                 parameters:
                   additionalFields.length > 0
@@ -1197,7 +1209,7 @@ export const ActionModal: FC<{
                         return {
                           linkedAction: JSON.stringify(newLinkedAction),
                           query: newActionQuery,
-                          amount: parseInt(amount),
+                          amount: amount != '' ? parseInt(amount) : 0,
                         };
                       }
                       return x;
@@ -1205,21 +1217,17 @@ export const ActionModal: FC<{
                   : (tempPost.campaign?.amountPerQuery || []).concat({
                       linkedAction: JSON.stringify(newLinkedAction),
                       query: newActionQuery,
-                      amount: parseInt(amount),
+                      amount: amount != '' ? parseInt(amount) : 0,
                     });
-              let existingLinkedActionIndex = tempPost.links?.actions.findIndex(
-                (x) => query && JSON.stringify(x) == JSON.stringify(query)
-              );
-              let newLinkedActions =
-                existingLinkedActionIndex != undefined &&
-                existingLinkedActionIndex != -1
-                  ? tempPost.links?.actions.map((x, index) => {
-                      if (index == existingLinkedActionIndex) {
-                        return newLinkedAction;
-                      }
-                      return x;
-                    }) || []
-                  : (tempPost.links?.actions || []).concat(newLinkedAction);
+
+              let newLinkedActions = query
+                ? tempPost.links?.actions.map((x) => {
+                    if (x.href == query.href) {
+                      return newLinkedAction;
+                    }
+                    return x;
+                  }) || []
+                : (tempPost.links?.actions || []).concat(newLinkedAction);
               setTempPost({
                 ...tempPost,
                 links: {
@@ -1247,6 +1255,19 @@ export const ActionModal: FC<{
   );
 };
 
+function createHref(
+  tempPost: PostContent,
+  label: string,
+  newActionQuery: { key: string; value?: string; validation?: string }[]
+) {
+  return (
+    generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
+    `&label=${label}` +
+    (newActionQuery.length > 0 ? '&' : '') +
+    newActionQuery.map((q) => q.key + '=' + q.value || `{${q.key}}`).join('&')
+  );
+}
+
 function buildActionQuery(
   additionalFields: {
     id: string;
@@ -1255,16 +1276,15 @@ function buildActionQuery(
     placeholder?: string;
     validation?: string;
   }[],
-  amount?: string
+  label: string
 ) {
-  const result = [];
-  let base: { key: string; value?: string; validation?: string } = {
-    key: 'amount',
-  };
-  if (amount) {
-    base['value'] = amount;
-  }
-  result.push(base);
+  const result: { key: string; value?: string; validation?: string }[] = [
+    {
+      key: 'label',
+      value: label,
+    },
+  ];
+
   additionalFields.forEach((x) =>
     result.push({ key: x.fieldName, validation: x.validation })
   );

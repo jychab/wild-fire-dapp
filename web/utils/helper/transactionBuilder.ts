@@ -112,7 +112,7 @@ export async function buildAndSendTransaction({
     ]);
     ixs.unshift(
       ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: Math.round(microLamports * 1.1),
+        microLamports: Math.round(microLamports),
       })
     );
     if (units) {

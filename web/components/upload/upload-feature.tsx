@@ -22,16 +22,17 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
   if (
-    publicKey &&
-    mintId &&
-    getDerivedMint(publicKey).toBase58() != mintId &&
-    !(
-      publicKey &&
-      metadataQuery?.authorities?.find(
-        (x) =>
-          x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
-      )?.address == publicKey.toBase58()
-    )
+    !publicKey ||
+    (publicKey &&
+      mintId &&
+      getDerivedMint(publicKey).toBase58() != mintId &&
+      !(
+        publicKey &&
+        metadataQuery?.authorities?.find(
+          (x) =>
+            x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
+        )?.address == publicKey.toBase58()
+      ))
   ) {
     return (
       <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">

@@ -111,6 +111,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             signTransaction: wallet.signTransaction,
           });
         }
+        delete input.campaign.amount;
         await createOrEditPost(mint.toBase58(), input);
         return { signature, input };
       } catch (error: unknown) {
