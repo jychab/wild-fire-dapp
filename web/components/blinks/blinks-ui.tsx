@@ -821,7 +821,7 @@ export const BlinksCaption: FC<{
             </span>
           )}
           {error && !success && (
-            <span className="mt-2 flex justify-center text-sm text-error">
+            <span className="mt-2 flex justify-center text-sm text-warning">
               {error}
             </span>
           )}

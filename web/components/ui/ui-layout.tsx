@@ -108,7 +108,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 />
               </div>
               <span className="hidden md:block text-2xl font-bold uppercase">
-                HashFeed
+                BlinksFeed
               </span>
             </Link>
             {publicKey && <SearchBar />}

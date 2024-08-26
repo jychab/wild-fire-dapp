@@ -1,27 +1,27 @@
 import { PublicKey } from '@solana/web3.js';
 
 export function generateMintApiEndPoint(mint: PublicKey) {
-  return `https://api.hashfeed.social/getPosts?mint=${mint.toBase58()}`;
+  return `https://api.blinksfeed.com/getPosts?mint=${mint.toBase58()}`;
 }
 
 export function generateAddressApiEndPoint(address: PublicKey) {
-  return `https://api.hashfeed.social/getPosts?address=${address.toBase58()}`;
+  return `https://api.blinksfeed.com/getPosts?address=${address.toBase58()}`;
 }
 
 export function generatePostEndPoint(mint: string, id: string) {
-  return `https://hashfeed.social/post?mint=${mint}&id=${id}`;
+  return `https://blinksfeed.com/post?mint=${mint}&id=${id}`;
 }
 
 export function generatePostApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post?mint=${mint}&id=${id}`;
+  return `https://api.blinksfeed.com/post?mint=${mint}&id=${id}`;
 }
 
 export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post/actions/subscribe?mint=${mint}&id=${id}`;
+  return `https://api.blinksfeed.com/post/actions/subscribe?mint=${mint}&id=${id}`;
 }
 
 export function generatePostTransferApiEndPoint(mint: string, id: string) {
-  return `https://api.hashfeed.social/post/actions/transfer?mint=${mint}&id=${id}`;
+  return `https://api.blinksfeed.com/post/actions/transfer?mint=${mint}&id=${id}`;
 }
 
 export function proxify(targetUrl: string) {

@@ -1262,7 +1262,6 @@ function createHref(
 ) {
   return (
     generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
-    `&label=${label}` +
     (newActionQuery.length > 0 ? '&' : '') +
     newActionQuery.map((q) => q.key + '=' + q.value || `{${q.key}}`).join('&')
   );

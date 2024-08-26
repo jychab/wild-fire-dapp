@@ -3,10 +3,10 @@ import { UiLayout } from '@/components/ui/ui-layout';
 import './global.css';
 import { ReactQueryProvider } from './react-query-provider';
 export const metadata = {
-  title: 'HashFeed - Aidrop To Share',
+  title: 'BlinksFeed - Every action in a feed',
   description:
     'Create a post and airdrop it directly to your audience wallets.',
-  metadataBase: new URL('https://hashfeed.social'),
+  metadataBase: new URL('https://blinksfeed.com'),
 };
 
 export default function RootLayout({

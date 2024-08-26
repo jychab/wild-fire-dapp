@@ -210,7 +210,7 @@ export async function buildTokenMetadata(
     name: input.name,
     symbol: input.symbol,
     uri: uri,
-    additionalMetadata: [['hashfeed', generateMintApiEndPoint(mint)]],
+    additionalMetadata: [['blinksfeed', generateMintApiEndPoint(mint)]],
     mint: mint,
   };
 }

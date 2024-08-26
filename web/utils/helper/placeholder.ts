@@ -1,2 +1,2 @@
 export const placeholderImage =
-  'https://buckets.hashfeed.social/placeholder.png';
+  'https://buckets.blinksfeed.com/placeholder.png';
