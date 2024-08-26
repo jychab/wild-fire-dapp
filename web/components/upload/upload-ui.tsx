@@ -1282,6 +1282,7 @@ function buildActionQuery(
     {
       key: 'label',
       value: label,
+      validation: label,
     },
   ];
 
