@@ -9,22 +9,24 @@ export async function createOrEditCampaign(
   id: number,
   name: string,
   allocatedBudget: number,
+  tokensRemaining: number,
   amount: number,
   criteria: Criteria,
   eligibility: Eligibility,
   startDate: number,
-  duration?: number
+  endDate?: number
 ) {
   const createOrEditCampaign = httpsCallable(functions, 'createOrEditCampaign');
   await createOrEditCampaign({
     id,
     name,
     allocatedBudget,
+    tokensRemaining,
     amount,
     criteria,
     eligibility,
     startDate,
-    duration,
+    endDate,
   });
 }
 
@@ -33,9 +35,13 @@ export async function deleteCampaign(id: number) {
   await deleteCampaign({ id });
 }
 
-export async function withdrawFromCampaign(id: number, amount: number) {
+export async function withdrawFromCampaign(
+  id: number,
+  amount: number,
+  postId?: string
+) {
   const withdrawFromCampaign = httpsCallable(functions, 'withdrawFromCampaign');
-  const result = await withdrawFromCampaign({ id, amount });
+  const result = await withdrawFromCampaign({ id, amount, postId });
   return result.data as { partialTx: string };
 }
 

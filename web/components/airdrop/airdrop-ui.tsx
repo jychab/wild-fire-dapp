@@ -108,7 +108,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
   const [criteria, setCriteria] = useState(Criteria.SUBSCRIBERS_ONLY);
   const [eligibility, setEligibility] = useState(Eligibility.REFRESHES_DAILY);
   const [startDate, setStartDate] = useState(currentTime);
-  const [endDate, setEndDate] = useState(currentTime);
+  const [endDate, setEndDate] = useState<number | undefined>();
   const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
   const { publicKey } = useWallet();
   const campaignMutation = useCreateOrEditCampaign({
@@ -126,7 +126,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
   useEffect(() => {
     if (id && campaign) {
       setName(campaign.name);
-      setAllocatedBudget(campaign.allocatedBudget.toString());
+      setAllocatedBudget(campaign.tokensRemaining.toString());
       setAmount(campaign.amount.toString());
       setCriteria(campaign.criteria);
       setEligibility(campaign.eligibility);
@@ -142,7 +142,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
       setCriteria(Criteria.SUBSCRIBERS_ONLY);
       setEligibility(Eligibility.REFRESHES_DAILY);
       setStartDate(currentTime);
-      setEndDate(currentTime);
+      setEndDate(undefined);
       setDuration(Duration.UNTILL_BUDGET_FINISHES);
     }
   }, [campaign, id]);
@@ -179,6 +179,11 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
             onChange={(e) => setAllocatedBudget(e.target.value)}
             placeholder=""
           />
+          {`${
+            campaign?.allocatedBudget
+              ? `/ ${formatLargeNumber(campaign.allocatedBudget)} left`
+              : ''
+          }`}
         </label>
         <label className="input input-bordered text-base flex items-center gap-2">
           Amount
@@ -245,7 +250,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
               id="campaign start date"
               className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
               onChange={(e) => setEndDate(Date.parse(e.target.value))}
-              value={getDDMMYYYY(new Date(endDate))}
+              value={getDDMMYYYY(new Date(endDate || startDate))}
               min={startDate}
             />
           </label>
@@ -274,22 +279,25 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
             <button
               disabled={campaignMutation.isPending}
               onClick={() => {
+                const difference =
+                  parseInt(allocatedBudget) - (campaign?.tokensRemaining || 0);
                 campaignMutation.mutateAsync({
                   id,
                   name: name,
-                  allocatedBudget: parseInt(allocatedBudget),
+                  allocatedBudget: campaign?.allocatedBudget
+                    ? campaign.allocatedBudget + difference
+                    : difference,
+                  tokensRemaining:
+                    (campaign?.tokensRemaining || 0) + difference,
                   amount: parseInt(amount),
                   criteria: criteria,
                   eligibility: eligibility,
                   startDate:
                     (startDate < currentTime ? currentTime : startDate) / 1000,
-                  duration:
-                    duration == Duration.CUSTOM_DATE
-                      ? (endDate -
-                          (startDate < currentTime ? currentTime : startDate)) /
-                        1000
-                      : undefined,
-                  tokensRemaining: id ? campaign?.tokensRemaining : undefined,
+                  endDate: endDate
+                    ? (endDate < currentTime ? currentTime : endDate) / 1000
+                    : undefined,
+                  difference,
                 });
               }}
               className="btn btn-success"

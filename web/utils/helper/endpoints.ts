@@ -20,6 +20,10 @@ export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
   return `https://api.hashfeed.social/post/actions/subscribe?mint=${mint}&id=${id}`;
 }
 
+export function generatePostTransferApiEndPoint(mint: string, id: string) {
+  return `https://api.hashfeed.social/post/actions/transfer?mint=${mint}&id=${id}`;
+}
+
 export function proxify(targetUrl: string) {
   // Encode the target URL to ensure it is safely passed as a query parameter
   const encodedTargetUrl = encodeURIComponent(targetUrl);

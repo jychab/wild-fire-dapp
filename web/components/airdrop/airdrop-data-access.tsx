@@ -11,6 +11,7 @@ import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { Campaign } from '@/utils/types/campaigns';
 import {
+  createAssociatedTokenAccountIdempotentInstruction,
   createTransferCheckedInstruction,
   getAccount,
   getAssociatedTokenAddressSync,
@@ -31,12 +32,13 @@ interface CreateOrEditCampaignArgs {
   id: number | null;
   name: string;
   allocatedBudget: number;
+  tokensRemaining: number;
   amount: number;
   criteria: Criteria;
   eligibility: Eligibility;
   startDate: number;
-  duration?: number;
-  tokensRemaining?: number;
+  endDate?: number;
+  difference?: number;
 }
 
 export function useCreateOrEditCampaign({
@@ -65,15 +67,14 @@ export function useCreateOrEditCampaign({
         !wallet.publicKey ||
         !wallet.signTransaction ||
         !input.allocatedBudget ||
-        !input.amount
+        !input.amount ||
+        !input.id
       )
         return;
-      let signature: TransactionSignature = 'Success';
+      let signature: TransactionSignature = '';
       try {
-        if (
-          !input.tokensRemaining ||
-          input.tokensRemaining < input.allocatedBudget
-        ) {
+        console.log(input);
+        if (input.difference && input.difference > 0) {
           const source = getAssociatedTokenAddressSync(
             mint,
             wallet.publicKey,
@@ -86,36 +87,47 @@ export function useCreateOrEditCampaign({
             true,
             tokenProgram
           );
-          const amount = input.allocatedBudget - (input.tokensRemaining || 0);
-          const destinationAccount = await getAccount(
-            connection,
-            destination,
-            undefined,
-            tokenProgram
-          );
-          if (destinationAccount.amount < amount) {
-            const ix = createTransferCheckedInstruction(
+          const ixs = [];
+          try {
+            await getAccount(
+              connection,
+              destination,
+              undefined,
+              TOKEN_2022_PROGRAM_ID
+            );
+          } catch (e) {
+            ixs.push(
+              createAssociatedTokenAccountIdempotentInstruction(
+                wallet.publicKey,
+                destination,
+                getAssociatedTokenStateAccount(mint),
+                mint,
+                TOKEN_2022_PROGRAM_ID
+              )
+            );
+          }
+          ixs.push(
+            createTransferCheckedInstruction(
               source,
               mint,
               destination,
               wallet.publicKey,
-              amount,
+              input.difference,
               0,
               undefined,
-              tokenProgram
-            );
-            signature = await buildAndSendTransaction({
-              connection,
-              ixs: [ix],
-              signTransaction: wallet.signTransaction,
-              publicKey: wallet.publicKey,
-            });
-          }
-        } else if (input.id && input.tokensRemaining > input.allocatedBudget) {
-          const difference = input.tokensRemaining - input.allocatedBudget;
+              TOKEN_2022_PROGRAM_ID
+            )
+          );
+          signature = await buildAndSendTransaction({
+            connection,
+            ixs,
+            signTransaction: wallet.signTransaction,
+            publicKey: wallet.publicKey,
+          });
+        } else if (input.difference && input.difference < 0) {
           const { partialTx } = await withdrawFromCampaign(
             input.id,
-            difference
+            input.difference
           );
           const partialSignedTx = VersionedTransaction.deserialize(
             Buffer.from(partialTx, 'base64')
@@ -131,11 +143,12 @@ export function useCreateOrEditCampaign({
           input.id ? input.id : Math.floor(Math.random() * 65536),
           input.name,
           input.allocatedBudget,
+          input.tokensRemaining,
           input.amount,
           input.criteria,
           input.eligibility,
           input.startDate,
-          input.duration
+          input.endDate
         );
         return { signature, mint };
       } catch (error: unknown) {
@@ -145,7 +158,7 @@ export function useCreateOrEditCampaign({
     },
     onSuccess: async (result) => {
       if (result) {
-        transactionToast(result.signature);
+        transactionToast(result.signature || 'Success');
         (
           document.getElementById('campaign_modal') as HTMLDialogElement
         ).close();
@@ -194,7 +207,7 @@ export function useStopCampaign({ mint }: { mint: PublicKey | null }) {
     ],
     mutationFn: async ({ id, amount }: { id: number; amount: number }) => {
       if (!mint || !id || !wallet.publicKey || !wallet.signTransaction) return;
-      let signature: TransactionSignature = 'Success';
+      let signature: TransactionSignature = '';
       try {
         const { partialTx } = await withdrawFromCampaign(id, amount);
         const partialSignedTx = VersionedTransaction.deserialize(

@@ -1,21 +1,47 @@
 'use client';
 
+import { Duration, Eligibility } from '@/utils/enums/campaign';
+import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
 import {
   generatePostEndPoint,
   generatePostSubscribeApiEndPoint,
+  generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
+import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
+import { generateRandomU64Number } from '@/utils/helper/post';
+import { Parameter } from '@/utils/types/blinks';
 import { PostContent } from '@/utils/types/post';
+import { LinkedAction } from '@solana/actions';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconPhoto, IconPlus, IconVideo, IconX } from '@tabler/icons-react';
+import {
+  IconDiscountCheck,
+  IconExclamationCircle,
+  IconPhoto,
+  IconPlus,
+  IconTrash,
+  IconVideo,
+  IconX,
+} from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Dispatch,
+  FC,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import toast from 'react-hot-toast';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { Blinks } from '../blinks/blinks-feature';
+import { ActionContent } from '../blinks/blinks-ui';
 import { CreateAccountBtn } from '../create/create-ui';
+import { SubscribeBtn } from '../profile/profile-ui';
 import { checkUrlIsValid, useUploadMutation } from './upload.data-access';
 
 export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
@@ -48,6 +74,7 @@ export const UploadPost: FC<{
   mint: PublicKey | null;
   id?: string;
 }> = ({ post, mint, id }) => {
+  const [tempPost, setTempPost] = useState<PostContent | any>();
   const [files, setFiles] = useState<UploadFileTypes[]>([]);
   const previousFilesRef = useRef(files);
   const [useExistingBlink, setUseExistingBlink] = useState(false);
@@ -56,6 +83,7 @@ export const UploadPost: FC<{
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const [filesLoaded, setFilesLoaded] = useState(false);
   const [uri, setUri] = useState('');
+  const [action, setAction] = useState(ActionTypeEnum.SUBSCRIBE);
 
   const updateFiles = useCallback((newFiles: any) => {
     setFiles((prevFiles) =>
@@ -73,7 +101,7 @@ export const UploadPost: FC<{
   }, []);
 
   useEffect(() => {
-    if (post && !filesLoaded && files.length === 0) {
+    if (post && !filesLoaded && files.length === 0 && mint) {
       if (post.carousel?.length) {
         const newFiles = post.carousel.map((x) =>
           x.fileType.startsWith('image/')
@@ -88,6 +116,11 @@ export const UploadPost: FC<{
         setFiles(newFiles);
         setDescription(post.description || '');
         setTitle(post.title || '');
+        setTempPost({
+          ...post,
+          id: id || crypto.randomUUID(),
+          mint: mint.toBase58(),
+        });
         setUseExistingBlink(false);
       } else if (post.url) {
         setUri(post.url);
@@ -96,7 +129,7 @@ export const UploadPost: FC<{
       }
       setFilesLoaded(true);
     }
-  }, [post, filesLoaded]);
+  }, [post, filesLoaded, mint, id]);
 
   useEffect(() => {
     if (uri) {
@@ -425,26 +458,47 @@ export const UploadPost: FC<{
             onChange={handleInputChange(setDescription)}
           />
         )}
+        {!useExistingBlink && (
+          <AddActions
+            tempPost={tempPost}
+            setTempPost={setTempPost}
+            action={action}
+            setAction={setAction}
+          />
+        )}
       </div>
       <UploadContentBtn
+        tempPost={tempPost}
         useExistingBlink={useExistingBlink}
         mint={mint}
         id={id}
         files={files}
         title={title}
         description={description}
+        action={action}
       />
     </div>
   );
 };
 const UploadContentBtn: FC<{
+  tempPost: PostContent;
   useExistingBlink: boolean;
   id?: string;
   mint: PublicKey | null;
   files: UploadFileTypes[];
   title: string;
   description: string;
-}> = ({ useExistingBlink, mint, files, id, title, description }) => {
+  action: ActionTypeEnum;
+}> = ({
+  useExistingBlink,
+  mint,
+  files,
+  id,
+  title,
+  description,
+  tempPost,
+  action,
+}) => {
   const { publicKey } = useWallet();
   const uploadMutation = useUploadMutation({ mint });
   const [loading, setLoading] = useState(false);
@@ -455,7 +509,7 @@ const UploadContentBtn: FC<{
     setLoading(true);
 
     try {
-      const postId = id || crypto.randomUUID();
+      const postId = tempPost.id;
       if (useExistingBlink) {
         const mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
         if (mediaUrl) {
@@ -468,6 +522,32 @@ const UploadContentBtn: FC<{
           toast.error('No Blinks Url Found');
         }
       } else if (publicKey) {
+        if (
+          !tempPost.links ||
+          tempPost.links.actions.length == 0 ||
+          action == ActionTypeEnum.SUBSCRIBE
+        ) {
+          tempPost.links = {
+            actions: [
+              {
+                href: generatePostSubscribeApiEndPoint(mint.toBase58(), postId),
+                label: 'Subscribe',
+              },
+            ],
+          };
+        } else {
+          if (!tempPost.campaign || !tempPost.campaign.budget) {
+            toast.error('No Budget Found');
+            return;
+          }
+          if (
+            tempPost.campaign.eligibility == Eligibility.ONCE_PER_ADDRESS &&
+            !tempPost.campaign.participants
+          ) {
+            tempPost.campaign.participants = [];
+          }
+        }
+
         const carousel = await Promise.all(
           files
             .filter((x) => x.id !== 'blinks')
@@ -496,6 +576,7 @@ const UploadContentBtn: FC<{
               )
             : carousel[0]!.uri;
           await uploadMutation.mutateAsync({
+            ...tempPost,
             icon: iconUrl,
             title,
             description,
@@ -504,17 +585,6 @@ const UploadContentBtn: FC<{
             mint: mint.toBase58(),
             id: postId,
             carousel,
-            links: {
-              actions: [
-                {
-                  href: generatePostSubscribeApiEndPoint(
-                    mint.toBase58(),
-                    postId
-                  ),
-                  label: 'Subscribe',
-                },
-              ],
-            },
           });
         }
       }
@@ -553,5 +623,712 @@ const UploadContentBtn: FC<{
         'Create Post'
       )}
     </button>
+  );
+};
+
+export const AddActions: FC<{
+  tempPost: PostContent | undefined;
+  setTempPost: Dispatch<SetStateAction<PostContent | undefined>>;
+  action: ActionTypeEnum;
+  setAction: Dispatch<SetStateAction<ActionTypeEnum>>;
+}> = ({ tempPost, setTempPost, action, setAction }) => {
+  const [selectedQuery, setSelectedQuery] = useState<LinkedAction>();
+
+  useEffect(() => {
+    if (tempPost?.links?.actions && tempPost.links?.actions.length > 0) {
+      setAction(
+        tempPost?.links?.actions[0].href ==
+          generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
+          ? ActionTypeEnum.SUBSCRIBE
+          : ActionTypeEnum.REWARD
+      );
+    }
+  }, [tempPost]);
+
+  return (
+    <div className="border rounded input-bordered p-4 flex flex-col gap-4">
+      <div className="flex items-center gap-2 ">
+        <span className="">Actions:</span>
+        <button
+          onClick={() => {
+            setAction(ActionTypeEnum.SUBSCRIBE);
+          }}
+          className={`badge badge-primary ${
+            action == ActionTypeEnum.SUBSCRIBE ? '' : 'badge-outline'
+          }`}
+        >
+          Subscribe
+        </button>
+        <button
+          onClick={() => {
+            setAction(ActionTypeEnum.REWARD);
+          }}
+          className={`badge badge-primary ${
+            action == ActionTypeEnum.REWARD ? '' : 'badge-outline'
+          }`}
+        >
+          Reward
+        </button>
+      </div>
+      <span className="text-sm">
+        {action == ActionTypeEnum.SUBSCRIBE
+          ? 'Users can click on this button to create an associated token account for your token.'
+          : 'Create customizable rewards for your users.'}
+      </span>
+      {action == ActionTypeEnum.REWARD && (
+        <div className="flex flex-col gap-4">
+          <div className="w-full flex items-center gap-2">
+            <button
+              onClick={() =>
+                (
+                  document.getElementById(
+                    'overall_post_campaign_modal'
+                  ) as HTMLDialogElement
+                ).showModal()
+              }
+              className="btn btn-sm btn-outline"
+            >
+              {tempPost?.campaign?.budget ? 'Edit' : 'Set'} Overall Budget
+            </button>
+            <div
+              className={`badge ${
+                tempPost?.campaign?.budget ? 'text-success' : 'text-warning'
+              }`}
+            >
+              {tempPost?.campaign?.budget ? (
+                <div className="flex items-center gap-2">
+                  <IconDiscountCheck />
+                  Completed
+                </div>
+              ) : (
+                <IconExclamationCircle />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {tempPost?.links?.actions.map((x, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (!x.parameters) {
+                    setSelectedQuery({ href: x.href, label: x.label });
+                  } else {
+                    setSelectedQuery(x);
+                  }
+                  (
+                    document.getElementById('action_modal') as HTMLDialogElement
+                  ).showModal();
+                }}
+                className="btn btn-sm btn-outline"
+              >
+                {x.label}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                setSelectedQuery(undefined);
+                (
+                  document.getElementById('action_modal') as HTMLDialogElement
+                ).showModal();
+              }}
+              className="btn btn-sm btn-outline"
+            >
+              <IconPlus /> Add Action
+            </button>
+          </div>
+        </div>
+      )}
+      Preview:
+      {action == ActionTypeEnum.REWARD && (
+        <PreviewBlinksActionButton actions={tempPost?.links?.actions} />
+      )}
+      {action == ActionTypeEnum.SUBSCRIBE && (
+        <SubscribeBtn mintId={tempPost?.mint || null} subscribeOnly={true} />
+      )}
+      {action == ActionTypeEnum.REWARD && (
+        <>
+          <OverallPostCampaignModal
+            tempPost={tempPost}
+            setTempPost={setTempPost}
+          />
+          <ActionModal
+            tempPost={tempPost}
+            query={selectedQuery}
+            setTempPost={setTempPost}
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+export const OverallPostCampaignModal: FC<{
+  tempPost: any | undefined;
+  setTempPost: Dispatch<SetStateAction<any>>;
+}> = ({ tempPost, setTempPost }) => {
+  const currentTime = Date.now();
+  const [mint, setMint] = useState('');
+  const [allocatedBudget, setAllocatedBudget] = useState('');
+  const [eligibility, setEligibility] = useState(Eligibility.ONCE_PER_ADDRESS);
+  const [endDate, setEndDate] = useState<number | undefined>();
+  const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
+  useEffect(() => {
+    if (tempPost) {
+      setMint(tempPost.mint);
+      setAllocatedBudget(tempPost.campaign?.tokensRemaining?.toString() || '');
+      setEligibility(
+        tempPost.campaign?.eligibility || Eligibility.ONCE_PER_ADDRESS
+      );
+      setEndDate(tempPost.campaign?.endDate);
+      setDuration(
+        tempPost.campaign?.endDate
+          ? Duration.CUSTOM_DATE
+          : Duration.UNTILL_BUDGET_FINISHES
+      );
+    } else {
+      setMint('');
+      setAllocatedBudget('');
+      setEligibility(Eligibility.ONCE_PER_ADDRESS);
+      setEndDate(undefined);
+      setDuration(Duration.UNTILL_BUDGET_FINISHES);
+    }
+  }, [tempPost]);
+
+  return (
+    <dialog id="overall_post_campaign_modal" className="modal">
+      <div className="modal-box flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-lg text-center">
+            {tempPost ? 'Edit Overall Budget' : 'Set Overall Budget'}
+          </span>
+          <form method="dialog">
+            <button>
+              <IconX />
+            </button>
+          </form>
+        </div>
+        <label className="input input-bordered text-base flex items-center gap-2">
+          Mint
+          <input
+            type="string"
+            className="grow text-end"
+            value={mint}
+            onChange={(e) => setMint(e.target.value)}
+            placeholder="Enter a mint address"
+          />
+        </label>
+        <label className="input input-bordered text-base flex items-center gap-2">
+          Budget
+          <input
+            type="number"
+            className="grow text-end"
+            value={allocatedBudget}
+            onChange={(e) => setAllocatedBudget(e.target.value)}
+            placeholder="How many tokens do you want to give out?"
+          />
+          {`${
+            tempPost.campaign.budget
+              ? `/ ${formatLargeNumber(tempPost.campaign.budget)} left`
+              : ''
+          }`}
+        </label>
+        <label className="flex px-2 justify-between items-center gap-2">
+          Elligibility
+          <select
+            value={eligibility}
+            onChange={(e) => setEligibility(e.target.value as Eligibility)}
+            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
+          >
+            {Object.entries(Eligibility).map((x) => (
+              <option key={x[0]}>{x[1]}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex px-2 justify-between items-center gap-2">
+          Duration
+          <select
+            value={duration}
+            onChange={(e) => setDuration(e.target.value as Duration)}
+            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
+          >
+            {Object.entries(Duration).map((x) => (
+              <option key={x[0]}>{x[1]}</option>
+            ))}
+          </select>
+        </label>
+        {duration == Duration.CUSTOM_DATE && (
+          <label className="flex px-2 justify-between items-center gap-2">
+            End Date
+            <input
+              type="date"
+              id="campaign start date"
+              className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
+              onChange={(e) => setEndDate(Date.parse(e.target.value))}
+              value={getDDMMYYYY(new Date(endDate || currentTime))}
+              min={currentTime}
+            />
+          </label>
+        )}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => {
+              const difference =
+                parseInt(allocatedBudget) -
+                (tempPost.campaign.tokensRemaining || 0);
+              setTempPost({
+                ...(tempPost || {}),
+                campaign: {
+                  id: generateRandomU64Number(),
+                  ...(tempPost?.campaign || {}),
+                  mint: mint,
+                  endDate: endDate,
+                  eligibility: eligibility,
+                  budget: tempPost.campaign.budget
+                    ? tempPost.campaign.budget + difference
+                    : difference,
+                  tokensRemaining:
+                    (tempPost.campaign.tokensRemaining || 0) + difference,
+                  amount: difference,
+                },
+              });
+              (
+                document.getElementById(
+                  'overall_post_campaign_modal'
+                ) as HTMLDialogElement
+              ).close();
+            }}
+            className="btn btn-primary btn-sm"
+          >
+            Set Budget
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+};
+
+export const ActionModal: FC<{
+  tempPost: PostContent | undefined;
+  setTempPost: Dispatch<SetStateAction<any>>;
+  query?: LinkedAction;
+}> = ({ tempPost, setTempPost, query }) => {
+  const action = tempPost?.campaign?.amountPerQuery?.find(
+    (x) => query && x.linkedAction == JSON.stringify(query)
+  );
+  const [amount, setAmount] = useState('');
+  const [additionalFields, setAdditionalFields] = useState<
+    {
+      id: string;
+      type: any;
+      fieldName: string;
+      placeholder?: string;
+      validation?: string;
+    }[]
+  >([]);
+  const [label, setLabel] = useState('');
+
+  useEffect(() => {
+    if (action) {
+      setAmount(Number.isNaN(action.amount) ? '' : action.amount.toString());
+    } else {
+      setAmount('');
+    }
+    if (query) {
+      setLabel(query.label);
+    } else {
+      setLabel('');
+    }
+    if (query && action) {
+      setAdditionalFields(
+        query.parameters?.map((x) => ({
+          type: x.type,
+          fieldName: x.name,
+          placeholder: x.label,
+          id: x.name,
+          validation: action.query.find((q) => q.key == x.name && !q.value)
+            ?.validation,
+        })) || []
+      );
+    } else {
+      setAdditionalFields([]);
+    }
+  }, [query, action]);
+
+  return (
+    <dialog id="action_modal" className="modal">
+      <div className="modal-box flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-lg text-center">
+            {action ? 'Edit Action Button' : 'Add Action Button'}
+          </span>
+          <form method="dialog">
+            <button>
+              <IconX />
+            </button>
+          </form>
+        </div>
+        <label className="input input-bordered text-base flex items-center gap-2">
+          Label
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            type="text"
+            className="grow text-end"
+            placeholder=""
+          />
+        </label>
+        <label className="input input-bordered text-base flex items-center gap-2">
+          Amount
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            type="number"
+            className="grow text-end"
+            placeholder="How much should each user receive?"
+          />
+        </label>
+        <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
+          {additionalFields.map((x, index) => (
+            <div
+              key={x.id}
+              className="border input-bordered rounded p-4 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between">
+                {`Additional Field ${index + 1}`}
+                <button
+                  onClick={() =>
+                    setAdditionalFields((previous) =>
+                      previous.filter((y) => y.id !== x.id)
+                    )
+                  }
+                >
+                  <IconTrash />
+                </button>
+              </div>
+              <label className="flex px-2 justify-between items-center gap-2">
+                Type
+                <select
+                  value={x.type}
+                  onChange={(e) =>
+                    setAdditionalFields((previous) =>
+                      previous.map((p) => {
+                        if (p.id == x.id) {
+                          return {
+                            ...p,
+                            type: e.target.value as
+                              | 'number'
+                              | 'text'
+                              | 'email'
+                              | 'url'
+                              | 'date'
+                              | 'datetime-local'
+                              | 'textarea',
+                          };
+                        }
+                        return p;
+                      })
+                    )
+                  }
+                  className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
+                >
+                  {[
+                    'number',
+                    'text',
+                    'email',
+                    'url',
+                    'date',
+                    'datetime-local',
+                    'textarea',
+                  ].map((x, index) => (
+                    <option key={index}>{x}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="input input-bordered text-base flex items-center gap-2">
+                {(x.type == 'datetime-local' || x.type == 'date') && (
+                  <span className="text-sm">Field Name</span>
+                )}
+                <input
+                  value={x.fieldName}
+                  onChange={(e) =>
+                    setAdditionalFields((previous) =>
+                      previous.map((p) => {
+                        if (p.id == x.id) {
+                          return {
+                            ...p,
+                            fieldName: e.target.value,
+                          };
+                        }
+                        return p;
+                      })
+                    )
+                  }
+                  type={x.type}
+                  className="grow"
+                  placeholder="Field Name"
+                />
+              </label>
+              <label className="input input-bordered text-base flex items-center gap-2">
+                {(x.type == 'datetime-local' || x.type == 'date') && (
+                  <span className="text-sm">Placeholder</span>
+                )}
+                <input
+                  value={x.placeholder}
+                  onChange={(e) =>
+                    setAdditionalFields((previous) =>
+                      previous.map((p) => {
+                        if (p.id == x.id) {
+                          return {
+                            ...p,
+                            placeholder: e.target.value,
+                          };
+                        }
+                        return p;
+                      })
+                    )
+                  }
+                  type="text"
+                  className="grow"
+                  placeholder="Placeholder"
+                />
+              </label>
+              <label className="input input-bordered text-base flex items-center gap-2">
+                {(x.type == 'datetime-local' || x.type == 'date') && (
+                  <span className="text-sm">Validation Text</span>
+                )}
+                <input
+                  value={x.validation}
+                  onChange={(e) =>
+                    setAdditionalFields((previous) =>
+                      previous.map((p) => {
+                        if (p.id == x.id) {
+                          return {
+                            ...p,
+                            validation: e.target.value,
+                          };
+                        }
+                        return p;
+                      })
+                    )
+                  }
+                  type={x.type}
+                  className="grow"
+                  placeholder="Validation Text"
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() =>
+            setAdditionalFields((previous) => [
+              ...previous,
+              {
+                validation: '',
+                fieldName: '',
+                placeholder: '',
+                type: 'text',
+                id: crypto.randomUUID(),
+              },
+            ])
+          }
+          className="btn w-fit btn-sm"
+        >
+          <IconPlus />
+          Add Additional Field
+        </button>
+        <div className="flex items-center justify-end gap-2">
+          {action && query && (
+            <button
+              onClick={() => {
+                setTempPost({
+                  ...(tempPost || {}),
+                  links: {
+                    actions: (tempPost?.links?.actions || []).filter(
+                      (x) => JSON.stringify(x) != JSON.stringify(query)
+                    ),
+                  },
+                  campaign: {
+                    ...(tempPost?.campaign || {}),
+                    amountPerQuery: tempPost?.campaign?.amountPerQuery.filter(
+                      (x) => x.linkedAction != JSON.stringify(query)
+                    ),
+                  },
+                });
+                (
+                  document.getElementById('action_modal') as HTMLDialogElement
+                ).close();
+              }}
+              className="btn btn-outline btn-sm"
+            >
+              Delete Action
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (!tempPost) return;
+              const newActionQuery = buildActionQuery(additionalFields, amount);
+              let newLinkedAction = {
+                href:
+                  generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
+                  '&' +
+                  newActionQuery
+                    .map((q) => q.key + '=' + q.value || `{${q.key}}`)
+                    .join('&'),
+                label: label,
+                parameters:
+                  additionalFields.length > 0
+                    ? additionalFields.map((x) => ({
+                        type: x.type,
+                        name: x.fieldName,
+                        label: x.placeholder,
+                      }))
+                    : undefined,
+              };
+              let existingAmountPerQueryIndex =
+                tempPost.campaign?.amountPerQuery?.findIndex(
+                  (x) => query && x.linkedAction == JSON.stringify(query)
+                );
+              let newAmountPerQuery =
+                existingAmountPerQueryIndex != undefined &&
+                existingAmountPerQueryIndex != -1
+                  ? tempPost.campaign?.amountPerQuery.map((x, index) => {
+                      if (index == existingAmountPerQueryIndex) {
+                        return {
+                          linkedAction: JSON.stringify(newLinkedAction),
+                          query: newActionQuery,
+                          amount: parseInt(amount),
+                        };
+                      }
+                      return x;
+                    }) || []
+                  : (tempPost.campaign?.amountPerQuery || []).concat({
+                      linkedAction: JSON.stringify(newLinkedAction),
+                      query: newActionQuery,
+                      amount: parseInt(amount),
+                    });
+              let existingLinkedActionIndex = tempPost.links?.actions.findIndex(
+                (x) => query && JSON.stringify(x) == JSON.stringify(query)
+              );
+              let newLinkedActions =
+                existingLinkedActionIndex != undefined &&
+                existingLinkedActionIndex != -1
+                  ? tempPost.links?.actions.map((x, index) => {
+                      if (index == existingLinkedActionIndex) {
+                        return newLinkedAction;
+                      }
+                      return x;
+                    }) || []
+                  : (tempPost.links?.actions || []).concat(newLinkedAction);
+              setTempPost({
+                ...tempPost,
+                links: {
+                  actions: newLinkedActions,
+                },
+                campaign: {
+                  ...tempPost?.campaign,
+                  amountPerQuery: newAmountPerQuery,
+                },
+              });
+              (
+                document.getElementById('action_modal') as HTMLDialogElement
+              ).close();
+              setAmount('');
+              setLabel('');
+              setAdditionalFields([]);
+            }}
+            className="btn btn-primary btn-sm"
+          >
+            {action ? 'Edit' : 'Add'} Action
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+};
+
+function buildActionQuery(
+  additionalFields: {
+    id: string;
+    type: any;
+    fieldName: string;
+    placeholder?: string;
+    validation?: string;
+  }[],
+  amount?: string
+) {
+  const result = [];
+  let base: { key: string; value?: string; validation?: string } = {
+    key: 'amount',
+  };
+  if (amount) {
+    base['value'] = amount;
+  }
+  result.push(base);
+  additionalFields.forEach((x) =>
+    result.push({ key: x.fieldName, validation: x.validation })
+  );
+  return result;
+}
+
+export const PreviewBlinksActionButton: FC<{
+  actions?: LinkedAction[];
+}> = ({ actions }) => {
+  const buttons = useMemo(
+    () => actions?.filter((it) => !it.parameters) ?? [],
+    [actions]
+  );
+  const inputs = useMemo(
+    () => actions?.filter((it) => it.parameters?.length === 1) ?? [],
+    [actions]
+  );
+  const form = useMemo(() => {
+    const [formComponent] =
+      actions?.filter((it) => it.parameters && it.parameters.length > 1) ?? [];
+    return formComponent;
+  }, [actions]);
+
+  const asButtonProps = (
+    it: LinkedAction
+  ): {
+    text: string | null;
+    loading?: boolean;
+    variant?: 'default' | 'success' | 'error';
+    disabled?: boolean;
+    onClick: (params?: Record<string, string>) => void;
+  } => ({
+    text: it.label,
+    loading: false,
+    disabled: false,
+    variant: 'default',
+    onClick: () => {},
+  });
+
+  const asInputProps = (it: LinkedAction, parameter?: Parameter) => {
+    const placeholder = !parameter ? it.label : parameter.label;
+    const name = !parameter ? it.label : parameter.name;
+
+    return {
+      // since we already filter this, we can safely assume that parameter is not null
+      placeholder,
+      disabled: false,
+      name,
+      button: !parameter ? asButtonProps(it) : undefined,
+    };
+  };
+
+  const asFormProps = (it: LinkedAction) => {
+    return {
+      button: asButtonProps(it),
+      inputs: it.parameters!.map((parameter) => asInputProps(it, parameter)),
+    };
+  };
+
+  return (
+    <ActionContent
+      buttons={buttons.map(asButtonProps)}
+      inputs={inputs.map((input) => asInputProps(input))}
+      form={form ? asFormProps(form) : undefined}
+    />
   );
 };

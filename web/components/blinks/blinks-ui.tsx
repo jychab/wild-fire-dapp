@@ -575,7 +575,7 @@ export const ActionLayout = ({
   );
 };
 
-const ActionContent = ({
+export const ActionContent = ({
   form,
   inputs,
   buttons,
@@ -613,7 +613,7 @@ const ActionForm = ({ form }: Required<Pick<LayoutProps, 'form'>>) => {
   const disabled = form.inputs.some((i) => i.required && values[i.name] === '');
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {form.inputs.map((input) => (
         <ActionInput
           key={input.name}
@@ -630,7 +630,7 @@ const ActionForm = ({ form }: Required<Pick<LayoutProps, 'form'>>) => {
   );
 };
 
-const ActionInput = ({
+export const ActionInput = ({
   placeholder,
   name,
   button,
@@ -655,7 +655,7 @@ const ActionInput = ({
         value={value}
         disabled={disabled}
         onChange={extendedChange}
-        className="text-base ml-4 flex-1 truncate bg-transparent outline-none placeholder:text-disabled disabled:text-disabled"
+        className="input text-base input-sm flex-1 truncate focus-within:outline-none bg-transparent border-none placeholder:text-disabled disabled:text-disabled"
       />
       {button && (
         <div className="my-1 mr-1">
@@ -670,7 +670,7 @@ const ActionInput = ({
   );
 };
 
-const ActionButton = ({
+export const ActionButton = ({
   text,
   loading,
   disabled,
@@ -740,7 +740,7 @@ export const Button = ({
       : '';
   return (
     <button
-      className={`${buttonStyle} ${variantStlye} btn btn-sm flex w-full items-center justify-center rounded-full font-semibold transition-colors motion-reduce:transition-none`}
+      className={`${buttonStyle} ${variantStlye} btn btn-sm w-full transition-colors motion-reduce:transition-none`}
       disabled={disabled}
       onClick={onClick}
     >

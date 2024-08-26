@@ -190,7 +190,7 @@ export function useSubscriptionMutation({
         mint,
       },
     ],
-    mutationFn: async () => {
+    mutationFn: async (subscribeOnly: boolean) => {
       if (!mint || !publicKey || !signTransaction) return null;
       let signature: TransactionSignature = '';
       const associatedTokenAddress = getAssociatedTokenAddressSync(
@@ -220,7 +220,11 @@ export function useSubscriptionMutation({
           ),
         ];
       }
-      if (account) {
+      if (subscribeOnly && !ixs) {
+        toast.error('Already Subscribed');
+        return;
+      }
+      if (account && !subscribeOnly) {
         try {
           if (account.amount == BigInt(0)) {
             throw new Error('Amount is zero');

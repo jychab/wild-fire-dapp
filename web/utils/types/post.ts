@@ -1,4 +1,6 @@
 import { ActionGetResponse } from '@solana/actions';
+import { Eligibility } from '../enums/campaign';
+import { ActionCostEnum } from '../enums/post';
 
 export interface GetPostsResponse {
   posts: PostBlinksDetail[]; // sorted actionUrls for a particular mint/address
@@ -15,11 +17,37 @@ export interface PostBlinksDetail {
   commentsCount?: number;
 }
 
-export interface PostContent extends ActionGetResponse, PostDetails {
+export interface PostContent
+  extends ActionGetResponse,
+    PostDetails,
+    PostCampaignDetails {
   carousel?: Carousel[];
-  onLoading?: string; // image to display on loading
-  onError?: string; // image to display on error
-  onCompletion?: string; // client will call this url on completion with the publickey -> to return an image string
+}
+
+export interface PostCampaignDetails {
+  cost?: {
+    type: ActionCostEnum;
+    mint: string;
+    tokenProgram: string;
+    decimals: number;
+    queries: { key: string; value?: string }[];
+    amount: number;
+  }[];
+  campaign?: {
+    amountPerQuery: {
+      linkedAction: string;
+      query: { key: string; value?: string; validation?: string }[];
+      amount: number;
+    }[];
+    endDate?: number;
+    eligibility: Eligibility;
+    participants: string[];
+    winners: string[];
+    budget: number;
+    mint: string;
+    tokensRemaining: number;
+    id: number;
+  };
 }
 
 export interface PostDetails extends PostBlinksDetail {

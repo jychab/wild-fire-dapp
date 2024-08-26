@@ -10,7 +10,6 @@ export interface Campaign {
   tokensRemaining: number;
   wallets: string[];
   startDate: number;
-  endDate: number;
-  duration?: number;
+  endDate?: number;
   softDelete: boolean;
 }

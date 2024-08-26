@@ -130,28 +130,6 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
     mint: mintId ? new PublicKey(mintId) : null,
   });
 
-  const tokenProgram = metadata?.token_info?.token_program
-    ? new PublicKey(metadata?.token_info?.token_program)
-    : undefined;
-
-  const { data: tokenInfo } = useGetTokenAccountInfo({
-    address:
-      metadata && publicKey && metadata.token_info
-        ? getAssociatedTokenAddressSync(
-            new PublicKey(metadata!.id),
-            publicKey,
-            false,
-            new PublicKey(metadata.token_info?.token_program!)
-          )
-        : null,
-    tokenProgram: tokenProgram,
-  });
-
-  const subscribeMutation = useSubscriptionMutation({
-    mint: mintId ? new PublicKey(mintId) : null,
-    tokenProgram: tokenProgram,
-  });
-
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
       <div className="w-40 h-40 items-center justify-center flex">
@@ -183,32 +161,7 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
         </div>
 
         <div className="flex items-center gap-2 ">
-          {metadata?.token_info && (
-            <button
-              disabled={subscribeMutation.isPending}
-              onClick={() => {
-                subscribeMutation.mutateAsync();
-              }}
-              className={`btn relative group ${
-                tokenInfo ? 'btn-success hover:btn-warning' : 'btn-primary'
-              } btn-sm w-32 `}
-            >
-              {subscribeMutation.isPending && (
-                <div className="loading loading-spinner" />
-              )}
-              {!subscribeMutation.isPending &&
-                (tokenInfo ? (
-                  <>
-                    <span className="hidden group-hover:block">
-                      Unsubscribe
-                    </span>
-                    <span className="block group-hover:hidden">Subscribed</span>
-                  </>
-                ) : (
-                  <span>Subscribe</span>
-                ))}
-            </button>
-          )}
+          <SubscribeBtn mintId={mintId} />
           {(isAuthorized(tokenStateData, publicKey, metadata) ||
             (publicKey && mintId == getDerivedMint(publicKey).toBase58())) && (
             <button
@@ -312,6 +265,63 @@ export const LockedContent: FC<{
           <CreateAccountBtn />
         </div>
       </div>
+    )
+  );
+};
+export const SubscribeBtn: FC<{
+  mintId: string | null;
+  subscribeOnly?: boolean;
+}> = ({ mintId, subscribeOnly = false }) => {
+  const { data: metadata } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
+  const tokenProgram = metadata?.token_info?.token_program
+    ? new PublicKey(metadata?.token_info?.token_program)
+    : undefined;
+  const { publicKey } = useWallet();
+  const { data: tokenInfo } = useGetTokenAccountInfo({
+    address:
+      metadata && publicKey && metadata.token_info
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(metadata!.id),
+            publicKey,
+            false,
+            new PublicKey(metadata.token_info?.token_program!)
+          )
+        : null,
+    tokenProgram: tokenProgram,
+  });
+
+  const subscribeMutation = useSubscriptionMutation({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+    tokenProgram: tokenProgram,
+  });
+  return (
+    !checkIfMetadataExist(metadata) && (
+      <button
+        disabled={subscribeMutation.isPending}
+        onClick={() => {
+          subscribeMutation.mutateAsync(subscribeOnly);
+        }}
+        className={`btn relative group ${
+          tokenInfo && !subscribeOnly
+            ? 'btn-success hover:btn-warning'
+            : 'btn-primary'
+        } btn-sm`}
+      >
+        {subscribeMutation.isPending && (
+          <div className="loading loading-spinner" />
+        )}
+        {!subscribeMutation.isPending &&
+          (tokenInfo && !subscribeOnly ? (
+            <>
+              <span className="hidden group-hover:block">Unsubscribe</span>
+              <span className="block group-hover:hidden">Subscribed</span>
+            </>
+          ) : (
+            <span>Subscribe</span>
+          ))}
+      </button>
     )
   );
 };
