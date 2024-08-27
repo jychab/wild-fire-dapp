@@ -171,21 +171,20 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     }
   }, [overallState, isPassingSecurityCheck]);
 
-  const filteredActions = action?.actions.filter(
-    (x) =>
+  const filteredActions = action?.actions.filter((x) => {
+    if (
       blinksDetail &&
-      !(
-        x.href ==
-          generatePostSubscribeApiEndPoint(
-            blinksDetail.mint,
-            blinksDetail.id
-          ) &&
-        tokenAccounts?.token_accounts &&
-        tokenAccounts.token_accounts.findIndex(
-          (x) => x.mint == blinksDetail.mint
-        ) != -1
-      )
-  );
+      tokenAccounts?.token_accounts &&
+      x.href ==
+        generatePostSubscribeApiEndPoint(blinksDetail.mint, blinksDetail.id) &&
+      tokenAccounts.token_accounts.findIndex(
+        (x) => x.mint == blinksDetail.mint
+      ) != -1
+    ) {
+      return false;
+    }
+    return true;
+  });
 
   const buttons = useMemo(
     () =>
@@ -199,6 +198,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
     [filteredActions, executionState.executingAction]
   );
+
   const inputs = useMemo(
     () =>
       filteredActions

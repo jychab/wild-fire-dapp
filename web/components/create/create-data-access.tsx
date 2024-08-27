@@ -54,11 +54,11 @@ export function useCreateMintWithExistingToken({
       await createOrUpdateAdminForExternalMint(mint.toBase58());
       return mint;
     },
-    onSuccess: async (result) => {
-      router.push(`/profile?mintId=${result.toBase58()}`);
+    onSuccess: async (mint) => {
+      router.push(`/profile?mintId=${mint.toBase58()}`);
       return await Promise.all([
         client.invalidateQueries({
-          queryKey: ['get-token-details', { mint: result }],
+          queryKey: ['get-token-details', { mint: mint }],
         }),
       ]);
     },

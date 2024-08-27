@@ -210,11 +210,15 @@ export function useEditData({
       }
     },
 
-    onSuccess: (signature) => {
+    onSuccess: async (signature) => {
       if (signature) {
         transactionToast(signature);
         router.push(`/profile?mintId=${mint?.toBase58()}`);
-        return;
+        return await Promise.all([
+          client.invalidateQueries({
+            queryKey: ['get-token-details', { mint: mint }],
+          }),
+        ]);
       }
     },
     onError: (error) => {

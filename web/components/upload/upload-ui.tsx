@@ -705,13 +705,13 @@ export const AddActions: FC<{
 
   return (
     <div className="border rounded input-bordered p-4 flex flex-col gap-4">
+      Actions:
       {renderActionButtons()}
       <span className="text-sm">
         {action === ActionTypeEnum.SUBSCRIBE
           ? 'Users can click on this button to create an associated token account for your token.'
           : 'Create customizable rewards for your users.'}
       </span>
-
       {action === ActionTypeEnum.REWARD && (
         <div className="flex flex-col gap-4">
           <div className="w-full flex items-center gap-2">
@@ -769,14 +769,12 @@ export const AddActions: FC<{
           </div>
         </div>
       )}
-
       <div>Preview:</div>
       {action === ActionTypeEnum.REWARD ? (
         <PreviewBlinksActionButton actions={tempPost?.links?.actions} />
       ) : (
         <SubscribeBtn mintId={tempPost?.mint || null} subscribeOnly={true} />
       )}
-
       {action === ActionTypeEnum.REWARD && (
         <>
           <OverallPostCampaignModal

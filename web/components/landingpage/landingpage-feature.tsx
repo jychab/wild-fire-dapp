@@ -41,6 +41,7 @@ export const LandingPage: FC = () => {
                     editable={false}
                     multiGrid={false}
                     hideBorder={true}
+                    expandAll={true}
                   />
                 ))}
               </div>
