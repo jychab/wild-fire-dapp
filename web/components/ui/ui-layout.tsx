@@ -1,10 +1,5 @@
 'use client';
 
-import { ReactNode, Suspense, useEffect, useRef } from 'react';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
 import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
@@ -13,8 +8,11 @@ import {
   signInWithCustomToken,
 } from 'firebase/auth';
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ReactNode, Suspense, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import logo from '../../images/logo.png';
+import logo from '../../public/images/logo.png';
 import { auth } from '../../utils/firebase/firebase';
 import {
   createLoginMessage,
@@ -96,19 +94,19 @@ export function UiLayout({ children }: { children: ReactNode }) {
         <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col w-full items-center">
           <div className="w-full navbar fixed flex items-center justify-between gap-4 z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
-            <Link className="flex items-end gap-1 w-fit" href="/">
-              <div className="relative w-8 h-8 justify-center items-center flex">
+            <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
+              <div className="relative w-8 h-8">
                 <Image
                   src={logo}
                   alt={'logo'}
                   priority={true}
-                  className={`object-cover rounded-full`}
+                  className={`object-cover`}
                   fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="100vw"
                 />
               </div>
-              <span className="hidden md:block text-2xl font-bold">
-                BlinksFeed
+              <span className="font-luckiestguy text-3xl font-bold leading-[0.75]">
+                Blinks Feed
               </span>
             </Link>
             {publicKey && <SearchBar />}

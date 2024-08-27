@@ -11,7 +11,12 @@ module.exports = {
     ...createGlobPatternsForDependencies(__dirname),
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Helvetica', 'Arial', 'sans-serif'],
+        luckiestguy: ['Luckiest Guy'],
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/typography'),

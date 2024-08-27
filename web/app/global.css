@@ -24,4 +24,9 @@ body {
     -webkit-appearance: none;
     margin: 0;
   }
+  @font-face {
+    font-family: 'Luckiest Guy';
+    font-weight: 400;
+    src: url('../public/fonts/LuckiestGuy-Regular.ttf');
+  }
 }
