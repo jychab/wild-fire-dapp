@@ -1,5 +1,7 @@
-export async function GET(request: any) {
-  const data = {
+import { ACTIONS_CORS_HEADERS, ActionsJson } from '@solana/actions';
+
+export const GET = async () => {
+  const data: ActionsJson = {
     rules: [
       {
         pathPattern: '/post',
@@ -8,24 +10,10 @@ export async function GET(request: any) {
     ],
   };
 
-  return new Response(JSON.stringify(data), {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers':
-        'Content-Type, Authorization, Content-Encoding, Accept-Encoding',
-      'Content-Type': 'application/json',
-    },
+  return Response.json(data, {
+    headers: ACTIONS_CORS_HEADERS,
   });
-}
+};
 
-export async function OPTIONS(request: any) {
-  return new Response('', {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers':
-        'Content-Type, Authorization, Content-Encoding, Accept-Encoding',
-    },
-  });
-}
+// ensures cors
+export const OPTIONS = GET;
