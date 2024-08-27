@@ -105,8 +105,8 @@ export function UiLayout({ children }: { children: ReactNode }) {
                   sizes="100vw"
                 />
               </div>
-              <span className="font-luckiestguy text-3xl font-bold leading-[0.75]">
-                Blinks Feed
+              <span className="hidden md:block font-luckiestguy text-3xl font-bold leading-[0.75]">
+                BlinksFeed
               </span>
             </Link>
             {publicKey && <SearchBar />}

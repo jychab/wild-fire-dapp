@@ -29,7 +29,7 @@ module.exports = {
     themes: [
       {
         light: {
-          primary: '#fb7185',
+          primary: '#111011',
           secondary: '#38bdf8',
           accent: '#f43f5e',
           neutral: '#e7e5e4',
@@ -37,20 +37,20 @@ module.exports = {
           info: '#d1d5db',
           success: '#4ade80',
           warning: '#fbbf24',
-          error: '#ff0000',
+          error: '#be123c',
         },
       },
       {
         dark: {
-          primary: '#fb7185',
+          primary: '#e7e5e4',
           secondary: '#38bdf8',
           accent: '#f4ef5e',
           neutral: '#292524',
-          'base-100': '#292929',
+          'base-100': '#111011',
           info: '#d1d5db',
           success: '#4ade80',
           warning: '#fbbf24',
-          error: '#ff0000',
+          error: '#be123c',
         },
       },
     ], // false: only light + dark | true: all themes | array: specific themes like this ["light", "dark", "cupcake"]

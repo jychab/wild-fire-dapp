@@ -636,30 +636,21 @@ export const AddActions: FC<{
 }> = ({ tempPost, setTempPost, action, setAction }) => {
   const [selectedQuery, setSelectedQuery] = useState<LinkedAction>();
 
-  function isNewPost(tempPost: PostContent | undefined) {
-    return !(
-      tempPost &&
-      tempPost.links?.actions &&
-      tempPost.links.actions.length > 0
-    );
-  }
-
-  function isSubscribeAction(tempPost: PostContent | undefined) {
+  function hasAction(tempPost: PostContent | undefined) {
     return (
-      tempPost &&
-      tempPost.links?.actions &&
-      tempPost.links?.actions.length > 0 &&
-      tempPost.links?.actions[0].href ===
-        generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
+      tempPost && tempPost.links?.actions && tempPost.links?.actions.length > 0
     );
   }
 
   // Memoize the current action to avoid unnecessary updates
   useEffect(() => {
-    if (isNewPost(tempPost) || isSubscribeAction(tempPost)) {
-      setAction(ActionTypeEnum.SUBSCRIBE);
-    } else {
-      setAction(ActionTypeEnum.REWARD);
+    if (hasAction(tempPost)) {
+      setAction(
+        tempPost!.links?.actions[0].href ==
+          generatePostSubscribeApiEndPoint(tempPost!.mint, tempPost!.id)
+          ? ActionTypeEnum.SUBSCRIBE
+          : ActionTypeEnum.REWARD
+      );
     }
   }, [tempPost]);
 
@@ -680,7 +671,11 @@ export const AddActions: FC<{
         label="Reward"
         isActive={action === ActionTypeEnum.REWARD}
         onClick={() => {
-          if (isSubscribeAction(tempPost)) {
+          if (
+            hasAction(tempPost) &&
+            tempPost!.links?.actions[0].href ==
+              generatePostSubscribeApiEndPoint(tempPost!.mint, tempPost!.id)
+          ) {
             setTempPost((prev) => {
               if (prev?.links) {
                 prev.links = { actions: [] };
@@ -727,18 +722,23 @@ export const AddActions: FC<{
               {tempPost?.campaign?.budget ? 'Edit' : 'Set'} Overall Budget
             </button>
             <div
-              className={`badge ${
+              className={`${
                 tempPost?.campaign?.budget ? 'text-success' : 'text-warning'
               }`}
             >
-              {tempPost?.campaign?.budget ? (
-                <div className="flex items-center gap-2">
-                  <IconDiscountCheck />
-                  Completed
-                </div>
-              ) : (
-                <IconExclamationCircle />
-              )}
+              <div className="flex items-center gap-2">
+                {tempPost?.campaign?.budget ? (
+                  <>
+                    <IconDiscountCheck />
+                    Completed
+                  </>
+                ) : (
+                  <>
+                    <IconExclamationCircle />
+                    Budget not found
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -809,22 +809,18 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   const [campaignDetails, setCampaignDetails] = useState({
     mint: '',
     allocatedBudget: '',
-    eligibility: Eligibility.ONCE_PER_ADDRESS,
     endDate: undefined as number | undefined,
     duration: Duration.UNTILL_BUDGET_FINISHES,
   });
 
   // Destructuring state for easier access
-  const { mint, allocatedBudget, eligibility, endDate, duration } =
-    campaignDetails;
+  const { mint, allocatedBudget, endDate, duration } = campaignDetails;
 
   useEffect(() => {
     if (tempPost) {
       setCampaignDetails({
         mint: tempPost.mint,
         allocatedBudget: tempPost.campaign?.tokensRemaining?.toString() || '',
-        eligibility:
-          tempPost.campaign?.eligibility || Eligibility.ONCE_PER_ADDRESS,
         endDate: tempPost.campaign?.endDate,
         duration: tempPost.campaign?.endDate
           ? Duration.CUSTOM_DATE
@@ -839,7 +835,6 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     setCampaignDetails({
       mint: '',
       allocatedBudget: '',
-      eligibility: Eligibility.ONCE_PER_ADDRESS,
       endDate: undefined,
       duration: Duration.UNTILL_BUDGET_FINISHES,
     });
@@ -866,7 +861,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         ...(tempPost?.campaign || {}),
         mint,
         endDate: endDate ? endDate / 1000 : undefined,
-        eligibility,
+        eligibility: Eligibility.ONCE_PER_ADDRESS,
         budget: currentBudget + difference,
         tokensRemaining: currentTokensRemaining + difference,
         amount: difference,
@@ -920,17 +915,6 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
               : ''
           }
         />
-
-        <SelectField
-          label="Eligibility"
-          value={eligibility}
-          onChange={(e) => handleInputChange('eligibility', e.target.value)}
-          options={Object.entries(Eligibility).map(([key, value]) => ({
-            key,
-            value,
-          }))}
-        />
-
         <SelectField
           label="Duration"
           value={duration}
