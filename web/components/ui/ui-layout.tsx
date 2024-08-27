@@ -107,7 +107,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
-              <span className="hidden md:block text-2xl font-bold uppercase">
+              <span className="hidden md:block text-2xl font-bold">
                 BlinksFeed
               </span>
             </Link>

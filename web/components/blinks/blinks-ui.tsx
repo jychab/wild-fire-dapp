@@ -552,7 +552,6 @@ export const ActionLayout = ({
                 error={error}
                 multiGrid={multiGrid}
                 expandAll={expandAll}
-                post={post}
               />
             )}
           </div>
@@ -762,7 +761,6 @@ export const BlinksCaption: FC<{
   error: string | null | undefined;
   multiGrid: boolean;
   expandAll: boolean;
-  post: PostContent | undefined;
   blinksDetail: PostBlinksDetail | undefined;
 }> = ({
   expandAll,
@@ -777,7 +775,6 @@ export const BlinksCaption: FC<{
   inputs,
   buttons,
   multiGrid,
-  post,
   disclaimer,
   blinksDetail,
 }) => {

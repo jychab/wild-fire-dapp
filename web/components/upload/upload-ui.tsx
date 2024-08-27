@@ -636,65 +636,92 @@ export const AddActions: FC<{
 }> = ({ tempPost, setTempPost, action, setAction }) => {
   const [selectedQuery, setSelectedQuery] = useState<LinkedAction>();
 
+  function isNewPost(tempPost: PostContent | undefined) {
+    return !(
+      tempPost &&
+      tempPost.links?.actions &&
+      tempPost.links.actions.length > 0
+    );
+  }
+
+  function isSubscribeAction(tempPost: PostContent | undefined) {
+    return (
+      tempPost &&
+      tempPost.links?.actions &&
+      tempPost.links?.actions.length > 0 &&
+      tempPost.links?.actions[0].href ===
+        generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
+    );
+  }
+
+  // Memoize the current action to avoid unnecessary updates
   useEffect(() => {
-    if (tempPost?.links?.actions && tempPost.links?.actions.length > 0) {
-      setAction(
-        tempPost?.links?.actions[0].href ==
-          generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
-          ? ActionTypeEnum.SUBSCRIBE
-          : ActionTypeEnum.REWARD
-      );
+    if (isNewPost(tempPost) || isSubscribeAction(tempPost)) {
+      setAction(ActionTypeEnum.SUBSCRIBE);
+    } else {
+      setAction(ActionTypeEnum.REWARD);
     }
   }, [tempPost]);
 
+  // Helper to show a modal by id
+  const showModalById = (id: string) => {
+    (document.getElementById(id) as HTMLDialogElement).showModal();
+  };
+
+  // Render the action buttons (Subscribe and Reward)
+  const renderActionButtons = () => (
+    <div className="flex items-center gap-2">
+      <ActionButton
+        label="Subscribe"
+        isActive={action === ActionTypeEnum.SUBSCRIBE}
+        onClick={() => setAction(ActionTypeEnum.SUBSCRIBE)}
+      />
+      <ActionButton
+        label="Reward"
+        isActive={action === ActionTypeEnum.REWARD}
+        onClick={() => {
+          if (isSubscribeAction(tempPost)) {
+            setTempPost((prev) => {
+              if (prev?.links) {
+                prev.links = { actions: [] };
+              }
+              return prev ? { ...prev } : undefined;
+            });
+          }
+          setAction(ActionTypeEnum.REWARD);
+        }}
+      />
+    </div>
+  );
+
+  // Helper component for rendering individual action buttons
+  const ActionButton: FC<{
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+  }> = ({ label, isActive, onClick }) => (
+    <button
+      onClick={onClick}
+      className={`badge badge-primary ${isActive ? '' : 'badge-outline'}`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="border rounded input-bordered p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-2 ">
-        <span className="">Actions:</span>
-        <button
-          onClick={() => {
-            setAction(ActionTypeEnum.SUBSCRIBE);
-          }}
-          className={`badge badge-primary ${
-            action == ActionTypeEnum.SUBSCRIBE ? '' : 'badge-outline'
-          }`}
-        >
-          Subscribe
-        </button>
-        <button
-          onClick={() => {
-            if (
-              tempPost &&
-              tempPost.links?.actions[0].href ==
-                generatePostSubscribeApiEndPoint(tempPost.mint, tempPost.id)
-            ) {
-              tempPost.links.actions = [];
-            }
-            setAction(ActionTypeEnum.REWARD);
-          }}
-          className={`badge badge-primary ${
-            action == ActionTypeEnum.REWARD ? '' : 'badge-outline'
-          }`}
-        >
-          Reward
-        </button>
-      </div>
+      {renderActionButtons()}
       <span className="text-sm">
-        {action == ActionTypeEnum.SUBSCRIBE
+        {action === ActionTypeEnum.SUBSCRIBE
           ? 'Users can click on this button to create an associated token account for your token.'
           : 'Create customizable rewards for your users.'}
       </span>
-      {action == ActionTypeEnum.REWARD && (
+
+      {action === ActionTypeEnum.REWARD && (
         <div className="flex flex-col gap-4">
           <div className="w-full flex items-center gap-2">
             <button
-              onClick={() =>
-                (
-                  document.getElementById(
-                    'overall_post_campaign_modal'
-                  ) as HTMLDialogElement
-                ).showModal()
-              }
+              onClick={() => showModalById('overall_post_campaign_modal')}
               className="btn btn-sm btn-outline"
             >
               {tempPost?.campaign?.budget ? 'Edit' : 'Set'} Overall Budget
@@ -714,19 +741,16 @@ export const AddActions: FC<{
               )}
             </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
             {tempPost?.links?.actions.map((x, index) => (
               <button
                 key={index}
                 onClick={() => {
-                  if (!x.parameters) {
-                    setSelectedQuery({ href: x.href, label: x.label });
-                  } else {
-                    setSelectedQuery(x);
-                  }
-                  (
-                    document.getElementById('action_modal') as HTMLDialogElement
-                  ).showModal();
+                  setSelectedQuery(
+                    !x.parameters ? { href: x.href, label: x.label } : x
+                  );
+                  showModalById('action_modal');
                 }}
                 className="btn btn-sm btn-outline"
               >
@@ -736,9 +760,7 @@ export const AddActions: FC<{
             <button
               onClick={() => {
                 setSelectedQuery(undefined);
-                (
-                  document.getElementById('action_modal') as HTMLDialogElement
-                ).showModal();
+                showModalById('action_modal');
               }}
               className="btn btn-sm btn-outline"
             >
@@ -747,14 +769,15 @@ export const AddActions: FC<{
           </div>
         </div>
       )}
-      Preview:
-      {action == ActionTypeEnum.REWARD && (
+
+      <div>Preview:</div>
+      {action === ActionTypeEnum.REWARD ? (
         <PreviewBlinksActionButton actions={tempPost?.links?.actions} />
-      )}
-      {action == ActionTypeEnum.SUBSCRIBE && (
+      ) : (
         <SubscribeBtn mintId={tempPost?.mint || null} subscribeOnly={true} />
       )}
-      {action == ActionTypeEnum.REWARD && (
+
+      {action === ActionTypeEnum.REWARD && (
         <>
           <OverallPostCampaignModal
             tempPost={tempPost}
@@ -771,44 +794,104 @@ export const AddActions: FC<{
   );
 };
 
-export const OverallPostCampaignModal: FC<{
+interface OverallPostCampaignModalProps {
   tempPost: any | undefined;
   setTempPost: Dispatch<SetStateAction<any>>;
-}> = ({ tempPost, setTempPost }) => {
+}
+
+export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
+  tempPost,
+  setTempPost,
+}) => {
   const currentTime = Date.now();
-  const [mint, setMint] = useState('');
-  const [allocatedBudget, setAllocatedBudget] = useState('');
-  const [eligibility, setEligibility] = useState(Eligibility.ONCE_PER_ADDRESS);
-  const [endDate, setEndDate] = useState<number | undefined>();
-  const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
+
+  // Initializing state with a single useState call for all form fields
+  const [campaignDetails, setCampaignDetails] = useState({
+    mint: '',
+    allocatedBudget: '',
+    eligibility: Eligibility.ONCE_PER_ADDRESS,
+    endDate: undefined as number | undefined,
+    duration: Duration.UNTILL_BUDGET_FINISHES,
+  });
+
+  // Destructuring state for easier access
+  const { mint, allocatedBudget, eligibility, endDate, duration } =
+    campaignDetails;
+
   useEffect(() => {
     if (tempPost) {
-      setMint(tempPost.mint);
-      setAllocatedBudget(tempPost.campaign?.tokensRemaining?.toString() || '');
-      setEligibility(
-        tempPost.campaign?.eligibility || Eligibility.ONCE_PER_ADDRESS
-      );
-      setEndDate(tempPost.campaign?.endDate);
-      setDuration(
-        tempPost.campaign?.endDate
+      setCampaignDetails({
+        mint: tempPost.mint,
+        allocatedBudget: tempPost.campaign?.tokensRemaining?.toString() || '',
+        eligibility:
+          tempPost.campaign?.eligibility || Eligibility.ONCE_PER_ADDRESS,
+        endDate: tempPost.campaign?.endDate,
+        duration: tempPost.campaign?.endDate
           ? Duration.CUSTOM_DATE
-          : Duration.UNTILL_BUDGET_FINISHES
-      );
+          : Duration.UNTILL_BUDGET_FINISHES,
+      });
     } else {
-      setMint('');
-      setAllocatedBudget('');
-      setEligibility(Eligibility.ONCE_PER_ADDRESS);
-      setEndDate(undefined);
-      setDuration(Duration.UNTILL_BUDGET_FINISHES);
+      resetForm();
     }
   }, [tempPost]);
+
+  const resetForm = () => {
+    setCampaignDetails({
+      mint: '',
+      allocatedBudget: '',
+      eligibility: Eligibility.ONCE_PER_ADDRESS,
+      endDate: undefined,
+      duration: Duration.UNTILL_BUDGET_FINISHES,
+    });
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setCampaignDetails((prevDetails) => ({
+      ...prevDetails,
+      [field]: value,
+    }));
+  };
+
+  const handleBudgetSubmit = () => {
+    const currentBudget = tempPost?.campaign?.budget || 0;
+    const currentTokensRemaining = tempPost?.campaign?.tokensRemaining || 0;
+    const difference =
+      (allocatedBudget ? parseInt(allocatedBudget) : 0) -
+      currentTokensRemaining;
+
+    setTempPost({
+      ...(tempPost || {}),
+      campaign: {
+        id: generateRandomU64Number(),
+        ...(tempPost?.campaign || {}),
+        mint,
+        endDate,
+        eligibility,
+        budget: currentBudget + difference,
+        tokensRemaining: currentTokensRemaining + difference,
+        amount: difference,
+      },
+    });
+
+    closeModal();
+  };
+
+  const closeModal = () => {
+    (
+      document.getElementById(
+        'overall_post_campaign_modal'
+      ) as HTMLDialogElement
+    ).close();
+  };
 
   return (
     <dialog id="overall_post_campaign_modal" className="modal">
       <div className="modal-box flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <span className="font-bold text-lg text-center">
-            {tempPost ? 'Edit Overall Budget' : 'Set Overall Budget'}
+            {tempPost?.campaign?.budget
+              ? 'Edit Overall Budget'
+              : 'Set Overall Budget'}
           </span>
           <form method="dialog">
             <button>
@@ -816,97 +899,63 @@ export const OverallPostCampaignModal: FC<{
             </button>
           </form>
         </div>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Mint
-          <input
-            type="string"
-            className="grow text-end"
-            value={mint}
-            onChange={(e) => setMint(e.target.value)}
-            placeholder="Enter a mint address"
-          />
-        </label>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Budget
-          <input
-            type="number"
-            className="grow text-end"
-            value={allocatedBudget}
-            onChange={(e) => setAllocatedBudget(e.target.value)}
-            placeholder="How many tokens do you want to give out?"
-          />
-          {`${
+
+        <InputField
+          label="Mint"
+          type="text"
+          value={mint}
+          onChange={(e) => handleInputChange('mint', e.target.value)}
+          placeholder="Enter a mint address"
+        />
+
+        <InputField
+          label="Budget"
+          type="number"
+          value={allocatedBudget}
+          onChange={(e) => handleInputChange('allocatedBudget', e.target.value)}
+          placeholder="How many tokens do you want to give out?"
+          suffix={
             tempPost?.campaign?.budget
               ? `/ ${formatLargeNumber(tempPost.campaign.budget)} left`
               : ''
-          }`}
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Elligibility
-          <select
-            value={eligibility}
-            onChange={(e) => setEligibility(e.target.value as Eligibility)}
-            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-          >
-            {Object.entries(Eligibility).map((x) => (
-              <option key={x[0]}>{x[1]}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Duration
-          <select
-            value={duration}
-            onChange={(e) => setDuration(e.target.value as Duration)}
-            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-          >
-            {Object.entries(Duration).map((x) => (
-              <option key={x[0]}>{x[1]}</option>
-            ))}
-          </select>
-        </label>
-        {duration == Duration.CUSTOM_DATE && (
-          <label className="flex px-2 justify-between items-center gap-2">
-            End Date
-            <input
-              type="date"
-              id="campaign start date"
-              className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
-              onChange={(e) => setEndDate(Date.parse(e.target.value))}
-              value={getDDMMYYYY(new Date(endDate || currentTime))}
-              min={currentTime}
-            />
-          </label>
+          }
+        />
+
+        <SelectField
+          label="Eligibility"
+          value={eligibility}
+          onChange={(e) => handleInputChange('eligibility', e.target.value)}
+          options={Object.entries(Eligibility).map(([key, value]) => ({
+            key,
+            value,
+          }))}
+        />
+
+        <SelectField
+          label="Duration"
+          value={duration}
+          onChange={(e) => handleInputChange('duration', e.target.value)}
+          options={Object.entries(Duration).map(([key, value]) => ({
+            key,
+            value,
+          }))}
+        />
+
+        {duration === Duration.CUSTOM_DATE && (
+          <InputField
+            label="End Date"
+            type="date"
+            value={getDDMMYYYY(new Date(endDate || currentTime))}
+            onChange={(e) =>
+              handleInputChange('endDate', Date.parse(e.target.value))
+            }
+            min={currentTime}
+          />
         )}
+
         <div className="flex items-center justify-end">
           <button
-            onClick={() => {
-              if (!tempPost) return;
-              const difference =
-                (allocatedBudget != '' ? parseInt(allocatedBudget) : 0) -
-                  tempPost.campaign?.tokensRemaining || 0;
-              setTempPost({
-                ...(tempPost || {}),
-                campaign: {
-                  id: generateRandomU64Number(),
-                  ...(tempPost?.campaign || {}),
-                  mint: mint,
-                  endDate: endDate,
-                  eligibility: eligibility,
-                  budget: tempPost.campaign?.budget
-                    ? tempPost.campaign.budget + difference
-                    : difference,
-                  tokensRemaining:
-                    (tempPost.campaign?.tokensRemaining || 0) + difference,
-                  amount: difference,
-                },
-              });
-              (
-                document.getElementById(
-                  'overall_post_campaign_modal'
-                ) as HTMLDialogElement
-              ).close();
-            }}
+            onClick={handleBudgetSubmit}
             className="btn btn-primary btn-sm"
           >
             Set Budget
@@ -917,14 +966,71 @@ export const OverallPostCampaignModal: FC<{
   );
 };
 
-export const ActionModal: FC<{
+interface InputFieldProps {
+  label: string;
+  type: string;
+  value: string | undefined;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  min?: number;
+  suffix?: string;
+}
+
+const InputField: FC<InputFieldProps> = ({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  min,
+  suffix,
+}) => (
+  <label className="input input-bordered text-base flex items-center gap-2">
+    {label}
+    <input
+      type={type}
+      className="grow text-end"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      min={min}
+    />
+    {suffix && <span>{suffix}</span>}
+  </label>
+);
+
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: { key: string; value: string }[];
+}
+
+const SelectField: FC<SelectFieldProps> = ({
+  label,
+  value,
+  onChange,
+  options,
+}) => (
+  <label className="flex px-2 justify-between items-center gap-2">
+    {label}
+    <select
+      value={value}
+      onChange={onChange}
+      className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
+    >
+      {options.map(({ key, value }) => (
+        <option key={key}>{value}</option>
+      ))}
+    </select>
+  </label>
+);
+
+const ActionModal: FC<{
   tempPost: PostContent | undefined;
   setTempPost: Dispatch<SetStateAction<any>>;
   query?: LinkedAction;
 }> = ({ tempPost, setTempPost, query }) => {
-  const action = tempPost?.campaign?.amountPerQuery?.find(
-    (x) => query && x.linkedAction == JSON.stringify(query)
-  );
   const [amount, setAmount] = useState('');
   const [additionalFields, setAdditionalFields] = useState<
     {
@@ -936,6 +1042,10 @@ export const ActionModal: FC<{
     }[]
   >([]);
   const [label, setLabel] = useState('');
+
+  const action = tempPost?.campaign?.amountPerQuery?.find(
+    (x) => query && x.linkedAction === JSON.stringify(query)
+  );
 
   useEffect(() => {
     if (action) {
@@ -955,7 +1065,7 @@ export const ActionModal: FC<{
           fieldName: x.name,
           placeholder: x.label,
           id: x.name,
-          validation: action.query.find((q) => q.key == x.name && !q.value)
+          validation: action.query.find((q) => q.key === x.name && !q.value)
             ?.validation,
         })) || []
       );
@@ -963,6 +1073,130 @@ export const ActionModal: FC<{
       setAdditionalFields([]);
     }
   }, [query, action]);
+
+  const handleAdditionalFieldChange = useCallback(
+    (id: string, field: string, value: string) => {
+      setAdditionalFields((prev) =>
+        prev.map((prev) =>
+          prev.id === id ? { ...prev, [field]: value } : prev
+        )
+      );
+    },
+    []
+  );
+
+  const handleAddField = useCallback(() => {
+    setAdditionalFields((prev) => [
+      ...prev,
+      {
+        validation: '',
+        fieldName: '',
+        placeholder: '',
+        type: 'text',
+        id: crypto.randomUUID(),
+      },
+    ]);
+  }, []);
+
+  const handleDeleteAction = useCallback(() => {
+    setTempPost(
+      (prev: {
+        links: { actions: any };
+        campaign: { amountPerQuery: any[] };
+      }) => {
+        if (!prev || !prev.links || !prev.campaign?.amountPerQuery || !query) {
+          return prev;
+        }
+        return {
+          ...prev,
+          links: {
+            actions: (prev.links.actions || []).filter(
+              (x: { href: string }) => x.href !== query.href
+            ),
+          },
+          campaign: {
+            ...prev.campaign,
+            amountPerQuery: prev.campaign.amountPerQuery.filter(
+              (x) => x.linkedAction !== JSON.stringify(query)
+            ),
+          },
+        };
+      }
+    );
+    (document.getElementById('action_modal') as HTMLDialogElement).close();
+  }, [query, setTempPost]);
+
+  const handleSaveAction = useCallback(() => {
+    if (!tempPost) return;
+    if (
+      !query &&
+      tempPost.links?.actions &&
+      tempPost.links?.actions.findIndex((x) => x.label === label) !== -1
+    ) {
+      toast.error('Label needs to be unique!');
+      return;
+    }
+    const newActionQuery = buildActionQuery(additionalFields, label);
+    const newLinkedAction = {
+      href: createHref(tempPost, newActionQuery),
+      label,
+      parameters:
+        additionalFields.length > 0
+          ? additionalFields.map((x) => ({
+              type: x.type,
+              name: x.fieldName,
+              label: x.placeholder,
+            }))
+          : undefined,
+    };
+    const existingAmountPerQueryIndex =
+      tempPost.campaign?.amountPerQuery?.findIndex(
+        (x) => query && x.linkedAction === JSON.stringify(query)
+      );
+    const newAmountPerQuery =
+      existingAmountPerQueryIndex !== undefined &&
+      existingAmountPerQueryIndex !== -1
+        ? tempPost.campaign?.amountPerQuery.map((x, index) => {
+            if (index === existingAmountPerQueryIndex) {
+              return {
+                linkedAction: JSON.stringify(newLinkedAction),
+                query: newActionQuery,
+                amount: amount !== '' ? parseInt(amount) : 0,
+              };
+            }
+            return x;
+          }) || []
+        : (tempPost.campaign?.amountPerQuery || []).concat({
+            linkedAction: JSON.stringify(newLinkedAction),
+            query: newActionQuery,
+            amount: amount !== '' ? parseInt(amount) : 0,
+          });
+
+    const newLinkedActions = query
+      ? tempPost.links?.actions.map((x) => {
+          if (x.href === query.href) {
+            return newLinkedAction;
+          }
+          return x;
+        }) || []
+      : (tempPost.links?.actions || []).concat(newLinkedAction);
+
+    setTempPost((prev: any) => ({
+      ...(prev || {}),
+      links: {
+        actions: newLinkedActions,
+      },
+      campaign: {
+        ...(prev?.campaign || {}),
+        amountPerQuery: newAmountPerQuery,
+      },
+    }));
+
+    (document.getElementById('action_modal') as HTMLDialogElement).close();
+    setAmount('');
+    setLabel('');
+    setAdditionalFields([]);
+  }, [amount, additionalFields, label, query, setTempPost, tempPost]);
 
   return (
     <dialog id="action_modal" className="modal">
@@ -977,276 +1211,122 @@ export const ActionModal: FC<{
             </button>
           </form>
         </div>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Label
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            type="text"
-            className="grow text-end"
-            placeholder=""
-          />
-        </label>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Amount
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            type="number"
-            className="grow text-end"
-            placeholder="How much should each user receive?"
-          />
-        </label>
+        <InputField
+          label="Label"
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder=""
+        />
+        <InputField
+          label="Amount"
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Amount per action"
+        />
         <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
-          {additionalFields.map((x, index) => (
+          {additionalFields.map((field, index) => (
             <div
-              key={x.id}
+              key={field.id}
               className="border input-bordered rounded p-4 flex flex-col gap-2"
             >
               <div className="flex items-center justify-between">
                 {`Additional Field ${index + 1}`}
                 <button
                   onClick={() =>
-                    setAdditionalFields((previous) =>
-                      previous.filter((y) => y.id !== x.id)
+                    setAdditionalFields((prev) =>
+                      prev.filter((f) => f.id !== field.id)
                     )
                   }
                 >
                   <IconTrash />
                 </button>
               </div>
-              <label className="flex px-2 justify-between items-center gap-2">
-                Type
-                <select
-                  value={x.type}
-                  onChange={(e) =>
-                    setAdditionalFields((previous) =>
-                      previous.map((p) => {
-                        if (p.id == x.id) {
-                          return {
-                            ...p,
-                            type: e.target.value as
-                              | 'number'
-                              | 'text'
-                              | 'email'
-                              | 'url'
-                              | 'date'
-                              | 'datetime-local'
-                              | 'textarea',
-                          };
-                        }
-                        return p;
-                      })
-                    )
-                  }
-                  className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-                >
-                  {[
-                    'number',
-                    'text',
-                    'email',
-                    'url',
-                    'date',
-                    'datetime-local',
-                    'textarea',
-                  ].map((x, index) => (
-                    <option key={index}>{x}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="input input-bordered text-base flex items-center gap-2">
-                {(x.type == 'datetime-local' || x.type == 'date') && (
-                  <span className="text-sm">Field Name</span>
-                )}
-                <input
-                  value={x.fieldName}
-                  onChange={(e) =>
-                    setAdditionalFields((previous) =>
-                      previous.map((p) => {
-                        if (p.id == x.id) {
-                          return {
-                            ...p,
-                            fieldName: e.target.value,
-                          };
-                        }
-                        return p;
-                      })
-                    )
-                  }
-                  type={x.type}
-                  className="grow"
-                  placeholder="Field Name"
-                />
-              </label>
-              <label className="input input-bordered text-base flex items-center gap-2">
-                {(x.type == 'datetime-local' || x.type == 'date') && (
-                  <span className="text-sm">Placeholder</span>
-                )}
-                <input
-                  value={x.placeholder}
-                  onChange={(e) =>
-                    setAdditionalFields((previous) =>
-                      previous.map((p) => {
-                        if (p.id == x.id) {
-                          return {
-                            ...p,
-                            placeholder: e.target.value,
-                          };
-                        }
-                        return p;
-                      })
-                    )
-                  }
-                  type="text"
-                  className="grow"
-                  placeholder="Placeholder"
-                />
-              </label>
-              <label className="input input-bordered text-base flex items-center gap-2">
-                {(x.type == 'datetime-local' || x.type == 'date') && (
-                  <span className="text-sm">Validation Text</span>
-                )}
-                <input
-                  value={x.validation}
-                  onChange={(e) =>
-                    setAdditionalFields((previous) =>
-                      previous.map((p) => {
-                        if (p.id == x.id) {
-                          return {
-                            ...p,
-                            validation: e.target.value,
-                          };
-                        }
-                        return p;
-                      })
-                    )
-                  }
-                  type={x.type}
-                  className="grow"
-                  placeholder="Validation Text"
-                />
-              </label>
+              <SelectField
+                label="Type"
+                value={field.type}
+                onChange={(e) =>
+                  handleAdditionalFieldChange(field.id, 'type', e.target.value)
+                }
+                options={[
+                  'number',
+                  'text',
+                  'email',
+                  'url',
+                  'date',
+                  'datetime-local',
+                  'textarea',
+                ].map((type) => ({ key: type, value: type }))}
+              />
+              <InputField
+                label={
+                  field.type === 'datetime-local' || field.type === 'date'
+                    ? 'Field Name'
+                    : ''
+                }
+                type={field.type}
+                value={field.fieldName}
+                onChange={(e) =>
+                  handleAdditionalFieldChange(
+                    field.id,
+                    'fieldName',
+                    e.target.value
+                  )
+                }
+                placeholder="Field Name"
+              />
+              <InputField
+                label={
+                  field.type === 'datetime-local' || field.type === 'date'
+                    ? 'Placeholder'
+                    : ''
+                }
+                type="text"
+                value={field.placeholder}
+                onChange={(e) =>
+                  handleAdditionalFieldChange(
+                    field.id,
+                    'placeholder',
+                    e.target.value
+                  )
+                }
+                placeholder="Placeholder"
+              />
+              <InputField
+                label={
+                  field.type === 'datetime-local' || field.type === 'date'
+                    ? 'Validation Text'
+                    : ''
+                }
+                type={field.type}
+                value={field.validation}
+                onChange={(e) =>
+                  handleAdditionalFieldChange(
+                    field.id,
+                    'validation',
+                    e.target.value
+                  )
+                }
+                placeholder="Validation Text"
+              />
             </div>
           ))}
         </div>
-        <button
-          onClick={() =>
-            setAdditionalFields((previous) => [
-              ...previous,
-              {
-                validation: '',
-                fieldName: '',
-                placeholder: '',
-                type: 'text',
-                id: crypto.randomUUID(),
-              },
-            ])
-          }
-          className="btn w-fit btn-sm"
-        >
+        <button onClick={handleAddField} className="btn w-fit btn-sm">
           <IconPlus />
           Add Additional Field
         </button>
         <div className="flex items-center justify-end gap-2">
           {action && query && (
             <button
-              onClick={() => {
-                setTempPost({
-                  ...(tempPost || {}),
-                  links: {
-                    actions: (tempPost?.links?.actions || []).filter(
-                      (x) => JSON.stringify(x) != JSON.stringify(query)
-                    ),
-                  },
-                  campaign: {
-                    ...(tempPost?.campaign || {}),
-                    amountPerQuery: tempPost?.campaign?.amountPerQuery.filter(
-                      (x) => x.linkedAction != JSON.stringify(query)
-                    ),
-                  },
-                });
-                (
-                  document.getElementById('action_modal') as HTMLDialogElement
-                ).close();
-              }}
+              onClick={handleDeleteAction}
               className="btn btn-outline btn-sm"
             >
               Delete Action
             </button>
           )}
-          <button
-            onClick={() => {
-              if (!tempPost) return;
-              if (
-                !query &&
-                tempPost.links?.actions.findIndex((x) => x.label == label) != -1
-              ) {
-                toast.error('Label needs to be unique!');
-                return;
-              }
-              const newActionQuery = buildActionQuery(additionalFields, label);
-              let newLinkedAction = {
-                href: createHref(tempPost, label, newActionQuery),
-                label: label,
-                parameters:
-                  additionalFields.length > 0
-                    ? additionalFields.map((x) => ({
-                        type: x.type,
-                        name: x.fieldName,
-                        label: x.placeholder,
-                      }))
-                    : undefined,
-              };
-              let existingAmountPerQueryIndex =
-                tempPost.campaign?.amountPerQuery?.findIndex(
-                  (x) => query && x.linkedAction == JSON.stringify(query)
-                );
-              let newAmountPerQuery =
-                existingAmountPerQueryIndex != undefined &&
-                existingAmountPerQueryIndex != -1
-                  ? tempPost.campaign?.amountPerQuery.map((x, index) => {
-                      if (index == existingAmountPerQueryIndex) {
-                        return {
-                          linkedAction: JSON.stringify(newLinkedAction),
-                          query: newActionQuery,
-                          amount: amount != '' ? parseInt(amount) : 0,
-                        };
-                      }
-                      return x;
-                    }) || []
-                  : (tempPost.campaign?.amountPerQuery || []).concat({
-                      linkedAction: JSON.stringify(newLinkedAction),
-                      query: newActionQuery,
-                      amount: amount != '' ? parseInt(amount) : 0,
-                    });
-
-              let newLinkedActions = query
-                ? tempPost.links?.actions.map((x) => {
-                    if (x.href == query.href) {
-                      return newLinkedAction;
-                    }
-                    return x;
-                  }) || []
-                : (tempPost.links?.actions || []).concat(newLinkedAction);
-              setTempPost({
-                ...tempPost,
-                links: {
-                  actions: newLinkedActions,
-                },
-                campaign: {
-                  ...tempPost?.campaign,
-                  amountPerQuery: newAmountPerQuery,
-                },
-              });
-              (
-                document.getElementById('action_modal') as HTMLDialogElement
-              ).close();
-              setAmount('');
-              setLabel('');
-              setAdditionalFields([]);
-            }}
-            className="btn btn-primary btn-sm"
-          >
+          <button onClick={handleSaveAction} className="btn btn-primary btn-sm">
             {action ? 'Edit' : 'Add'} Action
           </button>
         </div>
@@ -1257,7 +1337,6 @@ export const ActionModal: FC<{
 
 function createHref(
   tempPost: PostContent,
-  label: string,
   newActionQuery: { key: string; value?: string; validation?: string }[]
 ) {
   return (
@@ -1325,9 +1404,8 @@ export const PreviewBlinksActionButton: FC<{
   });
 
   const asInputProps = (it: LinkedAction, parameter?: Parameter) => {
-    const placeholder = !parameter ? it.label : parameter.label;
-    const name = !parameter ? it.label : parameter.name;
-
+    const placeholder = !parameter ? it.parameters![0].label : parameter.label;
+    const name = !parameter ? it.parameters![0].name : parameter.name;
     return {
       // since we already filter this, we can safely assume that parameter is not null
       placeholder,
