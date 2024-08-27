@@ -5,7 +5,6 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TYPE_SIZE,
   TokenAccountNotFoundError,
-  createUpdateFieldInstruction,
   getExtensionData,
   getNewAccountLenForExtensionLen,
   unpackMint,
@@ -39,7 +38,6 @@ export async function createMint(
     .accounts({
       admin: payer,
       payer: payer,
-      program: program.programId,
     })
     .instruction();
   return ix;
@@ -86,7 +84,6 @@ export async function initializeMint(
       mint: mint,
       payer: payer,
       admin: payer,
-      program: program.programId,
     })
     .instruction();
 }
@@ -109,13 +106,10 @@ export async function updateMetadata(
   field: string,
   value: string
 ) {
-  return createUpdateFieldInstruction({
-    programId: TOKEN_2022_PROGRAM_ID,
-    metadata: mint,
-    updateAuthority: payer,
-    field: field,
-    value: value,
-  });
+  return await program.methods
+    .updateMintMetadata(field, value)
+    .accounts({ admin: payer, mint: mint })
+    .instruction();
 }
 
 export async function getAdditionalRentForUpdatedMetadata(

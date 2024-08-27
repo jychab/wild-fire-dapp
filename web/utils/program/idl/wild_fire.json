@@ -34,23 +34,6 @@
         },
         {
           "name": "mint"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -91,23 +74,6 @@
         {
           "name": "token_program_mint",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -148,23 +114,6 @@
         },
         {
           "name": "mint"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -266,23 +215,6 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -459,8 +391,7 @@
           }
         },
         {
-          "name": "token_program_mint",
-          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          "name": "token_program_mint"
         },
         {
           "name": "associated_token_program",
@@ -469,23 +400,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -603,23 +517,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -630,6 +527,96 @@
         {
           "name": "amount_to_creator",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "remove_key_from_metadata",
+      "discriminator": [212, 198, 93, 174, 2, 22, 50, 81],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program_mint",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "field",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_mint_metadata",
+      "discriminator": [46, 244, 2, 123, 67, 219, 22, 121],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [116, 111, 107, 101, 110]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program_mint",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "field",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "string"
         }
       ]
     },
@@ -696,23 +683,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95, 95, 101, 118, 101, 110, 116, 95, 97, 117, 116, 104, 111,
-                  114, 105, 116, 121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": []
@@ -744,6 +714,10 @@
     {
       "name": "InitializeMint",
       "discriminator": [227, 163, 208, 22, 174, 191, 7, 162]
+    },
+    {
+      "name": "RefreshMintMetadata",
+      "discriminator": [34, 38, 109, 231, 45, 105, 118, 78]
     },
     {
       "name": "VerifedStatus",
@@ -857,20 +831,12 @@
             "type": "pubkey"
           },
           {
-            "name": "distributor",
-            "type": "pubkey"
-          },
-          {
-            "name": "payer",
+            "name": "to",
             "type": "pubkey"
           },
           {
             "name": "amount",
             "type": "u64"
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
           },
           {
             "name": "event",
@@ -899,6 +865,18 @@
           {
             "name": "amount_reserve",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RefreshMintMetadata",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
           }
         ]
       }

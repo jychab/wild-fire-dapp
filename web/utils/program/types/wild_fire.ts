@@ -40,38 +40,6 @@ export type WildFire = {
         },
         {
           name: 'mint';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -112,38 +80,6 @@ export type WildFire = {
         {
           name: 'tokenProgramMint';
           address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -184,38 +120,6 @@ export type WildFire = {
         },
         {
           name: 'mint';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -317,38 +221,6 @@ export type WildFire = {
         {
           name: 'rent';
           address: 'SysvarRent111111111111111111111111111111111';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -584,7 +456,6 @@ export type WildFire = {
         },
         {
           name: 'tokenProgramMint';
-          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
         },
         {
           name: 'associatedTokenProgram';
@@ -593,38 +464,6 @@ export type WildFire = {
         {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -800,38 +639,6 @@ export type WildFire = {
         {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [
@@ -842,6 +649,96 @@ export type WildFire = {
         {
           name: 'amountToCreator';
           type: 'u64';
+        }
+      ];
+    },
+    {
+      name: 'removeKeyFromMetadata';
+      discriminator: [212, 198, 93, 174, 2, 22, 50, 81];
+      accounts: [
+        {
+          name: 'admin';
+          signer: true;
+        },
+        {
+          name: 'mint';
+          writable: true;
+        },
+        {
+          name: 'tokenState';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110];
+              },
+              {
+                kind: 'account';
+                path: 'mint';
+              }
+            ];
+          };
+        },
+        {
+          name: 'tokenProgramMint';
+          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        },
+        {
+          name: 'systemProgram';
+          address: '11111111111111111111111111111111';
+        }
+      ];
+      args: [
+        {
+          name: 'field';
+          type: 'string';
+        }
+      ];
+    },
+    {
+      name: 'updateMintMetadata';
+      discriminator: [46, 244, 2, 123, 67, 219, 22, 121];
+      accounts: [
+        {
+          name: 'admin';
+          signer: true;
+        },
+        {
+          name: 'mint';
+          writable: true;
+        },
+        {
+          name: 'tokenState';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [116, 111, 107, 101, 110];
+              },
+              {
+                kind: 'account';
+                path: 'mint';
+              }
+            ];
+          };
+        },
+        {
+          name: 'tokenProgramMint';
+          address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        },
+        {
+          name: 'systemProgram';
+          address: '11111111111111111111111111111111';
+        }
+      ];
+      args: [
+        {
+          name: 'field';
+          type: 'string';
+        },
+        {
+          name: 'value';
+          type: 'string';
         }
       ];
     },
@@ -937,38 +834,6 @@ export type WildFire = {
         {
           name: 'systemProgram';
           address: '11111111111111111111111111111111';
-        },
-        {
-          name: 'eventAuthority';
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ];
-              }
-            ];
-          };
-        },
-        {
-          name: 'program';
         }
       ];
       args: [];
@@ -1000,6 +865,10 @@ export type WildFire = {
     {
       name: 'initializeMint';
       discriminator: [227, 163, 208, 22, 174, 191, 7, 162];
+    },
+    {
+      name: 'refreshMintMetadata';
+      discriminator: [34, 38, 109, 231, 45, 105, 118, 78];
     },
     {
       name: 'verifedStatus';
@@ -1113,20 +982,12 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
-            name: 'distributor';
-            type: 'pubkey';
-          },
-          {
-            name: 'payer';
+            name: 'to';
             type: 'pubkey';
           },
           {
             name: 'amount';
             type: 'u64';
-          },
-          {
-            name: 'to';
-            type: 'pubkey';
           },
           {
             name: 'event';
@@ -1155,6 +1016,18 @@ export type WildFire = {
           {
             name: 'amountReserve';
             type: 'u64';
+          }
+        ];
+      };
+    },
+    {
+      name: 'refreshMintMetadata';
+      type: {
+        kind: 'struct';
+        fields: [
+          {
+            name: 'mint';
+            type: 'pubkey';
           }
         ];
       };
