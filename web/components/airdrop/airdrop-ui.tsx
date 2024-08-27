@@ -239,7 +239,6 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
             className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
             onChange={(e) => setStartDate(Date.parse(e.target.value))}
             value={getDDMMYYYY(new Date(startDate))}
-            min={getDDMMYYYY(new Date(currentTime))}
           />
         </label>
         {duration == Duration.CUSTOM_DATE && (
@@ -292,11 +291,8 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
                   amount: parseInt(amount),
                   criteria: criteria,
                   eligibility: eligibility,
-                  startDate:
-                    (startDate < currentTime ? currentTime : startDate) / 1000,
-                  endDate: endDate
-                    ? (endDate < currentTime ? currentTime : endDate) / 1000
-                    : undefined,
+                  startDate: startDate / 1000,
+                  endDate: endDate ? endDate / 1000 : undefined,
                   difference,
                 });
               }}

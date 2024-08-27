@@ -865,7 +865,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         id: generateRandomU64Number(),
         ...(tempPost?.campaign || {}),
         mint,
-        endDate,
+        endDate: endDate ? endDate / 1000 : undefined,
         eligibility,
         budget: currentBudget + difference,
         tokensRemaining: currentTokensRemaining + difference,

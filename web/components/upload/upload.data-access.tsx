@@ -95,6 +95,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             signTransaction: wallet.signTransaction,
             publicKey: wallet.publicKey,
           });
+          delete input.campaign.amount;
         } else if (input.campaign && input.campaign.amount < 0) {
           const { partialTx } = await withdrawFromCampaign(
             input.campaign.id,
@@ -110,8 +111,8 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             partialSignedTx,
             signTransaction: wallet.signTransaction,
           });
+          delete input.campaign.amount;
         }
-        delete input.campaign.amount;
         await createOrEditPost(mint.toBase58(), input);
         return { signature, input };
       } catch (error: unknown) {
