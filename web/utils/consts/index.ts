@@ -1,9 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
 
-export const HASHFEED_MINT = new PublicKey(
-  'CtiPMWDvrYm8SaWwuVJWWbq9qHCsGZjxVi4RShrgtyCY'
-);
-
 export const LONG_STALE_TIME = 24 * 60 * 60 * 1000;
 
 export const MEDIUM_STALE_TIME = 60 * 60 * 1000;

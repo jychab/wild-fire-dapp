@@ -1,19 +1,21 @@
-import { HASHFEED_MINT } from '@/utils/consts';
+import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
+import { useGetPostsFromAddress } from '../content/content-data-access';
 import { DisplayContent } from '../content/content-ui';
-import { useGetPostsFromMint } from '../profile/profile-data-access';
 import { AppHero } from '../ui/ui-layout';
 
 export const LandingPage: FC = () => {
-  const { data: posts } = useGetPostsFromMint({ mint: HASHFEED_MINT });
+  const { data: posts } = useGetPostsFromAddress({
+    address: new PublicKey('1nc1nerator11111111111111111111111111111111'),
+  });
   return (
     <AppHero
       title={'Your feed, reimagined.'}
       subtitle={
         <div className="flex flex-col gap-4 items-center lg:items-start">
           <p className="text-lg">
-            Discover content curated by the tokens you hold.
+            Discover blinks customized by the tokens you hold.
           </p>
           <AuthenticationBtn
             children={

@@ -5,4 +5,6 @@ export enum TransactionType {
   SwapForLamports = 3,
   Campaign = 4,
   WithdrawFromCampaign = 5,
+  PostCampaign = 6,
+  WithdrawFromPostCampaign = 7,
 }
