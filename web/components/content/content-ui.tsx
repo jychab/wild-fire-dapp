@@ -114,7 +114,6 @@ export const UserProfile: FC<{
               <IconDiscountCheckFilled size={18} className="fill-secondary" />
             )} */}
           </div>
-          <div className="text-xs">{metadata?.content?.metadata.name}</div>
         </div>
       </Link>
     </div>
