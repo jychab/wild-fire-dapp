@@ -813,7 +813,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   tempPost,
   setTempPost,
 }) => {
-  const currentTime = Date.now();
+  const currentTime = Date.now() / 1000;
 
   // Initializing state with a single useState call for all form fields
   const [campaignDetails, setCampaignDetails] = useState({
@@ -939,11 +939,10 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
           <InputField
             label="End Date"
             type="date"
-            value={getDDMMYYYY(new Date(endDate || currentTime))}
+            value={getDDMMYYYY(new Date((endDate || currentTime) * 1000))}
             onChange={(e) =>
-              handleInputChange('endDate', Date.parse(e.target.value))
+              handleInputChange('endDate', Date.parse(e.target.value) / 1000)
             }
-            min={currentTime}
           />
         )}
 

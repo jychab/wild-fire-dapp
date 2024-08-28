@@ -101,7 +101,7 @@ export const CampaignTable: FC<{
 };
 
 export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
-  const currentTime = Date.now();
+  const currentTime = Date.now() / 1000;
   const [name, setName] = useState('');
   const [allocatedBudget, setAllocatedBudget] = useState('');
   const [amount, setAmount] = useState('');
@@ -130,10 +130,10 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
       setAmount(campaign.amount.toString());
       setCriteria(campaign.criteria);
       setEligibility(campaign.eligibility);
-      setStartDate(campaign.startDate * 1000);
+      setStartDate(campaign.startDate);
       if (campaign.endDate) {
         setDuration(Duration.CUSTOM_DATE);
-        setEndDate(campaign.endDate * 1000);
+        setEndDate(campaign.endDate);
       }
     } else if (!id) {
       setName('');
@@ -237,8 +237,8 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
             type="date"
             id="campaign start date"
             className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
-            onChange={(e) => setStartDate(Date.parse(e.target.value))}
-            value={getDDMMYYYY(new Date(startDate))}
+            onChange={(e) => setStartDate(Date.parse(e.target.value) / 1000)}
+            value={getDDMMYYYY(new Date(startDate * 1000))}
           />
         </label>
         {duration == Duration.CUSTOM_DATE && (
@@ -248,9 +248,8 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
               type="date"
               id="campaign start date"
               className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
-              onChange={(e) => setEndDate(Date.parse(e.target.value))}
-              value={getDDMMYYYY(new Date(endDate || startDate))}
-              min={startDate}
+              onChange={(e) => setEndDate(Date.parse(e.target.value) / 1000)}
+              value={getDDMMYYYY(new Date((endDate || startDate) * 1000))}
             />
           </label>
         )}
@@ -291,8 +290,8 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
                   amount: parseInt(amount),
                   criteria: criteria,
                   eligibility: eligibility,
-                  startDate: startDate / 1000,
-                  endDate: endDate ? endDate / 1000 : undefined,
+                  startDate: startDate,
+                  endDate: endDate,
                   difference,
                 });
               }}
