@@ -1122,21 +1122,31 @@ const ActionModal: FC<{
 
   const handleSaveAction = useCallback(() => {
     if (!tempPost) return;
-    if (
-      !query &&
-      tempPost.links?.actions &&
-      tempPost.links?.actions.findIndex((x) => x.label === label) !== -1
-    ) {
-      toast.error('Label needs to be unique!');
+    const nonEmptyAdditionalFields = additionalFields.filter(
+      (x) => x.fieldName != ''
+    );
+    const newActionQuery = buildActionQuery(nonEmptyAdditionalFields, label);
+    if (!newActionQuery) {
       return;
     }
-    const newActionQuery = buildActionQuery(additionalFields, label);
+    const newHref = createHref(tempPost, newActionQuery);
+    if (
+      tempPost.links?.actions &&
+      tempPost.links?.actions
+        .filter((x) => x.href !== query?.href)
+        .findIndex((x) => x.href === newHref) !== -1
+    ) {
+      toast.error(
+        'One of the labels or fields names are already used in another action.'
+      );
+      return;
+    }
     const newLinkedAction = {
-      href: createHref(tempPost, newActionQuery),
+      href: newHref,
       label,
       parameters:
-        additionalFields.length > 0
-          ? additionalFields.map((x) => ({
+        nonEmptyAdditionalFields.length > 0
+          ? nonEmptyAdditionalFields.map((x) => ({
               type: x.type,
               name: x.fieldName,
               label: x.placeholder,
@@ -1336,7 +1346,10 @@ function createHref(
   return (
     generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
     (newActionQuery.length > 0 ? '&' : '') +
-    newActionQuery.map((q) => q.key + '=' + q.value || `{${q.key}}`).join('&')
+    newActionQuery
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .map((q) => q.key + '=' + q.value || `{${q.key}}`)
+      .join('&')
   );
 }
 
@@ -1357,10 +1370,18 @@ function buildActionQuery(
       validation: label,
     },
   ];
+  for (const x of additionalFields) {
+    if (result.findIndex((y) => y.key == x.fieldName) !== -1) {
+      if (x.fieldName == 'label') {
+        toast.error("'Label' cannot be used as a field name.");
+        return null;
+      }
+      toast.error('Field names must be unique.');
+      return null;
+    }
+    result.push({ key: x.fieldName, validation: x.validation });
+  }
 
-  additionalFields.forEach((x) =>
-    result.push({ key: x.fieldName, validation: x.validation })
-  );
   return result;
 }
 
