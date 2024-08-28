@@ -63,7 +63,6 @@ function SearchBar() {
                 <span className="text-sm font-bold">
                   {x?.content?.metadata.name}
                 </span>
-                <span>{x?.content?.metadata.symbol}</span>
               </div>
             </Link>
           </li>
