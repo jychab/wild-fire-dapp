@@ -359,7 +359,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     }
   };
 
-  const asButtonProps = (it: ButtonActionComponent) => {
+  const asButtonProps = (component: AbstractActionComponent) => {
+    const it = component as ButtonActionComponent;
     return {
       text: buttonLabelMap[executionState.status] ?? it.label,
       loading:
@@ -379,11 +380,14 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   };
 
   const asInputProps = (
-    it: SingleValueActionComponent | MultiValueActionComponent,
+    component: AbstractActionComponent,
     { placement }: { placement: 'form' | 'standalone' } = {
       placement: 'standalone',
     }
   ) => {
+    const it = component as
+      | SingleValueActionComponent
+      | MultiValueActionComponent;
     return {
       type: it.parameter.type ?? 'text',
       placeholder: it.parameter.label,
@@ -411,7 +415,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     };
   };
 
-  const asFormProps = (it: FormActionComponent) => {
+  const asFormProps = (component: AbstractActionComponent) => {
+    const it = component as FormActionComponent;
     return {
       button: asButtonProps(it.toButtonActionComponent()),
       inputs: it.parameters.slice(0, SOFT_LIMIT_FORM_INPUTS).map((parameter) =>
@@ -443,7 +448,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
 
     return undefined;
   }, [executionState.status, isPassingSecurityCheck, overallState]);
-  console.log(action?.icon);
+
   return (
     <ActionLayout
       type={overallState}

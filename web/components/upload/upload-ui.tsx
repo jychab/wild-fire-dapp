@@ -41,6 +41,7 @@ import {
   useState,
 } from 'react';
 import toast from 'react-hot-toast';
+import { AbstractActionComponent } from '../actions/abstract-action-component';
 import { componentFactory } from '../actions/action';
 import { ButtonActionComponent } from '../actions/button-action-component';
 import { FormActionComponent } from '../actions/form-action-component';
@@ -1388,7 +1389,8 @@ export const PreviewBlinksActionButton: FC<{
     return [buttons, inputs, formComponent];
   }, [actions]);
 
-  const asButtonProps = (it: ButtonActionComponent) => {
+  const asButtonProps = (component: AbstractActionComponent) => {
+    const it = component as ButtonActionComponent;
     return {
       text: it.label,
       loading: false,
@@ -1399,11 +1401,14 @@ export const PreviewBlinksActionButton: FC<{
   };
 
   const asInputProps = (
-    it: SingleValueActionComponent | MultiValueActionComponent,
+    component: AbstractActionComponent,
     { placement }: { placement: 'form' | 'standalone' } = {
       placement: 'standalone',
     }
   ) => {
+    const it = component as
+      | SingleValueActionComponent
+      | MultiValueActionComponent;
     return {
       type: it.parameter.type ?? 'text',
       placeholder: it.parameter.label,
@@ -1428,7 +1433,8 @@ export const PreviewBlinksActionButton: FC<{
     };
   };
 
-  const asFormProps = (it: FormActionComponent) => {
+  const asFormProps = (component: AbstractActionComponent) => {
+    const it = component as FormActionComponent;
     return {
       button: asButtonProps(it.toButtonActionComponent()),
       inputs: it.parameters.slice(0, SOFT_LIMIT_FORM_INPUTS).map((parameter) =>

@@ -288,22 +288,25 @@ export const ActionContent = ({
 const buildDefaultFormValues = (
   inputs: InputProps[]
 ): Record<string, string | string[]> => {
-  return Object.fromEntries(
-    inputs
-      .map((i) => {
-        if (i.type === 'checkbox') {
-          return [
-            i.name,
-            i.options?.filter((o) => o.selected).map((o) => o.value),
-          ];
-        }
+  let parsedInputs = inputs
+    .filter(
+      (i) => i.type === 'checkbox' || i.type === 'radio' || i.type === 'select'
+    )
+    .map((i) => {
+      if (i.type === 'checkbox') {
+        return [
+          i.name,
+          i.options?.filter((o) => o.selected).map((o) => o.value) || [],
+        ] as const;
+      } else {
+        return [
+          i.name,
+          i.options?.find((o) => o.selected)?.value || [],
+        ] as const;
+      }
+    });
 
-        return i.type === 'radio' || i.type === 'select'
-          ? [i.name, i.options?.find((o) => o.selected)?.value]
-          : null;
-      })
-      .filter((i) => !!i)
-  );
+  return Object.fromEntries(parsedInputs);
 };
 
 const ActionForm = ({ form }: Required<Pick<LayoutProps, 'form'>>) => {
