@@ -528,7 +528,7 @@ export const ContentCaption: FC<{
             <NotSupportedBlock message={supportability.message} />
           ) : (
             <>
-              {disclaimer && (
+              {disclaimer && title && (
                 <DisclaimerBlock
                   className="mb-4"
                   type={disclaimer.type}
