@@ -1,25 +1,38 @@
 'use client';
 
+import { ActionSupportability } from '@/utils/actions/actions-supportability';
+import { DisclaimerType } from '@/utils/enums/blinks';
 import { sendLike } from '@/utils/firebase/functions';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
+import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
+  IconAlertTriangleFilled,
   IconChartLine,
   IconDotsVertical,
   IconEdit,
+  IconExclamationCircle,
   IconHeart,
   IconHeartFilled,
+  IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
 import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FC, RefObject, useCallback, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { BaseInputProps } from '../../utils/types/input';
 import { Blinks } from '../blinks/blinks-feature';
-import { BlinksStaticContent, FormProps } from '../blinks/blinks-ui';
+import {
+  ActionContent,
+  DisclaimerBlock,
+  FormProps,
+  NotSupportedBlock,
+} from '../blinks/blinks-layout';
+import { BaseButtonProps } from '../blinks/ui/action-button';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
@@ -264,25 +277,66 @@ export const CarouselContent: FC<{
   post?: PostContent;
   blinksDetail: PostBlinksDetail | undefined;
   multiGrid: boolean;
-  handleScroll: (index: number) => void;
-  currentIndex: number;
-  carouselRef?: RefObject<HTMLDivElement>;
-}> = ({
-  post,
-  multiGrid,
-  blinkImageUrl,
-  form,
-  handleScroll,
-  blinksDetail,
-  currentIndex,
-  carouselRef,
-}) => {
+}> = ({ post, multiGrid, blinkImageUrl, form, blinksDetail }) => {
   const router = useRouter();
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const handleClick = useCallback(() => {
     if (multiGrid && blinksDetail) {
       router.push(`/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`);
     }
   }, [multiGrid, blinksDetail, router]);
+
+  // Debounce function to optimize scroll event handling
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  };
+
+  const handleScrollEvent = () => {
+    if (carouselRef.current) {
+      const scrollLeft = carouselRef.current.scrollLeft;
+      const itemWidth = carouselRef.current.clientWidth;
+      const newIndex = Math.round(scrollLeft / itemWidth);
+
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+      }
+    }
+  };
+
+  // Debounced version of the scroll event handler
+  const handleScrollEventDebounced = debounce(handleScrollEvent, 50);
+
+  useEffect(() => {
+    const carouselElement = carouselRef.current;
+    if (carouselElement) {
+      carouselElement.addEventListener('scroll', handleScrollEventDebounced);
+
+      // Cleanup function
+      return () => {
+        carouselElement.removeEventListener(
+          'scroll',
+          handleScrollEventDebounced
+        );
+      };
+    }
+  }, [currentIndex]);
+  const handleScroll = (index: number) => {
+    if (!post) return;
+    const element = document.getElementById(`${post.id}/${index}`);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  };
 
   if (
     !post?.carousel ||
@@ -404,3 +458,162 @@ const CarouselIndicators: FC<{
     ))}
   </div>
 );
+
+export const ContentCaption: FC<{
+  websiteUrl: string | null | undefined;
+  websiteText: string | null | undefined;
+  type: string;
+  title: string | undefined;
+  description: string | undefined;
+  disclaimer: Disclaimer | undefined;
+  form: FormProps | undefined;
+  buttons: BaseButtonProps[] | undefined;
+  inputs: BaseInputProps[] | undefined;
+  success: string | null | undefined;
+  error: string | null | undefined;
+  multiGrid: boolean;
+  expandAll: boolean;
+  blinksDetail: PostBlinksDetail | undefined;
+  supportability: ActionSupportability;
+}> = ({
+  expandAll,
+  websiteUrl,
+  websiteText,
+  type,
+  error,
+  success,
+  title,
+  description,
+  form,
+  inputs,
+  buttons,
+  multiGrid,
+  disclaimer,
+  blinksDetail,
+  supportability,
+}) => {
+  const [showMore, setShowMore] = useState(expandAll);
+  const router = useRouter();
+  return (
+    <div>
+      {showMore ? (
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1">
+            {websiteUrl && (
+              <Link
+                href={websiteUrl}
+                className="link link-hover max-w-xs text-sm stat-desc truncate"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {websiteText ?? websiteUrl}
+              </Link>
+            )}
+            <Link
+              href="https://docs.dialect.to/documentation/actions/security"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center"
+            >
+              {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
+              {type === 'trusted' && <IconShieldCheckFilled size={14} />}
+              {type === 'unknown' && <IconExclamationCircle size={14} />}
+            </Link>
+          </div>
+          <p className="text-sm font-semibold whitespace-pre-wrap pt-2 ">
+            {title}
+          </p>
+          <p className="text-xs whitespace-pre-wrap pb-2 ">{description}</p>
+          {!supportability.isSupported ? (
+            <NotSupportedBlock message={supportability.message} />
+          ) : (
+            <>
+              {disclaimer && (
+                <DisclaimerBlock
+                  className="mb-4"
+                  type={disclaimer.type}
+                  ignorable={disclaimer.ignorable}
+                  hidden={
+                    disclaimer.type === DisclaimerType.BLOCKED
+                      ? disclaimer.hidden
+                      : false
+                  }
+                  onSkip={
+                    disclaimer.type === DisclaimerType.BLOCKED
+                      ? disclaimer.onSkip
+                      : undefined
+                  }
+                />
+              )}
+              <ActionContent form={form} inputs={inputs} buttons={buttons} />
+              {success && (
+                <span className="mt-2 flex justify-center text-sm text-success">
+                  {success}
+                </span>
+              )}
+              {error && !success && (
+                <span className="mt-2 flex justify-center text-sm text-error">
+                  {error}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-1">
+          {multiGrid && (
+            <p className="text-sm font-semibold whitespace-pre-wrap">{title}</p>
+          )}
+          {description && (
+            <p
+              className={`text-xs w-full ${
+                multiGrid ? 'line-clamp-2' : 'line-clamp-3'
+              }`}
+            >
+              {description}
+            </p>
+          )}
+          <button
+            onClick={() => {
+              if (!multiGrid) {
+                setShowMore(true);
+              } else if (blinksDetail?.mint && blinksDetail?.id) {
+                router.push(
+                  `/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`
+                );
+              }
+            }}
+            className="text-xs stat-desc link link-hover w-fit"
+          >
+            {!showMore && description != undefined && 'Show More'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+const BlinksStaticContent: FC<{
+  form: FormProps | undefined;
+  image: string | undefined;
+}> = ({ form, image }) => {
+  return (
+    <div
+      className={`flex relative justify-center items-center h-auto w-full ${
+        form ? 'aspect-[2/1] rounded-xl' : 'aspect-square'
+      }`}
+    >
+      {image ? (
+        <Image
+          className={`object-cover`}
+          src={image}
+          fill={true}
+          priority={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt="action-image"
+        />
+      ) : (
+        <div className="loading loading-spinner text-neutral loading-lg" />
+      )}
+    </div>
+  );
+};

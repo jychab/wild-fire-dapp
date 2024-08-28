@@ -1,14 +1,8 @@
-import { ExecutionType } from '../enums/blinks';
-import { ActionComponent } from '../helper/blinks';
-
-export interface SolanaPaySpecGetResponse {
-  label: string;
-  icon: string;
-}
-
-export interface SolanaPaySpecPostRequestBody {
-  account: string; // transaction signer public key
-}
+import { AbstractActionComponent } from '@/components/actions/abstract-action-component';
+import { Action } from '@/components/actions/action';
+import { ActionSupportStrategy } from '../actions/actions-supportability';
+import { DisclaimerType, ExecutionType } from '../enums/blinks';
+import { PostContent } from './post';
 
 export const ACTIONS_REGISTRY_URL_ALL =
   'https://actions-registry.dialectapi.to/all';
@@ -16,57 +10,6 @@ export const ACTIONS_REGISTRY_URL_ALL =
 export const SOFT_LIMIT_BUTTONS = 10;
 export const SOFT_LIMIT_INPUTS = 3;
 export const SOFT_LIMIT_FORM_INPUTS = 10;
-
-export interface LinkedAction {
-  href: string; // solana pay/actions get/post url
-  label: string; // button text
-
-  // optional parameters for the action, e.g. input fields, inspired by OpenAPI
-  // enforcing single parameter for now for simplicity and determenistic client UIs
-  // can be extended to multiple inputs w/o breaking change by switching to Parameter[]
-  // note: there are no use-cases for multiple parameters atm, e.g. farcaster frames also have just single input
-  parameters?: Parameter[];
-}
-
-export interface Parameter {
-  name: string; // parameter name in url
-  label?: string; // input placeholder
-  required?: boolean; // input required
-}
-
-export interface SolanaPaySpecPostResponse {
-  transaction: string; // base64-encoded serialized transaction
-  message?: string; // the nature of the transaction response e.g. the name of an item being purchased
-  redirect?: string; // redirect URL after the transaction is successful
-}
-
-export interface ActionsSpecGetResponse extends SolanaPaySpecGetResponse {
-  icon: string; // image
-  label: string; // button text
-  title: string;
-  description: string;
-  disabled?: boolean; // allows to model invalid state of the action e.g. nft sold out
-  links?: {
-    // linked actions inspired by HAL https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-11
-    actions: LinkedAction[];
-  };
-  // optional error indication for non-fatal errors, if present client should display it to the user
-  // doesn't prevent client from interpreting the action or displaying it to the user
-  // e.g. can be used together with 'disabled' to display the reason: business constraints, authorization
-  error?: ActionError;
-}
-// No changes
-
-export interface ActionsSpecPostRequestBody
-  extends SolanaPaySpecPostRequestBody {}
-// Almost no changes, omitting old `redirect`
-
-export interface ActionsSpecPostResponse
-  extends Omit<SolanaPaySpecPostResponse, 'redirect'> {}
-
-export interface ActionError {
-  message: string;
-}
 
 export interface RegisteredEntity {
   host: string;
@@ -96,6 +39,9 @@ export type IsInterstitialResult =
   | {
       isInterstitial: false;
     };
+
+export type SecurityLevel = 'only-trusted' | 'non-malicious' | 'all';
+
 export type ObserverSecurityLevel = SecurityLevel;
 
 export interface ObserverOptions {
@@ -103,30 +49,39 @@ export interface ObserverOptions {
   securityLevel:
     | ObserverSecurityLevel
     | Record<'websites' | 'interstitials' | 'actions', ObserverSecurityLevel>;
+  supportStrategy: ActionSupportStrategy;
 }
 export interface NormalizedObserverOptions {
   securityLevel: Record<
     'websites' | 'interstitials' | 'actions',
     ObserverSecurityLevel
   >;
+  supportStrategy: ActionSupportStrategy;
 }
 export type NormalizedSecurityLevel = Record<Source, SecurityLevel>;
+
 export interface ExecutionState {
   status: ExecutionStatus;
-  executingAction?: ActionComponent | null;
+  checkingSupportability?: boolean;
+  executingAction?: AbstractActionComponent | null;
   errorMessage?: string | null;
   successMessage?: string | null;
 }
 export type ExecutionStatus =
   | 'blocked'
+  | 'checking-supportability'
   | 'idle'
   | 'executing'
   | 'success'
   | 'error';
+
 export type ActionValue =
   | {
+      type: ExecutionType.CHECK_SUPPORTABILITY;
+    }
+  | {
       type: ExecutionType.INITIATE;
-      executingAction: ActionComponent;
+      executingAction: AbstractActionComponent;
       errorMessage?: string;
     }
   | {
@@ -151,16 +106,21 @@ export type ActionValue =
       errorMessage?: string;
     };
 
-export type SecurityLevel = 'only-trusted' | 'non-malicious' | 'all';
-
 export type ExtendedActionState = RegisteredEntity['state'] | 'unknown';
-type Action = {
-  pathPattern: string;
-  apiPath: string;
-};
+
+export interface ActionCallbacksConfig {
+  onActionMount: (
+    action: Action,
+    originalUrl: string,
+    type: 'trusted' | 'malicious' | 'unknown'
+  ) => void;
+}
 
 export type ActionsJsonConfig = {
-  rules: Action[];
+  rules: {
+    pathPattern: string;
+    apiPath: string;
+  }[];
 };
 export type ActionStateWithOrigin =
   | {
@@ -171,4 +131,53 @@ export type ActionStateWithOrigin =
       action: ExtendedActionState;
       origin: ExtendedActionState;
       originType: Source;
+    };
+
+export type ActionSupportability =
+  | {
+      isSupported: true;
+    }
+  | {
+      isSupported: false;
+      message: string;
+    };
+export type ActionChainMetadata =
+  | {
+      isChained: true;
+      isInline: boolean;
+    }
+  | {
+      isChained: false;
+    };
+
+export interface LiveData {
+  enabled: boolean;
+  delayMs?: number;
+}
+
+export interface ExperimentalFeatures {
+  liveData?: LiveData;
+}
+export interface DialectExperimentalFeatures {
+  dialectExperimental?: {
+    liveData?: {
+      enabled: boolean;
+      delayMs?: number; // default 1000 (1s)
+    };
+  };
+}
+
+export type ExtendedActionGetResponse = PostContent &
+  DialectExperimentalFeatures;
+
+export type Disclaimer =
+  | {
+      type: DisclaimerType.BLOCKED;
+      ignorable: boolean;
+      hidden: boolean;
+      onSkip: () => void;
+    }
+  | {
+      type: DisclaimerType.UNKNOWN;
+      ignorable: boolean;
     };

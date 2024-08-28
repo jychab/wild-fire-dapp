@@ -10,7 +10,11 @@ import {
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { generateRandomU64Number } from '@/utils/helper/post';
-import { Parameter } from '@/utils/types/blinks';
+import {
+  SOFT_LIMIT_BUTTONS,
+  SOFT_LIMIT_FORM_INPUTS,
+  SOFT_LIMIT_INPUTS,
+} from '@/utils/types/blinks';
 import { PostContent } from '@/utils/types/post';
 import { LinkedAction } from '@solana/actions';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -37,9 +41,16 @@ import {
   useState,
 } from 'react';
 import toast from 'react-hot-toast';
+import { componentFactory } from '../actions/action';
+import { ButtonActionComponent } from '../actions/button-action-component';
+import { FormActionComponent } from '../actions/form-action-component';
+import { isParameterSelectable, isPatternAllowed } from '../actions/guards';
+import { MultiValueActionComponent } from '../actions/multivalue-action-coponent';
+import { SingleValueActionComponent } from '../actions/single-action-value-component';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { Blinks } from '../blinks/blinks-feature';
-import { ActionContent } from '../blinks/blinks-ui';
+import { ActionContent } from '../blinks/blinks-layout';
+import { BaseButtonProps } from '../blinks/ui/action-button';
 import { CreateAccountBtn } from '../create/create-ui';
 import { SubscribeBtn } from '../profile/profile-ui';
 import { checkUrlIsValid, useUploadMutation } from './upload.data-access';
@@ -1355,59 +1366,83 @@ function buildActionQuery(
 export const PreviewBlinksActionButton: FC<{
   actions?: LinkedAction[];
 }> = ({ actions }) => {
-  const buttons = useMemo(
-    () => actions?.filter((it) => !it.parameters) ?? [],
-    [actions]
-  );
-  const inputs = useMemo(
-    () => actions?.filter((it) => it.parameters?.length === 1) ?? [],
-    [actions]
-  );
-  const form = useMemo(() => {
+  const [buttons, inputs, form] = useMemo(() => {
+    const actionComponent = actions?.map((x) =>
+      componentFactory(null, x.label, x.href, x.parameters)
+    );
+    const buttons = actionComponent
+      ?.filter((it) => it instanceof ButtonActionComponent)
+      .slice(0, SOFT_LIMIT_BUTTONS);
+
+    const inputs = actionComponent
+      ?.filter(
+        (it) =>
+          it instanceof SingleValueActionComponent ||
+          it instanceof MultiValueActionComponent
+      )
+      .slice(0, SOFT_LIMIT_INPUTS);
+
     const [formComponent] =
-      actions?.filter((it) => it.parameters && it.parameters.length > 1) ?? [];
-    return formComponent;
+      actionComponent?.filter((it) => it instanceof FormActionComponent) ?? [];
+
+    return [buttons, inputs, formComponent];
   }, [actions]);
 
-  const asButtonProps = (
-    it: LinkedAction
-  ): {
-    text: string | null;
-    loading?: boolean;
-    variant?: 'default' | 'success' | 'error';
-    disabled?: boolean;
-    onClick: (params?: Record<string, string>) => void;
-  } => ({
-    text: it.label,
-    loading: false,
-    disabled: false,
-    variant: 'default',
-    onClick: () => {},
-  });
-
-  const asInputProps = (it: LinkedAction, parameter?: Parameter) => {
-    const placeholder = !parameter ? it.parameters![0].label : parameter.label;
-    const name = !parameter ? it.parameters![0].name : parameter.name;
+  const asButtonProps = (it: ButtonActionComponent) => {
     return {
-      // since we already filter this, we can safely assume that parameter is not null
-      placeholder,
+      text: it.label,
+      loading: false,
       disabled: false,
-      name,
-      button: !parameter ? asButtonProps(it) : undefined,
+      variant: 'default',
+      onClick: (params?: Record<string, string | string[]>) => {},
+    } as BaseButtonProps;
+  };
+
+  const asInputProps = (
+    it: SingleValueActionComponent | MultiValueActionComponent,
+    { placement }: { placement: 'form' | 'standalone' } = {
+      placement: 'standalone',
+    }
+  ) => {
+    return {
+      type: it.parameter.type ?? 'text',
+      placeholder: it.parameter.label,
+      disabled: false,
+      name: it.parameter.name,
+      required: it.parameter.required,
+      min: it.parameter.min,
+      max: it.parameter.max,
+      pattern:
+        it instanceof SingleValueActionComponent &&
+        isPatternAllowed(it.parameter)
+          ? it.parameter.pattern
+          : undefined,
+      options: isParameterSelectable(it.parameter)
+        ? it.parameter.options
+        : undefined,
+      description: it.parameter.patternDescription,
+      button:
+        placement === 'standalone'
+          ? asButtonProps(it.toButtonActionComponent())
+          : undefined,
     };
   };
 
-  const asFormProps = (it: LinkedAction) => {
+  const asFormProps = (it: FormActionComponent) => {
     return {
-      button: asButtonProps(it),
-      inputs: it.parameters!.map((parameter) => asInputProps(it, parameter)),
+      button: asButtonProps(it.toButtonActionComponent()),
+      inputs: it.parameters.slice(0, SOFT_LIMIT_FORM_INPUTS).map((parameter) =>
+        asInputProps(it.toInputActionComponent(parameter.name), {
+          placement: 'form',
+        })
+      ),
     };
   };
 
   return (
     <ActionContent
-      buttons={buttons.map(asButtonProps)}
-      inputs={inputs.map((input) => asInputProps(input))}
+      buttons={buttons?.map(asButtonProps)}
+      inputs={inputs?.map((input) => asInputProps(input))}
       form={form ? asFormProps(form) : undefined}
     />
   );

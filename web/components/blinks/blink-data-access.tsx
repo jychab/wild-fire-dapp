@@ -1,31 +1,47 @@
+import { useCreateActionConfig as createActionConfig } from '@/utils/actions/actions-config';
 import {
   LONG_STALE_TIME,
   MEDIUM_STALE_TIME,
   SHORT_STALE_TIME,
 } from '@/utils/consts';
+import { isInterstitial, SOLANA_ACTION_PREFIX } from '@/utils/helper/blinks';
 import { proxify } from '@/utils/helper/endpoints';
 import {
   ActionsJsonConfig,
   ActionsRegistry,
   ActionsRegistryConfig,
   LookupType,
+  ObserverOptions,
   RegisteredEntity,
 } from '@/utils/types/blinks';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
-import { Action, ActionsURLMapper } from '../../utils/helper/blinks';
+import { Action } from '../actions/action';
 
 export function useGetBlinkAction({
   actionUrl,
+  publicKey,
+  options,
   enabled,
 }: {
   actionUrl: string | null;
+  publicKey: PublicKey | null;
+  options?: Partial<ObserverOptions>;
   enabled: boolean;
 }) {
+  const { signTransaction } = useWallet();
+  const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-blink-action', { actionUrl }],
+    queryKey: ['get-blink-action', { actionUrl, options }],
     queryFn: () => {
-      if (!actionUrl) return null;
-      return Action.fetch(actionUrl);
+      const config = createActionConfig({
+        connection,
+        publicKey,
+        walletSignTransaction: signTransaction,
+      });
+      if (!actionUrl || !config || !options) return null;
+      return Action.fetch(actionUrl, config, options.supportStrategy);
     },
     enabled: enabled,
     staleTime: SHORT_STALE_TIME,
@@ -61,36 +77,26 @@ export function useGetBlinkActionJsonUrl({
   });
 }
 
-export function useGetActionRegistryLookUp({
+export function getActionRegistryLookUp({
   url,
   type,
   actionsRegistry,
-  enabled = true,
 }: {
-  url: string | URL | null | undefined;
+  url: string | URL;
   type: LookupType;
-  actionsRegistry: ActionsRegistry | undefined;
-  enabled: boolean;
+  actionsRegistry: ActionsRegistry;
 }) {
-  return useQuery({
-    queryKey: ['get-blink-lookup-url', { url, type, actionsRegistry }],
-    queryFn: () => {
-      if (!url || !actionsRegistry) return null;
-      if (type === 'action') {
-        return lookupAction(url, actionsRegistry);
-      }
+  if (type === 'action') {
+    return lookupAction(url, actionsRegistry);
+  }
 
-      if (type === 'website') {
-        return lookupWebsite(url, actionsRegistry);
-      }
+  if (type === 'website') {
+    return lookupWebsite(url, actionsRegistry);
+  }
 
-      if (type === 'interstitial') {
-        return lookupInterstitial(url, actionsRegistry);
-      }
-    },
-    enabled: enabled,
-    staleTime: LONG_STALE_TIME,
-  });
+  if (type === 'interstitial') {
+    return lookupInterstitial(url, actionsRegistry);
+  }
 }
 
 function lookupAction(
@@ -180,4 +186,108 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
     },
     staleTime: MEDIUM_STALE_TIME,
   });
+}
+
+class ActionsURLMapper {
+  private config: ActionsJsonConfig;
+
+  constructor(config: ActionsJsonConfig) {
+    this.config = config;
+  }
+
+  public mapUrl(url: string | URL): string | null {
+    // Ensure the input is a URL object
+    const urlObj = typeof url === 'string' ? new URL(url) : url;
+    const queryParams = urlObj.search; // Extract the query parameters from the URL
+
+    for (const action of this.config.rules) {
+      // Handle direct mapping without wildcards
+      if (this.isExactMatch(action.pathPattern, urlObj)) {
+        return `${action.apiPath}${queryParams}`;
+      }
+      // Match the pattern with the URL
+      const match = this.matchPattern(action.pathPattern, urlObj);
+
+      if (match) {
+        // Construct the mapped URL if there's a match
+        return this.constructMappedUrl(
+          action.apiPath,
+          match,
+          queryParams,
+          urlObj.origin
+        );
+      }
+    }
+
+    // If no match is found, return null
+    return null;
+  }
+
+  // Helper method to check for exact match
+  private isExactMatch(pattern: string, urlObj: URL): boolean {
+    return pattern === `${urlObj.origin}${urlObj.pathname}`;
+  }
+
+  // Helper method to match the URL with the pattern
+  private matchPattern(pattern: string, urlObj: URL): RegExpMatchArray | null {
+    const fullPattern = new RegExp(
+      `^${pattern.replace(/\*\*/g, '(.*)').replace(/\/(\*)/g, '/([^/]+)')}$`
+    );
+
+    const urlToMatch = pattern.startsWith('http')
+      ? urlObj.toString()
+      : urlObj.pathname;
+
+    console.log(fullPattern);
+    console.log(urlToMatch);
+    return urlToMatch.match(fullPattern);
+  }
+
+  // Helper method to construct the mapped URL
+  private constructMappedUrl(
+    apiPath: string,
+    match: RegExpMatchArray,
+    queryParams: string,
+    origin: string
+  ): string {
+    let mappedPath = apiPath;
+    match.slice(1).forEach((group) => {
+      mappedPath = mappedPath.replace(/\*+/, group);
+    });
+
+    if (apiPath.startsWith('http')) {
+      const mappedUrl = new URL(mappedPath);
+      return `${mappedUrl.origin}${mappedUrl.pathname}${queryParams}`;
+    }
+
+    return `${origin}${mappedPath}${queryParams}`;
+  }
+}
+
+export async function unfurlUrlToActionApiUrl(
+  actionUrl: URL | string
+): Promise<string | null> {
+  const url = new URL(actionUrl);
+  const strUrl = actionUrl.toString();
+  // case 1: if the URL is a solana action URL
+  if (SOLANA_ACTION_PREFIX.test(strUrl)) {
+    return strUrl.replace(SOLANA_ACTION_PREFIX, '');
+  }
+
+  // case 2: if the URL is an interstitial URL
+  const interstitialData = isInterstitial(url);
+  if (interstitialData.isInterstitial) {
+    return interstitialData.decodedActionUrl;
+  }
+
+  // case 3: if the URL is a website URL which has action.json
+
+  const actionsJsonUrl = url.origin + '/actions.json';
+  const actionsJson = await fetch(proxify(actionsJsonUrl)).then(
+    (res) => res.json() as Promise<ActionsJsonConfig>
+  );
+
+  const actionsUrlMapper = new ActionsURLMapper(actionsJson);
+
+  return actionsUrlMapper.mapUrl(url);
 }

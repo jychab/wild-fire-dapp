@@ -1,18 +1,24 @@
 import {
   checkSecurity,
+  DEFAULT_OPTIONS,
   isInterstitial,
   normalizeOptions,
 } from '@/utils/helper/blinks';
-import { ACTIONS_REGISTRY_URL_ALL } from '@/utils/types/blinks';
-import { PostBlinksDetail } from '@/utils/types/post';
-import { FC } from 'react';
 import {
+  ActionCallbacksConfig,
+  ACTIONS_REGISTRY_URL_ALL,
+  ObserverOptions,
+} from '@/utils/types/blinks';
+import { PostBlinksDetail } from '@/utils/types/post';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { FC, useMemo } from 'react';
+import {
+  getActionRegistryLookUp,
   useGetActionRegistry,
-  useGetActionRegistryLookUp,
   useGetBlinkAction,
   useGetBlinkActionJsonUrl,
 } from './blink-data-access';
-import { ActionContainer } from './blinks-ui';
+import { ActionContainer } from './blinks-container';
 
 interface BlinksProps {
   actionUrl: URL;
@@ -26,6 +32,8 @@ interface BlinksProps {
   hideCaption?: boolean;
   hideCarousel?: boolean;
   hideBorder?: boolean;
+  callbacks?: Partial<ActionCallbacksConfig>;
+  options?: Partial<ObserverOptions>;
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
@@ -39,39 +47,65 @@ export const Blinks: FC<BlinksProps> = ({
   hideCaption = false,
   hideCarousel = false,
   hideBorder = false,
+  callbacks = {},
+  options = DEFAULT_OPTIONS,
 }) => {
+  const { publicKey } = useWallet();
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
   });
-  const mergedOptions = normalizeOptions({ securityLevel: 'only-trusted' });
-  const interstitialData = actionUrl
-    ? isInterstitial(actionUrl)
-    : { isInterstitial: false, decodedActionUrl: '' };
+  // Memoize merged options
+  const mergedOptions = useMemo(
+    () => normalizeOptions({ securityLevel: 'only-trusted' }),
+    []
+  );
+  const interstitialData = useMemo(
+    () =>
+      actionUrl
+        ? isInterstitial(actionUrl)
+        : { isInterstitial: false, decodedActionUrl: '' },
+    [actionUrl]
+  );
 
-  const { data: interstitialState } = useGetActionRegistryLookUp({
-    url: actionUrl,
-    type: 'interstitial',
-    actionsRegistry,
-    enabled: !!actionsRegistry && interstitialData.isInterstitial,
-  });
+  const interstitialState = useMemo(() => {
+    if (!!actionsRegistry && interstitialData.isInterstitial) {
+      return getActionRegistryLookUp({
+        url: actionUrl,
+        type: 'interstitial',
+        actionsRegistry,
+      });
+    } else {
+      return null;
+    }
+  }, [actionUrl, interstitialData, actionsRegistry]);
 
-  const actionApiUrl =
-    actionUrl &&
-    interstitialData.isInterstitial &&
-    interstitialState &&
-    checkSecurity(
-      interstitialState.state,
-      mergedOptions.securityLevel.interstitials
-    )
-      ? interstitialData.decodedActionUrl
-      : null;
+  // Determine the final action URL based on interstitial or website checks
+  const actionApiUrl = useMemo(
+    () =>
+      actionUrl &&
+      interstitialData.isInterstitial &&
+      interstitialState &&
+      checkSecurity(
+        interstitialState.state,
+        mergedOptions.securityLevel.interstitials
+      )
+        ? interstitialData.decodedActionUrl
+        : null,
+    [actionUrl, interstitialData, interstitialState, mergedOptions]
+  );
 
-  const { data: websiteState } = useGetActionRegistryLookUp({
-    url: actionUrl,
-    type: 'website',
-    actionsRegistry,
-    enabled: !!actionsRegistry && !interstitialData.isInterstitial,
-  });
+  const websiteState = useMemo(() => {
+    if (!!actionsRegistry && !interstitialData.isInterstitial) {
+      return getActionRegistryLookUp({
+        url: actionUrl,
+        type: 'website',
+        actionsRegistry,
+      });
+    } else {
+      return null;
+    }
+  }, [actionUrl, actionsRegistry, interstitialData]);
+
   const { data: actionsUrlMapperApiUrl } = useGetBlinkActionJsonUrl({
     actionUrl: actionUrl,
     enabled:
@@ -81,20 +115,30 @@ export const Blinks: FC<BlinksProps> = ({
       checkSecurity(websiteState.state, mergedOptions.securityLevel.websites),
   });
 
-  const finalActionApiUrl = actionsUrlMapperApiUrl
-    ? actionsUrlMapperApiUrl
-    : actionApiUrl;
+  const finalActionApiUrl = useMemo(
+    () => actionsUrlMapperApiUrl || actionApiUrl,
+    [actionsUrlMapperApiUrl, actionApiUrl]
+  );
 
-  const { data: actionState } = useGetActionRegistryLookUp({
-    url: finalActionApiUrl,
-    type: 'action',
-    actionsRegistry,
-    enabled: !!actionsRegistry && !!finalActionApiUrl,
-  });
+  // Get action state and action data
+  const actionState = useMemo(() => {
+    if (!!actionsRegistry && !!finalActionApiUrl) {
+      return getActionRegistryLookUp({
+        url: finalActionApiUrl,
+        type: 'action',
+        actionsRegistry,
+      });
+    } else {
+      return null;
+    }
+  }, [finalActionApiUrl, actionsRegistry]);
 
   const { data: action } = useGetBlinkAction({
     actionUrl: finalActionApiUrl,
+    publicKey: publicKey,
+    options: options,
     enabled:
+      !!options &&
       !!finalActionApiUrl &&
       !!actionState &&
       checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
