@@ -213,7 +213,7 @@ export function AppHero({
       <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
         <div className="flex flex-col gap-8 w-full text-center ">
           {typeof title === 'string' ? (
-            <h1 className="max-w-2xl text-4xl lg:text-6xl lg:text-left font-bold text-base-content">
+            <h1 className="max-w-2xl text-3xl lg:text-5xl lg:text-left font-bold text-base-content">
               {title}
             </h1>
           ) : (
