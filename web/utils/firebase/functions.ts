@@ -87,45 +87,31 @@ export async function setTemporaryProfile(
   });
 }
 
-export async function getDistributor() {
-  const getDistributor = httpsCallable(functions, 'getDistributor');
-  const result = await getDistributor();
-  return result.data as string;
-}
-
-export async function getSponsoredDistributor(metadata: TokenMetadata) {
-  const getSponsoredDistributor = httpsCallable(
+export async function createMintInstruction(metadata: TokenMetadata) {
+  const createMintInstruction = httpsCallable(
     functions,
-    'getSponsoredDistributor'
+    'createMintInstruction'
   );
 
-  const result = await getSponsoredDistributor({
+  const result = await createMintInstruction({
     metadata: {
       ...metadata,
       mint: metadata.mint.toBase58(),
       updateAuthority: metadata.updateAuthority?.toBase58(),
     },
   });
-  return result.data as { partialTx?: string; distributor: string };
-}
-
-export async function getSponsoredUpdateMetadata(
-  mint: string,
-  fieldsToUpdate: [string, string][]
-) {
-  const getSponsoredUpdateMetadata = httpsCallable(
-    functions,
-    'getSponsoredUpdateMetadata'
-  );
-  const result = await getSponsoredUpdateMetadata({ mint, fieldsToUpdate });
   return result.data as string;
 }
 
-export async function getDailyClaim(mint: string) {
-  const getDailyClaim = httpsCallable(functions, 'getDailyClaim');
-  const result = await getDailyClaim({
-    mint,
-  });
+export async function updateMetadataInstruction(
+  mint: string,
+  fieldsToUpdate: [string, string][]
+) {
+  const updateMetadataInstruction = httpsCallable(
+    functions,
+    'updateMetadataInstruction'
+  );
+  const result = await updateMetadataInstruction({ mint, fieldsToUpdate });
   return result.data as string;
 }
 

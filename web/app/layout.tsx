@@ -3,9 +3,8 @@ import { UiLayout } from '@/components/ui/ui-layout';
 import './global.css';
 import { ReactQueryProvider } from './react-query-provider';
 export const metadata = {
-  title: 'BlinksFeed - Every action in your feed',
-  description:
-    'Create a post and airdrop it directly to your audience wallets.',
+  title: 'BlinksFeed - Every blinks in a feed',
+  description: 'Your recommended blinks, all in one feed.',
   metadataBase: new URL('https://blinksfeed.com'),
 };
 

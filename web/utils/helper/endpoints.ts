@@ -24,10 +24,12 @@ export function generatePostTransferApiEndPoint(mint: string, id: string) {
   return `https://api.blinksfeed.com/post/actions/transfer?mint=${mint}&id=${id}`;
 }
 
-export function proxify(targetUrl: string) {
+export function proxify(targetUrl: string, image = false) {
   // Encode the target URL to ensure it is safely passed as a query parameter
   const encodedTargetUrl = encodeURIComponent(targetUrl);
 
   // Construct the full URL for the proxy
-  return `${process.env.NEXT_PUBLIC_PROXY_ENDPOINT}?url=${encodedTargetUrl}`;
+  return `${process.env.NEXT_PUBLIC_PROXY_ENDPOINT}?url=${encodedTargetUrl}${
+    image ? '&image=true' : ''
+  }`;
 }

@@ -115,7 +115,7 @@ export class Action {
     if (this._data.icon.startsWith('data:')) {
       return this._data.icon;
     }
-    return proxify(this._data.icon);
+    return proxify(this._data.icon, true);
   }
 
   public get title() {

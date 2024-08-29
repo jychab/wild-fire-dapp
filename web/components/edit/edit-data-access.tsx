@@ -8,8 +8,6 @@ import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
-  SystemProgram,
-  TransactionInstruction,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -18,17 +16,13 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  getSponsoredUpdateMetadata,
   setTemporaryProfile,
+  updateMetadataInstruction,
   uploadMedia,
   uploadMetadata,
 } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
-import {
-  closeAuthorityAccount,
-  getAdditionalRentForUpdatedMetadata,
-  updateMetadata,
-} from '../../utils/helper/transcationInstructions';
+import { closeAuthorityAccount } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -114,7 +108,6 @@ export function useEditData({
         return 'Success';
       }
       let signature: TransactionSignature = '';
-      let ixs: TransactionInstruction[] = [];
       let partialTx;
       try {
         const details = await getTokenMetadata(
@@ -152,58 +145,24 @@ export function useEditData({
           );
           fieldsToUpdate.push(['uri', uri]);
         }
-        if (fieldsToUpdate.length > 0) {
-          if (ixs.length == 0) {
-            partialTx = await getSponsoredUpdateMetadata(
-              mint.toBase58(),
-              fieldsToUpdate
-            );
-          }
-          if (!partialTx) {
-            const lamports = await getAdditionalRentForUpdatedMetadata(
-              connection,
-              mint,
-              fieldsToUpdate
-            );
-            if (lamports > 0) {
-              ixs.push(
-                SystemProgram.transfer({
-                  fromPubkey: wallet.publicKey,
-                  toPubkey: mint,
-                  lamports: lamports,
-                })
-              );
-            }
-            for (let x of fieldsToUpdate) {
-              ixs.push(
-                await updateMetadata(wallet.publicKey, mint, x[0], x[1])
-              );
-            }
-          }
+        if (fieldsToUpdate.length == 0) {
+          return;
         }
+        partialTx = await updateMetadataInstruction(
+          mint.toBase58(),
+          fieldsToUpdate
+        );
 
-        if (partialTx) {
-          const partialSignedTx = VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            partialSignedTx,
-            publicKey: wallet.publicKey,
-            signTransaction: wallet.signTransaction,
-          });
-          return signature;
-        } else if (ixs.length > 0) {
-          signature = await buildAndSendTransaction({
-            connection,
-            ixs,
-            publicKey: wallet.publicKey,
-            signTransaction: wallet.signTransaction,
-          });
-
-          return signature;
-        }
-        return 'Success';
+        const partialSignedTx = VersionedTransaction.deserialize(
+          Buffer.from(partialTx, 'base64')
+        );
+        signature = await buildAndSendTransaction({
+          connection,
+          partialSignedTx,
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
+        return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;

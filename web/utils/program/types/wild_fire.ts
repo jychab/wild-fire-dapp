@@ -175,6 +175,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'distributor';
+          signer: true;
+        },
+        {
           name: 'mint';
           writable: true;
           pda: {
@@ -938,6 +942,10 @@ export type WildFire = {
             type: 'pubkey';
           },
           {
+            name: 'admin';
+            type: 'pubkey';
+          },
+          {
             name: 'distributor';
             type: 'pubkey';
           },
@@ -953,10 +961,6 @@ export type WildFire = {
       type: {
         kind: 'struct';
         fields: [
-          {
-            name: 'distributor';
-            type: 'pubkey';
-          },
           {
             name: 'transferFeeArgs';
             type: {

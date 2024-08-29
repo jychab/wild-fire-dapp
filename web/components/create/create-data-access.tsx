@@ -1,32 +1,20 @@
 'use client';
 
+import { LONG_STALE_TIME } from '@/utils/consts';
 import {
-  AMOUNT_CREATOR,
-  AMOUNT_RESERVE,
-  LONG_STALE_TIME,
-  ONBOARDING_WALLET,
-} from '@/utils/consts';
-import {
+  createMintInstruction,
   createOrUpdateAdminForExternalMint,
-  getDistributor,
-  getSponsoredDistributor,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
 import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
-import {
-  createMint,
-  createMintMetadata,
-  initializeMint,
-  program,
-} from '@/utils/helper/transcationInstructions';
+import { program } from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   Connection,
-  LAMPORTS_PER_SOL,
   PublicKey,
   TransactionSignature,
   VersionedTransaction,
@@ -98,31 +86,21 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
           program.programId
         );
-        const distributor = await getDistributor();
-        const [metadata, onboardingWallet] = await Promise.all([
-          buildTokenMetadata(input, mint, wallet.publicKey),
-          connection.getAccountInfo(ONBOARDING_WALLET),
-        ]);
-        const sponsoredResult =
-          onboardingWallet &&
-          onboardingWallet.lamports > 0.012 * LAMPORTS_PER_SOL
-            ? await getSponsoredDistributor(metadata)
-            : null;
-        if (sponsoredResult && sponsoredResult.partialTx) {
-          signature = await handleSponsoredDistributor(
-            sponsoredResult.partialTx,
-            connection,
-            wallet
-          );
-        } else {
-          signature = await handleSelfDistributor(
-            metadata,
-            connection,
-            wallet,
-            new PublicKey(distributor),
-            mint
-          );
-        }
+        const metadata = await buildTokenMetadata(
+          input,
+          mint,
+          wallet.publicKey
+        );
+        const partialSignedTx = await createMintInstruction(metadata);
+        let tx = VersionedTransaction.deserialize(
+          Buffer.from(partialSignedTx, 'base64')
+        );
+        signature = await buildAndSendTransaction({
+          connection: connection,
+          partialSignedTx: tx,
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
         return { signature, mint };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
@@ -146,48 +124,6 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
   });
 }
 
-async function handleSponsoredDistributor(
-  partialTx: string,
-  connection: Connection,
-  wallet: any
-): Promise<TransactionSignature> {
-  let tx = VersionedTransaction.deserialize(Buffer.from(partialTx, 'base64'));
-  return await buildAndSendTransaction({
-    connection: connection,
-    partialSignedTx: tx,
-    publicKey: wallet.publicKey,
-    signTransaction: wallet.signTransaction,
-  });
-}
-
-async function handleSelfDistributor(
-  metadata: TokenMetadata,
-  connection: Connection,
-  wallet: any,
-  distributor: PublicKey,
-  mint: PublicKey
-): Promise<TransactionSignature> {
-  const [mintIx, metadataIx, initMintIx] = await Promise.all([
-    createMint(distributor, 10, undefined, wallet.publicKey),
-    createMintMetadata(connection, metadata, wallet.publicKey),
-    initializeMint(AMOUNT_RESERVE, AMOUNT_CREATOR, mint, wallet.publicKey),
-    // initializePool(
-    //   connection,
-    //   mint,
-    //   wallet.publicKey,
-    //   wallet.publicKey,
-    //   AMOUNT_LIQUIDITY_POOL,
-    //   Number(OFF_SET)
-    // ),
-  ]);
-
-  return await buildAndSendTransaction({
-    connection: connection,
-    ixs: [mintIx, metadataIx, initMintIx],
-    publicKey: wallet.publicKey,
-    signTransaction: wallet.signTransaction,
-  });
-}
 export async function buildTokenMetadata(
   input: CreateMintArgs,
   mint: PublicKey,

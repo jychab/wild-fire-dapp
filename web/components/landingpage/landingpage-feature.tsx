@@ -11,12 +11,9 @@ export const LandingPage: FC = () => {
   });
   return (
     <AppHero
-      title={'Your feed, reimagined.'}
+      title={'Your Perfect Feed, Curated by Your Tokens.'}
       subtitle={
         <div className="flex flex-col gap-4 items-center lg:items-start">
-          <p className="text-lg">
-            Discover blinks customized by the tokens you hold.
-          </p>
           <AuthenticationBtn
             children={
               <div className="btn btn-outline bg-base-100 rounded-none">
