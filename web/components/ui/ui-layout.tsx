@@ -10,7 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ReactNode, Suspense, useEffect, useRef } from 'react';
+import { FC, ReactNode, Suspense, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../../public/images/logo.png';
 import { auth } from '../../utils/firebase/firebase';
@@ -18,7 +18,10 @@ import {
   createLoginMessage,
   verifyAndGetToken,
 } from '../../utils/firebase/functions';
-import { SignInBtn } from '../authentication/authentication-ui';
+import {
+  AuthenticationDropdownMenu,
+  SignInBtn,
+} from '../authentication/authentication-ui';
 import SearchBar from '../search/search-ui';
 import { UploadBtn } from '../upload/upload-ui';
 
@@ -88,62 +91,68 @@ export function UiLayout({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [publicKey, signMessage]);
 
+  const path = usePathname();
+
   return (
-    <div className="flex flex-col h-screen">
-      <div className="drawer drawer-end flex flex-1">
-        <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-content flex flex-col w-full items-center">
-          <div className="w-full navbar fixed flex items-center justify-between gap-4 z-20 shadow-lg text-base-content bg-base-100 border-b border-base-300">
-            <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
-              <div className="relative w-8 h-8">
-                <Image
-                  src={logo}
-                  alt={'logo'}
-                  priority={true}
-                  className={`object-cover`}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-              </div>
-              <span className="hidden md:block font-luckiestguy text-3xl font-bold leading-[0.75]">
-                BlinksFeed
-              </span>
-            </Link>
-            {publicKey && <SearchBar />}
-            <div className="flex gap-1 w-fit items-center">
-              <div className="hidden md:flex w-36">
-                <UploadBtn />
-              </div>
-              <SignInBtn />
-            </div>
+    <div className="flex w-full bg-base-100 min-h-screen flex-1">
+      <div className=" flex flex-col w-full flex-1 items-center">
+        <Navbar />
+        <div className="flex flex-1 w-full mt-16">
+          <div className="w-full flex gap-16 flex-1 justify-center">
+            {(!!publicKey || path != '/') && (
+              <ul className="hidden 2xl:flex flex-col menu menu-primary bg-base-100 border-base-300 border-r left-0 gap-2 min-h-full w-60">
+                <AuthenticationDropdownMenu />
+              </ul>
+            )}
+            <Suspense
+              fallback={
+                <span className="loading loading-spinner loading-lg"></span>
+              }
+            >
+              {children}
+            </Suspense>
+            {(!!publicKey || path != '/') && (
+              <div className="hidden 2xl:flex w-60" />
+            )}
           </div>
-          <div className="flex flex-1 w-full mt-16">
-            <div className="w-full bg-base-100 text-base-content flex flex-1 justify-center">
-              <Suspense
-                fallback={
-                  <span className="loading loading-spinner loading-lg"></span>
-                }
-              >
-                {children}
-              </Suspense>
-            </div>
-            <Toaster position="bottom-right" />
-          </div>
-        </div>
-        <div className="drawer-side">
-          <label
-            htmlFor="my-drawer-3"
-            aria-label="close sidebar"
-            className="drawer-overlay"
-          />
+          <Toaster position="bottom-right" />
         </div>
       </div>
-      {/* <footer className="hidden md:block p-4">
-        <SocialComponent />
-      </footer> */}
     </div>
   );
 }
+
+export const Navbar: FC = () => {
+  const { publicKey } = useWallet();
+  return (
+    <div className="w-full navbar fixed flex items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
+      <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
+        <div className="relative w-8 h-8">
+          <Image
+            src={logo}
+            alt={'logo'}
+            priority={true}
+            className={`object-cover`}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
+        <span className="hidden md:block font-luckiestguy text-3xl font-bold leading-[0.75]">
+          BlinksFeed
+        </span>
+      </Link>
+      {publicKey && <SearchBar />}
+      <div className="flex gap-1 w-fit items-center">
+        {publicKey && (
+          <div className="hidden md:flex w-36">
+            <UploadBtn />
+          </div>
+        )}
+        <SignInBtn />
+      </div>
+    </div>
+  );
+};
 
 export function AppModal({
   children,
@@ -211,16 +220,16 @@ export function AppHero({
   return (
     <div className={`hero pb-[32px]`}>
       <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
-        <div className="flex flex-col gap-8 w-full text-center ">
+        <div className="flex flex-col gap-8 w-full items-center justify-center text-center lg:text-left lg:items-start">
           {typeof title === 'string' ? (
-            <h1 className="max-w-2xl text-3xl lg:text-5xl lg:text-left font-bold text-base-content">
+            <h1 className="max-w-2xl text-3xl lg:text-5xl font-bold">
               {title}
             </h1>
           ) : (
             title
           )}
           {typeof subtitle === 'string' ? (
-            <p className="py-6 text-base-content max-w-xl">{subtitle}</p>
+            <p className="py-6 max-w-xl">{subtitle}</p>
           ) : (
             subtitle
           )}

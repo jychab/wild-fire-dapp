@@ -77,7 +77,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
       <span className="text-3xl lg:text-4xl text-base-content">
         Edit Profile Settings
       </span>
-      <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded bg-base-100">
+      <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded">
         <div className="flex w-full justify-between items-center">
           <span className="hidden sm:block">Profile</span>
           {metadata?.token_info?.supply == 0 && (

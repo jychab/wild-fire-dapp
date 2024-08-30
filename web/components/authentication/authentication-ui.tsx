@@ -59,8 +59,6 @@ interface ProfileButtonProps {
 }
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
-  const { publicKey, disconnect } = useWallet();
-
   return (
     <div className="dropdown dropdown-end dropdown-bottom">
       <div
@@ -86,55 +84,76 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         tabIndex={0}
         className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-56"
       >
+        <AuthenticationDropdownMenu />
+      </ul>
+    </div>
+  );
+};
+export const AuthenticationDropdownMenu: FC = () => {
+  const { publicKey, disconnect } = useWallet();
+  const { data: metaDataQuery } = useGetTokenDetails({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
+  return (
+    <>
+      {publicKey ? (
         <li className="text-left">
-          <div className="flex items-center justify-between w-full">
-            <span className="block text-sm truncate max-w-[130px] ">
-              {publicKey?.toString()}
-            </span>
-            <ThemeComponent />
-          </div>
+          <span className="block text-sm truncate max-w-[150px] md:max-w-[220px] ">
+            {publicKey.toString()}
+          </span>
         </li>
+      ) : (
+        <div className="w-full">
+          <AuthenticationBtn>
+            <div className="btn w-full btn-primary rounded">Connect Wallet</div>
+          </AuthenticationBtn>
+        </div>
+      )}
 
-        {publicKey && (
-          <li className="w-full">
-            <Link
-              href={`/profile?mintId=${getDerivedMint(publicKey).toBase58()}`}
-            >
-              <IconUser />
-              Profile
-            </Link>
-          </li>
-        )}
+      {publicKey && (
         <li className="w-full">
-          <Link href={`/post/create`}>
-            <IconSquarePlus />
-            Create Post
+          <Link
+            href={`/profile?mintId=${getDerivedMint(publicKey).toBase58()}`}
+          >
+            <IconUser />
+            Profile
           </Link>
         </li>
-        {checkIfMetadataExist(metaDataQuery) ? (
+      )}
+      <li className="w-full">
+        <Link href={`/post/create`}>
+          <IconSquarePlus />
+          Create Post
+        </Link>
+      </li>
+      {checkIfMetadataExist(metaDataQuery) ? (
+        <li className="w-full">
+          <Link href={`/mint/create`}>
+            <IconStar />
+            Become a Creator
+          </Link>
+        </li>
+      ) : (
+        <>
           <li className="w-full">
-            <Link href={`/mint/create`}>
-              <IconStar />
-              Become a Creator
+            <Link href={`/airdrop`}>
+              <IconRocket />
+              Airdrop Campaigns
             </Link>
           </li>
-        ) : (
-          <>
-            <li className="w-full">
-              <Link href={`/airdrop`}>
-                <IconRocket />
-                Airdrop Campaigns
-              </Link>
-            </li>
-            <li className="w-full">
-              <Link href={`/transactions`}>
-                <IconTransactionBitcoin />
-                Transactions
-              </Link>
-            </li>
-          </>
-        )}
+          <li className="w-full">
+            <Link href={`/transactions`}>
+              <IconTransactionBitcoin />
+              Transactions
+            </Link>
+          </li>
+        </>
+      )}
+      <li className="w-full">
+        <ThemeComponent />
+      </li>
 
+      {publicKey && (
         <li className="w-full">
           <div
             onClick={async () => {
@@ -145,7 +164,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
             Disconnect
           </div>
         </li>
-      </ul>
-    </div>
+      )}
+    </>
   );
 };

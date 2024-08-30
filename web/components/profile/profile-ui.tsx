@@ -93,7 +93,7 @@ export const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
       <input
         type="radio"
         role="tab"
-        className={`tab font-semibold ${
+        className={`tab font-semibold [--tab-bg:transparent] ${
           selectedTab == TabsEnum.POST ? 'tab-active' : ''
         }`}
         checked={selectedTab == TabsEnum.POST}
@@ -103,7 +103,7 @@ export const Tabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
       <input
         type="radio"
         role="tab"
-        className={`tab font-semibold ${
+        className={`tab font-semibold [--tab-bg:transparent] ${
           selectedTab == TabsEnum.TRADE ? 'tab-active' : ''
         }`}
         checked={selectedTab == TabsEnum.TRADE}
@@ -132,7 +132,7 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
   });
 
   return (
-    <div className="flex flex-col lg:flex-row items-center gap-4 w-full bg-base-100">
+    <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
       <div className="w-40 h-40 items-center justify-center flex">
         {!isLoading && (
           <div className="relative h-full w-full">
@@ -224,8 +224,8 @@ export const LockedContent: FC<{
 
   return (
     locked && (
-      <div className="flex flex-col flex-1 justify-center items-center bg-base-100 bg-opacity-80 p-4 h-full w-full">
-        <div className="flex flex-col gap-4 rounded-box bg-base-300 w-full max-w-sm p-4">
+      <div className="flex flex-col flex-1 justify-center items-center bg-opacity-80 p-4 h-full w-full">
+        <div className="flex flex-col gap-4 rounded-box bg-base-100 border w-full max-w-sm p-4">
           <div className="flex flex-col gap-4 items-center">
             <h1 className="font-bold text-xl">Unlock This Feature</h1>
             <span className="text-center text-sm">

@@ -17,12 +17,12 @@ export const ProfileFeature: FC<{
   );
 
   return (
-    <div className="flex flex-col w-full h-full items-center">
+    <div className="flex flex-col w-full flex-1 h-full items-center">
       <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8 h-full">
         <Profile mintId={mintId} />
         <div className="flex flex-col flex-1 h-full w-full">
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
-          <div className="border-base-200 rounded border-x border-b h-full md:p-4">
+          <div className="rounded border-x border-b border-base-300 h-full md:p-4">
             {selectedTab == TabsEnum.POST && <ContentPanel mintId={mintId} />}
             {selectedTab == TabsEnum.TRADE && <TradingPanel mintId={mintId} />}
           </div>
