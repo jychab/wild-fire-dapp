@@ -3,13 +3,13 @@
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
+import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
 import {
   generatePostEndPoint,
   generatePostSubscribeApiEndPoint,
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { convertBlinksUrlToApiUrl } from '@/utils/helper/post';
 import {
   SOFT_LIMIT_BUTTONS,
   SOFT_LIMIT_FORM_INPUTS,
@@ -540,20 +540,21 @@ const UploadContentBtn: FC<{
     try {
       const postId = tempCampaign.postId;
       if (useExistingBlink) {
-        const mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
+        let mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
+
         if (!mediaUrl) {
           toast.error('No Blinks Url Found');
           return;
         }
-        const apiUrl = await convertBlinksUrlToApiUrl(new URL(mediaUrl));
+        const apiUrl = await unfurlUrlToActionApiUrl(mediaUrl);
         if (!apiUrl) {
-          toast.error('Error mapping blinks url');
+          toast.error('Unable to unfurl to action api url');
           return;
         }
-        const endpoint = generatePostEndPoint(mint.toBase58(), postId, apiUrl);
+
         await uploadMutation.mutateAsync({
           postContent: {
-            url: endpoint,
+            url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
             mint: mint.toBase58(),
             id: postId,
           },

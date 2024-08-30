@@ -58,14 +58,14 @@ export function useRemoveContentMutation({
         }
 
         await deletePost(mint.toBase58(), postId);
-        return signature;
+        return { signature };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;
       }
     },
-    onSuccess: async (signature) => {
-      if (signature) {
+    onSuccess: async (result) => {
+      if (result) {
         await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-posts-from-mint', { mint }],
@@ -75,7 +75,7 @@ export function useRemoveContentMutation({
           }),
         ]);
         revalidateTags('post');
-        transactionToast(signature || 'Success');
+        transactionToast(result.signature || 'Success');
         router.push(`profile/?mintId=${mint?.toBase58()}`);
       }
     },
