@@ -1,6 +1,6 @@
 'use client';
 
-import { Duration, Eligibility } from '@/utils/enums/campaign';
+import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
 import {
@@ -9,12 +9,13 @@ import {
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { generateRandomU64Number } from '@/utils/helper/post';
+import { convertBlinksUrlToApiUrl } from '@/utils/helper/post';
 import {
   SOFT_LIMIT_BUTTONS,
   SOFT_LIMIT_FORM_INPUTS,
   SOFT_LIMIT_INPUTS,
 } from '@/utils/types/blinks';
+import { PostCampaign } from '@/utils/types/campaigns';
 import { PostContent } from '@/utils/types/post';
 import { LinkedAction } from '@solana/actions';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -80,20 +81,29 @@ interface UploadFileTypes {
   thumbnail?: string;
   thumbnailFile?: File;
 }
-
+interface LinkedActionWithType extends LinkedAction {
+  type: ActionTypeEnum;
+}
+export interface TempPostCampaign extends PostCampaign {
+  difference?: number;
+  links?: {
+    /** list of related Actions a user could perform */
+    actions: LinkedActionWithType[];
+  };
+}
 export const UploadPost: FC<{
   post: PostContent | undefined | null;
+  postCampaign: PostCampaign | undefined | null;
   mint: PublicKey | null;
   id?: string;
-}> = ({ post, mint, id }) => {
-  const [tempPost, setTempPost] = useState<PostContent | any>();
+}> = ({ post, mint, id, postCampaign }) => {
+  const [tempCampaign, setTempCampaign] = useState<Partial<TempPostCampaign>>();
   const [files, setFiles] = useState<UploadFileTypes[]>([]);
   const previousFilesRef = useRef(files);
   const [useExistingBlink, setUseExistingBlink] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
-  const [filesLoaded, setFilesLoaded] = useState(false);
   const [uri, setUri] = useState('');
   const [action, setAction] = useState(ActionTypeEnum.SUBSCRIBE);
 
@@ -113,7 +123,20 @@ export const UploadPost: FC<{
   }, []);
 
   useEffect(() => {
-    if (post && !filesLoaded && files.length === 0) {
+    if (postCampaign && !tempCampaign) {
+      setTempCampaign((prev) => ({ ...prev, ...postCampaign }));
+    } else if (mint) {
+      setTempCampaign((prev) => ({
+        ...prev,
+        mint: mint.toBase58(),
+        postId: id || crypto.randomUUID(),
+      }));
+    }
+  }, [postCampaign, mint, id]);
+
+  const [postLoaded, setPostLoaded] = useState(false);
+  useEffect(() => {
+    if (post && !postLoaded && files.length === 0) {
       if (post.carousel?.length) {
         const newFiles = post.carousel.map((x) =>
           x.fileType.startsWith('image/')
@@ -134,16 +157,9 @@ export const UploadPost: FC<{
         setFiles([{ fileType: 'blinks', uri: post.url, id: 'blinks' }]);
         setUseExistingBlink(true);
       }
-      setFilesLoaded(true);
+      setPostLoaded(true);
     }
-    if (mint) {
-      setTempPost({
-        ...post,
-        id: id || crypto.randomUUID(),
-        mint: mint.toBase58(),
-      });
-    }
-  }, [post, filesLoaded, mint, id]);
+  }, [post, postLoaded]);
 
   useEffect(() => {
     if (uri) {
@@ -474,15 +490,16 @@ export const UploadPost: FC<{
         )}
         {!useExistingBlink && (
           <AddActions
-            tempPost={tempPost}
-            setTempPost={setTempPost}
+            post={post}
+            tempCampaign={tempCampaign}
+            setTempCampaign={setTempCampaign}
             action={action}
             setAction={setAction}
           />
         )}
       </div>
       <UploadContentBtn
-        tempPost={tempPost}
+        tempCampaign={tempCampaign}
         useExistingBlink={useExistingBlink}
         mint={mint}
         id={id}
@@ -495,7 +512,7 @@ export const UploadPost: FC<{
   );
 };
 const UploadContentBtn: FC<{
-  tempPost: PostContent;
+  tempCampaign: Partial<TempPostCampaign> | undefined;
   useExistingBlink: boolean;
   id?: string;
   mint: PublicKey | null;
@@ -510,7 +527,7 @@ const UploadContentBtn: FC<{
   id,
   title,
   description,
-  tempPost,
+  tempCampaign,
   action,
 }) => {
   const { publicKey } = useWallet();
@@ -518,69 +535,65 @@ const UploadContentBtn: FC<{
   const [loading, setLoading] = useState(false);
 
   const handleUpload = useCallback(async () => {
-    if (!files || !mint) return;
-
+    if (!files || !mint || !tempCampaign?.postId) return;
     setLoading(true);
-
     try {
-      const postId = tempPost.id;
+      const postId = tempCampaign.postId;
       if (useExistingBlink) {
         const mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
-        if (mediaUrl) {
-          await uploadMutation.mutateAsync({
-            url: mediaUrl,
+        if (!mediaUrl) {
+          toast.error('No Blinks Url Found');
+          return;
+        }
+        const apiUrl = await convertBlinksUrlToApiUrl(new URL(mediaUrl));
+        if (!apiUrl) {
+          toast.error('Error mapping blinks url');
+          return;
+        }
+        const endpoint = generatePostEndPoint(mint.toBase58(), postId, apiUrl);
+        await uploadMutation.mutateAsync({
+          postContent: {
+            url: endpoint,
             mint: mint.toBase58(),
             id: postId,
-          });
-        } else {
-          toast.error('No Blinks Url Found');
-        }
+          },
+        });
       } else if (publicKey) {
-        if (
-          !tempPost.links ||
-          tempPost.links.actions.length == 0 ||
-          action == ActionTypeEnum.SUBSCRIBE
-        ) {
-          tempPost.links = {
-            actions: [
-              {
-                href: generatePostSubscribeApiEndPoint(mint.toBase58(), postId),
-                label: 'Subscribe',
-              },
-            ],
-          };
-        } else {
-          if (!tempPost.campaign || !tempPost.campaign.budget) {
+        if (tempCampaign?.links) {
+          tempCampaign.links.actions = tempCampaign.links?.actions.filter(
+            (x) => x.type == action
+          );
+        }
+        if (action == ActionTypeEnum.REWARD) {
+          if (!tempCampaign || !tempCampaign.budget) {
             toast.error('No Budget Found');
             return;
-          }
-          if (
-            tempPost.campaign.eligibility == Eligibility.ONCE_PER_ADDRESS &&
-            !tempPost.campaign.participants
-          ) {
-            tempPost.campaign.participants = [];
           }
         }
 
         const carousel = await Promise.all(
           files
-            .filter((x) => x.id !== 'blinks')
+            .filter(
+              (x) =>
+                x.id !== 'blinks' &&
+                (x.fileType.startsWith('image/') ||
+                  x.fileType.startsWith('video/'))
+            )
             .map(async (x) => {
               const mediaUrl = x.file
                 ? await uploadMedia(x.file, publicKey)
                 : x.uri;
               if (x.fileType.startsWith('image/')) {
                 return { uri: mediaUrl, fileType: x.fileType };
-              } else if (x.fileType.startsWith('video/')) {
+              } else {
                 return {
                   uri: mediaUrl,
                   fileType: x.fileType,
                   duration: x.duration,
                 };
               }
-              return null;
             })
-        ).then((results) => results.filter((x) => x != null));
+        );
         if (carousel.length > 0) {
           const iconUrl = carousel[0]!.fileType.startsWith('video/')
             ? await uploadMedia(
@@ -590,15 +603,30 @@ const UploadContentBtn: FC<{
               )
             : carousel[0]!.uri;
           await uploadMutation.mutateAsync({
-            ...tempPost,
-            icon: iconUrl,
-            title,
-            description,
-            label: 'Subscribe', // default
-            url: generatePostEndPoint(mint.toBase58(), postId),
-            mint: mint.toBase58(),
-            id: postId,
-            carousel,
+            postContent: {
+              icon: iconUrl,
+              title,
+              description,
+              label: 'Subscribe', // default
+              url: generatePostEndPoint(mint.toBase58(), postId),
+              mint: mint.toBase58(),
+              id: postId,
+              carousel,
+              links: tempCampaign.links,
+            },
+            postCampaign: {
+              difference: tempCampaign.difference,
+              postId: tempCampaign.postId,
+              amountPerQuery: tempCampaign.amountPerQuery,
+              id: tempCampaign.id,
+              mint: tempCampaign.mint,
+              mintToSend: tempCampaign.mintToSend,
+              budget: tempCampaign.budget,
+              tokensRemaining: tempCampaign.tokensRemaining,
+              eligibility: tempCampaign.eligibility,
+              criteria: tempCampaign.criteria,
+              endDate: tempCampaign.endDate,
+            },
           });
         }
       }
@@ -641,30 +669,54 @@ const UploadContentBtn: FC<{
 };
 
 export const AddActions: FC<{
-  tempPost: PostContent | undefined;
-  setTempPost: Dispatch<SetStateAction<PostContent | undefined>>;
+  post: PostContent | null | undefined;
+  tempCampaign: Partial<TempPostCampaign> | undefined;
+  setTempCampaign: Dispatch<
+    SetStateAction<Partial<TempPostCampaign> | undefined>
+  >;
   action: ActionTypeEnum;
   setAction: Dispatch<SetStateAction<ActionTypeEnum>>;
-}> = ({ tempPost, setTempPost, action, setAction }) => {
-  const [selectedQuery, setSelectedQuery] = useState<LinkedAction>();
+}> = ({ post, tempCampaign, setTempCampaign, action, setAction }) => {
+  const [selectedQuery, setSelectedQuery] = useState<LinkedActionWithType>();
 
-  function hasAction(tempPost: PostContent | undefined) {
-    return (
-      tempPost && tempPost.links?.actions && tempPost.links?.actions.length > 0
-    );
+  function isSubscribe(href: string, post: PostContent) {
+    return href == generatePostSubscribeApiEndPoint(post.mint, post.id)
+      ? ActionTypeEnum.SUBSCRIBE
+      : ActionTypeEnum.REWARD;
   }
 
-  // Memoize the current action to avoid unnecessary updates
   useEffect(() => {
-    if (hasAction(tempPost)) {
-      setAction(
-        tempPost!.links?.actions[0].href ==
-          generatePostSubscribeApiEndPoint(tempPost!.mint, tempPost!.id)
-          ? ActionTypeEnum.SUBSCRIBE
-          : ActionTypeEnum.REWARD
-      );
+    if (
+      post &&
+      post.links?.actions &&
+      post.links?.actions.length > 0 &&
+      !tempCampaign?.links
+    ) {
+      setAction(isSubscribe(post?.links?.actions[0].href!, post!));
+      const actions = post!.links!.actions.map((x) => ({
+        ...x,
+        type: isSubscribe(x.href, post!),
+      }));
+      if (actions.findIndex((x) => x.type == ActionTypeEnum.SUBSCRIBE) == -1) {
+        actions.push({
+          href: generatePostSubscribeApiEndPoint(post!.mint, post!.id),
+          type: ActionTypeEnum.SUBSCRIBE,
+          label: 'Subscribe',
+        });
+      }
+      setTempCampaign((prev) => {
+        if (prev) {
+          return {
+            ...prev,
+            links: {
+              actions: actions,
+            },
+          };
+        }
+        return undefined;
+      });
     }
-  }, [tempPost]);
+  }, [post, tempCampaign]);
 
   // Helper to show a modal by id
   const showModalById = (id: string) => {
@@ -683,18 +735,6 @@ export const AddActions: FC<{
         label="Reward"
         isActive={action === ActionTypeEnum.REWARD}
         onClick={() => {
-          if (
-            hasAction(tempPost) &&
-            tempPost!.links?.actions[0].href ==
-              generatePostSubscribeApiEndPoint(tempPost!.mint, tempPost!.id)
-          ) {
-            setTempPost((prev) => {
-              if (prev?.links) {
-                prev.links = { actions: [] };
-              }
-              return prev ? { ...prev } : undefined;
-            });
-          }
           setAction(ActionTypeEnum.REWARD);
         }}
       />
@@ -731,15 +771,15 @@ export const AddActions: FC<{
               onClick={() => showModalById('overall_post_campaign_modal')}
               className="btn btn-sm btn-outline"
             >
-              {tempPost?.campaign?.budget ? 'Edit' : 'Set'} Overall Budget
+              {tempCampaign?.budget ? 'Edit' : 'Set'} Overall Budget
             </button>
             <div
               className={`${
-                tempPost?.campaign?.budget ? 'text-success' : 'text-warning'
+                tempCampaign?.budget ? 'text-success' : 'text-warning'
               }`}
             >
               <div className="flex items-center gap-2">
-                {tempPost?.campaign?.budget ? (
+                {tempCampaign?.budget ? (
                   <>
                     <IconDiscountCheck />
                     Completed
@@ -753,22 +793,29 @@ export const AddActions: FC<{
               </div>
             </div>
           </div>
-
           <div className="flex flex-wrap items-center gap-2">
-            {tempPost?.links?.actions.map((x, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setSelectedQuery(
-                    !x.parameters ? { href: x.href, label: x.label } : x
-                  );
-                  showModalById('action_modal');
-                }}
-                className="btn btn-sm btn-outline"
-              >
-                {x.label}
-              </button>
-            ))}
+            {tempCampaign?.links?.actions
+              .filter((x) => x.type == ActionTypeEnum.REWARD)
+              .map((x, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setSelectedQuery(
+                      !x.parameters
+                        ? {
+                            type: ActionTypeEnum.REWARD,
+                            href: x.href,
+                            label: x.label,
+                          }
+                        : x
+                    );
+                    showModalById('action_modal');
+                  }}
+                  className="btn btn-sm btn-outline"
+                >
+                  {x.label}
+                </button>
+              ))}
             <button
               onClick={() => {
                 setSelectedQuery(undefined);
@@ -783,20 +830,27 @@ export const AddActions: FC<{
       )}
       <div>Preview:</div>
       {action === ActionTypeEnum.REWARD ? (
-        <PreviewBlinksActionButton actions={tempPost?.links?.actions} />
+        <PreviewBlinksActionButton
+          actions={tempCampaign?.links?.actions.filter(
+            (x) => x.type == ActionTypeEnum.REWARD
+          )}
+        />
       ) : (
-        <SubscribeBtn mintId={tempPost?.mint || null} subscribeOnly={true} />
+        <SubscribeBtn
+          mintId={tempCampaign?.mint || null}
+          subscribeOnly={true}
+        />
       )}
       {action === ActionTypeEnum.REWARD && (
         <>
           <OverallPostCampaignModal
-            tempPost={tempPost}
-            setTempPost={setTempPost}
+            tempCampaign={tempCampaign}
+            setTempCampaign={setTempCampaign}
           />
           <ActionModal
-            tempPost={tempPost}
+            tempCampaign={tempCampaign}
             query={selectedQuery}
-            setTempPost={setTempPost}
+            setTempCampaign={setTempCampaign}
           />
         </>
       )}
@@ -805,46 +859,48 @@ export const AddActions: FC<{
 };
 
 interface OverallPostCampaignModalProps {
-  tempPost: any | undefined;
-  setTempPost: Dispatch<SetStateAction<any>>;
+  tempCampaign: Partial<TempPostCampaign> | undefined;
+  setTempCampaign: Dispatch<
+    SetStateAction<Partial<TempPostCampaign> | undefined>
+  >;
 }
 
 export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
-  tempPost,
-  setTempPost,
+  tempCampaign,
+  setTempCampaign,
 }) => {
   const currentTime = Date.now() / 1000;
 
   // Initializing state with a single useState call for all form fields
   const [campaignDetails, setCampaignDetails] = useState({
-    mint: '',
-    allocatedBudget: '',
+    mintToSend: tempCampaign?.mint || '',
+    budget: '',
     endDate: undefined as number | undefined,
     duration: Duration.UNTILL_BUDGET_FINISHES,
   });
 
   // Destructuring state for easier access
-  const { mint, allocatedBudget, endDate, duration } = campaignDetails;
+  const { mintToSend, budget, endDate, duration } = campaignDetails;
 
   useEffect(() => {
-    if (tempPost) {
+    if (tempCampaign) {
       setCampaignDetails({
-        mint: tempPost.mint,
-        allocatedBudget: tempPost.campaign?.tokensRemaining?.toString() || '',
-        endDate: tempPost.campaign?.endDate,
-        duration: tempPost.campaign?.endDate
+        mintToSend: tempCampaign.mintToSend || tempCampaign?.mint || '',
+        budget: tempCampaign.tokensRemaining?.toString() || '',
+        endDate: tempCampaign.endDate,
+        duration: tempCampaign.endDate
           ? Duration.CUSTOM_DATE
           : Duration.UNTILL_BUDGET_FINISHES,
       });
     } else {
       resetForm();
     }
-  }, [tempPost]);
+  }, [tempCampaign]);
 
   const resetForm = () => {
     setCampaignDetails({
-      mint: '',
-      allocatedBudget: '',
+      mintToSend: tempCampaign?.mint || '',
+      budget: '',
       endDate: undefined,
       duration: Duration.UNTILL_BUDGET_FINISHES,
     });
@@ -858,25 +914,21 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   };
 
   const handleBudgetSubmit = () => {
-    const currentBudget = tempPost?.campaign?.budget || 0;
-    const currentTokensRemaining = tempPost?.campaign?.tokensRemaining || 0;
-    const difference =
-      (allocatedBudget ? parseInt(allocatedBudget) : 0) -
-      currentTokensRemaining;
+    const currentBudget = tempCampaign?.budget || 0;
+    const currentTokensRemaining = tempCampaign?.tokensRemaining || 0;
+    const difference = (budget ? parseInt(budget) : 0) - currentTokensRemaining;
 
-    setTempPost({
-      ...(tempPost || {}),
-      campaign: {
-        id: generateRandomU64Number(),
-        ...(tempPost?.campaign || {}),
-        mint,
-        endDate: endDate ? endDate / 1000 : undefined,
-        eligibility: Eligibility.ONCE_PER_ADDRESS,
-        budget: currentBudget + difference,
-        tokensRemaining: currentTokensRemaining + difference,
-        amount: difference,
-      },
-    });
+    setTempCampaign((prev) => ({
+      ...prev,
+      mintToSend: mintToSend,
+      endDate:
+        duration == Duration.CUSTOM_DATE && endDate ? endDate : undefined,
+      criteria: Criteria.ANYONE,
+      eligibility: Eligibility.ONCE_PER_ADDRESS,
+      budget: currentBudget + difference,
+      tokensRemaining: currentTokensRemaining + difference,
+      difference: difference,
+    }));
 
     closeModal();
   };
@@ -894,7 +946,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
       <div className="modal-box flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <span className="font-bold text-lg text-center">
-            {tempPost?.campaign?.budget
+            {tempCampaign?.budget
               ? 'Edit Overall Budget'
               : 'Set Overall Budget'}
           </span>
@@ -908,20 +960,20 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         <InputField
           label="Mint"
           type="text"
-          value={mint}
-          onChange={(e) => handleInputChange('mint', e.target.value)}
+          value={mintToSend}
+          onChange={(e) => handleInputChange('mintToSend', e.target.value)}
           placeholder="Enter a mint address"
         />
 
         <InputField
           label="Budget"
           type="number"
-          value={allocatedBudget}
-          onChange={(e) => handleInputChange('allocatedBudget', e.target.value)}
+          value={budget}
+          onChange={(e) => handleInputChange('budget', e.target.value)}
           placeholder="How many tokens do you want to give out?"
           suffix={
-            tempPost?.campaign?.budget
-              ? `/ ${formatLargeNumber(tempPost.campaign.budget)} left`
+            tempCampaign?.budget
+              ? `/ ${formatLargeNumber(tempCampaign.budget)} left`
               : ''
           }
         />
@@ -1020,10 +1072,12 @@ const SelectField: FC<SelectFieldProps> = ({
 );
 
 const ActionModal: FC<{
-  tempPost: PostContent | undefined;
-  setTempPost: Dispatch<SetStateAction<any>>;
+  tempCampaign: Partial<TempPostCampaign> | undefined;
+  setTempCampaign: Dispatch<
+    SetStateAction<Partial<TempPostCampaign> | undefined>
+  >;
   query?: LinkedAction;
-}> = ({ tempPost, setTempPost, query }) => {
+}> = ({ tempCampaign, setTempCampaign, query }) => {
   const [amount, setAmount] = useState('');
   const [additionalFields, setAdditionalFields] = useState<
     {
@@ -1036,7 +1090,7 @@ const ActionModal: FC<{
   >([]);
   const [label, setLabel] = useState('');
 
-  const action = tempPost?.campaign?.amountPerQuery?.find(
+  const action = tempCampaign?.amountPerQuery?.find(
     (x) => query && x.linkedAction === JSON.stringify(query)
   );
 
@@ -1092,35 +1146,27 @@ const ActionModal: FC<{
   }, []);
 
   const handleDeleteAction = useCallback(() => {
-    setTempPost(
-      (prev: {
-        links: { actions: any };
-        campaign: { amountPerQuery: any[] };
-      }) => {
-        if (!prev || !prev.links || !prev.campaign?.amountPerQuery || !query) {
-          return prev;
-        }
-        return {
-          ...prev,
-          links: {
-            actions: (prev.links.actions || []).filter(
-              (x: { href: string }) => x.href !== query.href
-            ),
-          },
-          campaign: {
-            ...prev.campaign,
-            amountPerQuery: prev.campaign.amountPerQuery.filter(
-              (x) => x.linkedAction !== JSON.stringify(query)
-            ),
-          },
-        };
+    setTempCampaign((prev) => {
+      if (!prev || !prev.links || !prev.amountPerQuery || !query) {
+        return prev;
       }
-    );
+      return {
+        ...prev,
+        links: {
+          actions: prev.links.actions.filter(
+            (x: { href: string }) => x.href !== query.href
+          ),
+        },
+        amountPerQuery: prev.amountPerQuery.filter(
+          (x) => x.linkedAction !== JSON.stringify(query)
+        ),
+      };
+    });
     (document.getElementById('action_modal') as HTMLDialogElement).close();
-  }, [query, setTempPost]);
+  }, [query, setTempCampaign]);
 
   const handleSaveAction = useCallback(() => {
-    if (!tempPost) return;
+    if (!tempCampaign || !tempCampaign.mint || !tempCampaign.postId) return;
     const nonEmptyAdditionalFields = additionalFields.filter(
       (x) => x.fieldName != ''
     );
@@ -1128,10 +1174,10 @@ const ActionModal: FC<{
     if (!newActionQuery) {
       return;
     }
-    const newHref = createHref(tempPost, newActionQuery);
+    const newHref = createHref(tempCampaign, newActionQuery);
     if (
-      tempPost.links?.actions &&
-      tempPost.links?.actions
+      tempCampaign.links?.actions &&
+      tempCampaign.links?.actions
         .filter((x) => x.href !== query?.href)
         .findIndex((x) => x.href === newHref) !== -1
     ) {
@@ -1141,6 +1187,7 @@ const ActionModal: FC<{
       return;
     }
     const newLinkedAction = {
+      type: ActionTypeEnum.REWARD,
       href: newHref,
       label,
       parameters:
@@ -1152,14 +1199,13 @@ const ActionModal: FC<{
             }))
           : undefined,
     };
-    const existingAmountPerQueryIndex =
-      tempPost.campaign?.amountPerQuery?.findIndex(
-        (x) => query && x.linkedAction === JSON.stringify(query)
-      );
+    const existingAmountPerQueryIndex = tempCampaign.amountPerQuery?.findIndex(
+      (x) => query && x.linkedAction === JSON.stringify(query)
+    );
     const newAmountPerQuery =
       existingAmountPerQueryIndex !== undefined &&
       existingAmountPerQueryIndex !== -1
-        ? tempPost.campaign?.amountPerQuery.map((x, index) => {
+        ? tempCampaign.amountPerQuery?.map((x, index) => {
             if (index === existingAmountPerQueryIndex) {
               return {
                 linkedAction: JSON.stringify(newLinkedAction),
@@ -1169,38 +1215,38 @@ const ActionModal: FC<{
             }
             return x;
           }) || []
-        : (tempPost.campaign?.amountPerQuery || []).concat({
+        : (tempCampaign.amountPerQuery || []).concat({
             linkedAction: JSON.stringify(newLinkedAction),
             query: newActionQuery,
             amount: amount !== '' ? parseInt(amount) : 0,
           });
 
     const newLinkedActions = query
-      ? tempPost.links?.actions.map((x) => {
+      ? tempCampaign.links?.actions.map((x) => {
           if (x.href === query.href) {
             return newLinkedAction;
           }
           return x;
         }) || []
-      : (tempPost.links?.actions || []).concat(newLinkedAction);
+      : (tempCampaign.links?.actions || []).concat(newLinkedAction);
 
-    setTempPost((prev: any) => ({
-      ...(prev || {}),
+    setTempCampaign((prev) => ({
+      ...prev,
       links: {
         actions: newLinkedActions,
       },
-      campaign: {
-        ...(prev?.campaign || {}),
-        amountPerQuery: newAmountPerQuery,
-      },
+      amountPerQuery: newAmountPerQuery,
     }));
 
     (document.getElementById('action_modal') as HTMLDialogElement).close();
+    resetFields();
+  }, [amount, additionalFields, label, query, setTempCampaign, tempCampaign]);
+
+  function resetFields() {
     setAmount('');
     setLabel('');
     setAdditionalFields([]);
-  }, [amount, additionalFields, label, query, setTempPost, tempPost]);
-
+  }
   return (
     <dialog id="action_modal" className="modal">
       <div className="modal-box flex flex-col gap-4">
@@ -1214,21 +1260,22 @@ const ActionModal: FC<{
             </button>
           </form>
         </div>
-        <InputField
-          label="Label"
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder=""
-        />
-        <InputField
-          label="Amount"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount per action"
-        />
+
         <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
+          <InputField
+            label="Label"
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder=""
+          />
+          <InputField
+            label="Amount"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount per action"
+          />
           {additionalFields.map((field, index) => (
             <div
               key={field.id}
@@ -1339,11 +1386,11 @@ const ActionModal: FC<{
 };
 
 function createHref(
-  tempPost: PostContent,
+  tempPost: Partial<TempPostCampaign>,
   newActionQuery: { key: string; value?: string; validation?: string }[]
 ) {
   return (
-    generatePostTransferApiEndPoint(tempPost.mint, tempPost.id) +
+    generatePostTransferApiEndPoint(tempPost.mint!, tempPost.postId!) +
     (newActionQuery.length > 0 ? '&' : '') +
     newActionQuery
       .sort((a, b) => a.key.localeCompare(b.key))

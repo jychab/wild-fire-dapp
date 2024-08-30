@@ -2,32 +2,15 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
-import { Criteria, Eligibility } from '../enums/campaign';
+import { Campaign, PostCampaign } from '../types/campaigns';
+import { PostContent } from '../types/post';
 import { functions, storage } from './firebase';
 
 export async function createOrEditCampaign(
-  id: number,
-  name: string,
-  allocatedBudget: number,
-  tokensRemaining: number,
-  amount: number,
-  criteria: Criteria,
-  eligibility: Eligibility,
-  startDate: number,
-  endDate?: number
+  data: Partial<PostCampaign | Campaign>
 ) {
   const createOrEditCampaign = httpsCallable(functions, 'createOrEditCampaign');
-  await createOrEditCampaign({
-    id,
-    name,
-    allocatedBudget,
-    tokensRemaining,
-    amount,
-    criteria,
-    eligibility,
-    startDate,
-    endDate,
-  });
+  await createOrEditCampaign(data);
 }
 
 export async function deleteCampaign(id: number) {
@@ -45,7 +28,10 @@ export async function withdrawFromCampaign(
   return result.data as { partialTx: string };
 }
 
-export async function createOrEditPost(mint: string, post: any) {
+export async function createOrEditPost(
+  mint: string,
+  post: Partial<PostContent>
+) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
   await createOrEditPost({ mint, post });
 }

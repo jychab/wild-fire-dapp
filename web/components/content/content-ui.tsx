@@ -36,7 +36,10 @@ import { BaseButtonProps } from '../blinks/ui/action-button';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
-import { checkUrlIsValid } from '../upload/upload.data-access';
+import {
+  checkUrlIsValid,
+  useGetPostCampaign,
+} from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
 interface DisplayContentProps {
@@ -138,9 +141,14 @@ export const UserPanel: FC<{
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
+  const { data: postCampaign } = useGetPostCampaign({
+    address: publicKey,
+    postId: blinksDetail?.id || null,
+  });
   const removeContentMutation = useRemoveContentMutation({
     mint:
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
+    postId: blinksDetail?.id || null,
   });
   const closestUser =
     blinksDetail?.likesUser && blinksDetail?.likesUser?.length > 0
@@ -250,7 +258,7 @@ export const UserPanel: FC<{
                   <button
                     disabled={removeContentMutation.isPending}
                     onClick={() =>
-                      removeContentMutation.mutateAsync(blinksDetail.id)
+                      removeContentMutation.mutateAsync(postCampaign)
                     }
                     className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
                   >
@@ -283,7 +291,7 @@ export const CarouselContent: FC<{
   const carouselRef = useRef<HTMLDivElement>(null);
   const handleClick = useCallback(() => {
     if (multiGrid && blinksDetail) {
-      router.push(`/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`);
+      router.push(blinksDetail.url);
     }
   }, [multiGrid, blinksDetail, router]);
 
@@ -576,10 +584,8 @@ export const ContentCaption: FC<{
             onClick={() => {
               if (!multiGrid) {
                 setShowMore(true);
-              } else if (blinksDetail?.mint && blinksDetail?.id) {
-                router.push(
-                  `/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`
-                );
+              } else if (blinksDetail) {
+                router.push(blinksDetail.url);
               }
             }}
             className="text-xs stat-desc link link-hover w-fit"

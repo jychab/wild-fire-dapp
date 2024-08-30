@@ -2,8 +2,8 @@ import revalidateTags from '@/app/action';
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { deletePost, withdrawFromCampaign } from '@/utils/firebase/functions';
 import { generateAddressApiEndPoint, proxify } from '@/utils/helper/endpoints';
-import { fetchPost } from '@/utils/helper/post';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { PostCampaign } from '@/utils/types/campaigns';
 import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -16,7 +16,13 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
-export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
+export function useRemoveContentMutation({
+  mint,
+  postId,
+}: {
+  mint: PublicKey | null;
+  postId: string | null;
+}) {
   const wallet = useWallet();
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
@@ -29,29 +35,33 @@ export function useRemoveContentMutation({ mint }: { mint: PublicKey | null }) {
         mint,
       },
     ],
-    mutationFn: async (id: string) => {
-      if (!mint || !id || !wallet.publicKey || !wallet.signTransaction) return;
+    mutationFn: async (postCampaign: PostCampaign | null | undefined) => {
+      if (
+        !postCampaign ||
+        !mint ||
+        !postId ||
+        !wallet.publicKey ||
+        !wallet.signTransaction
+      )
+        return;
       let signature: TransactionSignature = '';
       try {
-        const post = await fetchPost(mint.toBase58(), id);
-        if (!post) return;
-        if (post.campaign) {
-          const { partialTx } = await withdrawFromCampaign(
-            post.campaign.id,
-            post.campaign.tokensRemaining,
-            id
-          );
-          const partialSignedTx = VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            publicKey: wallet.publicKey,
-            partialSignedTx,
-            signTransaction: wallet.signTransaction,
-          });
-        }
-        await deletePost(mint.toBase58(), id);
+        const { partialTx } = await withdrawFromCampaign(
+          postCampaign.id,
+          postCampaign.tokensRemaining,
+          postId
+        );
+        const partialSignedTx = VersionedTransaction.deserialize(
+          Buffer.from(partialTx, 'base64')
+        );
+        signature = await buildAndSendTransaction({
+          connection,
+          publicKey: wallet.publicKey,
+          partialSignedTx,
+          signTransaction: wallet.signTransaction,
+        });
+
+        await deletePost(mint.toBase58(), postId);
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);

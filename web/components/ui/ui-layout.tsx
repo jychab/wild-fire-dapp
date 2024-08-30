@@ -102,7 +102,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                   priority={true}
                   className={`object-cover`}
                   fill={true}
-                  sizes="100vw"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
               <span className="hidden md:block font-luckiestguy text-3xl font-bold leading-[0.75]">

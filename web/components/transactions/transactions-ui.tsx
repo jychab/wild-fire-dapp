@@ -2,7 +2,6 @@
 
 import { TransactionType } from '@/utils/enums/transactions';
 import { formatLargeNumber, getTimeAgo } from '@/utils/helper/format';
-import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { FC, useState } from 'react';
 import { useGetTransactions } from './transactions-data-access';
@@ -14,7 +13,7 @@ export const TransactionsTable: FC = () => {
   const [page, setPage] = useState(0);
   const [currentTop, setCurrentTop] = useState<number[]>([]);
   const { data: transactions, isLoading } = useGetTransactions({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    address: publicKey,
     params:
       startAt || startAfter
         ? { startAfter: startAfter, startAt: startAt, showPendingOnly: false }

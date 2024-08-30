@@ -164,6 +164,7 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
 
         config.actions.push({ host: 'api.blinksfeed.com', state: 'trusted' });
         config.websites.push({ host: 'blinksfeed.com', state: 'trusted' });
+        config.interstitials.push({ host: 'blinksfeed.com', state: 'trusted' });
 
         actionRegistry.actionsByHost = Object.fromEntries(
           config.actions.map((action) => [action.host, action])
@@ -188,7 +189,7 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
   });
 }
 
-class ActionsURLMapper {
+export class ActionsURLMapper {
   private config: ActionsJsonConfig;
 
   constructor(config: ActionsJsonConfig) {
@@ -237,9 +238,6 @@ class ActionsURLMapper {
     const urlToMatch = pattern.startsWith('http')
       ? urlObj.toString()
       : urlObj.pathname;
-
-    console.log(fullPattern);
-    console.log(urlToMatch);
     return urlToMatch.match(fullPattern);
   }
 

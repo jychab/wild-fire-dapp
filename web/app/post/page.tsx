@@ -24,7 +24,7 @@ export async function generateMetadata({
     openGraph: {
       title: post.title,
       description: post.description,
-      url: `/post?mint=${post.mint}&id=${post.id}`,
+      url: post.url,
       images: [
         {
           url: post.icon,

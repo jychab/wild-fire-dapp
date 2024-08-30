@@ -3,6 +3,7 @@
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
+import { Campaign } from '@/utils/types/campaigns';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
@@ -13,13 +14,13 @@ import {
 } from './airdrop-data-access';
 
 export const CreateCampaignButton: FC<{
-  setId: Dispatch<SetStateAction<number | null>>;
+  setId: Dispatch<SetStateAction<number | undefined>>;
 }> = ({ setId }) => {
   return (
     <button
       className="btn btn-sm btn-primary w-fit"
       onClick={() => {
-        setId(null);
+        setId(undefined);
         openCampaignModal();
       }}
     >
@@ -35,11 +36,11 @@ function openCampaignModal(): void {
 }
 
 export const CampaignTable: FC<{
-  setId: Dispatch<SetStateAction<number | null>>;
+  setId: Dispatch<SetStateAction<number | undefined>>;
 }> = ({ setId }) => {
   const { publicKey } = useWallet();
   const { data: campaigns, isLoading } = useGetCampaigns({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    address: publicKey,
   });
   return isLoading ? (
     <div className="flex w-full h-full items-center justify-center">
@@ -78,7 +79,7 @@ export const CampaignTable: FC<{
                 <td>{x.eligibility}</td>
                 <td>{`${formatLargeNumber(
                   x.tokensRemaining
-                )} / ${formatLargeNumber(x.allocatedBudget)}`}</td>
+                )} / ${formatLargeNumber(x.budget)}`}</td>
                 <td>{formatLargeNumber(x.wallets.length)}</td>
                 <td>{getDDMMYYYY(new Date(x.startDate * 1000))}</td>
                 <td>
@@ -100,10 +101,14 @@ export const CampaignTable: FC<{
   );
 };
 
-export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
+export interface TempCampaign extends Campaign {
+  difference?: number;
+}
+
+export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
   const currentTime = Date.now() / 1000;
   const [name, setName] = useState('');
-  const [allocatedBudget, setAllocatedBudget] = useState('');
+  const [budget, setBudget] = useState('');
   const [amount, setAmount] = useState('');
   const [criteria, setCriteria] = useState(Criteria.SUBSCRIBERS_ONLY);
   const [eligibility, setEligibility] = useState(Eligibility.REFRESHES_DAILY);
@@ -112,13 +117,13 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
   const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
   const { publicKey } = useWallet();
   const campaignMutation = useCreateOrEditCampaign({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    address: publicKey,
   });
   const stopCampaignMutation = useStopCampaign({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    address: publicKey,
   });
   const { data: campaigns } = useGetCampaigns({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    address: publicKey,
   });
 
   const campaign = campaigns?.find((x) => x.id == id);
@@ -126,7 +131,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
   useEffect(() => {
     if (id && campaign) {
       setName(campaign.name);
-      setAllocatedBudget(campaign.tokensRemaining.toString());
+      setBudget(campaign.tokensRemaining.toString());
       setAmount(campaign.amount.toString());
       setCriteria(campaign.criteria);
       setEligibility(campaign.eligibility);
@@ -137,7 +142,7 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
       }
     } else if (!id) {
       setName('');
-      setAllocatedBudget('');
+      setBudget('');
       setAmount('');
       setCriteria(Criteria.SUBSCRIBERS_ONLY);
       setEligibility(Eligibility.REFRESHES_DAILY);
@@ -175,13 +180,13 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
           <input
             type="number"
             className="grow text-end"
-            value={allocatedBudget}
-            onChange={(e) => setAllocatedBudget(e.target.value)}
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
             placeholder=""
           />
           {`${
-            campaign?.allocatedBudget
-              ? `/ ${formatLargeNumber(campaign.allocatedBudget)} left`
+            campaign?.budget
+              ? `/ ${formatLargeNumber(campaign.budget)} left`
               : ''
           }`}
         </label>
@@ -277,13 +282,14 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
             <button
               disabled={campaignMutation.isPending}
               onClick={() => {
+                if (!publicKey) return;
                 const difference =
-                  parseInt(allocatedBudget) - (campaign?.tokensRemaining || 0);
+                  parseInt(budget) - (campaign?.tokensRemaining || 0);
                 campaignMutation.mutateAsync({
                   id,
                   name: name,
-                  allocatedBudget: campaign?.allocatedBudget
-                    ? campaign.allocatedBudget + difference
+                  budget: campaign?.budget
+                    ? campaign.budget + difference
                     : difference,
                   tokensRemaining:
                     (campaign?.tokensRemaining || 0) + difference,
@@ -293,6 +299,8 @@ export const CampaignModal: FC<{ id: number | null }> = ({ id }) => {
                   startDate: startDate,
                   endDate: endDate,
                   difference,
+                  mint: getDerivedMint(publicKey).toBase58(),
+                  mintToSend: getDerivedMint(publicKey).toBase58(),
                 });
               }}
               className="btn btn-success"

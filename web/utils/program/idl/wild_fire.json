@@ -336,6 +336,9 @@
           }
         },
         {
+          "name": "mint_to_send"
+        },
+        {
           "name": "token_state_mint_token_account",
           "writable": true,
           "pda": {
@@ -350,7 +353,7 @@
               },
               {
                 "kind": "account",
-                "path": "mint"
+                "path": "mint_to_send"
               }
             ],
             "program": {
@@ -381,7 +384,7 @@
               },
               {
                 "kind": "account",
-                "path": "mint"
+                "path": "mint_to_send"
               }
             ],
             "program": {
@@ -832,6 +835,10 @@
         "fields": [
           {
             "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint_to_send",
             "type": "pubkey"
           },
           {

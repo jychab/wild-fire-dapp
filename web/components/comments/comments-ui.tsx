@@ -182,7 +182,7 @@ export const CommentsSection: FC<{
         <button
           onClick={() => {
             if (multiGrid) {
-              router.push(`/post?mintId=${post.mint}&id=${post.id}`);
+              router.push(post.url);
             } else {
               toggleModal(true);
             }

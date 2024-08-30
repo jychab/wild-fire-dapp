@@ -1,13 +1,18 @@
 'use client';
 
 import revalidateTags from '@/app/action';
+import { SHORT_STALE_TIME } from '@/utils/consts';
+import { db } from '@/utils/firebase/firebase';
 import {
+  createOrEditCampaign,
   createOrEditPost,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
 import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { PostCampaign } from '@/utils/types/campaigns';
+import { PostContent } from '@/utils/types/post';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   createTransferCheckedInstruction,
@@ -21,10 +26,12 @@ import {
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
+import { TempPostCampaign } from './upload-ui';
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
   const transactionToast = useTransactionToast();
@@ -40,19 +47,29 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         mint,
       },
     ],
-    mutationFn: async (input: any) => {
+    mutationFn: async ({
+      postContent,
+      postCampaign,
+    }: {
+      postContent: Partial<PostContent>;
+      postCampaign?: Partial<TempPostCampaign>;
+    }) => {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       try {
-        if (input.campaign && input.campaign.amount > 0) {
+        if (
+          postCampaign?.difference &&
+          postCampaign.mintToSend &&
+          postCampaign.difference > 0
+        ) {
           const source = getAssociatedTokenAddressSync(
-            new PublicKey(input.campaign.mint),
+            new PublicKey(postCampaign.mintToSend),
             wallet.publicKey,
             false,
             TOKEN_2022_PROGRAM_ID
           );
           const destination = getAssociatedTokenAddressSync(
-            new PublicKey(input.campaign.mint),
+            new PublicKey(postCampaign.mintToSend),
             getAssociatedTokenStateAccount(mint),
             true,
             TOKEN_2022_PROGRAM_ID
@@ -71,7 +88,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
                 wallet.publicKey,
                 destination,
                 getAssociatedTokenStateAccount(mint),
-                new PublicKey(input.campaign.mint),
+                new PublicKey(postCampaign.mintToSend),
                 TOKEN_2022_PROGRAM_ID
               )
             );
@@ -83,7 +100,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
               mint,
               destination,
               wallet.publicKey,
-              input.campaign.amount,
+              postCampaign.difference,
               0,
               undefined,
               TOKEN_2022_PROGRAM_ID
@@ -95,12 +112,16 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             signTransaction: wallet.signTransaction,
             publicKey: wallet.publicKey,
           });
-          delete input.campaign.amount;
-        } else if (input.campaign && input.campaign.amount < 0) {
+        } else if (
+          postCampaign?.id &&
+          postCampaign.postId &&
+          postCampaign.difference &&
+          postCampaign.difference < 0
+        ) {
           const { partialTx } = await withdrawFromCampaign(
-            input.campaign.id,
-            input.campaign.amount,
-            input.id
+            postCampaign.id,
+            postCampaign.difference * -1,
+            postCampaign.postId
           );
           const partialSignedTx = VersionedTransaction.deserialize(
             Buffer.from(partialTx, 'base64')
@@ -111,10 +132,13 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             partialSignedTx,
             signTransaction: wallet.signTransaction,
           });
-          delete input.campaign.amount;
         }
-        await createOrEditPost(mint.toBase58(), input);
-        return { signature, input };
+        await createOrEditPost(mint.toBase58(), postContent);
+        if (postCampaign) {
+          delete postCampaign.difference;
+          await createOrEditCampaign(postCampaign);
+        }
+        return { signature, postId: postContent.id };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);
         return;
@@ -132,7 +156,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
               {
                 actionUrl: generatePostApiEndPoint(
                   mint!.toBase58(),
-                  res.input.id
+                  res.postId!
                 ),
               },
             ],
@@ -149,6 +173,30 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
     onError: (error) => {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
+  });
+}
+
+export function useGetPostCampaign({
+  address,
+  postId,
+}: {
+  address: PublicKey | null;
+  postId: string | null;
+}) {
+  return useQuery({
+    queryKey: ['get-post-campaign', { address, postId }],
+    queryFn: async () => {
+      if (!address || !postId) return null;
+      const docData = await getDoc(
+        doc(db, `Admin/${address.toBase58()}/PostCampaigns/${postId}`)
+      );
+      if (docData.exists()) {
+        return docData.data() as PostCampaign;
+      }
+      return null;
+    },
+    enabled: !!address && !!postId,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 

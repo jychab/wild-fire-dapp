@@ -342,6 +342,9 @@ export type WildFire = {
           };
         },
         {
+          name: 'mintToSend';
+        },
+        {
           name: 'tokenStateMintTokenAccount';
           writable: true;
           pda: {
@@ -356,7 +359,7 @@ export type WildFire = {
               },
               {
                 kind: 'account';
-                path: 'mint';
+                path: 'mintToSend';
               }
             ];
             program: {
@@ -416,7 +419,7 @@ export type WildFire = {
               },
               {
                 kind: 'account';
-                path: 'mint';
+                path: 'mintToSend';
               }
             ];
             program: {
@@ -983,6 +986,10 @@ export type WildFire = {
         fields: [
           {
             name: 'mint';
+            type: 'pubkey';
+          },
+          {
+            name: 'mintToSend';
             type: 'pubkey';
           },
           {

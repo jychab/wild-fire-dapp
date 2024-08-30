@@ -15,10 +15,10 @@ import {
 } from 'firebase/firestore';
 
 export function useGetTransactions({
-  mint,
+  address,
   params,
 }: {
-  mint: PublicKey | null;
+  address: PublicKey | null;
   params: {
     startAfter: number | null;
     startAt: number | null;
@@ -29,12 +29,12 @@ export function useGetTransactions({
     queryKey: [
       'get-transactions',
       {
-        mint,
+        address,
         params,
       },
     ],
     queryFn: async () => {
-      if (!mint) return null;
+      if (!address) return null;
       const constraints = [];
       if (params?.showPendingOnly) {
         constraints.push(where('pending', '>', 0));
@@ -48,13 +48,13 @@ export function useGetTransactions({
       }
       constraints.push(limit(20));
       const queries = query(
-        collection(db, `Mint/${mint.toBase58()}/Transactions`),
+        collection(db, `Admin/${address.toBase58()}/Transactions`),
         ...constraints
       );
       const docData = await getDocs(queries);
       return docData.docs.map((x) => x.data() as Transaction);
     },
-    enabled: !!mint,
+    enabled: !!address,
     staleTime: SHORT_STALE_TIME,
   });
 }

@@ -8,8 +8,14 @@ export function generateAddressApiEndPoint(address: PublicKey) {
   return `https://api.blinksfeed.com/getPosts?address=${address.toBase58()}`;
 }
 
-export function generatePostEndPoint(mint: string, id: string) {
-  return `https://blinksfeed.com/post?mint=${mint}&id=${id}`;
+export function generatePostEndPoint(
+  mint: string,
+  id: string,
+  blinks?: string
+) {
+  return `https://blinksfeed.com/post?mint=${mint}&id=${id}${
+    blinks ? `&action=solana-action:${blinks}` : ''
+  }`;
 }
 
 export function generatePostApiEndPoint(mint: string, id: string) {

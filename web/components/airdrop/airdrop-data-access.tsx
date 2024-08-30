@@ -1,6 +1,5 @@
 'use client';
-import { LONG_STALE_TIME } from '@/utils/consts';
-import { Criteria, Eligibility } from '@/utils/enums/campaign';
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import {
   createOrEditCampaign,
@@ -27,26 +26,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
-
-interface CreateOrEditCampaignArgs {
-  id: number | null;
-  name: string;
-  allocatedBudget: number;
-  tokensRemaining: number;
-  amount: number;
-  criteria: Criteria;
-  eligibility: Eligibility;
-  startDate: number;
-  endDate?: number;
-  difference?: number;
-}
+import { TempCampaign } from './airdrop-ui';
 
 export function useCreateOrEditCampaign({
-  mint,
-  tokenProgram = TOKEN_2022_PROGRAM_ID,
+  address,
 }: {
-  mint: PublicKey | null;
-  tokenProgram?: PublicKey;
+  address: PublicKey | null;
 }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
@@ -56,36 +41,34 @@ export function useCreateOrEditCampaign({
     mutationKey: [
       'create-campaign',
       {
-        endpoint: connection.rpcEndpoint,
-        mint,
+        address,
       },
     ],
-    mutationFn: async (input: CreateOrEditCampaignArgs) => {
+    mutationFn: async (input: Partial<TempCampaign>) => {
       if (
-        !mint ||
-        !tokenProgram ||
         !wallet.publicKey ||
         !wallet.signTransaction ||
-        !input.allocatedBudget ||
-        !input.amount ||
-        !input.id
+        !input.budget ||
+        !input.amount
       )
         return;
       let signature: TransactionSignature = '';
       try {
-        console.log(input);
-        if (input.difference && input.difference > 0) {
+        if (input.mintToSend && input.difference && input.difference > 0) {
+          // check if payer has enough sol
+          // calculate amount of sol needed to airdrop subscribers
+
           const source = getAssociatedTokenAddressSync(
-            mint,
+            new PublicKey(input.mintToSend),
             wallet.publicKey,
             false,
-            tokenProgram
+            TOKEN_2022_PROGRAM_ID
           );
           const destination = getAssociatedTokenAddressSync(
-            mint,
-            getAssociatedTokenStateAccount(mint),
+            new PublicKey(input.mintToSend),
+            getAssociatedTokenStateAccount(new PublicKey(input.mintToSend)),
             true,
-            tokenProgram
+            TOKEN_2022_PROGRAM_ID
           );
           const ixs = [];
           try {
@@ -100,8 +83,8 @@ export function useCreateOrEditCampaign({
               createAssociatedTokenAccountIdempotentInstruction(
                 wallet.publicKey,
                 destination,
-                getAssociatedTokenStateAccount(mint),
-                mint,
+                getAssociatedTokenStateAccount(new PublicKey(input.mintToSend)),
+                new PublicKey(input.mintToSend),
                 TOKEN_2022_PROGRAM_ID
               )
             );
@@ -109,7 +92,7 @@ export function useCreateOrEditCampaign({
           ixs.push(
             createTransferCheckedInstruction(
               source,
-              mint,
+              new PublicKey(input.mintToSend),
               destination,
               wallet.publicKey,
               input.difference,
@@ -124,7 +107,7 @@ export function useCreateOrEditCampaign({
             signTransaction: wallet.signTransaction,
             publicKey: wallet.publicKey,
           });
-        } else if (input.difference && input.difference < 0) {
+        } else if (input.id && input.difference && input.difference < 0) {
           const { partialTx } = await withdrawFromCampaign(
             input.id,
             input.difference
@@ -139,18 +122,11 @@ export function useCreateOrEditCampaign({
             signTransaction: wallet.signTransaction,
           });
         }
-        await createOrEditCampaign(
-          input.id ? input.id : Math.floor(Math.random() * 65536),
-          input.name,
-          input.allocatedBudget,
-          input.tokensRemaining,
-          input.amount,
-          input.criteria,
-          input.eligibility,
-          input.startDate,
-          input.endDate
-        );
-        return { signature, mint };
+        if (input.difference != undefined) {
+          delete input.difference;
+        }
+        await createOrEditCampaign(input);
+        return { signature };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);
         return;
@@ -163,9 +139,11 @@ export function useCreateOrEditCampaign({
           document.getElementById('campaign_modal') as HTMLDialogElement
         ).close();
         return await Promise.all([
-          client.invalidateQueries({ queryKey: ['get-campaigns', { mint }] }),
           client.invalidateQueries({
-            queryKey: ['get-transactions', { mint }],
+            queryKey: ['get-campaigns', { address: wallet.publicKey! }],
+          }),
+          client.invalidateQueries({
+            queryKey: ['get-transactions', { address: wallet.publicKey! }],
           }),
         ]);
       }
@@ -176,22 +154,22 @@ export function useCreateOrEditCampaign({
   });
 }
 
-export function useGetCampaigns({ mint }: { mint: PublicKey | null }) {
+export function useGetCampaigns({ address }: { address: PublicKey | null }) {
   return useQuery({
-    queryKey: ['get-campaigns', { mint }],
+    queryKey: ['get-campaigns', { address }],
     queryFn: async () => {
-      if (!mint) return null;
+      if (!address) return null;
       const docData = await getDocs(
-        collection(db, `Mint/${mint.toBase58()}/Campaigns`)
+        collection(db, `Admin/${address.toBase58()}/Campaigns`)
       );
       return docData.docs.map((x) => x.data() as Campaign);
     },
-    enabled: !!mint,
-    staleTime: LONG_STALE_TIME,
+    enabled: !!address,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
-export function useStopCampaign({ mint }: { mint: PublicKey | null }) {
+export function useStopCampaign({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection();
   const wallet = useWallet();
   const transactionToast = useTransactionToast();
@@ -202,11 +180,12 @@ export function useStopCampaign({ mint }: { mint: PublicKey | null }) {
       'remove-mint-content',
       {
         endpoint: connection.rpcEndpoint,
-        mint,
+        address,
       },
     ],
     mutationFn: async ({ id, amount }: { id: number; amount: number }) => {
-      if (!mint || !id || !wallet.publicKey || !wallet.signTransaction) return;
+      if (!address || !id || !wallet.publicKey || !wallet.signTransaction)
+        return;
       let signature: TransactionSignature = '';
       try {
         const { partialTx } = await withdrawFromCampaign(id, amount);
@@ -234,9 +213,11 @@ export function useStopCampaign({ mint }: { mint: PublicKey | null }) {
           document.getElementById('campaign_modal') as HTMLDialogElement
         ).close();
         return await Promise.all([
-          client.invalidateQueries({ queryKey: ['get-campaigns', { mint }] }),
           client.invalidateQueries({
-            queryKey: ['get-transactions', { mint }],
+            queryKey: ['get-campaigns', { address: wallet.publicKey! }],
+          }),
+          client.invalidateQueries({
+            queryKey: ['get-transactions', { address: wallet.publicKey! }],
           }),
         ]);
       }
