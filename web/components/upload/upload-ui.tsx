@@ -1417,11 +1417,15 @@ function buildActionQuery(
     },
   ];
   for (const x of additionalFields) {
+    if (x.fieldName.toLowerCase() == 'label') {
+      toast.error("'Label' cannot be used as a field name.");
+      return null;
+    }
+    if (x.fieldName.toLowerCase() == 'action') {
+      toast.error("'Action' cannot be used as a field name.");
+      return;
+    }
     if (result.findIndex((y) => y.key == x.fieldName) !== -1) {
-      if (x.fieldName == 'label') {
-        toast.error("'Label' cannot be used as a field name.");
-        return null;
-      }
       toast.error('Field names must be unique.');
       return null;
     }

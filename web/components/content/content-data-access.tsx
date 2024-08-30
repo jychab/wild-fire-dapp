@@ -36,30 +36,26 @@ export function useRemoveContentMutation({
       },
     ],
     mutationFn: async (postCampaign: PostCampaign | null | undefined) => {
-      if (
-        !postCampaign ||
-        !mint ||
-        !postId ||
-        !wallet.publicKey ||
-        !wallet.signTransaction
-      )
+      if (!mint || !postId || !wallet.publicKey || !wallet.signTransaction)
         return;
       let signature: TransactionSignature = '';
       try {
-        const { partialTx } = await withdrawFromCampaign(
-          postCampaign.id,
-          postCampaign.tokensRemaining,
-          postId
-        );
-        const partialSignedTx = VersionedTransaction.deserialize(
-          Buffer.from(partialTx, 'base64')
-        );
-        signature = await buildAndSendTransaction({
-          connection,
-          publicKey: wallet.publicKey,
-          partialSignedTx,
-          signTransaction: wallet.signTransaction,
-        });
+        if (postCampaign) {
+          const { partialTx } = await withdrawFromCampaign(
+            postCampaign.id,
+            postCampaign.tokensRemaining,
+            postId
+          );
+          const partialSignedTx = VersionedTransaction.deserialize(
+            Buffer.from(partialTx, 'base64')
+          );
+          signature = await buildAndSendTransaction({
+            connection,
+            publicKey: wallet.publicKey,
+            partialSignedTx,
+            signTransaction: wallet.signTransaction,
+          });
+        }
 
         await deletePost(mint.toBase58(), postId);
         return signature;
@@ -79,7 +75,7 @@ export function useRemoveContentMutation({
           }),
         ]);
         revalidateTags('post');
-        transactionToast(signature);
+        transactionToast(signature || 'Success');
         router.push(`profile/?mintId=${mint?.toBase58()}`);
       }
     },
