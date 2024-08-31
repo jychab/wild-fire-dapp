@@ -7,6 +7,10 @@ export const GET = async () => {
         pathPattern: '/post',
         apiPath: 'https://api.blinksfeed.com/post',
       },
+      {
+        pathPattern: '/mint/create',
+        apiPath: 'https://api.blinksfeed.com/mint/create',
+      },
     ],
   };
 
