@@ -110,7 +110,7 @@ export function useCreateOrEditCampaign({
         } else if (input.id && input.difference && input.difference < 0) {
           const { partialTx } = await withdrawFromCampaign(
             input.id,
-            input.difference
+            input.difference * -1
           );
           const partialSignedTx = VersionedTransaction.deserialize(
             Buffer.from(partialTx, 'base64')

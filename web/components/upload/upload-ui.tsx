@@ -1614,7 +1614,7 @@ function createHref(
     (newActionQuery.length > 0 ? '&' : '') +
     newActionQuery
       .sort((a, b) => a.key.localeCompare(b.key))
-      .map((q) => q.key + '=' + q.value || `{${q.key}}`)
+      .map((q) => q.key + '=' + (q.value ? q.value : `{${q.key}}`))
       .join('&')
   );
 }
