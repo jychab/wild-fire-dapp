@@ -133,52 +133,19 @@ export const Radio = ({
   const labelId = `${id}_label`;
 
   return (
-    <button
-      className={`flex h-full gap-2.5 ${
-        !disabled ? 'cursor-pointer' : 'cursor-not-allowed'
-      }`}
-      onClick={() => !disabled && onChange(!value)}
-    >
-      <div className="flex h-full items-center">
-        <input
-          type="radio"
-          name={name}
-          className="hidden"
-          defaultValue={inputValue}
-        />
-        <div
-          role="radio"
-          id={id}
-          aria-labelledby={labelId}
-          className={`mt-0.5 flex aspect-square h-[16px] items-center justify-center rounded-full border transition-colors motion-reduce:transition-none',
-            ${!value && !disabled ? 'border-input-stroke bg-input-bg' : ''}
-              ${
-                value && !disabled
-                  ? 'border-input-stroke-selected bg-input-bg-selected'
-                  : ''
-              }
-              ${
-                !value && disabled
-                  ? 'border-input-stroke-disabled bg-input-bg'
-                  : ''
-              }
-              ${
-                value && disabled
-                  ? 'border-input-stroke-disabled bg-input-bg-disabled'
-                  : ''
-              }
-          `}
-        >
-          <div
-            className={`aspect-square h-[8px] rounded-full bg-input-bg ${
-              !value ? 'invisible' : ''
-            }`}
-          />
-        </div>
-      </div>
-      <label className="text-text text-text-input" id={labelId}>
-        {label}
-      </label>
-    </button>
+    <label className="label gap-2" id={labelId}>
+      <input
+        id={id}
+        disabled={disabled}
+        aria-labelledby={labelId}
+        type="radio"
+        name={name}
+        checked={value}
+        className="radio"
+        onChange={() => !disabled && onChange(!value)}
+        defaultValue={inputValue}
+      />
+      <span className="label-text"> {label}</span>
+    </label>
   );
 };

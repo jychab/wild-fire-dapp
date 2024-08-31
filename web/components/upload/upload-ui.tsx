@@ -959,6 +959,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         </div>
 
         <InputField
+          tooltip="Mint token to reward users. Defaults to your own token."
           label="Mint"
           type="text"
           value={mintToSend}
@@ -967,6 +968,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         />
 
         <InputField
+          tooltip="Total amount of tokens allocated as rewards for this post."
           label="Budget"
           type="number"
           value={budget}
@@ -979,6 +981,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
           }
         />
         <SelectField
+          type="select"
           label="Duration"
           value={duration}
           onChange={(e) => handleInputChange('duration', e.target.value)}
@@ -1018,12 +1021,14 @@ interface InputFieldProps {
   value: string | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
+  tooltip?: string;
   min?: number;
   suffix?: string;
 }
 
 const InputField: FC<InputFieldProps> = ({
   label,
+  tooltip,
   type,
   value,
   onChange,
@@ -1031,46 +1036,88 @@ const InputField: FC<InputFieldProps> = ({
   min,
   suffix,
 }) => (
-  <label className="input input-bordered text-base flex items-center gap-2">
-    {label}
-    <input
-      type={type}
-      className="grow text-end"
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      min={min}
-    />
+  <label className="input input-bordered w-full text-base flex items-center gap-2">
+    <span> {label}</span>
+    <div
+      data-tip={tooltip}
+      className={`grow ${tooltip ? 'tooltip tooltip-primary' : ''}`}
+    >
+      <input
+        type={type}
+        className={`text-end w-full`}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        min={min}
+      />
+    </div>
     {suffix && <span>{suffix}</span>}
   </label>
 );
 
 interface SelectFieldProps {
+  type: string;
   label: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => void;
   options: { key: string; value: string }[];
+  tooltip?: string;
 }
 
 const SelectField: FC<SelectFieldProps> = ({
+  type,
   label,
-  value,
+  value: validationText,
   onChange,
   options,
-}) => (
-  <label className="flex px-2 justify-between items-center gap-2">
-    {label}
-    <select
-      value={value}
-      onChange={onChange}
-      className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-    >
-      {options.map(({ key, value }) => (
-        <option key={key}>{value}</option>
-      ))}
-    </select>
-  </label>
-);
+  tooltip,
+}) => {
+  return (
+    <div className="px-2 flex justify-between items-center gap-2">
+      <div
+        className={`${tooltip ? 'tooltip tooltip-right tooltip-primary' : ''}`}
+        data-tip={tooltip}
+      >
+        <span>{label}</span>
+      </div>
+      <div className={`grow justify-end flex `}>
+        {type == 'select' && (
+          <select
+            value={validationText}
+            onChange={onChange}
+            className="select bg-transparent w-fit border-none focus-within:outline-none"
+          >
+            {options.map(({ key, value }) => (
+              <option key={key}>{value}</option>
+            ))}
+          </select>
+        )}
+        {(type == 'radio' || type == 'checkbox') && (
+          <div className="flex flex-wrap gap-2 items-center">
+            {options.map(({ key, value }) => (
+              <label key={key} className="label flex gap-2 cursor-pointer">
+                <span className="label-text">{value}</span>
+                <input
+                  key={key}
+                  type={type}
+                  value={value}
+                  checked={
+                    validationText == value ||
+                    (validationText == '' && value == 'No Validation')
+                  }
+                  onChange={onChange}
+                  className={type}
+                />
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const ActionModal: FC<{
   tempCampaign: Partial<TempPostCampaign> | undefined;
@@ -1087,6 +1134,15 @@ const ActionModal: FC<{
       fieldName: string;
       placeholder?: string;
       validation?: string;
+      options?: Array<{
+        id: string;
+        /** displayed UI label of this selectable option */
+        label: string;
+        /** value of this selectable option */
+        value: string;
+        /** whether this option should be selected by default */
+        selected?: boolean;
+      }>;
     }[]
   >([]);
   const [label, setLabel] = useState('');
@@ -1109,6 +1165,9 @@ const ActionModal: FC<{
     if (query && action) {
       setAdditionalFields(
         query.parameters?.map((x) => ({
+          options: isParameterSelectable(x)
+            ? x.options.map((y) => ({ ...y, id: y.label }))
+            : [],
           type: x.type,
           fieldName: x.name,
           placeholder: x.label,
@@ -1197,9 +1256,15 @@ const ActionModal: FC<{
               type: x.type,
               name: x.fieldName,
               label: x.placeholder,
+              options: x.options?.map((x) => ({
+                label: x.label,
+                value: x.value,
+                selected: x.selected,
+              })),
             }))
           : undefined,
     };
+
     const existingAmountPerQueryIndex = tempCampaign.amountPerQuery?.findIndex(
       (x) => query && x.linkedAction === JSON.stringify(query)
     );
@@ -1263,105 +1328,31 @@ const ActionModal: FC<{
         </div>
 
         <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
-          <InputField
-            label="Label"
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder=""
-          />
-          <InputField
-            label="Amount"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount per action"
-          />
+          <div className="flex flex-col gap-2">
+            <InputField
+              label="Label"
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder=""
+            />
+            <InputField
+              label="Reward"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Optional"
+              tooltip="Amount of tokens to reward user for this action."
+            />
+          </div>
           {additionalFields.map((field, index) => (
-            <div
+            <AdditionalFieldComponent
               key={field.id}
-              className="border input-bordered rounded p-4 flex flex-col gap-2"
-            >
-              <div className="flex items-center justify-between">
-                {`Additional Field ${index + 1}`}
-                <button
-                  onClick={() =>
-                    setAdditionalFields((prev) =>
-                      prev.filter((f) => f.id !== field.id)
-                    )
-                  }
-                >
-                  <IconTrash />
-                </button>
-              </div>
-              <SelectField
-                label="Type"
-                value={field.type}
-                onChange={(e) =>
-                  handleAdditionalFieldChange(field.id, 'type', e.target.value)
-                }
-                options={[
-                  'number',
-                  'text',
-                  'email',
-                  'url',
-                  'date',
-                  'datetime-local',
-                  'textarea',
-                ].map((type) => ({ key: type, value: type }))}
-              />
-              <InputField
-                label={
-                  field.type === 'datetime-local' || field.type === 'date'
-                    ? 'Field Name'
-                    : ''
-                }
-                type={field.type}
-                value={field.fieldName}
-                onChange={(e) =>
-                  handleAdditionalFieldChange(
-                    field.id,
-                    'fieldName',
-                    e.target.value
-                  )
-                }
-                placeholder="Field Name"
-              />
-              <InputField
-                label={
-                  field.type === 'datetime-local' || field.type === 'date'
-                    ? 'Placeholder'
-                    : ''
-                }
-                type="text"
-                value={field.placeholder}
-                onChange={(e) =>
-                  handleAdditionalFieldChange(
-                    field.id,
-                    'placeholder',
-                    e.target.value
-                  )
-                }
-                placeholder="Placeholder"
-              />
-              <InputField
-                label={
-                  field.type === 'datetime-local' || field.type === 'date'
-                    ? 'Validation Text'
-                    : ''
-                }
-                type={field.type}
-                value={field.validation}
-                onChange={(e) =>
-                  handleAdditionalFieldChange(
-                    field.id,
-                    'validation',
-                    e.target.value
-                  )
-                }
-                placeholder="Validation Text"
-              />
-            </div>
+              field={field}
+              index={index}
+              setAdditionalFields={setAdditionalFields}
+              handleAdditionalFieldChange={handleAdditionalFieldChange}
+            />
           ))}
         </div>
         <button onClick={handleAddField} className="btn w-fit btn-sm">
@@ -1383,6 +1374,234 @@ const ActionModal: FC<{
         </div>
       </div>
     </dialog>
+  );
+};
+
+export const AdditionalFieldComponent: FC<{
+  field: {
+    id: string;
+    type: any;
+    fieldName: string;
+    placeholder?: string;
+    validation?: string;
+    options?: Array<{
+      id: string;
+      /** displayed UI label of this selectable option */
+      label: string;
+      /** value of this selectable option */
+      value: string;
+      /** whether this option should be selected by default */
+      selected?: boolean;
+    }>;
+  };
+  index: number;
+  setAdditionalFields: Dispatch<
+    SetStateAction<
+      {
+        id: string;
+        type: any;
+        fieldName: string;
+        placeholder?: string;
+        validation?: string;
+        options?: Array<{
+          id: string;
+          /** displayed UI label of this selectable option */
+          label: string;
+          /** value of this selectable option */
+          value: string;
+          /** whether this option should be selected by default */
+          selected?: boolean;
+        }>;
+      }[]
+    >
+  >;
+  handleAdditionalFieldChange: (id: string, field: string, value: any) => void;
+}> = ({ field, index, setAdditionalFields, handleAdditionalFieldChange }) => {
+  const handleSelectableOptionsChange = useCallback(
+    (id: string, x: string[], value: string | boolean) => {
+      handleAdditionalFieldChange(
+        field.id,
+        'options',
+        field.options?.map((prev) =>
+          prev.id === id ? { ...prev, [x[0]]: value, [x[1]]: value } : prev
+        )
+      );
+    },
+    [field]
+  );
+  const handleAddOption = useCallback(() => {
+    handleAdditionalFieldChange(
+      field.id,
+      'options',
+      (field.options || []).concat([
+        {
+          id: crypto.randomUUID(),
+          label: '',
+          value: '',
+          selected: false,
+        },
+      ])
+    );
+  }, [field]);
+  const handleDeleteOption = useCallback(
+    (x: any) => {
+      if (field.validation == x.label) {
+        handleAdditionalFieldChange(field.id, 'validation', '');
+      }
+      handleAdditionalFieldChange(
+        field.id,
+        'options',
+        field.options?.filter((f) => f.id !== x.id)
+      );
+    },
+    [field]
+  );
+  return (
+    <div className="border input-bordered rounded p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        {`Additional Field ${index + 1}`}
+        <button
+          onClick={() =>
+            setAdditionalFields((prev) => prev.filter((f) => f.id !== field.id))
+          }
+        >
+          <IconTrash />
+        </button>
+      </div>
+      <InputField
+        label={'Field Name'}
+        type={'text'}
+        value={field.fieldName}
+        onChange={(e) =>
+          handleAdditionalFieldChange(field.id, 'fieldName', e.target.value)
+        }
+        placeholder=""
+      />
+      <InputField
+        label={'Placeholder'}
+        type="text"
+        value={field.placeholder}
+        onChange={(e) =>
+          handleAdditionalFieldChange(field.id, 'placeholder', e.target.value)
+        }
+        placeholder=""
+      />
+      <div className="border border-base-300 p-2 rounded flex flex-col gap-2">
+        <SelectField
+          type="select"
+          label="Input Type"
+          value={field.type}
+          onChange={(e) =>
+            handleAdditionalFieldChange(field.id, 'type', e.target.value)
+          }
+          options={[
+            'number',
+            'text',
+            'email',
+            'url',
+            'date',
+            'datetime-local',
+            'textarea',
+            'select',
+            'radio',
+            'checkbox',
+          ].map((type) => ({ key: type, value: type }))}
+        />
+        {(field.type == 'select' ||
+          field.type == 'radio' ||
+          field.type == 'checkbox') && (
+          <>
+            {field.options?.map((x) => (
+              <div key={x.id} className="flex w-full items-center gap-2">
+                <InputField
+                  label={''}
+                  placeholder="Input Label"
+                  type={'text'}
+                  value={x.label}
+                  onChange={(e) => {
+                    handleSelectableOptionsChange(
+                      x.id,
+                      ['label', 'value'],
+                      e.target.value
+                    );
+                  }}
+                />
+                <label className="text-sm flex items-center gap-2">
+                  Preselected
+                  <input
+                    type="checkbox"
+                    className="checkbox"
+                    checked={x.selected || false}
+                    onChange={(e) =>
+                      handleSelectableOptionsChange(
+                        x.id,
+                        ['selected'],
+                        e.target.checked
+                      )
+                    }
+                  />
+                </label>
+                <button onClick={() => handleDeleteOption(x)}>
+                  <IconTrash />
+                </button>
+              </div>
+            ))}
+            <div onClick={handleAddOption} className="btn btn-sm w-fit">
+              <IconPlus />
+              Add Input Options
+            </div>
+          </>
+        )}
+        {field.type == 'select' ||
+        field.type == 'radio' ||
+        field.type == 'checkbox' ? (
+          field.options &&
+          field.options.filter((x) => x.label).length > 0 && (
+            <SelectField
+              type={field.type}
+              tooltip="Verify if the user's response matches this field. Only matching response will receive a reward."
+              label={'Validation'}
+              value={field.validation || ''}
+              onChange={(e) =>
+                handleAdditionalFieldChange(
+                  field.id,
+                  'validation',
+                  e.target.value == 'No Validation' ? '' : e.target.value
+                )
+              }
+              options={[
+                {
+                  key: field.options.length.toString(),
+                  value: 'No Validation',
+                },
+              ].concat(
+                field.options
+                  .filter((x) => x.label)
+                  .map((type, index) => ({
+                    key: index.toString(),
+                    value: type.value,
+                  }))
+              )}
+            />
+          )
+        ) : (
+          <InputField
+            tooltip="Verify if the user's response matches this field. Only matching response will receive a reward."
+            label={'Validation'}
+            type={field.type}
+            value={field.validation}
+            onChange={(e) =>
+              handleAdditionalFieldChange(
+                field.id,
+                'validation',
+                e.target.value
+              )
+            }
+            placeholder="Optional"
+          />
+        )}
+      </div>
+    </div>
   );
 };
 

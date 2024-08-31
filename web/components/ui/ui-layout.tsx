@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   onAuthStateChanged,
@@ -26,13 +26,6 @@ import SearchBar from '../search/search-ui';
 import { UploadBtn } from '../upload/upload-ui';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const [theme, _] = useLocalStorage('theme', 'dark');
-  useEffect(() => {
-    if (document.querySelector('html')) {
-      document.querySelector('html')!.setAttribute('data-theme', theme);
-    }
-  }, [theme]);
-  const pathname = usePathname();
   const { publicKey, signMessage, disconnect } = useWallet();
   const isLoggingInRef = useRef(false);
 
@@ -99,21 +92,22 @@ export function UiLayout({ children }: { children: ReactNode }) {
         <Navbar />
         <div className="flex flex-1 w-full mt-16">
           <div className="w-full flex gap-16 flex-1 justify-center">
-            {(!!publicKey || path != '/') && (
-              <ul className="hidden 2xl:flex flex-col menu menu-primary bg-base-100 border-base-300 border-r left-0 gap-2 min-h-full w-60">
-                <AuthenticationDropdownMenu />
-              </ul>
-            )}
             <Suspense
               fallback={
                 <span className="loading loading-spinner loading-lg"></span>
               }
             >
+              {(!!publicKey || path != '/') && (
+                <ul className="hidden 2xl:flex flex-col menu menu-primary bg-base-100 border-base-300 border-r left-0 gap-2 min-h-full w-60">
+                  <AuthenticationDropdownMenu />
+                </ul>
+              )}
+
               {children}
+              {(!!publicKey || path != '/') && (
+                <div className="hidden 2xl:flex w-60" />
+              )}
             </Suspense>
-            {(!!publicKey || path != '/') && (
-              <div className="hidden 2xl:flex w-60" />
-            )}
           </div>
           <Toaster position="bottom-right" />
         </div>

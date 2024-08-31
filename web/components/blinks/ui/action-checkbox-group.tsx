@@ -1,4 +1,3 @@
-import { IconCheckbox } from '@tabler/icons-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { BaseInputProps } from '../../../utils/types/input';
 import { ActionButton } from './action-button';
@@ -192,54 +191,20 @@ export const Checkbox = ({
   const labelId = `${id}_label`;
 
   return (
-    <button
-      className={`flex h-full gap-2.5 ${
-        !disabled ? 'cursor-pointer' : 'cursor-not-allowed'
-      }`}
-      onClick={() => !disabled && onChange(!value)}
-    >
-      <div className="flex h-full items-center">
-        <input
-          type="checkbox"
-          name={name}
-          className="hidden"
-          defaultValue={inputValue}
-        />
-        <span
-          role="checkbox"
-          id={id}
-          aria-labelledby={labelId}
-          className={`mt-0.5 flex aspect-square h-[16px] items-center justify-center rounded-lg border transition-colors motion-reduce:transition-none 
-            ${!value && !disabled ? 'border-input-stroke bg-input-bg' : ''}
-              ${
-                value && !disabled
-                  ? 'border-input-stroke-selected bg-input-bg-selected'
-                  : ''
-              }
-              ${
-                !value && disabled
-                  ? 'border-input-stroke-disabled bg-input-bg'
-                  : ''
-              }
-              ${
-                value && disabled
-                  ? 'border-input-stroke-disabled bg-input-bg-disabled'
-                  : ''
-              }
-            }
-          `}
-        >
-          <IconCheckbox
-            className={`h-full w-full text-input-bg ${
-              value ? 'block' : 'hidden'
-            }`}
-          />
-        </span>
-      </div>
-      <label className="text-text text-text-input" id={labelId}>
-        {label}
-      </label>
-    </button>
+    <label className="label gap-2" id={labelId}>
+      <input
+        id={id}
+        disabled={disabled}
+        aria-labelledby={labelId}
+        type="checkbox"
+        name={name}
+        checked={value || false}
+        className="checkbox"
+        onChange={() => !disabled && onChange(!value)}
+        defaultValue={inputValue}
+      />
+      <span className="label-text"> {label}</span>
+    </label>
   );
 };
 export const buildDefaultCheckboxGroupDescription = ({

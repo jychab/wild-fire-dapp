@@ -1,4 +1,4 @@
-import { IconNumber } from '@tabler/icons-react';
+import { IconNumber123 } from '@tabler/icons-react';
 import { type ChangeEvent, useEffect, useId, useMemo, useState } from 'react';
 import { BaseInputProps } from '../../../utils/types/input';
 import { ActionButton } from './action-button';
@@ -67,7 +67,7 @@ export const ActionNumberInput = ({
       }
       leftAdornment={
         <label htmlFor={id}>
-          <IconNumber className="text-primary" />
+          <IconNumber123 className="text-primary" />
         </label>
       }
       rightAdornment={
