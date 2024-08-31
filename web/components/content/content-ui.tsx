@@ -527,10 +527,10 @@ export const ContentCaption: FC<{
               {type === 'unknown' && <IconExclamationCircle size={14} />}
             </Link>
           </div>
-          <p className="text-sm font-semibold whitespace-pre-wrap pt-2 ">
+          <p className="text-md font-semibold whitespace-pre-wrap pt-2 ">
             {title}
           </p>
-          <p className="text-xs whitespace-pre-wrap pb-2 ">{description}</p>
+          <p className="text-sm whitespace-pre-wrap pb-2 ">{description}</p>
           {!supportability.isSupported ? (
             <NotSupportedBlock message={supportability.message} />
           ) : (
@@ -573,8 +573,8 @@ export const ContentCaption: FC<{
           )}
           {description && (
             <p
-              className={`text-xs w-full ${
-                multiGrid ? 'line-clamp-2' : 'line-clamp-3'
+              className={`w-full ${
+                multiGrid ? 'line-clamp-2 text-xs' : 'line-clamp-3 text-sm'
               }`}
             >
               {description}

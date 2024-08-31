@@ -80,24 +80,6 @@ export const NavbarLandingPage: FC<{ isLoading: boolean }> = ({
       <div className="loading loading-dots" />
     </div>
   ) : (
-    <div
-      className={`navbar flex top-0 items-center justify-center text-base-content bg-base-100 border-b border-base-200 pt-12 pb-8`}
-    >
-      <div className="flex flex-col items-center justify-center gap-2 w-fit">
-        <div className="relative w-6 h-6">
-          <Image
-            src={logo}
-            alt={'logo'}
-            priority={true}
-            className={`object-cover`}
-            fill={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
-        <span className="block font-luckiestguy text-xs font-bold leading-[0.5]">
-          BlinksFeed
-        </span>
-      </div>
-    </div>
+    <div className={`py-4`}></div>
   );
 };

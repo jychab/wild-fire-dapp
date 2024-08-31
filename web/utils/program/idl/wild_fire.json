@@ -637,6 +637,10 @@
           "signer": true
         },
         {
+          "name": "distributor",
+          "signer": true
+        },
+        {
           "name": "mint",
           "writable": true
         },
@@ -656,13 +660,13 @@
           }
         },
         {
-          "name": "token_state_mint_token_account",
+          "name": "payer_mint_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "token_state"
+                "path": "payer"
               },
               {
                 "kind": "account",
@@ -686,6 +690,10 @@
         {
           "name": "token_program_mint",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "system_program",
@@ -979,6 +987,10 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "payer",
+            "type": "pubkey"
           }
         ]
       }

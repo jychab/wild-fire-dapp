@@ -759,6 +759,10 @@ export type WildFire = {
           signer: true;
         },
         {
+          name: 'distributor';
+          signer: true;
+        },
+        {
           name: 'mint';
           writable: true;
         },
@@ -778,13 +782,13 @@ export type WildFire = {
           };
         },
         {
-          name: 'tokenStateMintTokenAccount';
+          name: 'payerMintTokenAccount';
           writable: true;
           pda: {
             seeds: [
               {
                 kind: 'account';
-                path: 'tokenState';
+                path: 'payer';
               },
               {
                 kind: 'account';
@@ -837,6 +841,10 @@ export type WildFire = {
         {
           name: 'tokenProgramMint';
           address: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+        },
+        {
+          name: 'associatedTokenProgram';
+          address: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
         },
         {
           name: 'systemProgram';
@@ -1130,6 +1138,10 @@ export type WildFire = {
           {
             name: 'amount';
             type: 'u64';
+          },
+          {
+            name: 'payer';
+            type: 'pubkey';
           }
         ];
       };
