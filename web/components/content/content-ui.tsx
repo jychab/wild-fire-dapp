@@ -3,6 +3,7 @@
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
 import { sendLike } from '@/utils/firebase/functions';
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
@@ -291,7 +292,8 @@ export const CarouselContent: FC<{
   const carouselRef = useRef<HTMLDivElement>(null);
   const handleClick = useCallback(() => {
     if (multiGrid && blinksDetail) {
-      router.push(blinksDetail.url);
+      const url = new URL(blinksDetail.url);
+      router.push(url.pathname + url.search);
     }
   }, [multiGrid, blinksDetail, router]);
 
@@ -508,10 +510,8 @@ export const ContentCaption: FC<{
           <div className="flex items-center gap-1">
             {websiteUrl && (
               <Link
-                href={websiteUrl}
+                href={useRelativePathIfPossbile(websiteUrl)}
                 className="link link-hover max-w-xs text-sm stat-desc truncate"
-                rel="noopener noreferrer"
-                target="_blank"
               >
                 {websiteText ?? websiteUrl}
               </Link>
@@ -585,7 +585,8 @@ export const ContentCaption: FC<{
               if (!multiGrid) {
                 setShowMore(true);
               } else if (blinksDetail) {
-                router.push(blinksDetail.url);
+                const url = new URL(blinksDetail.url);
+                router.push(url.pathname + url.search);
               }
             }}
             className="text-xs stat-desc link link-hover w-fit"

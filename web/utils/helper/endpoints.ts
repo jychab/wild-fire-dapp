@@ -39,3 +39,20 @@ export function proxify(targetUrl: string, image = false) {
     image ? '&image=true' : ''
   }`;
 }
+export function useRelativePathIfPossbile(urlString: string) {
+  try {
+    const url = new URL(urlString);
+    const domain = 'blinksfeed.com';
+
+    // Check if the domain matches
+    if (url.hostname === domain) {
+      // Return relative path including search parameters
+      return `${url.pathname}${url.search}`;
+    } else {
+      return urlString; // Or handle as needed
+    }
+  } catch (error) {
+    console.error('Invalid URL:', error);
+    return ''; // Return an empty string or handle as needed
+  }
+}
