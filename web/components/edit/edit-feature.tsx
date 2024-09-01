@@ -75,11 +75,11 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
   return (
     <div className="flex flex-col gap-4 my-4 items-center max-w-2xl h-full w-full sm:p-4">
       <span className="text-3xl lg:text-4xl text-base-content">
-        Edit Profile Settings
+        Edit Token Settings
       </span>
       <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded">
         <div className="flex w-full justify-between items-center">
-          <span className="hidden sm:block">Profile</span>
+          <span className="hidden sm:block">Settings</span>
           {metadata?.token_info?.supply == 0 && (
             <button
               onClick={() => closeMutation.mutateAsync()}
@@ -128,7 +128,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
           <div className="flex flex-col gap-4 w-full">
             <input
               type="text"
-              placeholder="Display Name"
+              placeholder="Name"
               value={name}
               className="input input-bordered w-full text-base rounded"
               onChange={handleNameChange}
@@ -136,7 +136,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
             {isAuthorized(tokenStateData, publicKey, metadata) && (
               <input
                 type="text"
-                placeholder="Username"
+                placeholder="Symbol"
                 className="input input-bordered w-full text-base rounded"
                 value={symbol}
                 onChange={handleSymbolChange}

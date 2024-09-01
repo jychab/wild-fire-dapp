@@ -75,14 +75,13 @@ export const CreatePanel: FC = () => {
   return (
     <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
       <span className="text-3xl md:text-4xl text-center">
-        Create your profile
+        Create Your Token
       </span>
       <span className="text-md md:text-base text-center px-4">
-        Add a profile picture, display name and username. You can always edit it
-        later.
+        Add a profile picture, name and symbol. You can always edit it later.
       </span>
       <div className="px-4 pb-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
-        <span className="hidden md:block pt-4">Create your profile</span>
+        <span className="hidden md:block pt-4">Create Your Token</span>
         <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content md:pt-4">
           <div className="flex w-40 h-40 items-center justify-center">
             <label
@@ -116,7 +115,7 @@ export const CreatePanel: FC = () => {
           <div className="flex flex-col gap-4 w-full">
             <input
               type="text"
-              placeholder="Display Name"
+              placeholder="Name"
               value={name}
               maxLength={20}
               className="input input-bordered w-full text-base rounded"
@@ -124,7 +123,7 @@ export const CreatePanel: FC = () => {
             />
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Symbol"
               maxLength={20}
               className="input input-bordered w-full text-base rounded"
               value={symbol}

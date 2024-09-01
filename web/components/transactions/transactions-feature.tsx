@@ -12,7 +12,8 @@ export const TransactionsFeature: FC = () => {
             Transactions History
           </span>
           <span className="text-md md:text-base text-center px-4">
-            Review and verify your recent transactions
+            Review and verify your recent transactions made by your associated
+            in-app wallet.
           </span>
         </div>
         <div className="flex flex-col flex-1 h-full w-full">
