@@ -2,11 +2,13 @@
 
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getDerivedMint } from '@/utils/helper/mint';
+import { getAmountAfterTransferFee, getDerivedMint } from '@/utils/helper/mint';
 import { Campaign } from '@/utils/types/campaigns';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useCreateOrEditCampaign,
   useGetCampaigns,
@@ -103,6 +105,7 @@ export const CampaignTable: FC<{
 
 export interface TempCampaign extends Campaign {
   difference?: number;
+  topUp?: number;
 }
 
 export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
@@ -116,8 +119,13 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
   const [endDate, setEndDate] = useState<number | undefined>();
   const [duration, setDuration] = useState(Duration.UNTILL_BUDGET_FINISHES);
   const { publicKey } = useWallet();
+  const { data: mintInfo } = useGetMintToken({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
+
   const campaignMutation = useCreateOrEditCampaign({
     address: publicKey,
+    payer: mintInfo ? new PublicKey(mintInfo?.payer) : null,
   });
   const stopCampaignMutation = useStopCampaign({
     address: publicKey,
@@ -182,7 +190,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             className="grow text-end"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
-            placeholder=""
+            placeholder="Total allocated tokens"
           />
           {`${
             campaign?.budget
@@ -197,7 +205,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             onChange={(e) => setAmount(e.target.value)}
             type="number"
             className="grow text-end"
-            placeholder=""
+            placeholder="Tokens to airdrop each time"
           />
         </label>
         <label className="flex px-2 justify-between items-center gap-2">
@@ -207,9 +215,11 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             onChange={(e) => setCriteria(e.target.value as Criteria)}
             className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
           >
-            {Object.entries(Criteria).map((x) => (
-              <option key={x[0]}>{x[1]}</option>
-            ))}
+            {Object.entries(Criteria)
+              .filter((x) => x[1] == Criteria.SUBSCRIBERS_ONLY)
+              .map((x) => (
+                <option key={x[0]}>{x[1]}</option>
+              ))}
           </select>
         </label>
         <label className="flex px-2 justify-between items-center gap-2">
@@ -258,6 +268,22 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             />
           </label>
         )}
+        {budget && amount && (
+          <>
+            <label className="flex px-2 justify-between items-center gap-2">
+              Estimated Cost
+              <span>{`~${
+                (parseInt(budget) / parseInt(amount)) * 0.00001
+              } SOL`}</span>
+            </label>
+            <label className="flex px-2 justify-between items-center gap-2">
+              No. of Wallets
+              <span>{`${formatLargeNumber(
+                parseInt(budget) / parseInt(amount)
+              )}`}</span>
+            </label>
+          </>
+        )}
         {!campaign || !campaign.softDelete ? (
           <div className="modal-action flex gap-2">
             {campaign && (
@@ -281,18 +307,35 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             )}
             <button
               disabled={campaignMutation.isPending}
-              onClick={() => {
+              onClick={async () => {
                 if (!publicKey) return;
                 const difference =
                   parseInt(budget) - (campaign?.tokensRemaining || 0);
+                const differenceAmountAfterTransferFee =
+                  difference > 0
+                    ? await getAmountAfterTransferFee(
+                        difference,
+                        getDerivedMint(publicKey)
+                      )
+                    : difference;
+                const newBudget =
+                  (campaign?.budget || 0) + differenceAmountAfterTransferFee;
+                const newTokensRemaining =
+                  (campaign?.tokensRemaining || 0) +
+                  differenceAmountAfterTransferFee;
+                const previousCost = campaign
+                  ? campaign.tokensRemaining / campaign.amount
+                  : 0;
+                const currentCost = parseInt(budget) / parseInt(amount);
+                const topUp =
+                  (currentCost - previousCost) * 0.00001 * LAMPORTS_PER_SOL;
+
                 campaignMutation.mutateAsync({
+                  topUp,
                   id,
                   name: name,
-                  budget: campaign?.budget
-                    ? campaign.budget + difference
-                    : difference,
-                  tokensRemaining:
-                    (campaign?.tokensRemaining || 0) + difference,
+                  budget: newBudget,
+                  tokensRemaining: newTokensRemaining,
                   amount: parseInt(amount),
                   criteria: criteria,
                   eligibility: eligibility,

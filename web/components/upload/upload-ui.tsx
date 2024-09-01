@@ -10,6 +10,7 @@ import {
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
+import { getAmountAfterTransferFee } from '@/utils/helper/mint';
 import {
   SOFT_LIMIT_BUTTONS,
   SOFT_LIMIT_FORM_INPUTS,
@@ -914,10 +915,14 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     }));
   };
 
-  const handleBudgetSubmit = () => {
+  const handleBudgetSubmit = async () => {
     const currentBudget = tempCampaign?.budget || 0;
     const currentTokensRemaining = tempCampaign?.tokensRemaining || 0;
     const difference = (budget ? parseInt(budget) : 0) - currentTokensRemaining;
+    const differenceAmountAfterTransferFee =
+      difference > 0
+        ? await getAmountAfterTransferFee(difference, new PublicKey(mintToSend))
+        : difference;
 
     setTempCampaign((prev) => ({
       ...prev,
@@ -926,8 +931,9 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         duration == Duration.CUSTOM_DATE && endDate ? endDate : undefined,
       criteria: Criteria.ANYONE,
       eligibility: Eligibility.ONCE_PER_ADDRESS,
-      budget: currentBudget + difference,
-      tokensRemaining: currentTokensRemaining + difference,
+      budget: currentBudget + differenceAmountAfterTransferFee,
+      tokensRemaining:
+        currentTokensRemaining + differenceAmountAfterTransferFee,
       difference: difference,
     }));
 

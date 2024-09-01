@@ -1,3 +1,9 @@
+import {
+  calculateEpochFee,
+  getMint,
+  getTransferFeeConfig,
+  TOKEN_2022_PROGRAM_ID,
+} from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
 import { Scope } from '../enums/das';
 import { DAS } from '../types/das';
@@ -33,4 +39,27 @@ export function getAssociatedTokenStateAccount(mint: PublicKey) {
   );
 
   return tokenState;
+}
+
+export async function getAmountAfterTransferFee(
+  amount: number,
+  mint: PublicKey,
+  tokenProgram = TOKEN_2022_PROGRAM_ID
+) {
+  const mintInfo = await getMint(
+    program.provider.connection,
+    mint,
+    undefined,
+    tokenProgram
+  );
+  const transferFeeConfig = getTransferFeeConfig(mintInfo);
+  if (!transferFeeConfig) {
+    return amount;
+  }
+  const transferFee = calculateEpochFee(
+    transferFeeConfig,
+    BigInt((await program.provider.connection.getEpochInfo()).epoch),
+    BigInt(amount)
+  );
+  return amount - Number(transferFee);
 }

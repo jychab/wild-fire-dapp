@@ -19,6 +19,7 @@ import {
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
+  SystemProgram,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -30,8 +31,10 @@ import { TempCampaign } from './airdrop-ui';
 
 export function useCreateOrEditCampaign({
   address,
+  payer,
 }: {
   address: PublicKey | null;
+  payer: PublicKey | null;
 }) {
   const { connection } = useConnection();
   const transactionToast = useTransactionToast();
@@ -42,6 +45,7 @@ export function useCreateOrEditCampaign({
       'create-campaign',
       {
         address,
+        payer,
       },
     ],
     mutationFn: async (input: Partial<TempCampaign>) => {
@@ -49,11 +53,24 @@ export function useCreateOrEditCampaign({
         !wallet.publicKey ||
         !wallet.signTransaction ||
         !input.budget ||
-        !input.amount
+        !input.amount ||
+        !address ||
+        !payer
       )
         return;
       let signature: TransactionSignature = '';
+
+      const ixs = [];
       try {
+        if (input.topUp && input.topUp > 0) {
+          ixs.push(
+            SystemProgram.transfer({
+              toPubkey: payer,
+              fromPubkey: wallet.publicKey,
+              lamports: input.topUp,
+            })
+          );
+        }
         if (input.mintToSend && input.difference && input.difference > 0) {
           // check if payer has enough sol
           // calculate amount of sol needed to airdrop subscribers
@@ -70,7 +87,6 @@ export function useCreateOrEditCampaign({
             true,
             TOKEN_2022_PROGRAM_ID
           );
-          const ixs = [];
           try {
             await getAccount(
               connection,
@@ -145,6 +161,12 @@ export function useCreateOrEditCampaign({
           client.invalidateQueries({
             queryKey: ['get-transactions', { address: wallet.publicKey! }],
           }),
+          client.invalidateQueries({
+            queryKey: [
+              'get-account-info',
+              { endpoint: connection.rpcEndpoint, address: payer },
+            ],
+          }),
         ]);
       }
     },
@@ -218,6 +240,62 @@ export function useStopCampaign({ address }: { address: PublicKey | null }) {
           }),
           client.invalidateQueries({
             queryKey: ['get-transactions', { address: wallet.publicKey! }],
+          }),
+        ]);
+      }
+    },
+    onError: (error) => {
+      console.error(`Transaction failed! ${JSON.stringify(error)}`);
+    },
+  });
+}
+
+export function useTopUpWallet({ address }: { address: PublicKey | null }) {
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const transactionToast = useTransactionToast();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationKey: [
+      'top-up-wallet',
+      {
+        endpoint: connection.rpcEndpoint,
+        address,
+      },
+    ],
+    mutationFn: async ({ amount }: { amount: number }) => {
+      if (!address || !wallet.publicKey || !wallet.signTransaction) return;
+      let signature: TransactionSignature = '';
+      try {
+        let ix = SystemProgram.transfer({
+          toPubkey: address,
+          fromPubkey: wallet.publicKey,
+          lamports: amount,
+        });
+        signature = await buildAndSendTransaction({
+          connection,
+          publicKey: wallet.publicKey,
+          ixs: [ix],
+          signTransaction: wallet.signTransaction,
+        });
+        return signature;
+      } catch (error: unknown) {
+        toast.error(`Transaction failed! ${error}` + signature);
+        return;
+      }
+    },
+
+    onSuccess: async (signature) => {
+      if (signature) {
+        transactionToast(signature);
+
+        return await Promise.all([
+          client.invalidateQueries({
+            queryKey: [
+              'get-account-info',
+              { endpoint: connection.rpcEndpoint, address },
+            ],
           }),
         ]);
       }

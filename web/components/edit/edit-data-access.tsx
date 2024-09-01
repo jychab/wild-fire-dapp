@@ -198,6 +198,7 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         return {
           mint: mintData.data()!.mint,
           admin: mintData.data()!.admin,
+          payer: mintData.data()!.payer,
         } as TokenState;
       }
     },
