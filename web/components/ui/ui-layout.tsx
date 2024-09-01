@@ -23,6 +23,7 @@ import {
   SignInBtn,
 } from '../authentication/authentication-ui';
 import SearchBar from '../search/search-ui';
+import { RightColumn } from '../trending/trending-feature';
 import { UploadBtn } from '../upload/upload-ui';
 
 export function UiLayout({ children }: { children: ReactNode }) {
@@ -98,15 +99,17 @@ export function UiLayout({ children }: { children: ReactNode }) {
               }
             >
               {(!!publicKey || path != '/') && (
-                <ul className="hidden 2xl:flex flex-col menu menu-primary bg-base-100 border-base-300 border-r left-0 gap-2 min-h-full w-80">
+                <ul className="hidden 2xl:flex flex-col menu menu-primary bg-base-100 absolute z-10 border-base-300 border-r left-0 gap-2 min-h-full w-full max-w-[250px]">
                   <AuthenticationDropdownMenu />
                 </ul>
               )}
-
               {children}
-              {(!!publicKey || path != '/') && (
-                <div className="hidden 2xl:flex w-80" />
-              )}
+              {!!publicKey &&
+                (path != '/' ? (
+                  <div className="hidden 2xl:flex w-full absolute max-w-[250px]" />
+                ) : (
+                  <RightColumn />
+                ))}
             </Suspense>
           </div>
           <Toaster position="bottom-right" />

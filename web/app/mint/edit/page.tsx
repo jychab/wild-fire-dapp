@@ -6,6 +6,12 @@ import { useSearchParams } from 'next/navigation';
 export default function page() {
   const searchParams = useSearchParams();
   const mintId = searchParams.get('mintId');
-  return <EditFeature mintId={mintId} />;
+  return (
+    <div className="flex flex-col h-full w-full items-center">
+      <div className="w-full max-w-2xl h-full">
+        <EditFeature mintId={mintId} />
+      </div>
+    </div>
+  );
   // return <div></div>;
 }

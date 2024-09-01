@@ -1,5 +1,6 @@
 'use client';
 
+import { COST_PER_NO_RENT_TRANSFER_IN_SOL } from '@/utils/consts';
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAmountAfterTransferFee, getDerivedMint } from '@/utils/helper/mint';
@@ -273,7 +274,8 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             <label className="flex px-2 justify-between items-center gap-2">
               Estimated Cost
               <span>{`~${
-                (parseInt(budget) / parseInt(amount)) * 0.00001
+                (parseInt(budget) / parseInt(amount)) *
+                COST_PER_NO_RENT_TRANSFER_IN_SOL
               } SOL`}</span>
             </label>
             <label className="flex px-2 justify-between items-center gap-2">
@@ -328,7 +330,9 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                   : 0;
                 const currentCost = parseInt(budget) / parseInt(amount);
                 const topUp =
-                  (currentCost - previousCost) * 0.00001 * LAMPORTS_PER_SOL;
+                  (currentCost - previousCost) *
+                  COST_PER_NO_RENT_TRANSFER_IN_SOL *
+                  LAMPORTS_PER_SOL;
 
                 campaignMutation.mutateAsync({
                   topUp,

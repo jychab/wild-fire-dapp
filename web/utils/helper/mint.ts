@@ -5,7 +5,9 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
+import { doc, getDoc } from 'firebase/firestore';
 import { Scope } from '../enums/das';
+import { db } from '../firebase/firebase';
 import { DAS } from '../types/das';
 import { TokenState } from '../types/program';
 import { program } from './transcationInstructions';
@@ -62,4 +64,16 @@ export async function getAmountAfterTransferFee(
     BigInt(amount)
   );
   return amount - Number(transferFee);
+}
+
+export async function getHolders(mint: string) {
+  const result = await getDoc(doc(db, `Mint/${mint}/TokenInfo/Summary`));
+  if (result.exists()) {
+    return result.data() as {
+      currentHoldersCount: number;
+      holdersChange24hPercent: number;
+    };
+  } else {
+    return null;
+  }
 }

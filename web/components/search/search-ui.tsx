@@ -1,3 +1,5 @@
+'use client';
+
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
 import Image from 'next/image';
@@ -34,7 +36,7 @@ function SearchBar() {
         <input
           type="text"
           placeholder="Search"
-          className="input input-bordered focus-within:border-none input-sm md:input-md text-base w-full rounded-full"
+          className="input input-bordered focus-within:border-none input-sm md:input-md text-base w-full rounded-box"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

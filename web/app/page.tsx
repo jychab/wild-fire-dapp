@@ -13,11 +13,13 @@ export default function Page() {
   });
 
   return publicKey ? (
-    <div className="flex flex-col w-full items-center justify-center">
-      <div className="max-w-lg w-full h-full sm:p-4">
-        <ContentGrid posts={posts} />
+    <>
+      <div className="flex flex-col w-full absolute items-center justify-center">
+        <div className="max-w-lg w-full h-full sm:p-4">
+          <ContentGrid posts={posts} />
+        </div>
       </div>
-    </div>
+    </>
   ) : (
     <LandingPage />
   );

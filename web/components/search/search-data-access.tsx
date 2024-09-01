@@ -13,6 +13,7 @@ export function useGetSummary() {
       if (result.exists()) {
         return result.data() as {
           all: string[];
+          allTokenPrices: { mint: string; price: number; supply: number }[];
         };
       } else {
         return null;

@@ -27,10 +27,8 @@ export const AirdropFeature: FC = () => {
           </span>
         </div>
         <div className="flex flex-col flex-1 h-full w-full">
-          <div className="border-base-200 rounded border border h-full">
-            <InAppWallet />
-            <AirdropCampaign />
-          </div>
+          <InAppWallet />
+          <AirdropCampaign />
         </div>
       </div>
     </div>
@@ -49,8 +47,8 @@ export const InAppWallet: FC = () => {
   });
   const topUpMutation = useTopUpWallet({ address });
   return (
-    <div className="px-4 overflow-x-hidden">
-      <div className="rounded-box flex flex-col border gap-4 p-4">
+    <div className="p-4 overflow-x-hidden">
+      <div className="rounded-box flex flex-col border border-base-300 gap-4 p-4">
         <div>
           <div className="items-start flex gap-2 ">
             <span className="text-lg font-bold truncate">

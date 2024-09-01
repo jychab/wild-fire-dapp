@@ -73,27 +73,13 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
   };
 
   return (
-    <div className="flex flex-col gap-4 my-4 items-center max-w-2xl h-full w-full sm:p-4">
-      <span className="text-3xl lg:text-4xl text-base-content">
+    <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
+      <span className="text-3xl md:text-4xl text-center">
         Edit Token Settings
       </span>
-      <div className="p-4 flex flex-col gap-4 items-start w-full sm:border border-base-content rounded">
-        <div className="flex w-full justify-between items-center">
-          <span className="hidden sm:block">Settings</span>
-          {metadata?.token_info?.supply == 0 && (
-            <button
-              onClick={() => closeMutation.mutateAsync()}
-              className="btn btn-error btn-sm"
-            >
-              {closeMutation.isPending ? (
-                <div className="loading loading-spinner loading-sm" />
-              ) : (
-                'Close Account'
-              )}
-            </button>
-          )}
-        </div>
-        <div className="flex flex-col md:flex-row w-full gap-4 items-center sm:border-t sm:border-base-content pt-4">
+      <div className="px-4 pb-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
+        <span className="hidden sm:block pt-4">Settings</span>
+        <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content md:pt-4">
           <div className="flex w-40 h-40 items-center justify-center">
             <label
               htmlFor="dropzone-file"

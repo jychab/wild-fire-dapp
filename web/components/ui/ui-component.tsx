@@ -1,3 +1,5 @@
+'use client';
+
 import { useLocalStorage } from '@solana/wallet-adapter-react';
 import {
   IconBrandGithubFilled,
