@@ -149,7 +149,7 @@ export function useCreateActionConfig({
     connect: async (context: ActionContext) => {
       return publicKey?.toBase58() || '';
     },
-    signTransaction: async (tx: string, context) => {
+    signTransaction: async (tx: string, context: ActionContext) => {
       if (!walletSignTransaction) return { error: 'Wallet not connected!' };
       const transaction = VersionedTransaction.deserialize(
         Buffer.from(tx, 'base64')

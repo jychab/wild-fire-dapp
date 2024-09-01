@@ -261,7 +261,6 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     component: AbstractActionComponent,
     params?: Record<string, string | string[]>
   ) => {
-    if (!action || !actionState) return;
     if (params) {
       if (component instanceof FormActionComponent) {
         Object.entries(params).forEach(([name, value]) =>
@@ -296,7 +295,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     };
 
     try {
-      const account = await action.adapter.connect(context);
+      const account = await action?.adapter.connect(context);
       if (!account) {
         dispatchExecution({ type: ExecutionType.RESET });
         return;
@@ -316,7 +315,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
         return;
       }
 
-      const signResult = await action.adapter.signTransaction(
+      const signResult = await action?.adapter.signTransaction(
         tx.transaction,
         context
       );
@@ -324,7 +323,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       if (!signResult || isSignTransactionError(signResult)) {
         dispatchExecution({ type: ExecutionType.RESET });
       } else {
-        await action.adapter.confirmTransaction(signResult.signature, context);
+        await action?.adapter.confirmTransaction(signResult.signature, context);
 
         if (!tx.links?.next) {
           dispatchExecution({
@@ -335,7 +334,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
         }
 
         //chain
-        const nextAction = await action.chain(tx.links.next, {
+        const nextAction = await action?.chain(tx.links.next, {
           signature: signResult.signature,
           account: account,
         });
