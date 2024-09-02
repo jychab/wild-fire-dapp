@@ -8,7 +8,10 @@ import {
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
-import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
+import {
+  getAmountAfterTransferFee,
+  getAssociatedTokenStateAccount,
+} from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { PostContent } from '@/utils/types/post';
@@ -57,84 +60,106 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       let signature: TransactionSignature = '';
       try {
         if (
-          postCampaign?.difference &&
+          postCampaign &&
           postCampaign.mintToSend &&
-          postCampaign.difference > 0
+          postCampaign.initialTokensRemaining
         ) {
-          const tokenProgram = postCampaign.mintToSendTokenProgram
-            ? new PublicKey(postCampaign.mintToSendTokenProgram)
-            : TOKEN_2022_PROGRAM_ID;
-          const source = getAssociatedTokenAddressSync(
-            new PublicKey(postCampaign.mintToSend),
-            wallet.publicKey,
-            false,
-            tokenProgram
-          );
-          const destination = getAssociatedTokenAddressSync(
-            new PublicKey(postCampaign.mintToSend),
-            getAssociatedTokenStateAccount(mint),
-            true,
-            tokenProgram
-          );
-          const ixs = [];
-          try {
-            await getAccount(connection, destination, undefined, tokenProgram);
-          } catch (e) {
-            ixs.push(
-              createAssociatedTokenAccountIdempotentInstruction(
-                wallet.publicKey,
+          const currentTokensRemaining =
+            postCampaign?.initialTokensRemaining || 0;
+          const difference =
+            (postCampaign.tokensRemaining || 0) - currentTokensRemaining;
+          const differenceAmountAfterTransferFee =
+            difference > 0 && postCampaign.mintToSendTokenProgram
+              ? await getAmountAfterTransferFee(
+                  difference,
+                  new PublicKey(postCampaign.mintToSend),
+                  new PublicKey(postCampaign.mintToSendTokenProgram)
+                )
+              : difference;
+          postCampaign.budget =
+            (postCampaign?.budget || 0) + differenceAmountAfterTransferFee;
+          postCampaign.tokensRemaining =
+            currentTokensRemaining + differenceAmountAfterTransferFee;
+
+          if (difference > 0) {
+            const tokenProgram = postCampaign.mintToSendTokenProgram
+              ? new PublicKey(postCampaign.mintToSendTokenProgram)
+              : TOKEN_2022_PROGRAM_ID;
+            const source = getAssociatedTokenAddressSync(
+              new PublicKey(postCampaign.mintToSend),
+              wallet.publicKey,
+              false,
+              tokenProgram
+            );
+            const destination = getAssociatedTokenAddressSync(
+              new PublicKey(postCampaign.mintToSend),
+              getAssociatedTokenStateAccount(mint),
+              true,
+              tokenProgram
+            );
+            const ixs = [];
+            try {
+              await getAccount(
+                connection,
                 destination,
-                getAssociatedTokenStateAccount(mint),
+                undefined,
+                tokenProgram
+              );
+            } catch (e) {
+              ixs.push(
+                createAssociatedTokenAccountIdempotentInstruction(
+                  wallet.publicKey,
+                  destination,
+                  getAssociatedTokenStateAccount(mint),
+                  new PublicKey(postCampaign.mintToSend),
+                  tokenProgram
+                )
+              );
+            }
+            ixs.push(
+              createTransferCheckedInstruction(
+                source,
                 new PublicKey(postCampaign.mintToSend),
+                destination,
+                wallet.publicKey,
+                Math.round(
+                  difference * 10 ** (postCampaign.mintToSendDecimals || 0)
+                ),
+                postCampaign.mintToSendDecimals || 0,
+                undefined,
                 tokenProgram
               )
             );
+            signature = await buildAndSendTransaction({
+              connection,
+              ixs,
+              signTransaction: wallet.signTransaction,
+              publicKey: wallet.publicKey,
+            });
+          } else if (
+            postCampaign?.id &&
+            postCampaign.postId &&
+            difference < 0
+          ) {
+            const { partialTx } = await withdrawFromCampaign(
+              postCampaign.id,
+              -1 * difference,
+              postCampaign.postId
+            );
+            const partialSignedTx = VersionedTransaction.deserialize(
+              Buffer.from(partialTx, 'base64')
+            );
+            signature = await buildAndSendTransaction({
+              connection,
+              publicKey: wallet.publicKey,
+              partialSignedTx,
+              signTransaction: wallet.signTransaction,
+            });
           }
-          ixs.push(
-            createTransferCheckedInstruction(
-              source,
-              new PublicKey(postCampaign.mintToSend),
-              destination,
-              wallet.publicKey,
-              Math.round(
-                postCampaign.difference *
-                  10 ** (postCampaign.mintToSendDecimals || 0)
-              ),
-              postCampaign.mintToSendDecimals || 0,
-              undefined,
-              tokenProgram
-            )
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            ixs,
-            signTransaction: wallet.signTransaction,
-            publicKey: wallet.publicKey,
-          });
-        } else if (
-          postCampaign?.id &&
-          postCampaign.postId &&
-          postCampaign.difference &&
-          postCampaign.difference < 0
-        ) {
-          const { partialTx } = await withdrawFromCampaign(
-            postCampaign.id,
-            -1 * postCampaign.difference,
-            postCampaign.postId
-          );
-          const partialSignedTx = VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            publicKey: wallet.publicKey,
-            partialSignedTx,
-            signTransaction: wallet.signTransaction,
-          });
         }
         await createOrEditPost(mint.toBase58(), postContent);
         if (postCampaign) {
-          delete postCampaign.difference;
+          delete postCampaign.initialTokensRemaining;
           await createOrEditCampaign(postCampaign);
         }
         return { signature, postId: postContent.id };

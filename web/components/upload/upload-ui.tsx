@@ -10,7 +10,7 @@ import {
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getAmountAfterTransferFee, getAsset } from '@/utils/helper/mint';
+import { getAsset } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import {
   SOFT_LIMIT_BUTTONS,
@@ -88,7 +88,7 @@ interface LinkedActionWithType extends LinkedAction {
   type: ActionTypeEnum;
 }
 export interface TempPostCampaign extends PostCampaign {
-  difference?: number;
+  initialTokensRemaining?: number;
   links?: {
     /** list of related Actions a user could perform */
     actions: LinkedActionWithType[];
@@ -127,7 +127,11 @@ export const UploadPost: FC<{
 
   useEffect(() => {
     if (postCampaign && !tempCampaign) {
-      setTempCampaign((prev) => ({ ...prev, ...postCampaign }));
+      setTempCampaign((prev) => ({
+        ...prev,
+        ...postCampaign,
+        initialTokensRemaining: postCampaign.tokensRemaining,
+      }));
     } else if (mint) {
       setTempCampaign((prev) => ({
         ...prev,
@@ -619,7 +623,7 @@ const UploadContentBtn: FC<{
               links: tempCampaign.links,
             },
             postCampaign: {
-              difference: tempCampaign.difference,
+              initialTokensRemaining: tempCampaign.initialTokensRemaining,
               postId: tempCampaign.postId,
               amountPerQuery: tempCampaign.amountPerQuery,
               id: tempCampaign.id,
@@ -880,13 +884,13 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   // Initializing state with a single useState call for all form fields
   const [campaignDetails, setCampaignDetails] = useState({
     mintToSend: tempCampaign?.mint || '',
-    budget: '',
+    tokensRemaining: '',
     endDate: undefined as number | undefined,
     duration: Duration.UNTILL_BUDGET_FINISHES,
   });
 
   // Destructuring state for easier access
-  const { mintToSend, budget, endDate, duration } = campaignDetails;
+  const { mintToSend, tokensRemaining, endDate, duration } = campaignDetails;
   const [mintToSendDetails, setMintToSendDetails] =
     useState<DAS.GetAssetResponse>();
   useEffect(() => {
@@ -905,7 +909,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     if (tempCampaign) {
       setCampaignDetails({
         mintToSend: tempCampaign.mintToSend || tempCampaign?.mint || '',
-        budget: tempCampaign.tokensRemaining?.toString() || '',
+        tokensRemaining: tempCampaign.tokensRemaining?.toString() || '',
         endDate: tempCampaign.endDate,
         duration: tempCampaign.endDate
           ? Duration.CUSTOM_DATE
@@ -919,7 +923,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   const resetForm = () => {
     setCampaignDetails({
       mintToSend: tempCampaign?.mint || '',
-      budget: '',
+      tokensRemaining: '',
       endDate: undefined,
       duration: Duration.UNTILL_BUDGET_FINISHES,
     });
@@ -936,16 +940,8 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     const currentBudget = tempCampaign?.budget || 0;
     const currentTokensRemaining = tempCampaign?.tokensRemaining || 0;
     const difference =
-      (budget ? parseFloat(budget) : 0) - currentTokensRemaining;
-
-    const differenceAmountAfterTransferFee =
-      difference > 0 && mintToSendDetails?.token_info?.token_program
-        ? await getAmountAfterTransferFee(
-            difference,
-            new PublicKey(mintToSend),
-            new PublicKey(mintToSendDetails.token_info?.token_program)
-          )
-        : difference;
+      (tokensRemaining ? parseFloat(tokensRemaining) : 0) -
+      currentTokensRemaining;
 
     setTempCampaign((prev) => ({
       ...prev,
@@ -956,10 +952,8 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         duration == Duration.CUSTOM_DATE && endDate ? endDate : undefined,
       criteria: Criteria.ANYONE,
       eligibility: Eligibility.ONCE_PER_ADDRESS,
-      budget: currentBudget + differenceAmountAfterTransferFee,
-      tokensRemaining:
-        currentTokensRemaining + differenceAmountAfterTransferFee,
-      difference: difference,
+      budget: currentBudget + difference,
+      tokensRemaining: currentTokensRemaining + difference,
     }));
 
     closeModal();
@@ -1009,7 +1003,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
           </div>
         </div>
         <InputField
-          tooltip="Mint token to reward users. Defaults to your own token."
+          tooltip="Mint token to reward users. Defaults to your account token."
           label="Mint"
           type="text"
           value={mintToSend}
@@ -1021,8 +1015,8 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
           tooltip="Total amount of tokens allocated as rewards for this post."
           label="Budget"
           type="number"
-          value={budget}
-          onChange={(e) => handleInputChange('budget', e.target.value)}
+          value={tokensRemaining}
+          onChange={(e) => handleInputChange('tokensRemaining', e.target.value)}
           placeholder="How many tokens do you want to give out?"
           suffix={
             tempCampaign?.budget
