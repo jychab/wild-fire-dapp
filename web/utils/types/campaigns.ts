@@ -41,6 +41,8 @@ interface CampaignDetails {
   mint: string;
   admin: string;
   mintToSend: string;
+  mintToSendDecimals: number;
+  mintToSendTokenProgram: string;
   budget: number;
   tokensRemaining: number;
   eligibility: Eligibility;

@@ -1015,6 +1015,10 @@ export type WildFire = {
           {
             name: 'id';
             type: 'u64';
+          },
+          {
+            name: 'mintToSendDecimals';
+            type: 'u8';
           }
         ];
       };
@@ -1035,6 +1039,10 @@ export type WildFire = {
           {
             name: 'amountReserve';
             type: 'u64';
+          },
+          {
+            name: 'decimals';
+            type: 'u8';
           }
         ];
       };
@@ -1134,6 +1142,10 @@ export type WildFire = {
           {
             name: 'mint';
             type: 'pubkey';
+          },
+          {
+            name: 'decimals';
+            type: 'u8';
           },
           {
             name: 'amount';

@@ -74,47 +74,47 @@ export function useCreateOrEditCampaign({
         if (input.mintToSend && input.difference && input.difference > 0) {
           // check if payer has enough sol
           // calculate amount of sol needed to airdrop subscribers
-
+          const tokenProgram = input.mintToSendTokenProgram
+            ? new PublicKey(input.mintToSendTokenProgram)
+            : TOKEN_2022_PROGRAM_ID;
+          const mintToSend = new PublicKey(input.mintToSend);
           const source = getAssociatedTokenAddressSync(
-            new PublicKey(input.mintToSend),
+            mintToSend,
             wallet.publicKey,
             false,
-            TOKEN_2022_PROGRAM_ID
+            tokenProgram
           );
           const destination = getAssociatedTokenAddressSync(
-            new PublicKey(input.mintToSend),
-            getAssociatedTokenStateAccount(new PublicKey(input.mintToSend)),
+            mintToSend,
+            getAssociatedTokenStateAccount(new PublicKey(input.mint!)),
             true,
-            TOKEN_2022_PROGRAM_ID
+            tokenProgram
           );
           try {
-            await getAccount(
-              connection,
-              destination,
-              undefined,
-              TOKEN_2022_PROGRAM_ID
-            );
+            await getAccount(connection, destination, undefined, tokenProgram);
           } catch (e) {
             ixs.push(
               createAssociatedTokenAccountIdempotentInstruction(
                 wallet.publicKey,
                 destination,
-                getAssociatedTokenStateAccount(new PublicKey(input.mintToSend)),
-                new PublicKey(input.mintToSend),
-                TOKEN_2022_PROGRAM_ID
+                getAssociatedTokenStateAccount(new PublicKey(input.mint!)),
+                mintToSend,
+                tokenProgram
               )
             );
           }
           ixs.push(
             createTransferCheckedInstruction(
               source,
-              new PublicKey(input.mintToSend),
+              mintToSend,
               destination,
               wallet.publicKey,
-              input.difference,
-              0,
+              Math.round(
+                input.difference * 10 ** (input.mintToSendDecimals || 0)
+              ),
+              input.mintToSendDecimals || 0,
               undefined,
-              TOKEN_2022_PROGRAM_ID
+              tokenProgram
             )
           );
           signature = await buildAndSendTransaction({
@@ -126,7 +126,7 @@ export function useCreateOrEditCampaign({
         } else if (input.id && input.difference && input.difference < 0) {
           const { partialTx } = await withdrawFromCampaign(
             input.id,
-            input.difference * -1
+            -1 * input.difference
           );
           const partialSignedTx = VersionedTransaction.deserialize(
             Buffer.from(partialTx, 'base64')

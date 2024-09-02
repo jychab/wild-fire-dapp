@@ -1,7 +1,6 @@
 'use client';
 
 import revalidateTags from '@/app/action';
-import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import {
   createOrEditCampaign,
@@ -62,26 +61,24 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           postCampaign.mintToSend &&
           postCampaign.difference > 0
         ) {
+          const tokenProgram = postCampaign.mintToSendTokenProgram
+            ? new PublicKey(postCampaign.mintToSendTokenProgram)
+            : TOKEN_2022_PROGRAM_ID;
           const source = getAssociatedTokenAddressSync(
             new PublicKey(postCampaign.mintToSend),
             wallet.publicKey,
             false,
-            TOKEN_2022_PROGRAM_ID
+            tokenProgram
           );
           const destination = getAssociatedTokenAddressSync(
             new PublicKey(postCampaign.mintToSend),
             getAssociatedTokenStateAccount(mint),
             true,
-            TOKEN_2022_PROGRAM_ID
+            tokenProgram
           );
           const ixs = [];
           try {
-            await getAccount(
-              connection,
-              destination,
-              undefined,
-              TOKEN_2022_PROGRAM_ID
-            );
+            await getAccount(connection, destination, undefined, tokenProgram);
           } catch (e) {
             ixs.push(
               createAssociatedTokenAccountIdempotentInstruction(
@@ -89,21 +86,23 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
                 destination,
                 getAssociatedTokenStateAccount(mint),
                 new PublicKey(postCampaign.mintToSend),
-                TOKEN_2022_PROGRAM_ID
+                tokenProgram
               )
             );
           }
-
           ixs.push(
             createTransferCheckedInstruction(
               source,
-              mint,
+              new PublicKey(postCampaign.mintToSend),
               destination,
               wallet.publicKey,
-              postCampaign.difference,
-              0,
+              Math.round(
+                postCampaign.difference *
+                  10 ** (postCampaign.mintToSendDecimals || 0)
+              ),
+              postCampaign.mintToSendDecimals || 0,
               undefined,
-              TOKEN_2022_PROGRAM_ID
+              tokenProgram
             )
           );
           signature = await buildAndSendTransaction({
@@ -120,7 +119,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         ) {
           const { partialTx } = await withdrawFromCampaign(
             postCampaign.id,
-            postCampaign.difference * -1,
+            -1 * postCampaign.difference,
             postCampaign.postId
           );
           const partialSignedTx = VersionedTransaction.deserialize(
@@ -196,7 +195,6 @@ export function useGetPostCampaign({
       return null;
     },
     enabled: !!address && !!postId,
-    staleTime: SHORT_STALE_TIME,
   });
 }
 

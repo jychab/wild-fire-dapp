@@ -1,10 +1,14 @@
 'use client';
 
-import { COST_PER_NO_RENT_TRANSFER_IN_SOL } from '@/utils/consts';
+import {
+  COST_PER_NO_RENT_TRANSFER_IN_SOL,
+  DEFAULT_MINT_DECIMALS,
+} from '@/utils/consts';
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAmountAfterTransferFee, getDerivedMint } from '@/utils/helper/mint';
 import { Campaign } from '@/utils/types/campaigns';
+import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { IconPlus, IconX } from '@tabler/icons-react';
@@ -274,15 +278,9 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
             <label className="flex px-2 justify-between items-center gap-2">
               Estimated Cost
               <span>{`~${
-                (parseInt(budget) / parseInt(amount)) *
+                (parseFloat(budget) / parseFloat(amount)) *
                 COST_PER_NO_RENT_TRANSFER_IN_SOL
               } SOL`}</span>
-            </label>
-            <label className="flex px-2 justify-between items-center gap-2">
-              No. of Wallets
-              <span>{`${formatLargeNumber(
-                parseInt(budget) / parseInt(amount)
-              )}`}</span>
             </label>
           </>
         )}
@@ -312,7 +310,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
               onClick={async () => {
                 if (!publicKey) return;
                 const difference =
-                  parseInt(budget) - (campaign?.tokensRemaining || 0);
+                  parseFloat(budget) - (campaign?.tokensRemaining || 0);
                 const differenceAmountAfterTransferFee =
                   difference > 0
                     ? await getAmountAfterTransferFee(
@@ -328,7 +326,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                 const previousCost = campaign
                   ? campaign.tokensRemaining / campaign.amount
                   : 0;
-                const currentCost = parseInt(budget) / parseInt(amount);
+                const currentCost = parseFloat(budget) / parseFloat(amount);
                 const topUp =
                   (currentCost - previousCost) *
                   COST_PER_NO_RENT_TRANSFER_IN_SOL *
@@ -340,7 +338,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                   name: name,
                   budget: newBudget,
                   tokensRemaining: newTokensRemaining,
-                  amount: parseInt(amount),
+                  amount: parseFloat(amount),
                   criteria: criteria,
                   eligibility: eligibility,
                   startDate: startDate,
@@ -348,6 +346,8 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                   difference,
                   mint: getDerivedMint(publicKey).toBase58(),
                   mintToSend: getDerivedMint(publicKey).toBase58(),
+                  mintToSendDecimals: DEFAULT_MINT_DECIMALS,
+                  mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
                 });
               }}
               className="btn btn-success"

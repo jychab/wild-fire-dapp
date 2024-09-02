@@ -2,7 +2,7 @@ import { DAS } from '../types/das';
 
 export function formatLargeNumber(number: number | string) {
   if (typeof number == 'string') {
-    number = parseInt(number);
+    number = parseFloat(number);
   }
   if (number < 1 && number > 0) {
     return number.toPrecision(3);

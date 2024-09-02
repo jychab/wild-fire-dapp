@@ -13,9 +13,9 @@ export async function createOrEditCampaign(
   await createOrEditCampaign(data);
 }
 
-export async function deleteCampaign(id: number) {
+export async function deleteCampaign(id?: number, postId?: string) {
   const deleteCampaign = httpsCallable(functions, 'deleteCampaign');
-  await deleteCampaign({ id });
+  await deleteCampaign({ id, postId });
 }
 
 export async function withdrawFromCampaign(

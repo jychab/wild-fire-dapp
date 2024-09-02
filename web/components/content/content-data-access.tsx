@@ -1,6 +1,10 @@
 import revalidateTags from '@/app/action';
 import { SHORT_STALE_TIME } from '@/utils/consts';
-import { deletePost, withdrawFromCampaign } from '@/utils/firebase/functions';
+import {
+  deleteCampaign,
+  deletePost,
+  withdrawFromCampaign,
+} from '@/utils/firebase/functions';
 import { generateAddressApiEndPoint, proxify } from '@/utils/helper/endpoints';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
@@ -56,8 +60,8 @@ export function useRemoveContentMutation({
             signTransaction: wallet.signTransaction,
           });
         }
-
         await deletePost(mint.toBase58(), postId);
+        await deleteCampaign(undefined, postId);
         return { signature };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}` + signature);

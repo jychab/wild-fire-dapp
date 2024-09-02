@@ -864,6 +864,10 @@
           {
             "name": "id",
             "type": "u64"
+          },
+          {
+            "name": "mint_to_send_decimals",
+            "type": "u8"
           }
         ]
       }
@@ -884,6 +888,10 @@
           {
             "name": "amount_reserve",
             "type": "u64"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
           }
         ]
       }
@@ -983,6 +991,10 @@
           {
             "name": "mint",
             "type": "pubkey"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
           },
           {
             "name": "amount",

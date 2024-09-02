@@ -43,6 +43,25 @@ export function getAssociatedTokenStateAccount(mint: PublicKey) {
   return tokenState;
 }
 
+export async function getAsset(mint: PublicKey) {
+  const response = await fetch(program.provider.connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: '',
+      method: 'getAsset',
+      params: {
+        id: mint.toBase58(),
+      },
+    }),
+  });
+  const data = (await response.json()).result as DAS.GetAssetResponse;
+  return data;
+}
+
 export async function getAmountAfterTransferFee(
   amount: number,
   mint: PublicKey,
@@ -54,6 +73,7 @@ export async function getAmountAfterTransferFee(
     undefined,
     tokenProgram
   );
+
   const transferFeeConfig = getTransferFeeConfig(mintInfo);
   if (!transferFeeConfig) {
     return amount;

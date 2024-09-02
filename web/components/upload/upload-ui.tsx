@@ -10,13 +10,15 @@ import {
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getAmountAfterTransferFee } from '@/utils/helper/mint';
+import { getAmountAfterTransferFee, getAsset } from '@/utils/helper/mint';
+import { placeholderImage } from '@/utils/helper/placeholder';
 import {
   SOFT_LIMIT_BUTTONS,
   SOFT_LIMIT_FORM_INPUTS,
   SOFT_LIMIT_INPUTS,
 } from '@/utils/types/blinks';
 import { PostCampaign } from '@/utils/types/campaigns';
+import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import { LinkedAction } from '@solana/actions';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -623,6 +625,8 @@ const UploadContentBtn: FC<{
               id: tempCampaign.id,
               mint: tempCampaign.mint,
               mintToSend: tempCampaign.mintToSend,
+              mintToSendDecimals: tempCampaign.mintToSendDecimals,
+              mintToSendTokenProgram: tempCampaign.mintToSendTokenProgram,
               budget: tempCampaign.budget,
               tokensRemaining: tempCampaign.tokensRemaining,
               eligibility: tempCampaign.eligibility,
@@ -883,6 +887,19 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
 
   // Destructuring state for easier access
   const { mintToSend, budget, endDate, duration } = campaignDetails;
+  const [mintToSendDetails, setMintToSendDetails] =
+    useState<DAS.GetAssetResponse>();
+  useEffect(() => {
+    try {
+      if (mintToSend && new PublicKey(mintToSend)) {
+        getAsset(new PublicKey(mintToSend)).then((res) =>
+          setMintToSendDetails(res)
+        );
+      }
+    } catch (e) {
+      console.log('Invalid Pubkey');
+    }
+  }, [mintToSend]);
 
   useEffect(() => {
     if (tempCampaign) {
@@ -918,15 +935,23 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   const handleBudgetSubmit = async () => {
     const currentBudget = tempCampaign?.budget || 0;
     const currentTokensRemaining = tempCampaign?.tokensRemaining || 0;
-    const difference = (budget ? parseInt(budget) : 0) - currentTokensRemaining;
+    const difference =
+      (budget ? parseFloat(budget) : 0) - currentTokensRemaining;
+
     const differenceAmountAfterTransferFee =
-      difference > 0
-        ? await getAmountAfterTransferFee(difference, new PublicKey(mintToSend))
+      difference > 0 && mintToSendDetails?.token_info?.token_program
+        ? await getAmountAfterTransferFee(
+            difference,
+            new PublicKey(mintToSend),
+            new PublicKey(mintToSendDetails.token_info?.token_program)
+          )
         : difference;
 
     setTempCampaign((prev) => ({
       ...prev,
       mintToSend: mintToSend,
+      mintToSendDecimals: mintToSendDetails?.token_info?.decimals,
+      mintToSendTokenProgram: mintToSendDetails?.token_info?.token_program,
       endDate:
         duration == Duration.CUSTOM_DATE && endDate ? endDate : undefined,
       criteria: Criteria.ANYONE,
@@ -963,7 +988,26 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
             </button>
           </form>
         </div>
-
+        <div className="flex w-full gap-2 justify-end items-center">
+          <div className="w-8 h-8 relative rounded-full">
+            <Image
+              priority={true}
+              className={`object-cover rounded-full`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              alt=""
+              src={mintToSendDetails?.content?.links?.image || placeholderImage}
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">
+              {`Name: ${mintToSendDetails?.content?.metadata.name}`}
+            </span>
+            <span className="text-sm">
+              {`Symbol: ${mintToSendDetails?.content?.metadata.symbol}`}
+            </span>
+          </div>
+        </div>
         <InputField
           tooltip="Mint token to reward users. Defaults to your own token."
           label="Mint"
@@ -1282,7 +1326,7 @@ const ActionModal: FC<{
               return {
                 linkedAction: JSON.stringify(newLinkedAction),
                 query: newActionQuery,
-                amount: amount !== '' ? parseInt(amount) : 0,
+                amount: amount !== '' ? parseFloat(amount) : 0,
               };
             }
             return x;
@@ -1290,7 +1334,7 @@ const ActionModal: FC<{
         : (tempCampaign.amountPerQuery || []).concat({
             linkedAction: JSON.stringify(newLinkedAction),
             query: newActionQuery,
-            amount: amount !== '' ? parseInt(amount) : 0,
+            amount: amount !== '' ? parseFloat(amount) : 0,
           });
 
     const newLinkedActions = query
