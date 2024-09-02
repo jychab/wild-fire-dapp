@@ -296,7 +296,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                     amount: campaign.tokensRemaining,
                   });
                 }}
-                className="btn btn-warning"
+                className="btn btn-outline"
               >
                 {stopCampaignMutation.isPending ? (
                   <div className="loading loading-spinner" />
@@ -350,7 +350,7 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                   mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
                 });
               }}
-              className="btn btn-success"
+              className="btn btn-primary"
             >
               {campaignMutation.isPending ? (
                 <div className="loading loading-spinner" />

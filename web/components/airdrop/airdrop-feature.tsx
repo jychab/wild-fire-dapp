@@ -77,7 +77,7 @@ export const InAppWallet: FC = () => {
             <></>
           )}
         </div>
-        {publicKey && (
+        {publicKey && (walletInfo?.lamports || 0) < LAMPORTS_PER_SOL * 0.1 && (
           <div className="flex justify-start">
             <button
               disabled={topUpMutation.isPending}
