@@ -162,8 +162,6 @@ export function useGetActionRegistry({ registryUrl }: { registryUrl: string }) {
         }
         config = (await response.json()) as ActionsRegistryConfig;
 
-        config.actions.push({ host: 'api.blinksfeed.com', state: 'trusted' });
-        config.websites.push({ host: 'blinksfeed.com', state: 'trusted' });
         config.interstitials.push({ host: 'blinksfeed.com', state: 'trusted' });
 
         actionRegistry.actionsByHost = Object.fromEntries(
