@@ -7,7 +7,7 @@ export interface Campaign extends CampaignDetails {
 }
 
 export interface AmountPerQuery {
-  linkedAction: string;
+  href: string;
   query: {
     key: string;
     value?: string;

@@ -69,6 +69,7 @@ interface LinkedActionWithType extends LinkedAction {
 }
 export interface TempPostCampaign extends PostCampaign {
   initialTokensRemaining?: number;
+  initialBudget?: number;
   links?: {
     /** list of related Actions a user could perform */
     actions: LinkedActionWithType[];
@@ -106,11 +107,16 @@ export const UploadPost: FC<{
   }, []);
 
   useEffect(() => {
-    if (postCampaign && !tempCampaign?.initialTokensRemaining) {
+    if (
+      postCampaign &&
+      !tempCampaign?.initialTokensRemaining &&
+      !tempCampaign?.initialBudget
+    ) {
       setTempCampaign((prev) => ({
         ...prev,
         ...postCampaign,
         initialTokensRemaining: postCampaign.tokensRemaining,
+        initialBudget: postCampaign.budget,
       }));
     } else if (mint && !tempCampaign?.mint && !tempCampaign?.postId) {
       setTempCampaign((prev) => ({
@@ -157,12 +163,12 @@ export const UploadPost: FC<{
           links: {
             actions:
               post.links?.actions.map((x) => ({
+                ...x,
                 type: isSubscribe(
                   x.href,
                   tempCampaign?.mint!,
                   tempCampaign?.postId!
                 ),
-                ...x,
               })) || [],
           },
         }));
@@ -1020,7 +1026,7 @@ const ActionModal: FC<{
   const [label, setLabel] = useState('');
 
   const action = tempCampaign?.amountPerQuery?.find(
-    (x) => query && x.linkedAction === JSON.stringify(query)
+    (x) => query && x.href == query.href
   );
 
   useEffect(() => {
@@ -1090,7 +1096,7 @@ const ActionModal: FC<{
           ),
         },
         amountPerQuery: prev.amountPerQuery.filter(
-          (x) => x.linkedAction !== JSON.stringify(query)
+          (x) => x.href !== query.href
         ),
       };
     });
@@ -1138,7 +1144,7 @@ const ActionModal: FC<{
     };
 
     const existingAmountPerQueryIndex = tempCampaign.amountPerQuery?.findIndex(
-      (x) => query && x.linkedAction === JSON.stringify(query)
+      (x) => query && x.href === query.href
     );
     const newAmountPerQuery =
       existingAmountPerQueryIndex !== undefined &&
@@ -1146,7 +1152,7 @@ const ActionModal: FC<{
         ? tempCampaign.amountPerQuery?.map((x, index) => {
             if (index === existingAmountPerQueryIndex) {
               return {
-                linkedAction: JSON.stringify(newLinkedAction),
+                href: newHref,
                 query: newActionQuery,
                 amount: amount !== '' ? parseFloat(amount) : 0,
               };
@@ -1154,7 +1160,7 @@ const ActionModal: FC<{
             return x;
           }) || []
         : (tempCampaign.amountPerQuery || []).concat({
-            linkedAction: JSON.stringify(newLinkedAction),
+            href: newHref,
             query: newActionQuery,
             amount: amount !== '' ? parseFloat(amount) : 0,
           });

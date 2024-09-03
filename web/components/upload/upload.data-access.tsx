@@ -73,7 +73,8 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
                 )
               : difference;
           postCampaign.budget =
-            (postCampaign?.budget || 0) + differenceAmountAfterTransferFee;
+            (postCampaign?.initialBudget || 0) +
+            differenceAmountAfterTransferFee;
           postCampaign.tokensRemaining =
             currentTokensRemaining + differenceAmountAfterTransferFee;
 
@@ -156,6 +157,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         await createOrEditPost(mint.toBase58(), postContent);
         if (postCampaign) {
           delete postCampaign.initialTokensRemaining;
+          delete postCampaign.initialBudget;
           await createOrEditCampaign(postCampaign);
         }
         return { signature, postId: postContent.id };

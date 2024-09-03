@@ -106,6 +106,7 @@ export const UploadContentBtn: FC<{
             links: tempCampaign.links,
           };
           const postCampaign = {
+            initialBudget: tempCampaign.initialBudget,
             initialTokensRemaining: tempCampaign.initialTokensRemaining,
             postId: tempCampaign.postId,
             amountPerQuery: tempCampaign.amountPerQuery,
