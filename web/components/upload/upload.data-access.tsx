@@ -59,11 +59,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       try {
-        if (
-          postCampaign &&
-          postCampaign.mintToSend &&
-          postCampaign.initialTokensRemaining
-        ) {
+        if (postCampaign && postCampaign.mintToSend) {
           const currentTokensRemaining =
             postCampaign?.initialTokensRemaining || 0;
           const difference =

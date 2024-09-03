@@ -106,24 +106,30 @@ export const UploadPost: FC<{
   }, []);
 
   useEffect(() => {
-    if (postCampaign && !tempCampaign) {
+    if (postCampaign && !tempCampaign?.initialTokensRemaining) {
       setTempCampaign((prev) => ({
         ...prev,
         ...postCampaign,
         initialTokensRemaining: postCampaign.tokensRemaining,
       }));
-    } else if (mint) {
+    } else if (mint && !tempCampaign?.mint && !tempCampaign?.postId) {
       setTempCampaign((prev) => ({
         ...prev,
         mint: mint.toBase58(),
         postId: id || crypto.randomUUID(),
       }));
     }
-  }, [postCampaign, mint, id]);
+  }, [postCampaign, tempCampaign, mint, id]);
 
   const [postLoaded, setPostLoaded] = useState(false);
   useEffect(() => {
-    if (post && !postLoaded && files.length === 0) {
+    if (
+      post &&
+      !postLoaded &&
+      files.length === 0 &&
+      tempCampaign?.mint &&
+      tempCampaign?.postId
+    ) {
       if (post.carousel?.length) {
         const newFiles = post.carousel.map((x) =>
           x.fileType.startsWith('image/')
@@ -139,6 +145,27 @@ export const UploadPost: FC<{
         setDescription(post.description || '');
         setTitle(post.title || '');
         setUseExistingBlink(false);
+        setAction(
+          isSubscribe(
+            post?.links?.actions[0].href!,
+            tempCampaign?.mint,
+            tempCampaign?.postId
+          )
+        );
+        setTempCampaign((prev) => ({
+          ...prev,
+          links: {
+            actions:
+              post.links?.actions.map((x) => ({
+                type: isSubscribe(
+                  x.href,
+                  tempCampaign?.mint!,
+                  tempCampaign?.postId!
+                ),
+                ...x,
+              })) || [],
+          },
+        }));
       } else if (post.url) {
         setUri(post.url);
         setFiles([{ fileType: 'blinks', uri: post.url, id: 'blinks' }]);
@@ -146,7 +173,7 @@ export const UploadPost: FC<{
       }
       setPostLoaded(true);
     }
-  }, [post, postLoaded]);
+  }, [post, postLoaded, tempCampaign]);
 
   useEffect(() => {
     if (uri) {
@@ -477,7 +504,6 @@ export const UploadPost: FC<{
         )}
         {!useExistingBlink && (
           <AddActions
-            post={post}
             tempCampaign={tempCampaign}
             setTempCampaign={setTempCampaign}
             action={action}
@@ -498,55 +524,55 @@ export const UploadPost: FC<{
   );
 };
 
+function isSubscribe(href: string, mint: string, postId: string) {
+  return href == generatePostSubscribeApiEndPoint(mint, postId)
+    ? ActionTypeEnum.SUBSCRIBE
+    : ActionTypeEnum.REWARD;
+}
+
 export const AddActions: FC<{
-  post: PostContent | null | undefined;
   tempCampaign: Partial<TempPostCampaign> | undefined;
   setTempCampaign: Dispatch<
     SetStateAction<Partial<TempPostCampaign> | undefined>
   >;
   action: ActionTypeEnum;
   setAction: Dispatch<SetStateAction<ActionTypeEnum>>;
-}> = ({ post, tempCampaign, setTempCampaign, action, setAction }) => {
+}> = ({ tempCampaign, setTempCampaign, action, setAction }) => {
   const [selectedQuery, setSelectedQuery] = useState<LinkedActionWithType>();
 
-  function isSubscribe(href: string, post: PostContent) {
-    return href == generatePostSubscribeApiEndPoint(post.mint, post.id)
-      ? ActionTypeEnum.SUBSCRIBE
-      : ActionTypeEnum.REWARD;
-  }
-
   useEffect(() => {
-    if (
-      post &&
-      post.links?.actions &&
-      post.links?.actions.length > 0 &&
-      !tempCampaign?.links
-    ) {
-      setAction(isSubscribe(post?.links?.actions[0].href!, post!));
-      const actions = post!.links!.actions.map((x) => ({
-        ...x,
-        type: isSubscribe(x.href, post!),
-      }));
-      if (actions.findIndex((x) => x.type == ActionTypeEnum.SUBSCRIBE) == -1) {
+    if (tempCampaign && tempCampaign.mint && tempCampaign.postId) {
+      const actions =
+        tempCampaign.links?.actions.map((x) => ({
+          ...x,
+          type: isSubscribe(x.href, tempCampaign.mint!, tempCampaign.postId!),
+        })) || [];
+      if (
+        actions?.find((x) => x.type == ActionTypeEnum.SUBSCRIBE) == undefined &&
+        action == ActionTypeEnum.SUBSCRIBE
+      ) {
         actions.push({
-          href: generatePostSubscribeApiEndPoint(post!.mint, post!.id),
+          href: generatePostSubscribeApiEndPoint(
+            tempCampaign.mint,
+            tempCampaign.postId
+          ),
           type: ActionTypeEnum.SUBSCRIBE,
           label: 'Subscribe',
         });
+        setTempCampaign((prev) => {
+          if (prev) {
+            return {
+              ...prev,
+              links: {
+                actions: actions,
+              },
+            };
+          }
+          return undefined;
+        });
       }
-      setTempCampaign((prev) => {
-        if (prev) {
-          return {
-            ...prev,
-            links: {
-              actions: actions,
-            },
-          };
-        }
-        return undefined;
-      });
     }
-  }, [post, tempCampaign]);
+  }, [action, tempCampaign]);
 
   // Render the action buttons (Subscribe and Reward)
   const renderActionButtons = () => (

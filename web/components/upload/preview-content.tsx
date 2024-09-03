@@ -126,7 +126,7 @@ export const PreviewContentBtn: FC<{
           };
         }
       }
-      setPostContent(postContent);
+      return postContent;
     } catch (error) {
       console.error('Error previewing post:', error);
     } finally {
@@ -153,8 +153,11 @@ export const PreviewContentBtn: FC<{
       <button
         disabled={!files.length || !files[0].uri.length || loading}
         onClick={async () => {
-          handlePreview();
-          showModalById('preview_modal');
+          const postContent = await handlePreview();
+          if (postContent) {
+            setPostContent(postContent);
+            showModalById('preview_modal');
+          }
         }}
         className="btn btn-primary w-full"
       >

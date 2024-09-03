@@ -63,13 +63,6 @@ export const UploadContentBtn: FC<{
             (x) => x.type == action
           );
         }
-        if (action == ActionTypeEnum.REWARD) {
-          if (!tempCampaign || !tempCampaign.budget) {
-            toast.error('No Budget Found');
-            return;
-          }
-        }
-
         const carousel = await Promise.all(
           files
             .filter(
