@@ -455,7 +455,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       description={action?.description}
       websiteUrl={websiteUrl}
       websiteText={websiteText}
-      image={action?.icon}
+      blinksImageUrl={action?.icon}
       error={
         executionState.status !== 'success'
           ? executionState.errorMessage ?? action?.error

@@ -138,7 +138,7 @@ export interface FormProps {
 type LayoutProps = {
   blinksDetail?: PostBlinksDetail;
   hideBorder: boolean;
-  post: PostContent | undefined;
+  post: Partial<PostContent> | undefined;
   hideCarousel: boolean;
   hideCaption: boolean;
   hideUserPanel: boolean;
@@ -147,7 +147,7 @@ type LayoutProps = {
   multiGrid: boolean;
   editable: boolean;
   showMintDetails: boolean;
-  image?: string;
+  blinksImageUrl?: string;
   error?: string | null;
   success?: string | null;
   websiteUrl?: string | null;
@@ -166,7 +166,7 @@ export const ActionLayout = ({
   blinksDetail,
   title,
   description,
-  image,
+  blinksImageUrl,
   websiteUrl,
   websiteText,
   type,
@@ -202,7 +202,7 @@ export const ActionLayout = ({
           <CarouselContent
             post={post}
             multiGrid={multiGrid}
-            blinkImageUrl={image}
+            blinkImageUrl={blinksImageUrl}
             blinksDetail={blinksDetail}
             form={form}
           />

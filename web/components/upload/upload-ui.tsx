@@ -2,26 +2,17 @@
 
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { ActionTypeEnum } from '@/utils/enums/post';
-import { uploadMedia } from '@/utils/firebase/functions';
-import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
 import {
-  generatePostEndPoint,
   generatePostSubscribeApiEndPoint,
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAsset } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
-import {
-  SOFT_LIMIT_BUTTONS,
-  SOFT_LIMIT_FORM_INPUTS,
-  SOFT_LIMIT_INPUTS,
-} from '@/utils/types/blinks';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import { LinkedAction } from '@solana/actions';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheck,
@@ -40,25 +31,14 @@ import {
   SetStateAction,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import toast from 'react-hot-toast';
-import { AbstractActionComponent } from '../actions/abstract-action-component';
-import { componentFactory } from '../actions/action';
-import { ButtonActionComponent } from '../actions/button-action-component';
-import { FormActionComponent } from '../actions/form-action-component';
-import { isParameterSelectable, isPatternAllowed } from '../actions/guards';
-import { MultiValueActionComponent } from '../actions/multivalue-action-coponent';
-import { SingleValueActionComponent } from '../actions/single-action-value-component';
-import { AuthenticationBtn } from '../authentication/authentication-ui';
+import { isParameterSelectable } from '../actions/guards';
 import { Blinks } from '../blinks/blinks-feature';
-import { ActionContent } from '../blinks/blinks-layout';
-import { BaseButtonProps } from '../blinks/ui/action-button';
-import { CreateAccountBtn } from '../create/create-ui';
-import { SubscribeBtn } from '../profile/profile-ui';
-import { checkUrlIsValid, useUploadMutation } from './upload.data-access';
+import { PreviewContentBtn } from './preview-content';
+import { checkUrlIsValid } from './upload.data-access';
 
 export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   const router = useRouter();
@@ -75,7 +55,7 @@ export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   );
 };
 
-interface UploadFileTypes {
+export interface UploadFileTypes {
   file?: File;
   fileType: string;
   uri: string;
@@ -505,176 +485,16 @@ export const UploadPost: FC<{
           />
         )}
       </div>
-      <UploadContentBtn
+      <PreviewContentBtn
         tempCampaign={tempCampaign}
         useExistingBlink={useExistingBlink}
         mint={mint}
-        id={id}
         files={files}
         title={title}
         description={description}
         action={action}
       />
     </div>
-  );
-};
-const UploadContentBtn: FC<{
-  tempCampaign: Partial<TempPostCampaign> | undefined;
-  useExistingBlink: boolean;
-  id?: string;
-  mint: PublicKey | null;
-  files: UploadFileTypes[];
-  title: string;
-  description: string;
-  action: ActionTypeEnum;
-}> = ({
-  useExistingBlink,
-  mint,
-  files,
-  id,
-  title,
-  description,
-  tempCampaign,
-  action,
-}) => {
-  const { publicKey } = useWallet();
-  const uploadMutation = useUploadMutation({ mint });
-  const [loading, setLoading] = useState(false);
-
-  const handleUpload = useCallback(async () => {
-    if (!files || !mint || !tempCampaign?.postId) return;
-    setLoading(true);
-    try {
-      const postId = tempCampaign.postId;
-      if (useExistingBlink) {
-        let mediaUrl = files.find((x) => x.id == 'blinks')?.uri;
-
-        if (!mediaUrl) {
-          toast.error('No Blinks Url Found');
-          return;
-        }
-        const apiUrl = await unfurlUrlToActionApiUrl(mediaUrl);
-        if (!apiUrl) {
-          toast.error('Unable to unfurl to action api url');
-          return;
-        }
-
-        await uploadMutation.mutateAsync({
-          postContent: {
-            url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
-            mint: mint.toBase58(),
-            id: postId,
-          },
-        });
-      } else if (publicKey) {
-        if (tempCampaign?.links) {
-          tempCampaign.links.actions = tempCampaign.links?.actions.filter(
-            (x) => x.type == action
-          );
-        }
-        if (action == ActionTypeEnum.REWARD) {
-          if (!tempCampaign || !tempCampaign.budget) {
-            toast.error('No Budget Found');
-            return;
-          }
-        }
-
-        const carousel = await Promise.all(
-          files
-            .filter(
-              (x) =>
-                x.id !== 'blinks' &&
-                (x.fileType.startsWith('image/') ||
-                  x.fileType.startsWith('video/'))
-            )
-            .map(async (x) => {
-              const mediaUrl = x.file
-                ? await uploadMedia(x.file, publicKey)
-                : x.uri;
-              if (x.fileType.startsWith('image/')) {
-                return { uri: mediaUrl, fileType: x.fileType };
-              } else {
-                return {
-                  uri: mediaUrl,
-                  fileType: x.fileType,
-                  duration: x.duration,
-                };
-              }
-            })
-        );
-        if (carousel.length > 0) {
-          const iconUrl = carousel[0]!.fileType.startsWith('video/')
-            ? await uploadMedia(
-                files.find((x) => x.fileType === carousel[0]!.fileType)
-                  ?.thumbnailFile!,
-                publicKey
-              )
-            : carousel[0]!.uri;
-          await uploadMutation.mutateAsync({
-            postContent: {
-              icon: iconUrl,
-              title,
-              description,
-              label: 'Subscribe', // default
-              url: generatePostEndPoint(mint.toBase58(), postId),
-              mint: mint.toBase58(),
-              id: postId,
-              carousel,
-              links: tempCampaign.links,
-            },
-            postCampaign: {
-              initialTokensRemaining: tempCampaign.initialTokensRemaining,
-              postId: tempCampaign.postId,
-              amountPerQuery: tempCampaign.amountPerQuery,
-              id: tempCampaign.id,
-              mint: tempCampaign.mint,
-              mintToSend: tempCampaign.mintToSend,
-              mintToSendDecimals: tempCampaign.mintToSendDecimals,
-              mintToSendTokenProgram: tempCampaign.mintToSendTokenProgram,
-              budget: tempCampaign.budget,
-              tokensRemaining: tempCampaign.tokensRemaining,
-              eligibility: tempCampaign.eligibility,
-              criteria: tempCampaign.criteria,
-              endDate: tempCampaign.endDate,
-            },
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading post:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [files, mint, id, title, description, uploadMutation]);
-
-  if (!publicKey) {
-    return (
-      <div className="w-full">
-        <AuthenticationBtn>
-          <div className="btn w-full btn-primary rounded">Connect Wallet</div>
-        </AuthenticationBtn>
-      </div>
-    );
-  }
-
-  if (!mint) {
-    return <CreateAccountBtn />;
-  }
-
-  return (
-    <button
-      disabled={!files.length || loading}
-      onClick={handleUpload}
-      className="btn btn-primary w-full"
-    >
-      {loading ? (
-        <div className="loading loading-spinner loading-sm" />
-      ) : id ? (
-        'Edit Post'
-      ) : (
-        'Create Post'
-      )}
-    </button>
   );
 };
 
@@ -727,11 +547,6 @@ export const AddActions: FC<{
       });
     }
   }, [post, tempCampaign]);
-
-  // Helper to show a modal by id
-  const showModalById = (id: string) => {
-    (document.getElementById(id) as HTMLDialogElement).showModal();
-  };
 
   // Render the action buttons (Subscribe and Reward)
   const renderActionButtons = () => (
@@ -837,19 +652,6 @@ export const AddActions: FC<{
             </button>
           </div>
         </div>
-      )}
-      <div>Preview:</div>
-      {action === ActionTypeEnum.REWARD ? (
-        <PreviewBlinksActionButton
-          actions={tempCampaign?.links?.actions.filter(
-            (x) => x.type == ActionTypeEnum.REWARD
-          )}
-        />
-      ) : (
-        <SubscribeBtn
-          mintId={tempCampaign?.mint || null}
-          subscribeOnly={true}
-        />
       )}
       {action === ActionTypeEnum.REWARD && (
         <>
@@ -1699,92 +1501,7 @@ function buildActionQuery(
   return result;
 }
 
-export const PreviewBlinksActionButton: FC<{
-  actions?: LinkedAction[];
-}> = ({ actions }) => {
-  const [buttons, inputs, form] = useMemo(() => {
-    const actionComponent = actions?.map((x) =>
-      componentFactory(null, x.label, x.href, x.parameters)
-    );
-    const buttons = actionComponent
-      ?.filter((it) => it instanceof ButtonActionComponent)
-      .slice(0, SOFT_LIMIT_BUTTONS);
-
-    const inputs = actionComponent
-      ?.filter(
-        (it) =>
-          it instanceof SingleValueActionComponent ||
-          it instanceof MultiValueActionComponent
-      )
-      .slice(0, SOFT_LIMIT_INPUTS);
-
-    const [formComponent] =
-      actionComponent?.filter((it) => it instanceof FormActionComponent) ?? [];
-
-    return [buttons, inputs, formComponent];
-  }, [actions]);
-
-  const asButtonProps = (component: AbstractActionComponent) => {
-    const it = component as ButtonActionComponent;
-    return {
-      text: it.label,
-      loading: false,
-      disabled: false,
-      variant: 'default',
-      onClick: (params?: Record<string, string | string[]>) => {},
-    } as BaseButtonProps;
-  };
-
-  const asInputProps = (
-    component: AbstractActionComponent,
-    { placement }: { placement: 'form' | 'standalone' } = {
-      placement: 'standalone',
-    }
-  ) => {
-    const it = component as
-      | SingleValueActionComponent
-      | MultiValueActionComponent;
-    return {
-      type: it.parameter.type ?? 'text',
-      placeholder: it.parameter.label,
-      disabled: false,
-      name: it.parameter.name,
-      required: it.parameter.required,
-      min: it.parameter.min,
-      max: it.parameter.max,
-      pattern:
-        it instanceof SingleValueActionComponent &&
-        isPatternAllowed(it.parameter)
-          ? it.parameter.pattern
-          : undefined,
-      options: isParameterSelectable(it.parameter)
-        ? it.parameter.options
-        : undefined,
-      description: it.parameter.patternDescription,
-      button:
-        placement === 'standalone'
-          ? asButtonProps(it.toButtonActionComponent())
-          : undefined,
-    };
-  };
-
-  const asFormProps = (component: AbstractActionComponent) => {
-    const it = component as FormActionComponent;
-    return {
-      button: asButtonProps(it.toButtonActionComponent()),
-      inputs: it.parameters.slice(0, SOFT_LIMIT_FORM_INPUTS).map((parameter) =>
-        asInputProps(it.toInputActionComponent(parameter.name), {
-          placement: 'form',
-        })
-      ),
-    };
-  };
-
-  return (
-    <ActionContent
-      buttons={buttons?.map(asButtonProps)}
-      inputs={inputs?.map((input) => asInputProps(input))}
-      form={form ? asFormProps(form) : undefined}
-    />
-  );
+// Helper to show a modal by id
+export const showModalById = (id: string) => {
+  (document.getElementById(id) as HTMLDialogElement).showModal();
 };

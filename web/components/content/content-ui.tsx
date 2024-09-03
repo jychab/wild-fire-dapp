@@ -282,7 +282,7 @@ export const UserPanel: FC<{
 export const CarouselContent: FC<{
   blinkImageUrl?: string;
   form?: FormProps;
-  post?: PostContent;
+  post?: Partial<PostContent>;
   blinksDetail: PostBlinksDetail | undefined;
   multiGrid: boolean;
 }> = ({ post, multiGrid, blinkImageUrl, form, blinksDetail }) => {
@@ -380,7 +380,7 @@ export const CarouselContent: FC<{
             key={file.uri}
             file={file}
             index={index}
-            postId={post.id}
+            postId={post.id!}
             handleScroll={handleScroll}
             showControls={
               !multiGrid && !!post.carousel && post.carousel.length > 1
@@ -431,21 +431,25 @@ const CarouselItem: FC<{
     )}
     {showControls && (
       <div className="hidden sm:flex absolute left-4 right-4 top-1/2 -translate-y-1/2 transform justify-between">
-        {index !== 0 && (
+        {index !== 0 ? (
           <button
             onClick={() => handleScroll(index - 1)}
             className="btn btn-circle btn-sm"
           >
             ❮
           </button>
+        ) : (
+          <div />
         )}
-        {index !== postLength - 1 && (
+        {index !== postLength - 1 ? (
           <button
             onClick={() => handleScroll(index + 1)}
             className="btn btn-circle btn-sm"
           >
             ❯
           </button>
+        ) : (
+          <div />
         )}
       </div>
     )}
