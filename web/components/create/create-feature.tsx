@@ -182,7 +182,7 @@ export const CreatePanel: FC = () => {
             </div>
           )}
           <Link
-            className="link text-center text-sm"
+            className="hidden link text-center text-sm"
             href={'/mint/create/existing'}
           >
             Already have an existing token?

@@ -113,7 +113,10 @@ export interface TempCampaign extends Campaign {
   topUp?: number;
 }
 
-export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
+export const CampaignModal: FC<{
+  id?: number;
+  setId: Dispatch<SetStateAction<number | undefined>>;
+}> = ({ id, setId }) => {
   const currentTime = Date.now() / 1000;
   const [name, setName] = useState('');
   const [budget, setBudget] = useState('');
@@ -138,6 +141,11 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
   const { data: campaigns } = useGetCampaigns({
     address: publicKey,
   });
+
+  function closeModal() {
+    setId(undefined);
+    (document.getElementById('campaign_modal') as HTMLDialogElement).close();
+  }
 
   const campaign = campaigns?.find((x) => x.id == id);
 
@@ -172,11 +180,9 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
           <span className="font-bold text-lg text-center">
             Airdrop Campaign
           </span>
-          <form method="dialog">
-            <button>
-              <IconX />
-            </button>
-          </form>
+          <button onClick={() => closeModal()}>
+            <IconX />
+          </button>
         </div>
         <label className="input input-bordered text-base flex items-center gap-2">
           Name
@@ -291,10 +297,12 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                 disabled={stopCampaignMutation.isPending}
                 onClick={() => {
                   if (!id || !campaign) return;
-                  stopCampaignMutation.mutateAsync({
-                    id,
-                    amount: campaign.tokensRemaining,
-                  });
+                  stopCampaignMutation
+                    .mutateAsync({
+                      id,
+                      amount: campaign.tokensRemaining,
+                    })
+                    .then(() => closeModal());
                 }}
                 className="btn btn-outline"
               >
@@ -332,23 +340,25 @@ export const CampaignModal: FC<{ id?: number }> = ({ id }) => {
                   COST_PER_NO_RENT_TRANSFER_IN_SOL *
                   LAMPORTS_PER_SOL;
 
-                campaignMutation.mutateAsync({
-                  topUp,
-                  id,
-                  name: name,
-                  budget: newBudget,
-                  tokensRemaining: newTokensRemaining,
-                  amount: parseFloat(amount),
-                  criteria: criteria,
-                  eligibility: eligibility,
-                  startDate: startDate,
-                  endDate: endDate,
-                  difference,
-                  mint: getDerivedMint(publicKey).toBase58(),
-                  mintToSend: getDerivedMint(publicKey).toBase58(),
-                  mintToSendDecimals: DEFAULT_MINT_DECIMALS,
-                  mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
-                });
+                campaignMutation
+                  .mutateAsync({
+                    topUp,
+                    id,
+                    name: name,
+                    budget: newBudget,
+                    tokensRemaining: newTokensRemaining,
+                    amount: parseFloat(amount),
+                    criteria: criteria,
+                    eligibility: eligibility,
+                    startDate: startDate,
+                    endDate: endDate,
+                    difference: difference,
+                    mint: getDerivedMint(publicKey).toBase58(),
+                    mintToSend: getDerivedMint(publicKey).toBase58(),
+                    mintToSendDecimals: DEFAULT_MINT_DECIMALS,
+                    mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
+                  })
+                  .then(() => closeModal());
               }}
               className="btn btn-primary"
             >

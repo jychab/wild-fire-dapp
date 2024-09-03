@@ -105,7 +105,7 @@ export const AirdropCampaign: FC = () => {
     <div className="flex flex-col w-full gap-8 p-4">
       <CreateCampaignButton setId={setId} />
       <CampaignTable setId={setId} />
-      <CampaignModal id={id} />
+      <CampaignModal id={id} setId={setId} />
     </div>
   );
 };

@@ -151,9 +151,7 @@ export function useCreateOrEditCampaign({
     onSuccess: async (result) => {
       if (result) {
         transactionToast(result.signature || 'Success');
-        (
-          document.getElementById('campaign_modal') as HTMLDialogElement
-        ).close();
+
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-campaigns', { address: wallet.publicKey! }],
@@ -231,9 +229,6 @@ export function useStopCampaign({ address }: { address: PublicKey | null }) {
     onSuccess: async (signature) => {
       if (signature) {
         transactionToast(signature);
-        (
-          document.getElementById('campaign_modal') as HTMLDialogElement
-        ).close();
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-campaigns', { address: wallet.publicKey! }],
