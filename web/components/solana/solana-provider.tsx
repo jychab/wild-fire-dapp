@@ -1,19 +1,10 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
 import { UnifiedWalletProvider } from '@jup-ag/wallet-adapter';
 import { WalletError } from '@solana/wallet-adapter-base';
 import { ConnectionProvider } from '@solana/wallet-adapter-react';
 import { ReactNode, useCallback, useMemo } from 'react';
 
-require('@solana/wallet-adapter-react-ui/styles.css');
-
-export const WalletButton = dynamic(
-  async () =>
-    (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
-  { ssr: false }
-);
 export function SolanaProvider({ children }: { children: ReactNode }) {
   const endpoint = useMemo(
     () => process.env.NEXT_PUBLIC_RPC_ENDPOINT!,

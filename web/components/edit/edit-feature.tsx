@@ -6,12 +6,9 @@ import { PublicKey } from '@solana/web3.js';
 import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
+import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { useGetTokenDetails } from '../profile/profile-data-access';
-import {
-  useCloseAccount,
-  useEditData,
-  useGetMintToken,
-} from './edit-data-access';
+import { useEditData, useGetMintToken } from './edit-data-access';
 
 interface EditFeatureProps {
   mintId: string | null;
@@ -33,9 +30,10 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
     mint: mintId ? new PublicKey(mintId) : null,
     metadata: metadata,
   });
-  const closeMutation = useCloseAccount({
-    mint: mintId ? new PublicKey(mintId) : null,
-  });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
   useEffect(() => {
@@ -71,6 +69,10 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
   const handleDescriptionChange = (e: any) => {
     setDescription(e.target.value);
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
@@ -143,36 +145,46 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
           ></textarea>
         </div>
 
-        <button
-          disabled={
-            !publicKey ||
-            editMutation.isPending ||
-            !(
-              isAuthorized(tokenStateData, publicKey, metadata) ||
-              (publicKey && mintId == getDerivedMint(publicKey).toBase58())
-            )
-          }
-          onClick={async () => {
-            await editMutation.mutateAsync({
-              name: name,
-              symbol: symbol,
-              description: description,
-              picture: picture,
-            });
-          }}
-          className="btn btn-primary btn-sm w-full rounded"
-        >
-          {!publicKey && 'Connect Wallet'}
-          {publicKey &&
-            (editMutation.isPending ? (
+        {publicKey && (
+          <button
+            disabled={
+              editMutation.isPending ||
+              !(
+                isAuthorized(tokenStateData, publicKey, metadata) ||
+                (publicKey && mintId == getDerivedMint(publicKey).toBase58())
+              )
+            }
+            onClick={async () => {
+              await editMutation.mutateAsync({
+                name: name,
+                symbol: symbol,
+                description: description,
+                picture: picture,
+              });
+            }}
+            className="btn btn-primary btn w-full rounded"
+          >
+            {editMutation.isPending ? (
               <div className="loading loading-spinner loading-sm" />
             ) : isAuthorized(tokenStateData, publicKey, metadata) ||
-              (publicKey && mintId == getDerivedMint(publicKey).toBase58()) ? (
+              mintId == getDerivedMint(publicKey).toBase58() ? (
               'Confirm'
             ) : (
               'Unauthorized'
-            ))}
-        </button>
+            )}
+          </button>
+        )}
+        {!publicKey && (
+          <div className="w-full">
+            <AuthenticationBtn
+              children={
+                <div className="w-full rounded btn-primary btn">
+                  Connect Wallet
+                </div>
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   );

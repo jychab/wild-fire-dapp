@@ -27,8 +27,11 @@ export const CreatePanel: FC = () => {
   const { data: metadata } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
-
   const [metaDataLoaded, setMetadataLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     if (metadata && !metaDataLoaded && metadata.content?.links?.image) {
       setTempImageUrl(metadata.content.links?.image);
@@ -71,6 +74,10 @@ export const CreatePanel: FC = () => {
       (!!picture || !!metadata?.content?.links?.image) && !!name && !!symbol
     );
   }, [picture, publicKey, name, symbol]);
+
+  if (!mounted) {
+    return null; // Or a loading skeleton
+  }
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center h-full w-full">

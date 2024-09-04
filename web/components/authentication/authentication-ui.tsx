@@ -1,3 +1,5 @@
+'use client';
+
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
@@ -13,7 +15,7 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, ReactNode } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import { DAS } from '../../utils/types/das';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { ThemeComponent } from '../ui/ui-component';
@@ -91,9 +93,17 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
 };
 export const AuthenticationDropdownMenu: FC = () => {
   const { publicKey, disconnect } = useWallet();
+
+  const [mounted, setMounted] = useState(false);
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return null; // Or a loading skeleton
+  }
   return (
     <>
       {publicKey ? (
@@ -103,13 +113,12 @@ export const AuthenticationDropdownMenu: FC = () => {
           </span>
         </li>
       ) : (
-        <div className="w-full">
+        <li className="w-full px-2">
           <AuthenticationBtn>
-            <div className="btn w-full btn-primary rounded">Connect Wallet</div>
+            <span className="text-base">Connect Wallet</span>
           </AuthenticationBtn>
-        </div>
+        </li>
       )}
-
       {publicKey && (
         <li className="w-full">
           <Link

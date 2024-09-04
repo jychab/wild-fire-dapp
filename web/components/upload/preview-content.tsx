@@ -1,3 +1,5 @@
+'use client';
+
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
 import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
@@ -11,7 +13,7 @@ import { ActionGetResponse } from '@solana/actions-spec';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconX } from '@tabler/icons-react';
-import { FC, useCallback, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AbstractActionComponent } from '../actions/abstract-action-component';
 import { componentFactory } from '../actions/action';
@@ -51,6 +53,12 @@ export const PreviewContentBtn: FC<{
   const uploadMutation = useUploadMutation({ mint });
   const [postContent, setPostContent] = useState<Partial<PostContent>>();
   const [loading, setLoading] = useState(false);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handlePreview = useCallback(async () => {
     if (!files || !mint || !tempCampaign?.postId) return;
     try {
@@ -133,6 +141,10 @@ export const PreviewContentBtn: FC<{
       setLoading(false);
     }
   }, [files, mint, id, title, description, uploadMutation]);
+
+  if (!mounted) {
+    return null; // Or a loading skeleton
+  }
 
   if (!publicKey) {
     return (

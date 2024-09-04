@@ -1,6 +1,8 @@
+'use client';
+
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import logo from '../../public/images/logo.png';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { useGetPostsFromAddress } from '../content/content-data-access';
@@ -8,9 +10,20 @@ import { DisplayContent } from '../content/content-ui';
 import { AppHero } from '../ui/ui-layout';
 
 export const LandingPage: FC = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { data: posts, isLoading } = useGetPostsFromAddress({
     address: new PublicKey('1nc1nerator11111111111111111111111111111111'),
   });
+
+  if (!mounted) {
+    return null; // Or a loading skeleton
+  }
+
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <AppHero
@@ -20,13 +33,11 @@ export const LandingPage: FC = () => {
             <span className="text-xl md:text-2xl">
               Discover trending blinks curated by your tokens.
             </span>
-            <AuthenticationBtn
-              children={
-                <div className="btn btn-outline bg-base-100 rounded-none">
-                  Get Started
-                </div>
-              }
-            />
+            <AuthenticationBtn>
+              <div className="btn btn-outline bg-base-100 rounded-none">
+                Get Started
+              </div>
+            </AuthenticationBtn>
           </div>
         }
         children={
@@ -80,6 +91,6 @@ export const NavbarLandingPage: FC<{ isLoading: boolean }> = ({
       <div className="loading loading-dots" />
     </div>
   ) : (
-    <div className={`py-4`}></div>
+    <div className={`py-2`}></div>
   );
 };
