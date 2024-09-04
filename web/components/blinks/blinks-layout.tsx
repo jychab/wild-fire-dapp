@@ -245,7 +245,7 @@ export const ActionLayout = ({
             )}
             {!hideUserPanel && blinksDetail && (
               <span className="text-xs stat-desc pt-2">
-                {convertUTCTimeToDayMonth(blinksDetail.updatedAt)}
+                {convertUTCTimeToDayMonth(blinksDetail.createdAt)}
               </span>
             )}
           </div>
