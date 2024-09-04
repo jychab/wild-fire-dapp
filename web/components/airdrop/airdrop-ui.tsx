@@ -20,28 +20,28 @@ import {
   useStopCampaign,
 } from './airdrop-data-access';
 
-export const CreateCampaignButton: FC<{
-  setId: Dispatch<SetStateAction<number | undefined>>;
-}> = ({ setId }) => {
-  return (
-    <button
-      className="btn btn-sm btn-primary w-fit"
-      onClick={() => {
-        setId(undefined);
-        openCampaignModal();
-      }}
-    >
-      <IconPlus />
-      Start a New Campaign
-    </button>
-  );
-};
+// Utility function for opening the modal
 function openCampaignModal(): void {
-  return (
-    document.getElementById('campaign_modal') as HTMLDialogElement
-  ).showModal();
+  (document.getElementById('campaign_modal') as HTMLDialogElement)?.showModal();
 }
 
+// CreateCampaignButton Component
+export const CreateCampaignButton: FC<{
+  setId: Dispatch<SetStateAction<number | undefined>>;
+}> = ({ setId }) => (
+  <button
+    className="btn btn-sm btn-primary w-fit"
+    onClick={() => {
+      setId(undefined);
+      openCampaignModal();
+    }}
+  >
+    <IconPlus />
+    Start a New Campaign
+  </button>
+);
+
+// CampaignTable Component
 export const CampaignTable: FC<{
   setId: Dispatch<SetStateAction<number | undefined>>;
 }> = ({ setId }) => {
@@ -49,11 +49,16 @@ export const CampaignTable: FC<{
   const { data: campaigns, isLoading } = useGetCampaigns({
     address: publicKey,
   });
-  return isLoading ? (
-    <div className="flex w-full h-full items-center justify-center">
-      <div className="loading loading-dots" />
-    </div>
-  ) : (
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full h-full items-center justify-center">
+        <div className="loading loading-dots" />
+      </div>
+    );
+  }
+
+  return (
     <div className="overflow-x-auto">
       <table className="table">
         <thead>
@@ -61,7 +66,7 @@ export const CampaignTable: FC<{
             <th></th>
             <th>Name</th>
             <th>Criteria</th>
-            <th>Elligibility</th>
+            <th>Eligibility</th>
             <th>Tokens Remaining</th>
             <th>Wallets Airdropped</th>
             <th>Started At</th>
@@ -89,17 +94,7 @@ export const CampaignTable: FC<{
                 )} / ${formatLargeNumber(x.budget)}`}</td>
                 <td>{formatLargeNumber(x.wallets.length)}</td>
                 <td>{getDDMMYYYY(new Date(x.startDate * 1000))}</td>
-                <td>
-                  {x.softDelete
-                    ? 'Terminated'
-                    : x.endDate
-                    ? Date.now() / 1000 > x.endDate
-                      ? 'Ended'
-                      : getDDMMYYYY(new Date(x.startDate * 1000))
-                    : x.tokensRemaining > 0
-                    ? Duration.UNTILL_BUDGET_FINISHES
-                    : 'Ended'}
-                </td>
+                <td>{getCampaignEndDate(x)}</td>
               </tr>
             ))}
         </tbody>
@@ -108,18 +103,27 @@ export const CampaignTable: FC<{
   );
 };
 
-export interface TempCampaign extends Campaign {
-  difference?: number;
-  topUp?: number;
+// Helper function to get the campaign end date status
+function getCampaignEndDate(campaign: Campaign): string {
+  if (campaign.softDelete) return 'Terminated';
+  if (campaign.endDate) {
+    return Date.now() / 1000 > campaign.endDate
+      ? 'Ended'
+      : getDDMMYYYY(new Date(campaign.endDate * 1000));
+  }
+  return campaign.tokensRemaining > 0
+    ? Duration.UNTILL_BUDGET_FINISHES
+    : 'Ended';
 }
 
+// CampaignModal Component
 export const CampaignModal: FC<{
   id?: number;
   setId: Dispatch<SetStateAction<number | undefined>>;
 }> = ({ id, setId }) => {
   const currentTime = Date.now() / 1000;
   const [name, setName] = useState('');
-  const [budget, setBudget] = useState('');
+  const [tokensRemaining, setTokensRemaining] = useState('');
   const [amount, setAmount] = useState('');
   const [criteria, setCriteria] = useState(Criteria.SUBSCRIBERS_ONLY);
   const [eligibility, setEligibility] = useState(Eligibility.REFRESHES_DAILY);
@@ -135,24 +139,22 @@ export const CampaignModal: FC<{
     address: publicKey,
     payer: mintInfo ? new PublicKey(mintInfo?.payer) : null,
   });
-  const stopCampaignMutation = useStopCampaign({
-    address: publicKey,
-  });
-  const { data: campaigns } = useGetCampaigns({
-    address: publicKey,
-  });
+  const stopCampaignMutation = useStopCampaign({ address: publicKey });
+  const { data: campaigns } = useGetCampaigns({ address: publicKey });
 
+  // Helper function to close the modal
   function closeModal() {
     setId(undefined);
-    (document.getElementById('campaign_modal') as HTMLDialogElement).close();
+    (document.getElementById('campaign_modal') as HTMLDialogElement)?.close();
   }
 
-  const campaign = campaigns?.find((x) => x.id == id);
+  const campaign = campaigns?.find((x) => x.id === id);
 
+  // Handle form state reset on id or campaign change
   useEffect(() => {
     if (id && campaign) {
       setName(campaign.name);
-      setBudget(campaign.tokensRemaining.toString());
+      setTokensRemaining(campaign.tokensRemaining.toString());
       setAmount(campaign.amount.toString());
       setCriteria(campaign.criteria);
       setEligibility(campaign.eligibility);
@@ -161,17 +163,22 @@ export const CampaignModal: FC<{
         setDuration(Duration.CUSTOM_DATE);
         setEndDate(campaign.endDate);
       }
-    } else if (!id) {
-      setName('');
-      setBudget('');
-      setAmount('');
-      setCriteria(Criteria.SUBSCRIBERS_ONLY);
-      setEligibility(Eligibility.REFRESHES_DAILY);
-      setStartDate(currentTime);
-      setEndDate(undefined);
-      setDuration(Duration.UNTILL_BUDGET_FINISHES);
+    } else {
+      resetForm();
     }
   }, [campaign, id]);
+
+  // Reset form state
+  function resetForm() {
+    setName('');
+    setTokensRemaining('');
+    setAmount('');
+    setCriteria(Criteria.SUBSCRIBERS_ONLY);
+    setEligibility(Eligibility.REFRESHES_DAILY);
+    setStartDate(currentTime);
+    setEndDate(undefined);
+    setDuration(Duration.UNTILL_BUDGET_FINISHES);
+  }
 
   return (
     <dialog id="campaign_modal" className="modal">
@@ -180,130 +187,106 @@ export const CampaignModal: FC<{
           <span className="font-bold text-lg text-center">
             Airdrop Campaign
           </span>
-          <button onClick={() => closeModal()}>
+          <button onClick={closeModal}>
             <IconX />
           </button>
         </div>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Name
-          <input
-            type="text"
-            className="grow text-end"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Campaign Name"
-          />
-        </label>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Budget
-          <input
-            type="number"
-            className="grow text-end"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            placeholder="Total allocated tokens"
-          />
-          {`${
+
+        {/* Campaign Name Input */}
+        <InputLabel
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Campaign Name"
+        />
+
+        {/* Budget Input */}
+        <InputLabel
+          label="Budget"
+          value={tokensRemaining}
+          type="number"
+          onChange={(e) => setTokensRemaining(e.target.value)}
+          placeholder="Total allocated tokens"
+          hint={
             campaign?.budget
               ? `/ ${formatLargeNumber(campaign.budget)} left`
               : ''
-          }`}
-        </label>
-        <label className="input input-bordered text-base flex items-center gap-2">
-          Amount
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            type="number"
-            className="grow text-end"
-            placeholder="Tokens to airdrop each time"
-          />
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Criteria
-          <select
-            value={criteria}
-            onChange={(e) => setCriteria(e.target.value as Criteria)}
-            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-          >
-            {Object.entries(Criteria)
-              .filter((x) => x[1] == Criteria.SUBSCRIBERS_ONLY)
-              .map((x) => (
-                <option key={x[0]}>{x[1]}</option>
-              ))}
-          </select>
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Elligibility
-          <select
-            value={eligibility}
-            onChange={(e) => setEligibility(e.target.value as Eligibility)}
-            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-          >
-            {Object.entries(Eligibility).map((x) => (
-              <option key={x[0]}>{x[1]}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Duration
-          <select
-            value={duration}
-            onChange={(e) => setDuration(e.target.value as Duration)}
-            className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
-          >
-            {Object.entries(Duration).map((x) => (
-              <option key={x[0]}>{x[1]}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex px-2 justify-between items-center gap-2">
-          Start Date
-          <input
+          }
+        />
+
+        {/* Amount Input */}
+        <InputLabel
+          label="Amount"
+          value={amount}
+          type="number"
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Tokens to airdrop each time"
+        />
+
+        {/* Criteria Select */}
+        <SelectLabel
+          label="Criteria"
+          value={criteria}
+          onChange={(e) => setCriteria(e.target.value as Criteria)}
+          options={Object.entries(Criteria).filter(
+            ([_, v]) => v === Criteria.SUBSCRIBERS_ONLY
+          )}
+        />
+
+        {/* Eligibility Select */}
+        <SelectLabel
+          label="Eligibility"
+          value={eligibility}
+          onChange={(e) => setEligibility(e.target.value as Eligibility)}
+          options={Object.entries(Eligibility)}
+        />
+
+        {/* Duration Select */}
+        <SelectLabel
+          label="Duration"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value as Duration)}
+          options={Object.entries(Duration)}
+        />
+
+        {/* Start Date Input */}
+        <InputLabel
+          label="Start Date"
+          value={getDDMMYYYY(new Date(startDate * 1000))}
+          type="date"
+          onChange={(e) => setStartDate(Date.parse(e.target.value) / 1000)}
+        />
+
+        {/* Conditional End Date Input */}
+        {duration === Duration.CUSTOM_DATE && (
+          <InputLabel
+            label="End Date"
+            value={getDDMMYYYY(new Date((endDate || startDate) * 1000))}
             type="date"
-            id="campaign start date"
-            className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
-            onChange={(e) => setStartDate(Date.parse(e.target.value) / 1000)}
-            value={getDDMMYYYY(new Date(startDate * 1000))}
+            onChange={(e) => setEndDate(Date.parse(e.target.value) / 1000)}
           />
-        </label>
-        {duration == Duration.CUSTOM_DATE && (
+        )}
+
+        {/* Estimated Cost */}
+        {tokensRemaining && amount && publicKey && (
           <label className="flex px-2 justify-between items-center gap-2">
-            End Date
-            <input
-              type="date"
-              id="campaign start date"
-              className="cursor-pointer input input-bordered w-fit sm:w-full max-w-xs"
-              onChange={(e) => setEndDate(Date.parse(e.target.value) / 1000)}
-              value={getDDMMYYYY(new Date((endDate || startDate) * 1000))}
-            />
+            Estimated Cost
+            <span>{`~${
+              calculateTopUp(
+                parseFloat(tokensRemaining) - (campaign?.tokensRemaining || 0),
+                amount
+              ) / LAMPORTS_PER_SOL
+            } SOL`}</span>
           </label>
         )}
-        {budget && amount && (
-          <>
-            <label className="flex px-2 justify-between items-center gap-2">
-              Estimated Cost
-              <span>{`~${
-                (parseFloat(budget) / parseFloat(amount)) *
-                COST_PER_NO_RENT_TRANSFER_IN_SOL
-              } SOL`}</span>
-            </label>
-          </>
-        )}
-        {!campaign || !campaign.softDelete ? (
+
+        {/* Modal Actions */}
+        {!campaign?.softDelete ? (
           <div className="modal-action flex gap-2">
             {campaign && (
               <button
                 disabled={stopCampaignMutation.isPending}
-                onClick={() => {
-                  if (!id || !campaign) return;
-                  stopCampaignMutation
-                    .mutateAsync({
-                      id,
-                      amount: campaign.tokensRemaining,
-                    })
-                    .then(() => closeModal());
-                }}
+                onClick={() => stopCampaign(campaign.id)}
                 className="btn btn-outline"
               >
                 {stopCampaignMutation.isPending ? (
@@ -315,51 +298,7 @@ export const CampaignModal: FC<{
             )}
             <button
               disabled={campaignMutation.isPending}
-              onClick={async () => {
-                if (!publicKey) return;
-                const difference =
-                  parseFloat(budget) - (campaign?.tokensRemaining || 0);
-                const differenceAmountAfterTransferFee =
-                  difference > 0
-                    ? await getAmountAfterTransferFee(
-                        difference,
-                        getDerivedMint(publicKey)
-                      )
-                    : difference;
-                const newBudget =
-                  (campaign?.budget || 0) + differenceAmountAfterTransferFee;
-                const newTokensRemaining =
-                  (campaign?.tokensRemaining || 0) +
-                  differenceAmountAfterTransferFee;
-                const previousCost = campaign
-                  ? campaign.tokensRemaining / campaign.amount
-                  : 0;
-                const currentCost = parseFloat(budget) / parseFloat(amount);
-                const topUp =
-                  (currentCost - previousCost) *
-                  COST_PER_NO_RENT_TRANSFER_IN_SOL *
-                  LAMPORTS_PER_SOL;
-
-                campaignMutation
-                  .mutateAsync({
-                    topUp,
-                    id,
-                    name: name,
-                    budget: newBudget,
-                    tokensRemaining: newTokensRemaining,
-                    amount: parseFloat(amount),
-                    criteria: criteria,
-                    eligibility: eligibility,
-                    startDate: startDate,
-                    endDate: endDate,
-                    difference: difference,
-                    mint: getDerivedMint(publicKey).toBase58(),
-                    mintToSend: getDerivedMint(publicKey).toBase58(),
-                    mintToSendDecimals: DEFAULT_MINT_DECIMALS,
-                    mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
-                  })
-                  .then(() => closeModal());
-              }}
+              onClick={handleCampaignMutation}
               className="btn btn-primary"
             >
               {campaignMutation.isPending ? (
@@ -373,10 +312,128 @@ export const CampaignModal: FC<{
           </div>
         ) : (
           <button disabled className="btn w-full">
-            {'Campaign Stopped'}
+            Campaign Stopped
           </button>
         )}
       </div>
     </dialog>
   );
+
+  // Handle stop campaign
+  async function stopCampaign(campaignId: number) {
+    if (!campaignId || !campaign) return;
+    await stopCampaignMutation.mutateAsync({
+      id: campaignId,
+      amount: campaign.tokensRemaining,
+    });
+    closeModal();
+  }
+
+  // Handle create or edit campaign
+  async function handleCampaignMutation() {
+    if (!publicKey || !tokensRemaining || !amount) return;
+    const { differenceAmountAfterTransferFee, difference } =
+      await calculateDifference(
+        tokensRemaining,
+        campaign?.tokensRemaining || 0,
+        publicKey
+      );
+
+    const newBudget =
+      (campaign?.budget || 0) + differenceAmountAfterTransferFee;
+    const newTokensRemaining =
+      (campaign?.tokensRemaining || 0) + differenceAmountAfterTransferFee;
+    const topUp = calculateTopUp(differenceAmountAfterTransferFee, amount);
+
+    await campaignMutation.mutateAsync({
+      topUp,
+      id,
+      name,
+      budget: newBudget,
+      tokensRemaining: newTokensRemaining,
+      amount: parseFloat(amount),
+      criteria,
+      eligibility,
+      startDate,
+      endDate,
+      difference,
+      mint: getDerivedMint(publicKey).toBase58(),
+      mintToSend: getDerivedMint(publicKey).toBase58(),
+      mintToSendDecimals: DEFAULT_MINT_DECIMALS,
+      mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
+    });
+    closeModal();
+  }
 };
+
+async function calculateDifference(
+  tokensRemaining: string,
+  currentTokensRemaining: number,
+  publicKey: PublicKey
+) {
+  const difference = parseFloat(tokensRemaining) - currentTokensRemaining;
+  const differenceAmountAfterTransferFee =
+    difference > 0
+      ? await getAmountAfterTransferFee(difference, getDerivedMint(publicKey))
+      : difference;
+  return { differenceAmountAfterTransferFee, difference };
+}
+
+// Calculate top-up value
+function calculateTopUp(
+  differenceAmountAfterTransferFee: number,
+  amount: string
+) {
+  const currentCost = differenceAmountAfterTransferFee / parseFloat(amount);
+  return Math.max(
+    Math.round(
+      currentCost * COST_PER_NO_RENT_TRANSFER_IN_SOL * LAMPORTS_PER_SOL
+    ),
+    0
+  );
+}
+
+// Reusable InputLabel Component
+const InputLabel: FC<{
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
+  hint?: string;
+}> = ({ label, value, onChange, type = 'text', placeholder, hint }) => (
+  <label className="input input-bordered text-base flex items-center gap-2">
+    {label}
+    <input
+      type={type}
+      className="grow text-end"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+    />
+    {hint && <span>{hint}</span>}
+  </label>
+);
+
+// Reusable SelectLabel Component
+const SelectLabel: FC<{
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: [string, string][];
+}> = ({ label, value, onChange, options }) => (
+  <label className="flex px-2 justify-between items-center gap-2">
+    {label}
+    <select
+      value={value}
+      onChange={onChange}
+      className="select bg-transparent w-fit sm:w-full border-none focus-within:outline-none max-w-xs"
+    >
+      {options.map(([key, val]) => (
+        <option key={key} value={val}>
+          {val}
+        </option>
+      ))}
+    </select>
+  </label>
+);

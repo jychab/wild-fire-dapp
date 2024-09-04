@@ -27,7 +27,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
-import { TempCampaign } from './airdrop-ui';
 
 export function useCreateOrEditCampaign({
   address,
@@ -48,7 +47,7 @@ export function useCreateOrEditCampaign({
         payer,
       },
     ],
-    mutationFn: async (input: Partial<TempCampaign>) => {
+    mutationFn: async (input: any) => {
       if (
         !wallet.publicKey ||
         !wallet.signTransaction ||
@@ -70,6 +69,7 @@ export function useCreateOrEditCampaign({
               lamports: input.topUp,
             })
           );
+          delete input.topUp;
         }
         if (input.mintToSend && input.difference && input.difference > 0) {
           // check if payer has enough sol
