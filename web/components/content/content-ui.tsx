@@ -99,12 +99,12 @@ export const UserProfile: FC<{
         href={`/profile?mintId=${blinksDetail.mint}`}
         className="link link-hover flex items-center gap-2 "
       >
-        <div className="relative w-8 h-8 rounded-full">
+        <div className="relative w-8 h-8 mask mask-circle">
           {metadata?.content?.links?.image && (
             <Image
               src={metadata?.content?.links?.image}
               priority={true}
-              className={`object-cover rounded-full`}
+              className={`object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt={'mint'}

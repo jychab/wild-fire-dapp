@@ -51,10 +51,10 @@ function SearchBar() {
               className="flex w-full items-center"
               href={`/profile?mintId=${x.id}`}
             >
-              <div className="w-8 h-8 relative rounded-full">
+              <div className="w-8 h-8 relative mask mask-circle">
                 <Image
                   priority={true}
-                  className={`object-cover rounded-full`}
+                  className={`object-cover`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""

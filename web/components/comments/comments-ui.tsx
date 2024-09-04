@@ -228,7 +228,7 @@ export const CommentsSection: FC<{
           </div>
           <label className="absolute max-w-lg bottom-0 gap-2 h-fit z-2 py-2 input input-bordered focus-within:outline-none rounded-none border-x-0 border-b-0 flex w-full input-base group items-center">
             <div className="avatar">
-              <div className=" w-8 h-8 relative rounded-full">
+              <div className=" w-8 h-8 relative mask mask-circle">
                 <Image
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -279,7 +279,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
             metadata && router.push(`/profile?mintId=${metadata.id}`)
           }
         >
-          <div className="w-8 h-8 relative rounded-full">
+          <div className="w-8 h-8 relative mask mask-circle">
             <Image
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

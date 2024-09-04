@@ -24,6 +24,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Dispatch,
@@ -37,6 +38,7 @@ import {
 import toast from 'react-hot-toast';
 import { isParameterSelectable } from '../actions/guards';
 import { Blinks } from '../blinks/blinks-feature';
+import { useGetJupiterVerifiedTokens } from '../create/create-data-access';
 import { PreviewContentBtn } from './preview-content';
 import { checkUrlIsValid } from './upload.data-access';
 
@@ -813,6 +815,8 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     ).close();
   };
 
+  const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
+
   return (
     <dialog id="overall_post_campaign_modal" className="modal">
       <div className="modal-box flex flex-col gap-4">
@@ -828,11 +832,11 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
             </button>
           </form>
         </div>
-        <div className="flex w-full gap-2 justify-end items-center">
-          <div className="w-8 h-8 relative rounded-full">
+        <div className="flex w-full gap-2 items-center">
+          <div className="w-10 h-10 relative mask mask-circle">
             <Image
               priority={true}
-              className={`object-cover rounded-full`}
+              className={`object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt=""
@@ -840,9 +844,28 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold">
-              {`Name: ${mintToSendDetails?.content?.metadata.name}`}
-            </span>
+            <div className="flex gap-1 items-center">
+              <Link
+                rel="noopener noreferrer"
+                target="_blank"
+                href={`https://solscan.io/address/${mintToSendDetails?.id}`}
+                className="link link-hover text-sm font-bold"
+              >
+                {`Name: ${mintToSendDetails?.content?.metadata.name}`}
+              </Link>
+              {verifiedTokens
+                ?.map((x) => x.address)
+                .includes(mintToSendDetails?.id) ? (
+                <IconDiscountCheck className="fill-secondary text-black" />
+              ) : (
+                <div
+                  className="tooltip tooltip-primary"
+                  data-tip="Token not on Jupiter verified list"
+                >
+                  <IconExclamationCircle size={18} className="text-warning" />
+                </div>
+              )}
+            </div>
             <span className="text-sm">
               {`Symbol: ${mintToSendDetails?.content?.metadata.symbol}`}
             </span>

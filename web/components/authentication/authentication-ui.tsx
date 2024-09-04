@@ -67,13 +67,13 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         tabIndex={0}
         role="button"
         id="user-menu-button"
-        className="relative w-8 h-8 justify-center items-center flex"
+        className="relative w-10 h-10 mask mask-circle"
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
             src={metaDataQuery?.content?.links?.image}
             priority={true}
-            className={`object-cover rounded-full`}
+            className={`object-cover`}
             fill={true}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             alt={'profile pic'}
