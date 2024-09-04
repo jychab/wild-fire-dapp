@@ -1,6 +1,3 @@
-# Set up 
+## UNLOCK ME BLOWFISH
 
-Change the rpc endpoint in the .env file then run 
-```
-npm run dev
-```
+Ticket number 2760, unblock this --> https://blinksfeed.com
