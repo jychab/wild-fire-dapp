@@ -18,6 +18,7 @@ export const UploadContentBtn: FC<{
   title: string;
   description: string;
   action: ActionTypeEnum;
+  tags: string;
 }> = ({
   useExistingBlink,
   mint,
@@ -27,6 +28,7 @@ export const UploadContentBtn: FC<{
   description,
   tempCampaign,
   action,
+  tags,
 }) => {
   const { publicKey } = useWallet();
   const uploadMutation = useUploadMutation({ mint });
@@ -55,6 +57,7 @@ export const UploadContentBtn: FC<{
             url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
             mint: mint.toBase58(),
             id: postId,
+            tags: tags.split(','),
           },
         });
       } else if (publicKey) {
@@ -95,6 +98,7 @@ export const UploadContentBtn: FC<{
               )
             : carousel[0]!.uri;
           const postContent = {
+            tags: tags.split(','),
             icon: iconUrl,
             title,
             description,

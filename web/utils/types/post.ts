@@ -6,7 +6,6 @@ export interface GetPostsResponse {
 
 export interface PostContent extends ActionGetResponse, PostBlinksDetail {
   carousel?: Carousel[];
-  tags?: string[];
   softDelete?: boolean;
   commentsEngagementScore?: { mint: string; amount: number }[];
   postEngagementScore?: { mint: string; amount: number }[];
@@ -20,6 +19,7 @@ export interface PostBlinksDetail {
   likesCount?: number;
   likesUser?: string[];
   commentsCount?: number;
+  tags?: string[];
 }
 
 export interface PostCreatorDetails {

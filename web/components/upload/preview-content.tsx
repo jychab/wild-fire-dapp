@@ -39,6 +39,7 @@ export const PreviewContentBtn: FC<{
   title: string;
   description: string;
   action: ActionTypeEnum;
+  tags: string;
 }> = ({
   mint,
   files,
@@ -48,6 +49,7 @@ export const PreviewContentBtn: FC<{
   tempCampaign,
   action,
   useExistingBlink,
+  tags,
 }) => {
   const { publicKey } = useWallet();
   const uploadMutation = useUploadMutation({ mint });
@@ -180,6 +182,7 @@ export const PreviewContentBtn: FC<{
         )}
       </button>
       <PreviewBlinksActionButton
+        tags={tags}
         post={postContent}
         useExistingBlink={useExistingBlink}
         tempCampaign={tempCampaign}
@@ -204,6 +207,7 @@ export const PreviewBlinksActionButton: FC<{
   files: UploadFileTypes[];
   title: string;
   description: string;
+  tags: string;
   action: ActionTypeEnum;
 }> = ({
   post,
@@ -216,6 +220,7 @@ export const PreviewBlinksActionButton: FC<{
   description,
   action,
   isLoading,
+  tags,
 }) => {
   const [buttons, inputs, form] = useMemo(() => {
     const actionComponent = post?.links?.actions?.map((x) =>
@@ -352,6 +357,7 @@ export const PreviewBlinksActionButton: FC<{
             <button className="btn btn-outline btn-primary">Close</button>
           </form>
           <UploadContentBtn
+            tags={tags}
             tempCampaign={tempCampaign}
             useExistingBlink={useExistingBlink}
             mint={mint}

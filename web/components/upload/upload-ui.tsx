@@ -90,6 +90,7 @@ export const UploadPost: FC<{
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const [uri, setUri] = useState('');
   const [action, setAction] = useState(ActionTypeEnum.SUBSCRIBE);
+  const [tags, setTags] = useState('');
 
   const updateFiles = useCallback((newFiles: any) => {
     setFiles((prevFiles) =>
@@ -147,6 +148,7 @@ export const UploadPost: FC<{
                 id: crypto.randomUUID(),
               }
         );
+        setTags(post.tags?.join(',') || '');
         setFiles(newFiles);
         setDescription(post.description || '');
         setTitle(post.title || '');
@@ -173,6 +175,7 @@ export const UploadPost: FC<{
           },
         }));
       } else if (post.url) {
+        setTags(post.tags?.join(',') || '');
         setUri(post.url);
         setFiles([{ fileType: 'blinks', uri: post.url, id: 'blinks' }]);
         setUseExistingBlink(true);
@@ -503,11 +506,19 @@ export const UploadPost: FC<{
         {!useExistingBlink && (
           <textarea
             className="textarea textarea-bordered w-full text-base"
+            rows={3}
             placeholder="Description"
             value={description}
             onChange={handleInputChange(setDescription)}
           />
         )}
+        <input
+          type="text"
+          className="input input-bordered w-full text-base"
+          placeholder="Add optional tags (e.g., #defi, #nft)"
+          value={tags}
+          onChange={handleInputChange(setTags)}
+        />
         {!useExistingBlink && (
           <AddActions
             tempCampaign={tempCampaign}
@@ -525,6 +536,7 @@ export const UploadPost: FC<{
         title={title}
         description={description}
         action={action}
+        tags={tags}
       />
     </div>
   );
