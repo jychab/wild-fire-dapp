@@ -52,14 +52,6 @@ export async function createOrEditComment(
   await createOrEditComment({ mint, postId, commentId, text, mentions });
 }
 
-export async function createOrUpdateAdminForExternalMint(mint: string) {
-  const createOrUpdateAdminForExternalMint = httpsCallable(
-    functions,
-    'createOrUpdateAdminForExternalMint'
-  );
-  await createOrUpdateAdminForExternalMint({ mint });
-}
-
 export async function setTemporaryProfile(
   displayName: string,
   description: string,
@@ -99,21 +91,6 @@ export async function updateMetadataInstruction(
   );
   const result = await updateMetadataInstruction({ mint, fieldsToUpdate });
   return result.data as string;
-}
-
-export async function sendLike(
-  postMint: string,
-  postId: string,
-  amount: number,
-  commentId?: string
-) {
-  const sendLike = httpsCallable(functions, 'sendLike');
-  await sendLike({
-    postMint,
-    postId,
-    commentId,
-    amount,
-  });
 }
 
 export async function verifyAndGetToken(

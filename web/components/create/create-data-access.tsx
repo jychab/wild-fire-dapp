@@ -3,7 +3,6 @@
 import { LONG_STALE_TIME, PROGRAM_ID } from '@/utils/consts';
 import {
   createMintInstruction,
-  createOrUpdateAdminForExternalMint,
   uploadMedia,
   uploadMetadata,
 } from '@/utils/firebase/functions';
@@ -22,38 +21,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
-
-export function useCreateMintWithExistingToken({
-  address,
-}: {
-  address: PublicKey | null;
-}) {
-  const router = useRouter();
-  const client = useQueryClient();
-  return useMutation({
-    mutationKey: [
-      'create-mint-with-existing-token',
-      {
-        address,
-      },
-    ],
-    mutationFn: async (mint: PublicKey) => {
-      await createOrUpdateAdminForExternalMint(mint.toBase58());
-      return mint;
-    },
-    onSuccess: async (mint) => {
-      router.push(`/profile?mintId=${mint.toBase58()}`);
-      return await Promise.all([
-        client.invalidateQueries({
-          queryKey: ['get-token-details', { mint: mint }],
-        }),
-      ]);
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${error}`);
-    },
-  });
-}
 
 interface CreateMintArgs {
   name: string;
@@ -139,13 +106,14 @@ export async function buildTokenMetadata(
     symbol: input.symbol,
     description: input.description,
     image: imageUrl,
+    externalUrl: generateMintApiEndPoint(mint),
   };
   const uri = await uploadMetadata(JSON.stringify(payload), publicKey);
   return {
     name: input.name,
     symbol: input.symbol,
     uri: uri,
-    additionalMetadata: [['blinksfeed', generateMintApiEndPoint(mint)]],
+    additionalMetadata: [],
     mint: mint,
   };
 }
