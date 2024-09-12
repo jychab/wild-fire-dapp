@@ -214,14 +214,17 @@ export const ActionLayout = ({
         >
           <div className="flex flex-col">
             {!hideUserPanel && (
-              <UserPanel editable={editable} blinksDetail={blinksDetail} />
-            )}
-            {!hideCaption && (
-              <ContentCaption
+              <UserPanel
+                editable={editable}
                 blinksDetail={blinksDetail}
                 websiteUrl={websiteUrl}
                 websiteText={websiteText}
                 type={type}
+              />
+            )}
+            {!hideCaption && (
+              <ContentCaption
+                blinksDetail={blinksDetail}
                 title={title}
                 description={description}
                 disclaimer={disclaimer}

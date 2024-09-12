@@ -4,18 +4,18 @@ import {
   getTransferFeeConfig,
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
-import { PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { doc, getDoc } from 'firebase/firestore';
+import { PROGRAM_ID } from '../consts';
 import { Scope } from '../enums/das';
 import { db } from '../firebase/firebase';
 import { DAS } from '../types/das';
 import { TokenState } from '../types/program';
-import { program } from './transcationInstructions';
 
 export function getDerivedMint(address: PublicKey) {
   const [derivedMint] = PublicKey.findProgramAddressSync(
     [Buffer.from('mint'), address.toBuffer()],
-    program.programId
+    PROGRAM_ID
   );
   return derivedMint;
 }
@@ -37,14 +37,14 @@ export function isAuthorized(
 export function getAssociatedTokenStateAccount(mint: PublicKey) {
   const [tokenState] = PublicKey.findProgramAddressSync(
     [Buffer.from('token'), mint.toBuffer()],
-    program.programId
+    PROGRAM_ID
   );
 
   return tokenState;
 }
 
 export async function getAsset(mint: PublicKey) {
-  const response = await fetch(program.provider.connection.rpcEndpoint, {
+  const response = await fetch(process.env.NEXT_PUBLIC_RPC_ENDPOINT as string, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -65,14 +65,10 @@ export async function getAsset(mint: PublicKey) {
 export async function getAmountAfterTransferFee(
   amount: number,
   mint: PublicKey,
+  connection: Connection,
   tokenProgram = TOKEN_2022_PROGRAM_ID
 ) {
-  const mintInfo = await getMint(
-    program.provider.connection,
-    mint,
-    undefined,
-    tokenProgram
-  );
+  const mintInfo = await getMint(connection, mint, undefined, tokenProgram);
 
   const transferFeeConfig = getTransferFeeConfig(mintInfo);
   if (!transferFeeConfig) {
@@ -80,7 +76,7 @@ export async function getAmountAfterTransferFee(
   }
   const transferFee = calculateEpochFee(
     transferFeeConfig,
-    BigInt((await program.provider.connection.getEpochInfo()).epoch),
+    BigInt((await connection.getEpochInfo()).epoch),
     BigInt(amount)
   );
   return amount - Number(transferFee);
