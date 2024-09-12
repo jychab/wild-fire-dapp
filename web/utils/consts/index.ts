@@ -14,3 +14,7 @@ export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   '49vVdqGZ8BfxtJFkY4oaWVhGgwhFkC27FWZki5S93vS7'
 );
 export const COST_PER_NO_RENT_TRANSFER_IN_SOL = 0.000005;
+
+export const PROGRAM_ID = new PublicKey(
+  '2fuSFHGb38TefYzzNmqCLE6iXffQ2HhgAS3cvsmgmGUR'
+);

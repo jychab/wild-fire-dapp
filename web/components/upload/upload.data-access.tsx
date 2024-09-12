@@ -69,6 +69,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
               ? await getAmountAfterTransferFee(
                   difference,
                   new PublicKey(postCampaign.mintToSend),
+                  connection,
                   new PublicKey(postCampaign.mintToSendTokenProgram)
                 )
               : difference;

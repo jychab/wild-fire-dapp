@@ -99,14 +99,14 @@ export function UiLayout({ children }: { children: ReactNode }) {
               }
             >
               {(!!publicKey || path != '/') && (
-                <ul className="hidden min-[1800px]:flex flex-col menu menu-primary bg-base-100 absolute z-10 border-base-300 border-r left-0 gap-2 min-h-full w-full max-w-[250px]">
+                <ul className="hidden min-[1800px]:flex flex-col menu menu-primary bg-base-100 fixed z-10 border-base-300 border-r left-0 gap-2 min-h-screen w-full flex-1 max-w-[250px]">
                   <AuthenticationDropdownMenu />
                 </ul>
               )}
               {children}
               {!!publicKey &&
                 (path != '/' ? (
-                  <div className="hidden min-[1800px]:flex w-full absolute max-w-[250px]" />
+                  <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
                 ) : (
                   <RightColumn />
                 ))}

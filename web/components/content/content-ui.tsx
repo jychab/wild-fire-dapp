@@ -2,10 +2,8 @@
 
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
-import { sendLike } from '@/utils/firebase/functions';
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
-import { formatLargeNumber } from '@/utils/helper/format';
-import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
+import { isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -16,8 +14,6 @@ import {
   IconDotsVertical,
   IconEdit,
   IconExclamationCircle,
-  IconHeart,
-  IconHeartFilled,
   IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
@@ -127,7 +123,10 @@ export const UserProfile: FC<{
 export const UserPanel: FC<{
   blinksDetail?: PostBlinksDetail;
   editable: boolean;
-}> = ({ blinksDetail, editable }) => {
+  websiteUrl: string | null | undefined;
+  websiteText: string | null | undefined;
+  type: string;
+}> = ({ blinksDetail, editable, websiteText, websiteUrl, type }) => {
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
@@ -135,10 +134,7 @@ export const UserPanel: FC<{
   const { data: metadata } = useGetTokenDetails({
     mint: blinksDetail ? new PublicKey(blinksDetail.mint) : null,
   });
-  const [liked, setLiked] = useState(
-    (publicKey && blinksDetail?.likesUser?.includes(publicKey?.toBase58())) ||
-      false
-  );
+
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
@@ -151,73 +147,29 @@ export const UserPanel: FC<{
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
     postId: blinksDetail?.id || null,
   });
-  const closestUser =
-    blinksDetail?.likesUser && blinksDetail?.likesUser?.length > 0
-      ? blinksDetail.likesUser[0]
-      : undefined;
-
-  const { data: closestUserMintMetadata } = useGetTokenDetails({
-    mint:
-      closestUser && closestUser !== publicKey?.toBase58()
-        ? getDerivedMint(new PublicKey(closestUser))
-        : null,
-  });
 
   return (
     <div className="flex justify-between pb-2">
-      <div className="flex gap-2 text-sm items-start">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
-              if (
-                blinksDetail?.mint &&
-                blinksDetail?.id &&
-                !liked &&
-                publicKey
-              ) {
-                try {
-                  sendLike(blinksDetail.mint, blinksDetail.id, 10);
-                } catch (e) {
-                  console.log(e);
-                } finally {
-                  setLiked(true);
-                }
-              }
-            }}
-            className=""
+      <div className="flex items-center gap-1">
+        {websiteUrl && (
+          <Link
+            href={useRelativePathIfPossbile(websiteUrl)}
+            className="link link-hover max-w-xs text-sm stat-desc truncate"
           >
-            {liked || (publicKey && closestUser == publicKey?.toBase58()) ? (
-              <IconHeartFilled size={18} className="fill-primary" />
-            ) : (
-              <IconHeart size={18} />
-            )}
-          </button>
-
-          {(liked ||
-            (blinksDetail?.likesCount != undefined &&
-              blinksDetail.likesCount > 0)) && (
-            <span className="text-xs stat-desc link link-hover">{`Liked by ${
-              closestUserMintMetadata?.content?.metadata.name ||
-              (closestUser == publicKey?.toBase58() || liked ? 'you' : '')
-            }${
-              (closestUser == publicKey?.toBase58() ||
-                closestUserMintMetadata?.content?.metadata.name) &&
-              blinksDetail?.likesCount != undefined &&
-              blinksDetail.likesCount > 1
-                ? ` and `
-                : ''
-            }${
-              blinksDetail?.likesCount != undefined &&
-              blinksDetail.likesCount > 1
-                ? formatLargeNumber(
-                    blinksDetail.likesCount - (closestUserMintMetadata ? 1 : 0)
-                  ) + ' others'
-                : ''
-            }`}</span>
-          )}
-        </div>
+            {websiteText ?? websiteUrl}
+          </Link>
+        )}
+        <Link
+          href="https://docs.dialect.to/documentation/actions/security"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
+          {type === 'trusted' && <IconShieldCheckFilled size={14} />}
+          {type === 'unknown' && <IconExclamationCircle size={14} />}
+        </Link>
       </div>
-
       {(editable || isLiquidityPoolFound) &&
         isAuthorized(tokenStateData, publicKey, metadata) && (
           <div className="dropdown dropdown-left">
@@ -473,9 +425,6 @@ const CarouselIndicators: FC<{
 );
 
 export const ContentCaption: FC<{
-  websiteUrl: string | null | undefined;
-  websiteText: string | null | undefined;
-  type: string;
   title: string | undefined;
   description: string | undefined;
   disclaimer: Disclaimer | undefined;
@@ -490,9 +439,6 @@ export const ContentCaption: FC<{
   supportability: ActionSupportability;
 }> = ({
   expandAll,
-  websiteUrl,
-  websiteText,
-  type,
   error,
   success,
   title,
@@ -511,26 +457,6 @@ export const ContentCaption: FC<{
     <div>
       {showMore ? (
         <div className="flex flex-col">
-          <div className="flex items-center gap-1">
-            {websiteUrl && (
-              <Link
-                href={useRelativePathIfPossbile(websiteUrl)}
-                className="link link-hover max-w-xs text-sm stat-desc truncate"
-              >
-                {websiteText ?? websiteUrl}
-              </Link>
-            )}
-            <Link
-              href="https://docs.dialect.to/documentation/actions/security"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center"
-            >
-              {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
-              {type === 'trusted' && <IconShieldCheckFilled size={14} />}
-              {type === 'unknown' && <IconExclamationCircle size={14} />}
-            </Link>
-          </div>
           <p className="text-md font-semibold whitespace-pre-wrap pt-2 ">
             {title}
           </p>

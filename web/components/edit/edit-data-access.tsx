@@ -22,7 +22,6 @@ import {
   uploadMetadata,
 } from '../../utils/firebase/functions';
 import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
-import { closeAuthorityAccount } from '../../utils/helper/transcationInstructions';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -30,50 +29,6 @@ interface EditMintArgs {
   symbol: string;
   picture: File | null;
   description: string;
-}
-
-export function useCloseAccount({ mint }: { mint: PublicKey | null }) {
-  const { connection } = useConnection();
-  const transactionToast = useTransactionToast();
-  const wallet = useWallet();
-
-  return useMutation({
-    mutationKey: [
-      'close-mint',
-      {
-        endpoint: connection.rpcEndpoint,
-        mint,
-      },
-    ],
-    mutationFn: async () => {
-      let signature: TransactionSignature = '';
-      try {
-        if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
-        const ix = await closeAuthorityAccount(wallet.publicKey, mint);
-
-        signature = await buildAndSendTransaction({
-          connection,
-          ixs: [ix],
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
-
-        return signature;
-      } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error}` + signature);
-        return;
-      }
-    },
-
-    onSuccess: (signature) => {
-      if (signature) {
-        transactionToast(signature);
-      }
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${JSON.stringify(error)}`);
-    },
-  });
 }
 
 export function useEditData({

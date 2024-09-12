@@ -7,7 +7,7 @@ import { useGetAssetsBatch, useGetSummary } from '../search/search-data-access';
 
 export const RightColumn: FC = () => {
   return (
-    <div className="hidden 2xl:flex flex-col right-0 absolute gap-4 p-4 min-h-full w-full max-w-[350px]">
+    <div className="hidden 2xl:flex flex-col right-0 fixed gap-4 p-4 min-h-full w-full max-w-[350px]">
       <TrendingTable />
     </div>
   );

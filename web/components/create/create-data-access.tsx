@@ -1,6 +1,6 @@
 'use client';
 
-import { LONG_STALE_TIME } from '@/utils/consts';
+import { LONG_STALE_TIME, PROGRAM_ID } from '@/utils/consts';
 import {
   createMintInstruction,
   createOrUpdateAdminForExternalMint,
@@ -9,7 +9,6 @@ import {
 } from '@/utils/firebase/functions';
 import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
-import { program } from '@/utils/helper/transcationInstructions';
 import { DAS } from '@/utils/types/das';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -84,7 +83,7 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
       try {
         const [mint] = PublicKey.findProgramAddressSync(
           [Buffer.from('mint'), wallet.publicKey.toBuffer()],
-          program.programId
+          PROGRAM_ID
         );
         const metadata = await buildTokenMetadata(
           input,

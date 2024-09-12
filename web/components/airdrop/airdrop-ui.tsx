@@ -9,8 +9,8 @@ import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAmountAfterTransferFee, getDerivedMint } from '@/utils/helper/mint';
 import { Campaign } from '@/utils/types/campaigns';
 import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { useGetMintToken } from '../edit/edit-data-access';
@@ -141,7 +141,7 @@ export const CampaignModal: FC<{
   });
   const stopCampaignMutation = useStopCampaign({ address: publicKey });
   const { data: campaigns } = useGetCampaigns({ address: publicKey });
-
+  const { connection } = useConnection();
   // Helper function to close the modal
   function closeModal() {
     setId(undefined);
@@ -336,7 +336,8 @@ export const CampaignModal: FC<{
       await calculateDifference(
         tokensRemaining,
         campaign?.tokensRemaining || 0,
-        publicKey
+        publicKey,
+        connection
       );
 
     const newBudget =
@@ -369,12 +370,17 @@ export const CampaignModal: FC<{
 async function calculateDifference(
   tokensRemaining: string,
   currentTokensRemaining: number,
-  publicKey: PublicKey
+  publicKey: PublicKey,
+  connection: Connection
 ) {
   const difference = parseFloat(tokensRemaining) - currentTokensRemaining;
   const differenceAmountAfterTransferFee =
     difference > 0
-      ? await getAmountAfterTransferFee(difference, getDerivedMint(publicKey))
+      ? await getAmountAfterTransferFee(
+          difference,
+          getDerivedMint(publicKey),
+          connection
+        )
       : difference;
   return { differenceAmountAfterTransferFee, difference };
 }

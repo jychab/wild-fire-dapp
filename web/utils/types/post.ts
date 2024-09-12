@@ -16,8 +16,6 @@ export interface PostBlinksDetail {
   id: string;
   createdAt: number;
   updatedAt: number;
-  likesCount?: number;
-  likesUser?: string[];
   commentsCount?: number;
   tags?: string[];
 }
