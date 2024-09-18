@@ -16,11 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ReactQueryProvider>
-          <SolanaProvider>
+        <SolanaProvider>
+          <ReactQueryProvider>
             <UiLayout>{children}</UiLayout>
-          </SolanaProvider>
-        </ReactQueryProvider>
+          </ReactQueryProvider>
+        </SolanaProvider>
       </body>
     </html>
   );

@@ -181,6 +181,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
                   mint!.toBase58(),
                   res.postId!
                 ),
+                publicKey: wallet.publicKey,
               },
             ],
           }),

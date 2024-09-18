@@ -1,9 +1,9 @@
 'use client';
 
-import { UnifiedWalletProvider } from '@jup-ag/wallet-adapter';
 import { WalletError } from '@solana/wallet-adapter-base';
 import { ConnectionProvider } from '@solana/wallet-adapter-react';
 import { ReactNode, useCallback, useMemo } from 'react';
+import { UnifiedWalletProvider } from 'unified-wallet-adapter-with-telegram';
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
   const endpoint = useMemo(
@@ -19,6 +19,14 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
       <UnifiedWalletProvider
         wallets={[]}
         config={{
+          telegramConfig: {
+            botDisplayPic: 'https://buckets.blinksfeed.com/blinksfeed/logo.png',
+            botDirectLink: 'https://t.me/blinksfeedbot/blinksfeed',
+            rpcEndpoint: 'https://rpc.blinksfeed.com',
+            backendEndpoint:
+              'https://us-central1-token-60450.cloudfunctions.net/api',
+            botUsername: 'blinksfeedbot',
+          },
           autoConnect: true,
           env: 'mainnet-beta',
           metadata: {

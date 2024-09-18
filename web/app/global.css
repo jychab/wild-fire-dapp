@@ -4,18 +4,11 @@
 
 html,
 body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
-}
-
-.wallet-adapter-button-trigger {
-  background: rgb(100, 26, 230) !important;
-  border-radius: 8px !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-}
-.wallet-adapter-dropdown-list,
-.wallet-adapter-button {
-  font-family: inherit !important;
+  overflow: hidden; /* Prevent any scrollbars */
 }
 
 @layer base {
@@ -29,4 +22,15 @@ body {
     font-weight: 400;
     src: url('../public/fonts/LuckiestGuy-Regular.ttf');
   }
+}
+
+:root:has(
+    :is(
+        .modal-open,
+        .modal:target,
+        .modal-toggle:checked + .modal,
+        .modal[open]
+      )
+  ) {
+  scrollbar-gutter: auto !important;
 }

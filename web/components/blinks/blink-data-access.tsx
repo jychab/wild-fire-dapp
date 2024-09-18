@@ -33,7 +33,7 @@ export function useGetBlinkAction({
   const { signTransaction } = useWallet();
   const { connection } = useConnection();
   return useQuery({
-    queryKey: ['get-blink-action', { actionUrl, options }],
+    queryKey: ['get-blink-action', { actionUrl, publicKey }],
     queryFn: () => {
       const config = createActionConfig({
         connection,

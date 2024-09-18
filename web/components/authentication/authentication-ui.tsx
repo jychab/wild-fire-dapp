@@ -2,7 +2,6 @@
 
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
-import { UnifiedWalletButton } from '@jup-ag/wallet-adapter';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconLogout,
@@ -16,6 +15,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, ReactNode, useEffect, useState } from 'react';
+import { UnifiedWalletButton } from 'unified-wallet-adapter-with-telegram';
 import { DAS } from '../../utils/types/das';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { ThemeComponent } from '../ui/ui-component';
@@ -84,7 +84,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       </div>
       <ul
         tabIndex={0}
-        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-56"
+        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-48 md:w-56"
       >
         <AuthenticationDropdownMenu />
       </ul>
@@ -108,7 +108,7 @@ export const AuthenticationDropdownMenu: FC = () => {
     <>
       {publicKey ? (
         <li className="text-left">
-          <span className="block text-sm truncate max-w-[150px] md:max-w-[220px] ">
+          <span className="block text-sm truncate max-w-[170px] md:max-w-[220px] ">
             {publicKey.toString()}
           </span>
         </li>

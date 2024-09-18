@@ -10,12 +10,11 @@
   "private": true,
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
-    "@jup-ag/wallet-adapter": "^0.2.0",
     "@solana/spl-token": "0.4.6",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",
-    "@solana/web3.js": "1.95.2",
+    "@solana/web3.js": "1.95.3",
     "@tabler/icons-react": "3.5.0",
     "@tanstack/query-async-storage-persister": "^5.51.15",
     "@tanstack/react-query": "^5.51.15",
@@ -30,7 +29,8 @@
     "next": "14.0.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-hot-toast": "2.4.1"
+    "react-hot-toast": "2.4.1",
+    "unified-wallet-adapter-with-telegram": "^0.1.7"
   },
   "devDependencies": {
     "@nx/eslint": "19.0.0",
