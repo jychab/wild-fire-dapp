@@ -3,6 +3,7 @@ import { createOrEditComment } from '@/utils/firebase/functions';
 import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
+import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -59,7 +60,7 @@ export const CommentsSection: FC<{
       createOrEditComment(
         post?.mint,
         post?.id,
-        crypto.randomUUID(),
+        generateRandomU64Number().toString(),
         comment,
         []
       );

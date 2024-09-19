@@ -18,8 +18,13 @@ export default function Page() {
   useEffect(() => {
     try {
       const { startParam } = retrieveLaunchParams();
-      setPath(startParam);
-    } catch (e) {}
+      const param = startParam?.split('_');
+      if (param && param.length == 2) {
+        setPath(`/post?mint=${param[0]}&id=${param[2]}`);
+      }
+    } catch (e) {
+      console.log(e);
+    }
   }, []);
 
   // Ensure that the page content is only rendered if `publicKey` is available
@@ -38,6 +43,7 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
   const contentGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!posts) return;
     const scrollTimeout = setTimeout(() => {
       if (contentGridRef.current) {
         window.scrollTo({
@@ -48,7 +54,7 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
     }, 100); // Adjust the delay as needed
 
     return () => clearTimeout(scrollTimeout);
-  }, []);
+  }, [posts]);
   return (
     <div className="flex flex-col w-full absolute items-center justify-center">
       <div className="block sm:hidden">

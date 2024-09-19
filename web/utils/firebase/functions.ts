@@ -2,6 +2,7 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
+import { generateRandomU64Number } from '../helper/post';
 import { Campaign, PostCampaign } from '../types/campaigns';
 import { PostContent } from '../types/post';
 import { functions, storage } from './firebase';
@@ -134,14 +135,14 @@ export function createLoginMessage(sessionKey: string) {
 }
 
 export async function uploadMetadata(payload: string, address: PublicKey) {
-  const path = `${address.toBase58()}/${crypto.randomUUID()}/metadata.json`;
+  const path = `${address.toBase58()}/${generateRandomU64Number()}/metadata.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload);
   return 'https://' + payloadRef.bucket + '/' + path;
 }
 
 export async function uploadMedia(picture: File, address: PublicKey) {
-  const path = `${address.toBase58()}/media/${crypto.randomUUID()}`;
+  const path = `${address.toBase58()}/media/${generateRandomU64Number()}`;
   const imageRef = ref(storage, path);
   await uploadBytes(imageRef, picture);
   return 'https://' + imageRef.bucket + '/' + path;

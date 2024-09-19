@@ -100,7 +100,6 @@ export const UserProfile: FC<{
           {metadata?.content?.links?.image && (
             <Image
               src={metadata?.content?.links?.image}
-              priority={true}
               className={`object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -184,12 +183,12 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
     (!editable || !isAuthorized(tokenStateData, publicKey, metadata)) &&
     !isLiquidityPoolFound
   ) {
-    return <ShareContent queries={new URL(blinksDetail.url).search} />;
+    return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
   }
 
   return (
     <div className="flex items-center gap-2">
-      <ShareContent queries={new URL(blinksDetail.url).search} />
+      <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />
       <div className="dropdown dropdown-left">
         <div tabIndex={0} role="button">
           {removeContentMutation.isPending ? (
@@ -558,7 +557,6 @@ const BlinksStaticContent: FC<{
           className={`object-cover`}
           src={image}
           fill={true}
-          priority={true}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           alt="action-image"
         />

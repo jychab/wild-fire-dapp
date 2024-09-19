@@ -7,10 +7,13 @@ import {
 import { FC, useState } from 'react';
 
 export const ShareContent: FC<{
-  queries?: string;
-}> = ({ queries }) => {
+  mint: string;
+  id: string;
+}> = ({ mint, id }) => {
   const [isCopied, setIsCopied] = useState(false);
-  const [url, setUrl] = useState(`https://blinksfeed.com/post${queries}`);
+  const [url, setUrl] = useState(
+    `https://blinksfeed.com/post?mint=${mint}&id=${id}`
+  );
   const handleCopy = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -56,14 +59,16 @@ export const ShareContent: FC<{
             <button
               onClick={() =>
                 setUrl(
-                  `https://t.me/blinksfeedbot/blinksfeed/startapp=/post${queries}`
+                  `https://t.me/blinksfeedbot/blinksfeed/startapp=${mint}_${id}`
                 )
               }
             >
               <IconBrandTelegram size={40} />
             </button>
             <button
-              onClick={() => setUrl(`https://blinksfeed.com/post${queries}`)}
+              onClick={() =>
+                setUrl(`https://blinksfeed.com/post?mint=${mint}&id=${id}`)
+              }
             >
               <IconBrandTwitterFilled size={40} />
             </button>

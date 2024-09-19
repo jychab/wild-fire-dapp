@@ -81,7 +81,6 @@ export const Logo: FC = ({}) => {
         <Image
           src={logo}
           alt={'logo'}
-          priority={true}
           className={`object-cover`}
           fill={true}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

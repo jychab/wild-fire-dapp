@@ -53,7 +53,6 @@ function SearchBar() {
             >
               <div className="w-8 h-8 relative mask mask-circle">
                 <Image
-                  priority={true}
                   className={`object-cover`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

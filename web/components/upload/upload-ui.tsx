@@ -9,6 +9,7 @@ import {
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAsset } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
+import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
@@ -125,7 +126,7 @@ export const UploadPost: FC<{
       setTempCampaign((prev) => ({
         ...prev,
         mint: mint.toBase58(),
-        postId: id || crypto.randomUUID(),
+        postId: id || generateRandomU64Number().toString(),
       }));
     }
   }, [postCampaign, tempCampaign, mint, id]);
@@ -142,12 +143,16 @@ export const UploadPost: FC<{
       if (post.carousel?.length) {
         const newFiles = post.carousel.map((x) =>
           x.fileType.startsWith('image/')
-            ? { fileType: x.fileType, uri: x.uri, id: crypto.randomUUID() }
+            ? {
+                fileType: x.fileType,
+                uri: x.uri,
+                id: generateRandomU64Number().toString(),
+              }
             : {
                 ...x,
                 fileType: x.fileType,
                 uri: x.uri,
-                id: crypto.randomUUID(),
+                id: generateRandomU64Number().toString(),
               }
         );
         setTags(post.tags?.join(',') || '');
@@ -281,7 +286,7 @@ export const UploadPost: FC<{
           return;
         }
         const url = URL.createObjectURL(selectedFile);
-        const id = crypto.randomUUID();
+        const id = generateRandomU64Number().toString();
         setFiles((prevFiles) => [
           ...prevFiles,
           { fileType: selectedFile.type, file: selectedFile, uri: url, id },
@@ -835,7 +840,6 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         <div className="flex w-full gap-2 items-center">
           <div className="w-10 h-10 relative mask mask-circle">
             <Image
-              priority={true}
               className={`object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -1113,7 +1117,7 @@ const ActionModal: FC<{
         fieldName: '',
         placeholder: '',
         type: 'text',
-        id: crypto.randomUUID(),
+        id: generateRandomU64Number().toString(),
       },
     ]);
   }, []);
@@ -1348,7 +1352,7 @@ export const AdditionalFieldComponent: FC<{
       'options',
       (field.options || []).concat([
         {
-          id: crypto.randomUUID(),
+          id: generateRandomU64Number().toString(),
           label: '',
           value: '',
           selected: false,

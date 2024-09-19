@@ -147,7 +147,6 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
         {!isLoading && (
           <div className="relative h-full w-full ring-secondary ring-offset-base-100 rounded-full hover:ring ring-offset-2 cursor-pointer">
             <Image
-              priority={true}
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -170,9 +169,7 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             <SubscribeBtn mintId={mintId} />
           </div>
         ) : (
-          <TelegramWalletButton
-            overrideContent={<div className="btn btn-sm">Wallet</div>}
-          />
+          <TelegramWalletButton />
         )}
         {mintSummaryDetails && (
           <div className="flex items-center gap-2">
