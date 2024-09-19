@@ -20,7 +20,7 @@ export default function Page() {
       const { startParam } = retrieveLaunchParams();
       const param = startParam?.split('_');
       if (param && param.length == 2) {
-        setPath(`/post?mint=${param[0]}&id=${param[2]}`);
+        setPath(`/post?mint=${param[0]}&id=${param[1]}`);
       }
     } catch (e) {
       console.log(e);

@@ -5,9 +5,11 @@ import { placeholderImage } from '@/utils/helper/placeholder';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
+import { IconWallet } from '@tabler/icons-react';
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { TelegramWalletButton } from 'unified-wallet-adapter-with-telegram';
 import {
   checkIfMetadataExist,
@@ -130,7 +132,17 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
-
+  const [userName, setUsername] = useState<string>();
+  useEffect(() => {
+    try {
+      const { initData } = retrieveLaunchParams();
+      if (initData?.user?.username) {
+        setUsername(initData.user?.username);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }, []);
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
       <button
@@ -160,7 +172,9 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
         <div className="flex flex-col">
           {!isLoading && (
             <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
-              {metadata?.content?.metadata.name || publicKey?.toBase58()}
+              {metadata?.content?.metadata.name ||
+                userName ||
+                publicKey?.toBase58()}
             </span>
           )}
         </div>
@@ -169,7 +183,16 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             <SubscribeBtn mintId={mintId} />
           </div>
         ) : (
-          <TelegramWalletButton />
+          <TelegramWalletButton
+            overrideContent={
+              <button className="btn btn-sm btn-primary btn-outline flex items-center gap-2 justify-start ">
+                <IconWallet />
+                <span className="truncate w-36">
+                  {userName || publicKey?.toBase58()}
+                </span>
+              </button>
+            }
+          />
         )}
         {mintSummaryDetails && (
           <div className="flex items-center gap-2">
