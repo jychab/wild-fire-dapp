@@ -8,6 +8,13 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
+
+  overflow-y: scroll; /* Allow vertical scrolling without scrollbar */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 @layer base {
@@ -23,13 +30,17 @@ body {
   }
 }
 
-:root:has(
-    :is(
-        .modal-open,
-        .modal:target,
-        .modal-toggle:checked + .modal,
-        .modal[open]
-      )
-  ) {
-  scrollbar-gutter: auto !important;
+.hideScrollbar {
+  -ms-overflow-style: none;
+}
+
+.hideScrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hideScrollbar::-moz-scrollbar {
+  display: none;
+}
+.hideScrollbar::-webkit-scrollbar {
+  display: none;
 }

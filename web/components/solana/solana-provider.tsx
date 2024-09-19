@@ -39,7 +39,7 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
           walletlistExplanation: {
             href: 'https://station.jup.ag/docs/additional-topics/wallet-list',
           },
-          theme: 'dark',
+          theme: 'jupiter',
           lang: 'en',
         }}
       >

@@ -80,7 +80,7 @@ export const CreatePanel: FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 items-center justify-center h-full w-full">
+    <div className="flex flex-col gap-4 items-center sm:pt-16 h-full w-full">
       <span className="text-3xl md:text-4xl text-center">
         Create Your Token
       </span>

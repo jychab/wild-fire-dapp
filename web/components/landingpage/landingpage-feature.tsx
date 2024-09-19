@@ -26,12 +26,17 @@ export const LandingPage: FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
+      <Logo />
       <AppHero
-        title={'Your recommended blinks, all in one feed.'}
+        title={
+          <h1 className="hidden sm:block max-w-2xl text-3xl lg:text-5xl font-bold px-10">
+            Discover, Trade, and Own Blinks — All in One Feed.
+          </h1>
+        }
         subtitle={
-          <div className="flex flex-col gap-4 items-center lg:items-start">
-            <span className="text-xl md:text-2xl">
-              Discover trending blinks curated by your tokens.
+          <div className="flex flex-col gap-4 items-center lg:items-start px-10">
+            <span className="sm:hidden text-xl md:text-2xl">
+              Discover, Trade, and Own Blinks — All in One Feed.
             </span>
             <AuthenticationBtn>
               <div className="btn btn-outline bg-base-100 rounded-none">
@@ -41,12 +46,11 @@ export const LandingPage: FC = () => {
           </div>
         }
         children={
-          <div className="mockup-phone w-full max-w-xs">
+          <div className="hidden sm:mockup-phone w-full max-w-xs">
             <div className="camera"></div>
             <div className="display w-full">
               <div className="artboard artboard-demo bg-base-100 h-[600px] overflow-y-scroll scrollbar-none">
                 <div className="grid grid-cols-1 h-full w-full ">
-                  <NavbarLandingPage isLoading={isLoading} />
                   {posts?.posts?.map((x) => (
                     <DisplayContent
                       key={x.id}
@@ -70,12 +74,10 @@ export const LandingPage: FC = () => {
   );
 };
 
-export const NavbarLandingPage: FC<{ isLoading: boolean }> = ({
-  isLoading,
-}) => {
-  return isLoading ? (
-    <div className="flex flex-col items-center justify-center gap-4 w-full h-full flex-1">
-      <div className="relative w-12 h-12">
+export const Logo: FC = ({}) => {
+  return (
+    <div className="flex sm:hidden flex-col items-center justify-center gap-4">
+      <div className="relative w-24 h-24">
         <Image
           src={logo}
           alt={'logo'}
@@ -85,12 +87,9 @@ export const NavbarLandingPage: FC<{ isLoading: boolean }> = ({
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       </div>
-      <span className="block font-luckiestguy text-lg font-bold leading-[0.5]">
+      <span className="block font-luckiestguy text-3xl font-bold leading-[0.5]">
         BlinksFeed
       </span>
-      <div className="loading loading-dots" />
     </div>
-  ) : (
-    <div className={`py-2`}></div>
   );
 };

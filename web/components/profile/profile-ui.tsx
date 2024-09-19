@@ -5,10 +5,10 @@ import { placeholderImage } from '@/utils/helper/placeholder';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconEdit } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC } from 'react';
+import { TelegramWalletButton } from 'unified-wallet-adapter-with-telegram';
 import {
   checkIfMetadataExist,
   formatLargeNumber,
@@ -133,9 +133,19 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
 
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
-      <div className="w-40 h-40 items-center justify-center flex">
+      <button
+        onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
+        className="w-40 h-40 items-center justify-center group flex avatar indicator"
+      >
+        {publicKey &&
+          (isAuthorized(tokenStateData, publicKey, metadata) ||
+            getDerivedMint(publicKey).toBase58() == mintId) && (
+            <span className="hidden group-hover:flex indicator-item badge badge-secondary absolute top-4 right-4">
+              Edit
+            </span>
+          )}
         {!isLoading && (
-          <div className="relative h-full w-full">
+          <div className="relative h-full w-full ring-secondary ring-offset-base-100 rounded-full hover:ring ring-offset-2 cursor-pointer">
             <Image
               priority={true}
               className={`object-cover rounded-full`}
@@ -146,40 +156,30 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             />
           </div>
         )}
-      </div>
+      </button>
       <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start">
         <div className="flex flex-col">
           {!isLoading && (
-            <span className="text-2xl lg:text-3xl font-bold truncate max-w-sm">
-              {metadata?.content?.metadata.name || mintId}
-            </span>
-          )}
-          {!isLoading && (
-            <span className="truncate max-w-xs">
-              {metadata?.content?.metadata.symbol || publicKey?.toBase58()}
+            <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
+              {metadata?.content?.metadata.name || publicKey?.toBase58()}
             </span>
           )}
         </div>
-
-        <div className="flex items-center gap-2 ">
-          <SubscribeBtn mintId={mintId} />
-          {(isAuthorized(tokenStateData, publicKey, metadata) ||
-            (publicKey && mintId == getDerivedMint(publicKey).toBase58())) && (
-            <button
-              className="btn btn-outline btn-sm items-center"
-              onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
-            >
-              <IconEdit />
-              Edit
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {mintSummaryDetails && (
+        {publicKey && mintId !== getDerivedMint(publicKey).toBase58() ? (
+          <div className="flex items-center gap-2 ">
+            <SubscribeBtn mintId={mintId} />
+          </div>
+        ) : (
+          <TelegramWalletButton
+            overrideContent={<div className="btn btn-sm">Wallet</div>}
+          />
+        )}
+        {mintSummaryDetails && (
+          <div className="flex items-center gap-2">
             <>
               <span>
                 {formatLargeNumber(
-                  mintSummaryDetails?.currentHoldersCount || 0
+                  mintSummaryDetails.currentHoldersCount || 0
                 ) + ' Subscribers'}
               </span>
               <span
@@ -194,19 +194,17 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
                   : `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%`}
               </span>
             </>
-          )}
-          {mintSummaryDetails &&
-            metadata?.token_info?.price_info?.price_per_token &&
-            '||'}
-          {metadata?.token_info?.price_info?.price_per_token && (
-            <>
-              <span>{`$${(
-                metadata?.token_info?.price_info?.price_per_token || 0
-              ).toPrecision(6)}
+            {metadata?.token_info?.price_info?.price_per_token && '||'}
+            {metadata?.token_info?.price_info?.price_per_token && (
+              <>
+                <span>{`$${(
+                  metadata?.token_info?.price_info?.price_per_token || 0
+                ).toPrecision(6)}
               `}</span>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
         <span className="text-base truncate font-normal">
           {metadata?.content?.metadata.description}
         </span>

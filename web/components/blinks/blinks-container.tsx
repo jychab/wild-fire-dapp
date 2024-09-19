@@ -295,10 +295,8 @@ export const ActionContainer: FC<ActionContainerProps> = ({
     };
 
     try {
-      console.log(action?.adapter);
       const account = await action?.adapter.connect(context);
 
-      console.log(account);
       if (!account) {
         dispatchExecution({ type: ExecutionType.RESET });
         return;

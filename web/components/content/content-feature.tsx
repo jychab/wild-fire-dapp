@@ -1,7 +1,10 @@
 'use client';
 
+import { getDerivedMint } from '@/utils/helper/mint';
 import { GetPostsResponse, PostContent } from '@/utils/types/post';
-import { FC } from 'react';
+import { FC, useEffect, useRef } from 'react';
+import { useWallet } from 'unified-wallet-adapter-with-telegram';
+import { Profile } from '../profile/profile-ui';
 import { DisplayContent } from './content-ui';
 
 interface ContentCardFeatureProps {
@@ -9,9 +12,28 @@ interface ContentCardFeatureProps {
 }
 
 export const ContentCardFeature: FC<ContentCardFeatureProps> = ({ post }) => {
+  const { publicKey } = useWallet();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (post && contentRef.current) {
+      const scrollToContent = () => {
+        window.scrollTo({
+          top: contentRef.current!.offsetTop,
+          behavior: 'smooth',
+        });
+      };
+    }
+  }, [post]); // Add post as a dependency to wait for the data
+
   return (
     <div className="flex flex-col w-full items-center sm:py-4">
-      <div className="max-w-lg w-full">
+      {publicKey && (
+        <div className="block sm:hidden">
+          <Profile mintId={getDerivedMint(publicKey).toBase58()} />
+        </div>
+      )}
+      <div ref={contentRef} className="max-w-lg w-full">
         <DisplayContent
           expandAll={true}
           blinksDetail={post}

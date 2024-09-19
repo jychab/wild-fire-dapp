@@ -32,6 +32,7 @@ import {
 import { BaseButtonProps } from '../blinks/ui/action-button';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { useGetTokenDetails } from '../profile/profile-data-access';
+import { ShareContent } from '../share/share-content';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import {
   checkUrlIsValid,
@@ -127,6 +128,37 @@ export const UserPanel: FC<{
   websiteText: string | null | undefined;
   type: string;
 }> = ({ blinksDetail, editable, websiteText, websiteUrl, type }) => {
+  return (
+    <div className="flex justify-between items-center">
+      <div className="flex items-center gap-1">
+        {websiteUrl && (
+          <Link
+            href={useRelativePathIfPossbile(websiteUrl)}
+            className="link link-hover max-w-xs text-sm stat-desc truncate"
+          >
+            {websiteText ?? websiteUrl}
+          </Link>
+        )}
+        <Link
+          href="https://docs.dialect.to/documentation/actions/security"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
+          {type === 'trusted' && <IconShieldCheckFilled size={14} />}
+          {type === 'unknown' && <IconExclamationCircle size={14} />}
+        </Link>
+      </div>
+      {blinksDetail && <Menu blinksDetail={blinksDetail} editable={editable} />}
+    </div>
+  );
+};
+
+const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
+  blinksDetail,
+  editable,
+}) => {
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
     mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
@@ -148,85 +180,68 @@ export const UserPanel: FC<{
     postId: blinksDetail?.id || null,
   });
 
+  if (
+    (!editable || !isAuthorized(tokenStateData, publicKey, metadata)) &&
+    !isLiquidityPoolFound
+  ) {
+    return <ShareContent queries={new URL(blinksDetail.url).search} />;
+  }
+
   return (
-    <div className="flex justify-between pb-2">
-      <div className="flex items-center gap-1">
-        {websiteUrl && (
-          <Link
-            href={useRelativePathIfPossbile(websiteUrl)}
-            className="link link-hover max-w-xs text-sm stat-desc truncate"
-          >
-            {websiteText ?? websiteUrl}
-          </Link>
-        )}
-        <Link
-          href="https://docs.dialect.to/documentation/actions/security"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center"
+    <div className="flex items-center gap-2">
+      <ShareContent queries={new URL(blinksDetail.url).search} />
+      <div className="dropdown dropdown-left">
+        <div tabIndex={0} role="button">
+          {removeContentMutation.isPending ? (
+            <div className="loading loading-spinner loading-sm" />
+          ) : (
+            <IconDotsVertical size={18} />
+          )}
+        </div>
+        <ul
+          tabIndex={0}
+          className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-0 text-sm w-28"
         >
-          {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
-          {type === 'trusted' && <IconShieldCheckFilled size={14} />}
-          {type === 'unknown' && <IconExclamationCircle size={14} />}
-        </Link>
+          {!editable && isLiquidityPoolFound && (
+            <li>
+              <Link
+                href={`/profile?mintId=${blinksDetail?.mint}&tab=trade`}
+                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+              >
+                <IconChartLine size={18} />
+                Trade
+              </Link>
+            </li>
+          )}
+          {editable && isAuthorized(tokenStateData, publicKey, metadata) && (
+            <li>
+              <Link
+                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
+              >
+                <IconEdit size={18} />
+                Edit
+              </Link>
+            </li>
+          )}
+          {editable && isAuthorized(tokenStateData, publicKey, metadata) && (
+            <li>
+              <button
+                disabled={removeContentMutation.isPending}
+                onClick={() => removeContentMutation.mutateAsync(postCampaign)}
+                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+              >
+                {removeContentMutation.isPending ? (
+                  <div className="loading loading-spinner loading-sm" />
+                ) : (
+                  <IconTrash size={18} />
+                )}
+                Delete
+              </button>
+            </li>
+          )}
+        </ul>
       </div>
-      {(editable || isLiquidityPoolFound) &&
-        isAuthorized(tokenStateData, publicKey, metadata) && (
-          <div className="dropdown dropdown-left">
-            <div tabIndex={0} role="button">
-              {removeContentMutation.isPending ? (
-                <div className="loading loading-spinner loading-sm" />
-              ) : (
-                <IconDotsVertical size={18} />
-              )}
-            </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-base-100 border border-base-300 rounded z-[1] p-0 text-sm w-28"
-            >
-              {!editable && isLiquidityPoolFound && blinksDetail && (
-                <li>
-                  <Link
-                    href={`/profile?mintId=${blinksDetail?.mint}&tab=trade`}
-                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                  >
-                    <IconChartLine size={18} />
-                    Trade
-                  </Link>
-                </li>
-              )}
-              {editable && blinksDetail && (
-                <li>
-                  <Link
-                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                    href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
-                  >
-                    <IconEdit size={18} />
-                    Edit
-                  </Link>
-                </li>
-              )}
-              {editable && blinksDetail && (
-                <li>
-                  <button
-                    disabled={removeContentMutation.isPending}
-                    onClick={() =>
-                      removeContentMutation.mutateAsync(postCampaign)
-                    }
-                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                  >
-                    {removeContentMutation.isPending ? (
-                      <div className="loading loading-spinner loading-sm" />
-                    ) : (
-                      <IconTrash size={18} />
-                    )}
-                    Delete
-                  </button>
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
     </div>
   );
 };
