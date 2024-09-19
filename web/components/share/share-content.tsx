@@ -12,7 +12,7 @@ export const ShareContent: FC<{
 }> = ({ mint, id }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [url, setUrl] = useState(
-    `https://blinksfeed.com/post?mint=${mint}&id=${id}`
+    `https://t.me/blinksfeedbot/blinksfeed?startapp=${mint}_${id}`
   );
   const handleCopy = async (url: string) => {
     try {
@@ -59,7 +59,7 @@ export const ShareContent: FC<{
             <button
               onClick={() =>
                 setUrl(
-                  `https://t.me/blinksfeedbot/blinksfeed/startapp=${mint}_${id}`
+                  `https://t.me/blinksfeedbot/blinksfeed?startapp=${mint}_${id}`
                 )
               }
             >

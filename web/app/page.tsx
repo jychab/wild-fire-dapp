@@ -5,6 +5,7 @@ import { ContentGrid } from '@/components/content/content-feature';
 import { LandingPage } from '@/components/landingpage/landingpage-feature';
 import { Profile } from '@/components/profile/profile-ui';
 import { getDerivedMint } from '@/utils/helper/mint';
+import { fetchPost } from '@/utils/helper/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { retrieveLaunchParams } from '@telegram-apps/sdk';
@@ -20,7 +21,11 @@ export default function Page() {
       const { startParam } = retrieveLaunchParams();
       const param = startParam?.split('_');
       if (param && param.length == 2) {
-        setPath(`/post?mint=${param[0]}&id=${param[1]}`);
+        fetchPost(param[0], param[1]).then((x) => {
+          if (x) {
+            setPath(x?.url);
+          }
+        });
       }
     } catch (e) {
       console.log(e);

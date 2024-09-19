@@ -122,7 +122,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
-    <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
+    <div className="flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
       <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
         <div className="relative w-8 h-8">
           <Image

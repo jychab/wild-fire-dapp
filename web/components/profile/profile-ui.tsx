@@ -185,9 +185,9 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
         ) : (
           <TelegramWalletButton
             overrideContent={
-              <button className="btn btn-sm btn-primary btn-outline flex items-center gap-2 justify-start ">
+              <button className="btn btn-primary btn-outline flex items-center gap-2 justify-start ">
                 <IconWallet />
-                <span className="truncate w-36">
+                <span className="truncate w-24">
                   {userName || publicKey?.toBase58()}
                 </span>
               </button>
