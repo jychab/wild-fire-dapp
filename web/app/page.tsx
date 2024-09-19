@@ -4,6 +4,7 @@ import { useGetPostsFromAddress } from '@/components/content/content-data-access
 import { ContentGrid } from '@/components/content/content-feature';
 import { LandingPage } from '@/components/landingpage/landingpage-feature';
 import { Profile } from '@/components/profile/profile-ui';
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { fetchPost } from '@/utils/helper/post';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -23,7 +24,7 @@ export default function Page() {
       if (param && param.length == 2) {
         fetchPost(param[0], param[1]).then((x) => {
           if (x) {
-            setPath(x?.url);
+            setPath(useRelativePathIfPossbile(x.url));
           }
         });
       }
