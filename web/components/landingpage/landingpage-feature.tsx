@@ -1,5 +1,6 @@
 'use client';
 
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export const Logo: FC<{ styles?: string; hideLogo?: boolean }> = ({
   return (
     <Link
       className="flex sm:hidden flex-col items-center justify-center gap-4"
-      href={'/'}
+      href={useRelativePathIfPossbile('https://blinksfeed.com')}
     >
       {!hideLogo && (
         <div className={`relative ${styles}`}>

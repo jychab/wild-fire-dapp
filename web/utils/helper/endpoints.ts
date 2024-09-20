@@ -42,7 +42,7 @@ export function proxify(targetUrl: string, image = false) {
 export function useRelativePathIfPossbile(urlString: string) {
   try {
     const url = new URL(urlString);
-    const domain = 'blinksfeed.com';
+    const domain = window.location.hostname;
 
     // Check if the domain matches
     if (url.hostname === domain) {
