@@ -18,6 +18,8 @@ export default function Page() {
   const router = useRouter();
   const [path, setPath] = useState<string>();
   useEffect(() => {
+    const hasNavigated = sessionStorage.getItem('hasNavigated') === 'true';
+    if (hasNavigated) return;
     try {
       const { startParam } = retrieveLaunchParams();
       const param = startParam?.split('_');
@@ -25,6 +27,7 @@ export default function Page() {
         fetchPost(param[0], param[1]).then((x) => {
           if (x) {
             setPath(useRelativePathIfPossbile(x.url));
+            sessionStorage.setItem('hasNavigated', 'true');
           }
         });
       }

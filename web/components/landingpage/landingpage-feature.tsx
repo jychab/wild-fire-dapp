@@ -1,6 +1,5 @@
 'use client';
 
-import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +17,7 @@ export const LandingPage: FC = () => {
     setMounted(true);
   }, []);
 
-  const { data: posts, isLoading } = useGetPostsFromAddress({
+  const { data: posts } = useGetPostsFromAddress({
     address: new PublicKey('1nc1nerator11111111111111111111111111111111'),
   });
 
@@ -83,7 +82,7 @@ export const Logo: FC<{ styles?: string; hideLogo?: boolean }> = ({
   return (
     <Link
       className="flex sm:hidden flex-col items-center justify-center gap-4"
-      href={useRelativePathIfPossbile('https://blinksfeed.com')}
+      href={'/'}
     >
       {!hideLogo && (
         <div className={`relative ${styles}`}>
