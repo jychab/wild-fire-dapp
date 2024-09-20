@@ -2,6 +2,7 @@
 
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
+import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
 import logo from '../../public/images/logo.png';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
@@ -74,21 +75,30 @@ export const LandingPage: FC = () => {
   );
 };
 
-export const Logo: FC = ({}) => {
+export const Logo: FC<{ styles?: string; hideLogo?: boolean }> = ({
+  styles = 'w-24 h-24',
+  hideLogo = false,
+}) => {
   return (
-    <div className="flex sm:hidden flex-col items-center justify-center gap-4">
-      <div className="relative w-24 h-24">
-        <Image
-          src={logo}
-          alt={'logo'}
-          className={`object-cover`}
-          fill={true}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
-      </div>
-      <span className="block font-luckiestguy text-3xl font-bold leading-[0.5]">
+    <Link
+      className="flex sm:hidden flex-col items-center justify-center gap-4"
+      href={'/'}
+    >
+      {!hideLogo && (
+        <div className={`relative ${styles}`}>
+          <Image
+            src={logo}
+            alt={'logo'}
+            className={`object-cover`}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
+      )}
+
+      <span className="block font-luckiestguy text-2xl font-bold leading-[0.5]">
         BlinksFeed
       </span>
-    </div>
+    </Link>
   );
 };

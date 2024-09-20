@@ -28,9 +28,7 @@ export default function Page() {
           }
         });
       }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   }, []);
 
   // Ensure that the page content is only rendered if `publicKey` is available
@@ -50,10 +48,11 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
 
   useEffect(() => {
     if (!posts) return;
+    if (window.innerWidth > 640) return;
     const scrollTimeout = setTimeout(() => {
       if (contentGridRef.current) {
         window.scrollTo({
-          top: contentGridRef.current.offsetTop, // Adjust offset if needed
+          top: contentGridRef.current.offsetTop + 48, // Adjust offset if needed
           behavior: 'smooth',
         });
       }

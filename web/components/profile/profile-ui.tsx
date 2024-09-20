@@ -6,7 +6,7 @@ import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconWallet } from '@tabler/icons-react';
-import { retrieveLaunchParams } from '@telegram-apps/sdk';
+import { InitDataParsed, retrieveLaunchParams } from '@telegram-apps/sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
@@ -132,37 +132,49 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
-  const [userName, setUsername] = useState<string>();
+  const [initData, setInitData] = useState<InitDataParsed>();
   useEffect(() => {
     try {
       const { initData } = retrieveLaunchParams();
-      if (initData?.user?.username) {
-        setUsername(initData.user?.username);
+      if (initData) {
+        setInitData(initData);
       }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   }, []);
+  const isOwner =
+    publicKey &&
+    (isAuthorized(tokenStateData, publicKey, metadata) ||
+      getDerivedMint(publicKey).toBase58() == mintId);
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
       <button
-        onClick={() => router.push(`/mint/edit?mintId=${mintId}`)}
-        className="w-40 h-40 items-center justify-center group flex avatar indicator"
+        onClick={() => isOwner && router.push(`/mint/edit?mintId=${mintId}`)}
+        className={`w-40 h-40 items-center justify-center group flex ${
+          isOwner ? 'avatar indicator' : ''
+        }`}
       >
-        {publicKey &&
-          (isAuthorized(tokenStateData, publicKey, metadata) ||
-            getDerivedMint(publicKey).toBase58() == mintId) && (
-            <span className="hidden group-hover:flex indicator-item badge badge-secondary absolute top-4 right-4">
-              Edit
-            </span>
-          )}
+        {isOwner && (
+          <span className="hidden group-hover:flex indicator-item badge badge-secondary absolute top-4 right-4">
+            Edit
+          </span>
+        )}
         {!isLoading && (
-          <div className="relative h-full w-full ring-secondary ring-offset-base-100 rounded-full hover:ring ring-offset-2 cursor-pointer">
+          <div
+            className={`relative h-full w-full rounded-full ${
+              isOwner
+                ? 'ring-secondary ring-offset-base-100 hover:ring ring-offset-2'
+                : ''
+            } cursor-pointer`}
+          >
             <Image
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata?.content?.links?.image || placeholderImage}
+              src={
+                metadata?.content?.links?.image ||
+                initData?.user?.photoUrl ||
+                placeholderImage
+              }
               alt={''}
             />
           </div>
@@ -173,7 +185,7 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
           {!isLoading && (
             <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
               {metadata?.content?.metadata.name ||
-                userName ||
+                initData?.user?.username ||
                 publicKey?.toBase58()}
             </span>
           )}
@@ -185,12 +197,10 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
         ) : (
           <TelegramWalletButton
             overrideContent={
-              <button className="btn btn-primary btn-outline flex items-center gap-2 justify-start ">
+              <div className="btn btn-sm btn-primary btn-outline flex items-center gap-2 justify-start ">
                 <IconWallet />
-                <span className="truncate w-24">
-                  {userName || publicKey?.toBase58()}
-                </span>
-              </button>
+                <span className="truncate w-24">{publicKey?.toBase58()}</span>
+              </div>
             }
           />
         )}

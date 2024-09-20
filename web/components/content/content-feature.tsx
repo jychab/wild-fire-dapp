@@ -10,7 +10,7 @@ interface ContentCardFeatureProps {
 
 export const ContentCardFeature: FC<ContentCardFeatureProps> = ({ post }) => {
   return (
-    <div className="flex flex-col w-full items-center sm:py-4">
+    <div className="flex flex-col w-full items-center sm:py-4 animate-fade animate-duration-400 sm:animate-none">
       <div className="max-w-lg w-full">
         <DisplayContent
           expandAll={true}
