@@ -2,11 +2,7 @@
 
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { fetchPost } from '@/utils/helper/post';
-import {
-  initMainButton,
-  isTMA,
-  retrieveLaunchParams,
-} from '@telegram-apps/sdk';
+import { isTMA, retrieveLaunchParams } from '@telegram-apps/sdk';
 import { usePathname } from 'next/navigation';
 import router from 'next/router';
 import {
@@ -16,10 +12,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import {
-  useUnifiedWalletContext,
-  useWallet,
-} from 'unified-wallet-adapter-with-telegram';
+import { useWallet } from 'unified-wallet-adapter-with-telegram';
 
 const TelegramContext = createContext<{ isOnTelegram: boolean }>({
   isOnTelegram: false,
@@ -28,7 +21,6 @@ const TelegramContext = createContext<{ isOnTelegram: boolean }>({
 export const useTelegramContext = () => useContext(TelegramContext);
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [isOnTelegram, setIsOnTelegram] = useState(false);
-  const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
   const path = usePathname();
 
@@ -37,18 +29,6 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
       setIsOnTelegram(result);
 
       if (result) {
-        const [mainButton, cleanUp] = initMainButton();
-        if (path == '/') {
-          if (!publicKey) {
-            mainButton.setText('Get Started');
-            mainButton.on('click', () => setShowModal(true), true);
-            mainButton.enable();
-            mainButton.show();
-          } else {
-            mainButton.hide();
-          }
-        }
-
         const hasNavigated = sessionStorage.getItem('hasNavigated') === 'true';
         if (hasNavigated) return;
         const { startParam } = retrieveLaunchParams();
@@ -61,8 +41,6 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
             }
           });
         }
-
-        return () => cleanUp();
       }
     });
   }, [path, publicKey]);

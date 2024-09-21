@@ -43,11 +43,9 @@ export const LandingPage: FC = () => {
             <span className="sm:hidden md:text-2xl px-16 sm:px-0">
               Discover, Trade, and Own Blinks - All in one feed.
             </span>
-            {!isOnTelegram && (
-              <AuthenticationBtn>
-                <div className="btn btn-outline bg-base-100">Get Started</div>
-              </AuthenticationBtn>
-            )}
+            <AuthenticationBtn>
+              <div className="btn btn-outline bg-base-100">Get Started</div>
+            </AuthenticationBtn>
           </div>
         }
         children={
