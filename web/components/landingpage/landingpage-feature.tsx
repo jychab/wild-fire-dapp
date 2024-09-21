@@ -8,17 +8,21 @@ import logo from '../../public/images/logo.png';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { useGetPostsFromAddress } from '../content/content-data-access';
 import { DisplayContent } from '../content/content-ui';
-import { AppHero } from '../ui/ui-layout';
+import { useTelegramContext } from '../telegram/telegram-provider';
+import { AppHero } from '../ui/ui-component';
 
 export const LandingPage: FC = () => {
   const [mounted, setMounted] = useState(false);
+  const { isOnTelegram } = useTelegramContext();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const { data: posts } = useGetPostsFromAddress({
-    address: new PublicKey('1nc1nerator11111111111111111111111111111111'),
+    address: isOnTelegram
+      ? null
+      : new PublicKey('1nc1nerator11111111111111111111111111111111'),
   });
 
   if (!mounted) {
@@ -30,20 +34,20 @@ export const LandingPage: FC = () => {
       <Logo />
       <AppHero
         title={
-          <h1 className="hidden sm:block max-w-2xl text-3xl lg:text-5xl font-bold px-10">
-            Discover, Trade, and Own Blinks — All in One Feed.
+          <h1 className="hidden sm:block max-w-2xl lg:text-4xl font-bold px-4">
+            Discover, Trade, and Own Blinks - All in one feed.
           </h1>
         }
         subtitle={
-          <div className="flex flex-col gap-4 items-center lg:items-start px-10">
-            <span className="sm:hidden text-xl md:text-2xl">
-              Discover, Trade, and Own Blinks — All in One Feed.
+          <div className="flex flex-col gap-4 items-center lg:items-start px-4">
+            <span className="sm:hidden md:text-2xl px-16 sm:px-0">
+              Discover, Trade, and Own Blinks - All in one feed.
             </span>
-            <AuthenticationBtn>
-              <div className="btn btn-outline bg-base-100 rounded-none">
-                Get Started
-              </div>
-            </AuthenticationBtn>
+            {!isOnTelegram && (
+              <AuthenticationBtn>
+                <div className="btn btn-outline bg-base-100">Get Started</div>
+              </AuthenticationBtn>
+            )}
           </div>
         }
         children={
@@ -96,7 +100,7 @@ export const Logo: FC<{ styles?: string; hideLogo?: boolean }> = ({
         </div>
       )}
 
-      <span className="block font-luckiestguy text-2xl font-bold leading-[0.5]">
+      <span className="block font-luckiestguy text-xl leading-[0.5]">
         BlinksFeed
       </span>
     </Link>

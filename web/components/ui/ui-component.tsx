@@ -1,15 +1,25 @@
 'use client';
 
-import { useLocalStorage } from '@solana/wallet-adapter-react';
+import { getDerivedMint } from '@/utils/helper/mint';
+import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
 import {
   IconBrandGithubFilled,
   IconBrandTelegram,
   IconBrandTwitterFilled,
   IconMoon,
   IconSun,
+  IconUserCircle,
 } from '@tabler/icons-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FC, ReactNode, useEffect, useState } from 'react';
+import logo from '../../public/images/logo.png';
+import { SignInBtn } from '../authentication/authentication-ui';
+import { Logo } from '../landingpage/landingpage-feature';
+import { useGetTokenDetails } from '../profile/profile-data-access';
+import SearchBar from '../search/search-ui';
+import { UploadBtn } from '../upload/upload-ui';
 
 export const ThemeComponent: FC = ({}) => {
   const [theme, setTheme] = useLocalStorage('theme', 'dark');
@@ -83,3 +93,96 @@ export const SocialComponent: FC = () => {
     </div>
   );
 };
+
+export const Navbar: FC = () => {
+  const { publicKey } = useWallet();
+  const router = useRouter();
+  const { data: metaDataQuery } = useGetTokenDetails({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
+  return (
+    <>
+      <div className="flex sm:hidden justify-between w-full navbar items-center px-4 z-20">
+        <Logo styles="w-10 h-10" hideLogo={true} />
+        <button
+          onClick={() =>
+            publicKey &&
+            router.push(
+              `/profile?mintId=${getDerivedMint(publicKey).toBase58()}`
+            )
+          }
+          className="relative w-10 h-10 mask mask-circle"
+        >
+          {metaDataQuery && metaDataQuery.content?.links?.image ? (
+            <Image
+              src={metaDataQuery?.content?.links?.image}
+              className={`object-cover`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              alt={'profile pic'}
+            />
+          ) : (
+            <IconUserCircle size={32} />
+          )}
+        </button>
+      </div>
+      <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
+        <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
+          <div className="relative w-8 h-8">
+            <Image
+              src={logo}
+              alt={'logo'}
+              className={`object-cover`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+          <span className="hidden md:block font-luckiestguy text-3xl leading-[0.75]">
+            BlinksFeed
+          </span>
+        </Link>
+        {publicKey && <SearchBar />}
+        <div className="flex gap-1 w-fit items-center">
+          {publicKey && (
+            <div className="hidden md:flex w-36">
+              <UploadBtn />
+            </div>
+          )}
+          <SignInBtn />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export function AppHero({
+  children,
+  title,
+  subtitle,
+}: {
+  children?: ReactNode;
+  title: ReactNode;
+  subtitle: ReactNode;
+}) {
+  return (
+    <div className={`hero pb-[32px]`}>
+      <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
+        <div className="flex flex-col gap-8 w-full items-center justify-center text-center lg:text-left lg:items-start">
+          {typeof title === 'string' ? (
+            <h1 className="max-w-2xl text-3xl lg:text-5xl font-bold">
+              {title}
+            </h1>
+          ) : (
+            title
+          )}
+          {typeof subtitle === 'string' ? (
+            <p className="py-6 max-w-xl">{subtitle}</p>
+          ) : (
+            subtitle
+          )}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}

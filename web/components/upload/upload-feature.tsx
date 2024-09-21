@@ -48,7 +48,7 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
 
   return (
     <div className="flex flex-col h-full w-full items-center">
-      <div className="flex flex-col gap-8 my-4 items-center w-full p-4 pb-32">
+      <div className="flex flex-col gap-8 my-4 items-center w-full p-4 animate-fade-right animate-duration-200 sm:animate-none">
         <span className="text-3xl md:text-4xl lg:text-4xl text-base-content">
           {id ? 'Edit Post' : 'Create a New Post'}
         </span>

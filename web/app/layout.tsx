@@ -1,4 +1,6 @@
+import { AuthenticationProvider } from '@/components/authentication/authentication-provider';
 import { SolanaProvider } from '@/components/solana/solana-provider';
+import { TelegramProvider } from '@/components/telegram/telegram-provider';
 import { UiLayout } from '@/components/ui/ui-layout';
 import './global.css';
 import { ReactQueryProvider } from './react-query-provider';
@@ -18,7 +20,11 @@ export default function RootLayout({
       <body>
         <SolanaProvider>
           <ReactQueryProvider>
-            <UiLayout>{children}</UiLayout>
+            <AuthenticationProvider>
+              <TelegramProvider>
+                <UiLayout>{children}</UiLayout>
+              </TelegramProvider>
+            </AuthenticationProvider>
           </ReactQueryProvider>
         </SolanaProvider>
       </body>

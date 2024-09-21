@@ -1,92 +1,17 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
-import {
-  onAuthStateChanged,
-  signInAnonymously,
-  signInWithCustomToken,
-} from 'firebase/auth';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FC, ReactNode, Suspense, useEffect, useRef } from 'react';
+import { ReactNode, Suspense } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import logo from '../../public/images/logo.png';
-import { auth } from '../../utils/firebase/firebase';
-import {
-  createLoginMessage,
-  verifyAndGetToken,
-} from '../../utils/firebase/functions';
-import {
-  AuthenticationDropdownMenu,
-  SignInBtn,
-} from '../authentication/authentication-ui';
-import { Logo } from '../landingpage/landingpage-feature';
-import SearchBar from '../search/search-ui';
+import { AuthenticationDropdownMenu } from '../authentication/authentication-ui';
 import { RightColumn } from '../trending/trending-feature';
-import { UploadBtn } from '../upload/upload-ui';
+import { Navbar } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const { publicKey, signMessage, disconnect } = useWallet();
-  const isLoggingInRef = useRef(false);
-
-  const signOut = async () => {
-    if (auth.currentUser) {
-      await auth.signOut();
-    }
-    if (publicKey) {
-      await disconnect();
-    }
-  };
-  const handleLogin = async (
-    publicKey: PublicKey,
-    signMessage: (message: Uint8Array) => Promise<Uint8Array>
-  ) => {
-    if (isLoggingInRef.current) return; // Prevent re-entry if already logging in
-    isLoggingInRef.current = true;
-    try {
-      if (
-        (auth.currentUser && publicKey.toBase58() !== auth.currentUser.uid) ||
-        !auth.currentUser ||
-        auth.currentUser.isAnonymous
-      ) {
-        let currentUser = auth.currentUser;
-        if (!currentUser) {
-          currentUser = (await signInAnonymously(auth)).user;
-        }
-        const sessionKey = await currentUser.getIdToken();
-        const message = createLoginMessage(sessionKey);
-        const output = await signMessage(new TextEncoder().encode(message));
-        const token = await verifyAndGetToken(publicKey, output);
-        // Sign in with Firebase Authentication using a custom token.
-        await signInWithCustomToken(auth, token);
-      }
-    } catch (error) {
-      signOut();
-    } finally {
-      isLoggingInRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (
-        publicKey &&
-        signMessage &&
-        ((user && publicKey.toBase58() !== user.uid) ||
-          !user ||
-          user.isAnonymous)
-      ) {
-        handleLogin(publicKey, signMessage);
-      }
-    });
-
-    // Clean up the subscription on unmount
-    return () => unsubscribe();
-  }, [publicKey, signMessage]);
-
-  const path = usePathname();
+  const { publicKey } = useWallet();
+  const currentPath = usePathname();
 
   return (
     <div className="flex w-full bg-base-100 min-h-screen flex-1">
@@ -99,14 +24,14 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 <span className="loading loading-spinner loading-lg"></span>
               }
             >
-              {(!!publicKey || path != '/') && (
+              {(!!publicKey || currentPath != '/') && (
                 <ul className="hidden min-[1800px]:flex flex-col menu menu-primary bg-base-100 fixed z-10 border-base-300 border-r left-0 gap-2 min-h-screen w-full flex-1 max-w-[250px]">
                   <AuthenticationDropdownMenu />
                 </ul>
               )}
               {children}
               {!!publicKey &&
-                (path != '/' ? (
+                (currentPath != '/' ? (
                   <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
                 ) : (
                   <RightColumn />
@@ -118,137 +43,6 @@ export function UiLayout({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
-}
-
-export const Navbar: FC = () => {
-  const { publicKey } = useWallet();
-  return (
-    <>
-      <div className="flex sm:hidden justify-center w-full navbar items-center px-4 z-20">
-        <Logo styles="w-10 h-10" hideLogo={true} />
-      </div>
-      <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
-        <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
-          <div className="relative w-8 h-8">
-            <Image
-              src={logo}
-              alt={'logo'}
-              className={`object-cover`}
-              fill={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-          <span className="hidden md:block font-luckiestguy text-3xl font-bold leading-[0.75]">
-            BlinksFeed
-          </span>
-        </Link>
-        {publicKey && <SearchBar />}
-        <div className="flex gap-1 w-fit items-center">
-          {publicKey && (
-            <div className="hidden md:flex w-36">
-              <UploadBtn />
-            </div>
-          )}
-          <SignInBtn />
-        </div>
-      </div>
-    </>
-  );
-};
-
-export function AppModal({
-  children,
-  title,
-  hide,
-  show,
-  submit,
-  submitDisabled,
-  submitLabel,
-}: {
-  children: ReactNode;
-  title: string;
-  hide: () => void;
-  show: boolean;
-  submit?: () => void;
-  submitDisabled?: boolean;
-  submitLabel?: string;
-}) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
-
-  useEffect(() => {
-    if (!dialogRef.current) return;
-    if (show) {
-      dialogRef.current.showModal();
-    } else {
-      dialogRef.current.close();
-    }
-  }, [show, dialogRef]);
-
-  return (
-    <dialog className="modal" ref={dialogRef}>
-      <div className="modal-box space-y-5">
-        <h3 className="font-bold text-lg">{title}</h3>
-        {children}
-        <div className="modal-action">
-          <div className="join space-x-2">
-            {submit ? (
-              <button
-                className="btn btn-xs lg:btn-md btn-primary"
-                onClick={submit}
-                disabled={submitDisabled}
-              >
-                {submitLabel || 'Save'}
-              </button>
-            ) : null}
-            <button onClick={hide} className="btn">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </dialog>
-  );
-}
-
-export function AppHero({
-  children,
-  title,
-  subtitle,
-}: {
-  children?: ReactNode;
-  title: ReactNode;
-  subtitle: ReactNode;
-}) {
-  return (
-    <div className={`hero pb-[32px]`}>
-      <div className="hero-content flex flex-col lg:flex-row gap-4 max-w-5xl items-center justify-center w-full">
-        <div className="flex flex-col gap-8 w-full items-center justify-center text-center lg:text-left lg:items-start">
-          {typeof title === 'string' ? (
-            <h1 className="max-w-2xl text-3xl lg:text-5xl font-bold">
-              {title}
-            </h1>
-          ) : (
-            title
-          )}
-          {typeof subtitle === 'string' ? (
-            <p className="py-6 max-w-xl">{subtitle}</p>
-          ) : (
-            subtitle
-          )}
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-export function ellipsify(str = '', len = 4) {
-  if (str.length > 30) {
-    return (
-      str.substring(0, len) + '..' + str.substring(str.length - len, str.length)
-    );
-  }
-  return str;
 }
 
 export function useTransactionToast() {
