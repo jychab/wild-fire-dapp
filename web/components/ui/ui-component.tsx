@@ -12,7 +12,7 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import logo from '../../public/images/logo.png';
 import { SignInBtn } from '../authentication/authentication-ui';
@@ -100,32 +100,35 @@ export const Navbar: FC = () => {
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
+  const path = usePathname();
   return (
     <>
-      <div className="flex sm:hidden justify-between w-full navbar items-center px-4 z-20">
-        <Logo styles="w-10 h-10" hideLogo={true} />
-        <button
-          onClick={() =>
-            publicKey &&
-            router.push(
-              `/profile?mintId=${getDerivedMint(publicKey).toBase58()}`
-            )
-          }
-          className="relative w-10 h-10 mask mask-circle"
-        >
-          {metaDataQuery && metaDataQuery.content?.links?.image ? (
-            <Image
-              src={metaDataQuery?.content?.links?.image}
-              className={`object-cover`}
-              fill={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              alt={'profile pic'}
-            />
-          ) : (
-            <IconUserCircle size={32} />
-          )}
-        </button>
-      </div>
+      {(publicKey || path !== '/') && (
+        <div className="flex sm:hidden justify-between w-full navbar items-center px-4 z-20">
+          <Logo styles="w-10 h-10" hideLogo={true} />
+          <button
+            onClick={() =>
+              publicKey &&
+              router.push(
+                `/profile?mintId=${getDerivedMint(publicKey).toBase58()}`
+              )
+            }
+            className="relative w-10 h-10 mask mask-circle"
+          >
+            {metaDataQuery && metaDataQuery.content?.links?.image ? (
+              <Image
+                src={metaDataQuery?.content?.links?.image}
+                className={`object-cover`}
+                fill={true}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                alt={'profile pic'}
+              />
+            ) : (
+              <IconUserCircle size={32} />
+            )}
+          </button>
+        </div>
+      )}
       <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
         <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
           <div className="relative w-8 h-8">
