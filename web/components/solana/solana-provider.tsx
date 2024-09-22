@@ -23,8 +23,7 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
             botDisplayPic: 'https://buckets.blinksfeed.com/blinksfeed/logo.png',
             botDirectLink: 'https://t.me/blinksfeedbot/blinksfeed',
             rpcEndpoint: 'https://rpc.blinksfeed.com',
-            backendEndpoint:
-              'https://us-central1-token-60450.cloudfunctions.net/api',
+            backendEndpoint: 'https://api-733yg2bcpq-uc.a.run.app',
             botUsername: 'blinksfeedbot',
           },
           autoConnect: true,
