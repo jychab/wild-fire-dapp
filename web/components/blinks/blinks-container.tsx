@@ -28,6 +28,7 @@ import { PostBlinksDetail } from '@/utils/types/post';
 import { ActionPostResponse } from '@solana/actions-spec';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { FC, useEffect, useMemo, useReducer, useState } from 'react';
+import { useUnifiedWalletContext } from 'unified-wallet-adapter-with-telegram';
 import { AbstractActionComponent } from '../actions/abstract-action-component';
 import { Action } from '../actions/action';
 import { ButtonActionComponent } from '../actions/button-action-component';
@@ -76,6 +77,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   hideCarousel,
   hideCaption,
 }) => {
+  const { setShowModal } = useUnifiedWalletContext();
   const [action, setAction] = useState<Action | undefined | null>(
     initialAction
   );
@@ -298,6 +300,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       const account = await action?.adapter.connect(context);
 
       if (!account) {
+        setShowModal(true);
         dispatchExecution({ type: ExecutionType.RESET });
         return;
       }

@@ -3,7 +3,7 @@
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { fetchPost } from '@/utils/helper/post';
 import { isTMA, retrieveLaunchParams } from '@telegram-apps/sdk';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   createContext,
   ReactNode,
@@ -11,7 +11,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useWallet } from 'unified-wallet-adapter-with-telegram';
 
 const TelegramContext = createContext<{ isOnTelegram: boolean }>({
   isOnTelegram: false,
@@ -20,8 +19,6 @@ const TelegramContext = createContext<{ isOnTelegram: boolean }>({
 export const useTelegramContext = () => useContext(TelegramContext);
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [isOnTelegram, setIsOnTelegram] = useState(false);
-  const { publicKey } = useWallet();
-  const path = usePathname();
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +40,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         }
       }
     });
-  }, [path, publicKey, router]);
+  }, [router]);
 
   return (
     <TelegramContext.Provider value={{ isOnTelegram }}>
