@@ -73,7 +73,7 @@ export const TrendingTable: FC = () => {
 
   return (
     <div className="border border-base-300 flex flex-col w-full rounded-box p-4">
-      <span className="text-base font-semibold">Trending Tokens</span>
+      <span className="text-base font-semibold">Trending Creators</span>
       {loading ? (
         <div className="flex items-center justify-center">
           <div className="loading loading-dots" />

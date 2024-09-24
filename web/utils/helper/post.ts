@@ -1,5 +1,11 @@
-import { PostContent } from '../types/post';
-import { generatePostApiEndPoint } from './endpoints';
+import { PublicKey } from '@solana/web3.js';
+import { GetPostsResponse, PostContent } from '../types/post';
+import {
+  generateAddressApiEndPoint,
+  generatePostApiEndPoint,
+  proxify,
+} from './endpoints';
+import { typeSenseClient } from './typesense';
 
 export async function fetchPost(mint: string | null, postId: string | null) {
   if (!mint || !postId) return null;
@@ -10,6 +16,34 @@ export async function fetchPost(mint: string | null, postId: string | null) {
   ).json();
   let post = response as PostContent | undefined;
   return post;
+}
+
+export async function fetchPostByAddress(address: PublicKey) {
+  const result = await fetch(proxify(generateAddressApiEndPoint(address)));
+  const posts = (await result.json()) as GetPostsResponse | undefined;
+  return posts;
+}
+
+export async function fetchPostByCategories(
+  collections: string,
+  search: string,
+  query_by: string
+) {
+  const searchResults = await typeSenseClient
+    .collections(collections)
+    .documents()
+    .search(
+      {
+        q: search,
+        query_by: query_by,
+      },
+      { cacheSearchResultsForSeconds: 5 * 60 }
+    );
+
+  if (searchResults.hits) {
+    return searchResults.hits.map((x) => x.document as any);
+  }
+  return null;
 }
 
 export function generateRandomU64Number() {

@@ -2,7 +2,7 @@
 
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { placeholderImage } from '@/utils/helper/placeholder';
-import { typeSenseClient } from '@/utils/helper/typesense';
+import { fetchPostByCategories } from '@/utils/helper/post';
 import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import Image from 'next/image';
@@ -16,36 +16,20 @@ function SearchBar() {
     { name: string; symbol: string; mint: string; das: string }[]
   >([]);
   useEffect(() => {
-    typeSenseClient
-      .collections('post')
-      .documents()
-      .search(
-        {
-          q: search,
-          query_by: 'title,tags,description',
-        },
-        { cacheSearchResultsForSeconds: 5 * 60 }
-      )
-      .then(function (searchResults) {
-        if (searchResults.hits) {
-          setPosts(searchResults.hits.map((x) => x.document as PostContent));
+    fetchPostByCategories('post', search, 'tags,title,description').then(
+      (result) => {
+        if (result) {
+          setPosts(result);
         }
-      });
-    typeSenseClient
-      .collections('creators')
-      .documents()
-      .search(
-        {
-          q: search,
-          query_by: 'name,symbol,mint',
-        },
-        { cacheSearchResultsForSeconds: 5 * 60 }
-      )
-      .then(function (searchResults) {
-        if (searchResults.hits) {
-          setCreators(searchResults.hits.map((x) => x.document as any));
+      }
+    );
+    fetchPostByCategories('creators', search, 'name,symbol,mint').then(
+      (result) => {
+        if (result) {
+          setCreators(result);
         }
-      });
+      }
+    );
   }, [search]);
 
   return (

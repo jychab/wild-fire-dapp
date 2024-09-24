@@ -1,21 +1,18 @@
 import revalidateTags from '@/app/action';
-import { SHORT_STALE_TIME } from '@/utils/consts';
 import {
   deleteCampaign,
   deletePost,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
-import { generateAddressApiEndPoint, proxify } from '@/utils/helper/endpoints';
 import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
-import { GetPostsResponse } from '@/utils/types/post';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -88,21 +85,3 @@ export function useRemoveContentMutation({
     },
   });
 }
-
-export const useGetPostsFromAddress = ({
-  address,
-}: {
-  address: PublicKey | null;
-}) => {
-  return useQuery({
-    queryKey: ['get-posts-from-address', { address }],
-    queryFn: async () => {
-      if (!address) return null;
-      const result = await fetch(proxify(generateAddressApiEndPoint(address)));
-      const posts = (await result.json()) as GetPostsResponse | undefined;
-      return posts;
-    },
-    enabled: !!address,
-    staleTime: SHORT_STALE_TIME,
-  });
-};

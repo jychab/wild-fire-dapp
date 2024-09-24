@@ -1,29 +1,37 @@
 'use client';
 
+import { fetchPostByAddress } from '@/utils/helper/post';
+import { GetPostsResponse } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
 import logo from '../../public/images/logo.png';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { useGetPostsFromAddress } from '../content/content-data-access';
 import { DisplayContent } from '../content/content-ui';
 import { useTelegramContext } from '../telegram/telegram-provider';
 import { AppHero } from '../ui/ui-component';
 
 export const LandingPage: FC = () => {
   const [mounted, setMounted] = useState(false);
+  const [posts, setPosts] = useState<GetPostsResponse | undefined | null>();
   const { isOnTelegram } = useTelegramContext();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { data: posts } = useGetPostsFromAddress({
-    address: isOnTelegram
-      ? null
-      : new PublicKey('1nc1nerator11111111111111111111111111111111'),
-  });
+  useEffect(() => {
+    if (isOnTelegram && mounted) {
+      fetchPostByAddress(
+        new PublicKey('11111111111111111111111111111111')
+      ).then((result) => {
+        if (result) {
+          setPosts(result);
+        }
+      });
+    }
+  }, [isOnTelegram, mounted]);
 
   if (!mounted) {
     return null; // Or a loading skeleton
@@ -53,6 +61,7 @@ export const LandingPage: FC = () => {
             <div className="camera"></div>
             <div className="display w-full">
               <div className="artboard artboard-demo bg-base-100 h-[600px] overflow-y-scroll scrollbar-none">
+                <Logo />
                 <div className="grid grid-cols-1 h-full w-full ">
                   {posts?.posts?.map((x) => (
                     <DisplayContent
@@ -66,7 +75,6 @@ export const LandingPage: FC = () => {
                       expandAll={true}
                     />
                   ))}
-                  <div className=""></div>
                 </div>
               </div>
             </div>
