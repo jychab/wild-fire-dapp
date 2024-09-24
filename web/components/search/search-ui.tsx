@@ -1,5 +1,6 @@
 'use client';
 
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { typeSenseClient } from '@/utils/helper/typesense';
 import { DAS } from '@/utils/types/das';
@@ -69,7 +70,7 @@ function SearchBar() {
           <li key={x.id} className="w-full">
             <Link
               className="flex w-full items-center"
-              href={`/profile?mintId=${x.mint}`}
+              href={useRelativePathIfPossbile(x.url)}
             >
               <div className="w-8 h-8 relative mask mask-circle">
                 <Image

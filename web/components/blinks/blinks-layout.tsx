@@ -281,8 +281,8 @@ export const ActionContent = ({
           ))}
         </div>
       )}
-      {inputs?.map((input) => (
-        <ActionInputFactory key={input.name} {...input} />
+      {inputs?.map((input, index) => (
+        <ActionInputFactory key={index} {...input} />
       ))}
     </div>
   );
