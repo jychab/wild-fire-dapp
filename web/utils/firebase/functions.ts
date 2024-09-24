@@ -135,7 +135,7 @@ export function createLoginMessage(sessionKey: string) {
 }
 
 export async function uploadMetadata(payload: string, address: PublicKey) {
-  const path = `${address.toBase58()}/${generateRandomU64Number()}/metadata.json`;
+  const path = `${address.toBase58()}/metadata/${generateRandomU64Number()}.json`;
   const payloadRef = ref(storage, path);
   await uploadString(payloadRef, payload);
   return 'https://' + payloadRef.bucket + '/' + path;

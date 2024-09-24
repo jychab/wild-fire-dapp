@@ -9,6 +9,7 @@
   },
   "private": true,
   "dependencies": {
+    "@babel/runtime": "^7.25.6",
     "@coral-xyz/anchor": "^0.30.1",
     "@solana/spl-token": "0.4.6",
     "@solana/wallet-adapter-base": "^0.9.23",
@@ -31,7 +32,8 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hot-toast": "2.4.1",
-    "unified-wallet-adapter-with-telegram": "0.1.31"
+    "unified-wallet-adapter-with-telegram": "0.1.31",
+    "typesense": "^1.8.2"
   },
   "devDependencies": {
     "@nx/eslint": "19.0.0",

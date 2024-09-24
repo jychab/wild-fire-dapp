@@ -129,7 +129,7 @@ export const UploadPost: FC<{
         postId: id || generateRandomU64Number().toString(),
       }));
     }
-  }, [postCampaign, tempCampaign, mint, id]);
+  }, [postCampaign, mint, id]);
 
   const [postLoaded, setPostLoaded] = useState(false);
   useEffect(() => {
