@@ -1,7 +1,7 @@
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
 import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
-import { generatePostEndPoint } from '@/utils/helper/endpoints';
+import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC, useCallback, useState } from 'react';
@@ -51,9 +51,11 @@ export const UploadContentBtn: FC<{
           toast.error('Unable to unfurl to action api url');
           return;
         }
+        const response = await (await fetch(proxify(apiUrl))).json();
 
         await uploadMutation.mutateAsync({
           postContent: {
+            ...response,
             url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
             mint: mint.toBase58(),
             id: postId,

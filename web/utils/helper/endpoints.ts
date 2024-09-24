@@ -11,10 +11,10 @@ export function generateAddressApiEndPoint(address: PublicKey) {
 export function generatePostEndPoint(
   mint: string,
   id: string,
-  blinks?: string
+  blinksApiUrl?: string
 ) {
   return `https://blinksfeed.com/post?mint=${mint}&id=${id}${
-    blinks ? `&action=solana-action:${blinks}` : ''
+    blinksApiUrl ? `&action=solana-action:${blinksApiUrl}` : ''
   }`;
 }
 
