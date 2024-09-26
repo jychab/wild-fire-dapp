@@ -19,6 +19,18 @@ export async function deleteCampaign(id?: number, postId?: string) {
   await deleteCampaign({ id, postId });
 }
 
+export async function getAvailableAmountInEscrow(
+  mint: string,
+  tokenProgram: string
+) {
+  const getAvailableAmountInEscrow = httpsCallable(
+    functions,
+    'getAvailableAmountInEscrow'
+  );
+  const result = await getAvailableAmountInEscrow({ mint, tokenProgram });
+  return result.data as number;
+}
+
 export async function withdrawFromCampaign(
   id: number,
   amount: number,
@@ -100,21 +112,6 @@ export async function updateMetadataInstruction(
   );
   const result = await updateMetadataInstruction({ mint, fieldsToUpdate });
   return result.data as string;
-}
-
-export async function sendLike(
-  postMint: string,
-  postId: string,
-  amount: number,
-  commentId?: string
-) {
-  const sendLike = httpsCallable(functions, 'sendLike');
-  await sendLike({
-    postMint,
-    postId,
-    commentId,
-    amount,
-  });
 }
 
 export async function verifyAndGetToken(

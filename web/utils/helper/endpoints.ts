@@ -52,7 +52,6 @@ export function useRelativePathIfPossbile(urlString: string) {
       return urlString; // Or handle as needed
     }
   } catch (error) {
-    console.error('Invalid URL:', error);
-    return ''; // Return an empty string or handle as needed
+    return urlString;
   }
 }

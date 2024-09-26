@@ -5,7 +5,6 @@ import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconLogout,
-  IconRocket,
   IconSquarePlus,
   IconStar,
   IconTransactionBitcoin,
@@ -142,20 +141,12 @@ export const AuthenticationDropdownMenu: FC = () => {
           </Link>
         </li>
       ) : (
-        <>
-          <li className="w-full">
-            <Link href={`/airdrop`}>
-              <IconRocket />
-              Airdrop Campaigns
-            </Link>
-          </li>
-          <li className="w-full">
-            <Link href={`/transactions`}>
-              <IconTransactionBitcoin />
-              Transactions
-            </Link>
-          </li>
-        </>
+        <li className="w-full">
+          <Link href={`/transactions`}>
+            <IconTransactionBitcoin />
+            Transactions
+          </Link>
+        </li>
       )}
       <li className="w-full">
         <ThemeComponent />

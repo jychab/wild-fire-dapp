@@ -41,7 +41,10 @@ export function useRemoveContentMutation({
         return;
       let signature: TransactionSignature = '';
       try {
-        if (postCampaign?.budget) {
+        if (
+          postCampaign?.budget &&
+          postCampaign.mintToSend != mint.toBase58()
+        ) {
           const { partialTx } = await withdrawFromCampaign(
             postCampaign.id,
             postCampaign.tokensRemaining,

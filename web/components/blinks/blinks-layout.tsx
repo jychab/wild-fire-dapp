@@ -190,7 +190,7 @@ export const ActionLayout = ({
 }: LayoutProps) => {
   return (
     <div
-      className={`flex animate-fade border-base-300 flex-col ${
+      className={`flex animate-fade duration-100 border-base-300 flex-col ${
         !hideBorder ? `${multiGrid ? 'border' : 'sm:border'}` : ``
       } bg-base-100 rounded w-full`}
     >

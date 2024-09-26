@@ -3,7 +3,6 @@
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { fetchPostByCategories } from '@/utils/helper/post';
-import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,9 +11,7 @@ import { useEffect, useState } from 'react';
 function SearchBar() {
   const [search, setSearch] = useState('');
   const [posts, setPosts] = useState<PostContent[]>([]);
-  const [creators, setCreators] = useState<
-    { name: string; symbol: string; mint: string; das: string }[]
-  >([]);
+  const [creators, setCreators] = useState<any[]>([]);
   useEffect(() => {
     fetchPostByCategories('post', search, 'tags,title,description').then(
       (result) => {
@@ -86,10 +83,7 @@ function SearchBar() {
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
-                  src={
-                    (JSON.parse(x?.das) as DAS.GetAssetResponse).content?.links
-                      ?.image || placeholderImage
-                  }
+                  src={x.image || placeholderImage}
                 />
               </div>
               <div className="flex flex-col">

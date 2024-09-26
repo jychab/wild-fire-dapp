@@ -1,42 +1,14 @@
-'use client';
-
-import { fetchPostByAddress } from '@/utils/helper/post';
-import { GetPostsResponse } from '@/utils/types/post';
-import { PublicKey } from '@solana/web3.js';
+import { fetchPostByCategories } from '@/utils/helper/post';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useEffect, useState } from 'react';
+import { FC } from 'react';
 import logo from '../../public/images/logo.png';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { DisplayContent } from '../content/content-ui';
-import { useTelegramContext } from '../telegram/telegram-provider';
 import { AppHero } from '../ui/ui-component';
 
-export const LandingPage: FC = () => {
-  const [mounted, setMounted] = useState(false);
-  const [posts, setPosts] = useState<GetPostsResponse | undefined | null>();
-  const { isOnTelegram } = useTelegramContext();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isOnTelegram && mounted) {
-      fetchPostByAddress(
-        new PublicKey('11111111111111111111111111111111')
-      ).then((result) => {
-        if (result) {
-          setPosts(result);
-        }
-      });
-    }
-  }, [isOnTelegram, mounted]);
-
-  if (!mounted) {
-    return null; // Or a loading skeleton
-  }
-
+export const LandingPage: FC = async () => {
+  const posts = await fetchPostByCategories('post', 'memes', 'tags');
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <Logo />
@@ -61,9 +33,9 @@ export const LandingPage: FC = () => {
             <div className="camera"></div>
             <div className="display w-full">
               <div className="artboard artboard-demo bg-base-100 h-[600px] overflow-y-scroll scrollbar-none">
-                <Logo />
                 <div className="grid grid-cols-1 h-full w-full ">
-                  {posts?.posts?.map((x) => (
+                  <div className="py-4" />
+                  {posts?.map((x) => (
                     <DisplayContent
                       key={x.id}
                       blinksDetail={x}

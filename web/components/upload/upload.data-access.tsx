@@ -5,7 +5,7 @@ import { db } from '@/utils/firebase/firebase';
 import {
   createOrEditCampaign,
   createOrEditPost,
-  withdrawFromCampaign,
+  getAvailableAmountInEscrow,
 } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
 import {
@@ -23,11 +23,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  PublicKey,
-  TransactionSignature,
-  VersionedTransaction,
-} from '@solana/web3.js';
+import { Connection, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -59,13 +55,17 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
       let signature: TransactionSignature = '';
       try {
-        if (postCampaign && postCampaign.mintToSend) {
+        if (
+          postCampaign &&
+          postCampaign.mintToSend &&
+          postCampaign.mintToSendTokenProgram
+        ) {
           const currentTokensRemaining =
             postCampaign?.initialTokensRemaining || 0;
-          const difference =
+          let difference =
             (postCampaign.tokensRemaining || 0) - currentTokensRemaining;
           const differenceAmountAfterTransferFee =
-            difference > 0 && postCampaign.mintToSendTokenProgram
+            difference > 0
               ? await getAmountAfterTransferFee(
                   difference,
                   new PublicKey(postCampaign.mintToSend),
@@ -78,80 +78,25 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             differenceAmountAfterTransferFee;
           postCampaign.tokensRemaining =
             currentTokensRemaining + differenceAmountAfterTransferFee;
-
+          const currentBalance = await getAvailableAmountInEscrow(
+            postCampaign.mintToSend,
+            postCampaign.mintToSendTokenProgram
+          );
+          difference = difference - Math.max(currentBalance, 0);
           if (difference > 0) {
-            const tokenProgram = postCampaign.mintToSendTokenProgram
-              ? new PublicKey(postCampaign.mintToSendTokenProgram)
-              : TOKEN_2022_PROGRAM_ID;
-            const source = getAssociatedTokenAddressSync(
-              new PublicKey(postCampaign.mintToSend),
+            const ixs = await buildSendToDistributorIxs(
+              postCampaign,
               wallet.publicKey,
-              false,
-              tokenProgram
-            );
-            const destination = getAssociatedTokenAddressSync(
+              mint,
               new PublicKey(postCampaign.mintToSend),
-              getAssociatedTokenStateAccount(mint),
-              true,
-              tokenProgram
-            );
-            const ixs = [];
-            try {
-              await getAccount(
-                connection,
-                destination,
-                undefined,
-                tokenProgram
-              );
-            } catch (e) {
-              ixs.push(
-                createAssociatedTokenAccountIdempotentInstruction(
-                  wallet.publicKey,
-                  destination,
-                  getAssociatedTokenStateAccount(mint),
-                  new PublicKey(postCampaign.mintToSend),
-                  tokenProgram
-                )
-              );
-            }
-            ixs.push(
-              createTransferCheckedInstruction(
-                source,
-                new PublicKey(postCampaign.mintToSend),
-                destination,
-                wallet.publicKey,
-                Math.round(
-                  difference * 10 ** (postCampaign.mintToSendDecimals || 0)
-                ),
-                postCampaign.mintToSendDecimals || 0,
-                undefined,
-                tokenProgram
-              )
+              connection,
+              difference
             );
             signature = await buildAndSendTransaction({
               connection,
               ixs,
               signTransaction: wallet.signTransaction,
               publicKey: wallet.publicKey,
-            });
-          } else if (
-            postCampaign?.id &&
-            postCampaign.postId &&
-            difference < 0
-          ) {
-            const { partialTx } = await withdrawFromCampaign(
-              postCampaign.id,
-              -1 * difference,
-              postCampaign.postId
-            );
-            const partialSignedTx = VersionedTransaction.deserialize(
-              Buffer.from(partialTx, 'base64')
-            );
-            signature = await buildAndSendTransaction({
-              connection,
-              publicKey: wallet.publicKey,
-              partialSignedTx,
-              signTransaction: wallet.signTransaction,
             });
           }
         }
@@ -198,6 +143,59 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
   });
+}
+
+async function buildSendToDistributorIxs(
+  postCampaign: Partial<TempPostCampaign>,
+  publicKey: PublicKey,
+  mint: PublicKey,
+  mintToSend: PublicKey,
+  connection: Connection,
+  difference: number
+) {
+  const tokenProgram = postCampaign.mintToSendTokenProgram
+    ? new PublicKey(postCampaign.mintToSendTokenProgram)
+    : TOKEN_2022_PROGRAM_ID;
+  const source = getAssociatedTokenAddressSync(
+    mintToSend,
+    publicKey,
+    false,
+    tokenProgram
+  );
+  const escrowAccount = getAssociatedTokenStateAccount(mint);
+  const destination = getAssociatedTokenAddressSync(
+    mintToSend,
+    escrowAccount,
+    true,
+    tokenProgram
+  );
+  const ixs = [];
+  try {
+    await getAccount(connection, destination, undefined, tokenProgram);
+  } catch (e) {
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        publicKey,
+        destination,
+        escrowAccount,
+        mintToSend,
+        tokenProgram
+      )
+    );
+  }
+  ixs.push(
+    createTransferCheckedInstruction(
+      source,
+      mintToSend,
+      destination,
+      publicKey,
+      Math.round(difference * 10 ** (postCampaign.mintToSendDecimals || 0)),
+      postCampaign.mintToSendDecimals || 0,
+      undefined,
+      tokenProgram
+    )
+  );
+  return ixs;
 }
 
 export function useGetPostCampaign({
