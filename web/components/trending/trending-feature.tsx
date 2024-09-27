@@ -44,6 +44,7 @@ export const TrendingTable: FC = () => {
         image: metadata?.content?.links?.image,
         name: metadata?.content?.metadata.name,
         price: x.price,
+        supply: x.supply,
         holders: holders?.currentHoldersCount,
         holders24HrPercent: holders?.holdersChange24hPercent,
       };
@@ -57,6 +58,7 @@ export const TrendingTable: FC = () => {
       image?: string;
       name?: string;
       price: number;
+      supply: number;
       holders?: number;
       holders24HrPercent?: number;
     }[]
@@ -85,7 +87,7 @@ export const TrendingTable: FC = () => {
             <thead>
               <tr>
                 <th>Token</th>
-                <th>Price</th>
+                <th>Market Cap</th>
               </tr>
             </thead>
             <tbody>
@@ -133,7 +135,7 @@ export const TrendingTable: FC = () => {
                       className="link link-hover link-primary"
                       href={`/profile?mintId=${x.mint}&tab=trade`}
                     >
-                      {`$${formatLargeNumber(x.price)}`}
+                      {`$${formatLargeNumber(x.price * x.supply)}`}
                     </Link>
                   </td>
                 </tr>

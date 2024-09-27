@@ -447,12 +447,7 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                   </td>
                   <td className="w-auto text-xs">
                     {`${(metadata.token_info?.supply
-                      ? (Number(x.amount) /
-                          (metadata?.token_info?.supply /
-                            10 **
-                              (metadata?.token_info?.decimals ||
-                                DEFAULT_MINT_DECIMALS))) *
-                        100
+                      ? (Number(x.amount) / metadata?.token_info?.supply) * 100
                       : 0
                     ).toFixed(2)}%`}
                   </td>

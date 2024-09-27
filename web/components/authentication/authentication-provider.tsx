@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   signInWithCustomToken,
+  User,
 } from 'firebase/auth';
 import { createContext, ReactNode, useEffect, useRef } from 'react';
 import { auth } from '../../utils/firebase/firebase';
@@ -59,17 +60,25 @@ export function AuthenticationProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  async function handleAuth(
+    publicKey: PublicKey | null,
+    signMessage: ((message: Uint8Array) => Promise<Uint8Array>) | undefined,
+    user: User | null
+  ) {
+    if (
+      publicKey &&
+      signMessage &&
+      ((user && publicKey.toBase58() !== user.uid) || !user || user.isAnonymous)
+    ) {
+      await handleLogin(publicKey, signMessage);
+    } else if (!publicKey && !user) {
+      await signInAnonymously(auth);
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (
-        publicKey &&
-        signMessage &&
-        ((user && publicKey.toBase58() !== user.uid) ||
-          !user ||
-          user.isAnonymous)
-      ) {
-        handleLogin(publicKey, signMessage);
-      }
+      handleAuth(publicKey, signMessage, user);
     });
 
     // Clean up the subscription on unmount

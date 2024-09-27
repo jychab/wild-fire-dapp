@@ -17,6 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://proxify.blinksfeed.com" />
+        <link rel="preconnect" href="googleapis.com" />
+        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+      </head>
       <body>
         <SolanaProvider>
           <ReactQueryProvider>
