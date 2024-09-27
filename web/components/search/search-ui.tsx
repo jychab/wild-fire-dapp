@@ -3,32 +3,70 @@
 import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { fetchPostByCategories } from '@/utils/helper/post';
-import { PostContent } from '@/utils/types/post';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+interface SearchResult {
+  id: string;
+  image: string;
+  name: string;
+  url: string;
+  type: 'Blinks' | 'Creator';
+  score: number;
+}
+
+const handleSearch = async (search: string) => {
+  let result: any[] = [];
+  const posts = await fetchPostByCategories(
+    'post',
+    search,
+    'tags,title,description,embedding'
+  );
+  if (posts) {
+    result.push(
+      ...posts?.map(
+        (x): SearchResult => ({
+          id: x.id,
+          image: x.icon,
+          name: x.title,
+          url: x.url,
+          type: 'Blinks',
+          score: x.score,
+        })
+      )
+    );
+  }
+
+  const creators = await fetchPostByCategories(
+    'creators',
+    search,
+    'name,symbol,mint'
+  );
+
+  if (creators) {
+    result.push(
+      ...creators?.map(
+        (x): SearchResult => ({
+          id: x.mint,
+          image: x.image,
+          name: x.name,
+          url: `/profile?mintId=${x.mint}`,
+          type: 'Creator',
+          score: x.score,
+        })
+      )
+    );
+  }
+
+  return result;
+};
+
 function SearchBar() {
   const [search, setSearch] = useState('');
-  const [posts, setPosts] = useState<PostContent[]>([]);
-  const [creators, setCreators] = useState<any[]>([]);
+  const [posts, setPosts] = useState<SearchResult[]>([]);
   useEffect(() => {
-    fetchPostByCategories(
-      'post',
-      search,
-      'tags,title,description,embedding'
-    ).then((result) => {
-      if (result) {
-        setPosts(result);
-      }
-    });
-    fetchPostByCategories('creators', search, 'name,symbol,mint').then(
-      (result) => {
-        if (result) {
-          setCreators(result);
-        }
-      }
-    );
+    handleSearch(search).then((res) => setPosts(res));
   }, [search]);
 
   return (
@@ -46,54 +84,32 @@ function SearchBar() {
         tabIndex={0}
         className="dropdown-content menu border mt-2 border-base-300 bg-base-100 max-h-80 w-full overflow-y-scroll scrollbar-none rounded-box z-[1] gap-2 p-2 shadow"
       >
-        {posts.length > 0 && (
-          <span className="px-4 py-1 bg-base-300 rounded">Blinks</span>
-        )}
-        {posts.map((x) => (
-          <li key={x.id} className="w-full">
-            <Link
-              className="flex w-full items-center"
-              href={useRelativePathIfPossbile(x.url)}
-            >
-              <div className="w-8 h-8 relative mask mask-circle">
-                <Image
-                  className={`object-cover`}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  alt=""
-                  src={x?.icon || placeholderImage}
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold">{x?.title}</span>
-              </div>
-            </Link>
-          </li>
-        ))}
-        {creators.length > 0 && (
-          <span className="px-4 py-1 bg-base-300 rounded">Creators</span>
-        )}
-        {creators.map((x) => (
-          <li key={x.mint} className="w-full">
-            <Link
-              className="flex w-full items-center"
-              href={`/profile?mintId=${x.mint}`}
-            >
-              <div className="w-8 h-8 relative mask mask-circle">
-                <Image
-                  className={`object-cover`}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  alt=""
-                  src={proxify(x.image, true) || placeholderImage}
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold">{x?.name}</span>
-              </div>
-            </Link>
-          </li>
-        ))}
+        {posts
+          .sort((a, b) => b.score - a.score)
+          .map((x) => (
+            <li key={x.id} className="w-full">
+              <Link
+                className="flex w-full items-center"
+                href={useRelativePathIfPossbile(x.url)}
+              >
+                <div className="w-8 h-8 relative mask mask-circle">
+                  <Image
+                    className={`object-cover`}
+                    fill={true}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    alt=""
+                    src={proxify(x?.image, true) || placeholderImage}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">{x?.name}</span>
+                  {x.type == 'Creator' && (
+                    <span className="text-xs stat-desc">{'Creator'}</span>
+                  )}
+                </div>
+              </Link>
+            </li>
+          ))}
       </ul>
     </div>
   );

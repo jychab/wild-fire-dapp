@@ -38,12 +38,19 @@ export async function fetchPostByCategories(
           q: search,
           query_by: query_by,
           sort_by: '_text_match:desc',
+          page: 1,
+          per_page: 10,
         },
         { cacheSearchResultsForSeconds: 5 * 60 }
       );
-
     if (searchResults.hits) {
-      return searchResults.hits.map((x) => x.document as any);
+      return searchResults.hits.map(
+        (x) =>
+          ({
+            ...x.document,
+            score: x.text_match,
+          } as any)
+      );
     }
   }
   return null;
