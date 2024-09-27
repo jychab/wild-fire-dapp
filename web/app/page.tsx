@@ -40,13 +40,11 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
         }
         break;
       default:
-        fetchPostByCategories('post', category, 'tags,embedding').then(
-          (result) => {
-            if (result) {
-              setPosts({ posts: result });
-            }
+        fetchPostByCategories('post', category, 'tags').then((result) => {
+          if (result) {
+            setPosts({ posts: result });
           }
-        );
+        });
         break;
     }
   }, [category, publicKey]);

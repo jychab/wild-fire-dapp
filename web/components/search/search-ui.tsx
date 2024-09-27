@@ -21,7 +21,7 @@ const handleSearch = async (search: string) => {
   const posts = await fetchPostByCategories(
     'post',
     search,
-    'tags,title,description,embedding'
+    'tags,title,description'
   );
   if (posts) {
     result.push(
