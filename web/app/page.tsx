@@ -40,11 +40,13 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
         }
         break;
       default:
-        fetchPostByCategories('post', category, 'tags').then((result) => {
-          if (result) {
-            setPosts({ posts: result });
+        fetchPostByCategories('post', category, 'tags,embedding').then(
+          (result) => {
+            if (result) {
+              setPosts({ posts: result });
+            }
           }
-        });
+        );
         break;
     }
   }, [category, publicKey]);
@@ -53,7 +55,7 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
     <div className="flex flex-col w-full absolute items-center justify-center">
       <ul className="menu gap-4 menu-horizontal p-4 ">
         {Object.values(Categories).map((x) => (
-          <li onClick={() => setCategory(x)}>
+          <li key={x} onClick={() => setCategory(x)}>
             <a className={`${category == x ? 'active' : ''} rounded-full`}>
               {x}
             </a>

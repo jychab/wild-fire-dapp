@@ -29,19 +29,22 @@ export async function fetchPostByCategories(
   search: string,
   query_by: string
 ) {
-  const searchResults = await typeSenseClient
-    .collections(collections)
-    .documents()
-    .search(
-      {
-        q: search,
-        query_by: query_by,
-      },
-      { cacheSearchResultsForSeconds: 5 * 60 }
-    );
+  if (search) {
+    const searchResults = await typeSenseClient
+      .collections(collections)
+      .documents()
+      .search(
+        {
+          q: search,
+          query_by: query_by,
+          sort_by: '_text_match:desc',
+        },
+        { cacheSearchResultsForSeconds: 5 * 60 }
+      );
 
-  if (searchResults.hits) {
-    return searchResults.hits.map((x) => x.document as any);
+    if (searchResults.hits) {
+      return searchResults.hits.map((x) => x.document as any);
+    }
   }
   return null;
 }

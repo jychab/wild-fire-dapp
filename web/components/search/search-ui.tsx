@@ -1,6 +1,6 @@
 'use client';
 
-import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
+import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { fetchPostByCategories } from '@/utils/helper/post';
 import { PostContent } from '@/utils/types/post';
@@ -13,13 +13,15 @@ function SearchBar() {
   const [posts, setPosts] = useState<PostContent[]>([]);
   const [creators, setCreators] = useState<any[]>([]);
   useEffect(() => {
-    fetchPostByCategories('post', search, 'tags,title,description').then(
-      (result) => {
-        if (result) {
-          setPosts(result);
-        }
+    fetchPostByCategories(
+      'post',
+      search,
+      'tags,title,description,embedding'
+    ).then((result) => {
+      if (result) {
+        setPosts(result);
       }
-    );
+    });
     fetchPostByCategories('creators', search, 'name,symbol,mint').then(
       (result) => {
         if (result) {
@@ -83,7 +85,7 @@ function SearchBar() {
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
-                  src={x.image || placeholderImage}
+                  src={proxify(x.image, true) || placeholderImage}
                 />
               </div>
               <div className="flex flex-col">
