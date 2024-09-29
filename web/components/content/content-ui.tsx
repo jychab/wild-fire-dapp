@@ -2,7 +2,7 @@
 
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
-import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
+import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
@@ -99,7 +99,7 @@ export const UserProfile: FC<{
         <div className="relative w-8 h-8 mask mask-circle">
           {metadata?.content?.links?.image && (
             <Image
-              src={metadata?.content?.links?.image}
+              src={proxify(metadata?.content?.links?.image, true)}
               className={`object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

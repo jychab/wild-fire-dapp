@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/endpoints';
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -70,7 +71,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
-            src={metaDataQuery?.content?.links?.image}
+            src={proxify(metaDataQuery?.content?.links?.image, true)}
             className={`object-cover`}
             fill={true}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

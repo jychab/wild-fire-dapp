@@ -1,5 +1,6 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
+import { proxify } from '@/utils/helper/endpoints';
 import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
@@ -234,7 +235,10 @@ export const CommentsSection: FC<{
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   alt=""
-                  src={metadata?.content?.links?.image || placeholderImage}
+                  src={proxify(
+                    metadata?.content?.links?.image || placeholderImage,
+                    true
+                  )}
                 />
               </div>
             </div>
@@ -285,7 +289,10 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt=""
-              src={metadata?.content?.links?.image || placeholderImage}
+              src={proxify(
+                metadata?.content?.links?.image || placeholderImage,
+                true
+              )}
             />
           </div>
         </button>

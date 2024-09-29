@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
@@ -170,11 +171,12 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
               className={`object-cover rounded-full`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={
+              src={proxify(
                 metadata?.content?.links?.image ||
-                initData?.user?.photoUrl ||
-                placeholderImage
-              }
+                  initData?.user?.photoUrl ||
+                  placeholderImage,
+                true
+              )}
               alt={''}
             />
           </div>

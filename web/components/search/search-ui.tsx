@@ -1,7 +1,6 @@
 'use client';
 
 import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
-import { placeholderImage } from '@/utils/helper/placeholder';
 import { fetchPostByCategories } from '@/utils/helper/post';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -98,7 +97,7 @@ function SearchBar() {
                     fill={true}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     alt=""
-                    src={proxify(x?.image, true) || placeholderImage}
+                    src={proxify(x.image, true)}
                   />
                 </div>
                 <div className="flex flex-col">

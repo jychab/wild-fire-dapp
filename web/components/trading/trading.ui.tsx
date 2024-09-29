@@ -1,5 +1,6 @@
 import { DEFAULT_MINT_DECIMALS, NATIVE_MINT_DECIMALS } from '@/utils/consts';
 import { Scope } from '@/utils/enums/das';
+import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
@@ -193,7 +194,7 @@ export const TradingPanel: FC<{
               className={`rounded-full object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={metadata?.content?.links?.image!}
+              src={proxify(metadata?.content?.links?.image!, true)}
               alt={''}
             />
           </div>

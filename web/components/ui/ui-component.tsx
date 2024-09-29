@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -117,7 +118,7 @@ export const Navbar: FC = () => {
           >
             {metaDataQuery && metaDataQuery.content?.links?.image ? (
               <Image
-                src={metaDataQuery?.content?.links?.image}
+                src={proxify(metaDataQuery?.content?.links?.image, true)}
                 className={`object-cover`}
                 fill={true}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
