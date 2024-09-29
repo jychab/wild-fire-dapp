@@ -327,8 +327,6 @@ export const ActionContainer: FC<ActionContainerProps> = ({
       if (!signResult || isSignTransactionError(signResult)) {
         dispatchExecution({ type: ExecutionType.RESET });
       } else {
-        await action?.adapter.confirmTransaction(signResult.signature, context);
-
         if (!tx.links?.next) {
           dispatchExecution({
             type: ExecutionType.FINISH,

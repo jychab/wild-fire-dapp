@@ -4,6 +4,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
 import { DEFAULT_SUPPORTED_BLOCKCHAIN_IDS } from './actions-supportability';
@@ -129,6 +130,60 @@ export class ActionConfig implements ActionAdapter {
   }
 }
 
+async function pollTransactionConfirmation(
+  connection: Connection,
+  txtSig: TransactionSignature
+): Promise<TransactionSignature> {
+  // 15 second timeout
+  const timeout = 15000;
+  // 5 second retry interval
+  const interval = 5000;
+  let elapsed = 0;
+
+  return new Promise<TransactionSignature>((resolve, reject) => {
+    const intervalId = setInterval(async () => {
+      elapsed += interval;
+
+      if (elapsed >= timeout) {
+        clearInterval(intervalId);
+        reject(new Error(`Transaction ${txtSig}'s confirmation timed out`));
+      }
+
+      const status = await connection.getSignatureStatus(txtSig);
+
+      if (status?.value?.confirmationStatus === 'confirmed') {
+        clearInterval(intervalId);
+        resolve(txtSig);
+      }
+    }, interval);
+  });
+}
+async function pollAndSendTransaction(
+  connection: Connection,
+  transaction: VersionedTransaction
+): Promise<TransactionSignature> {
+  try {
+    const timeout = 60000;
+    const startTime = Date.now();
+    let txtSig = '';
+
+    while (Date.now() - startTime < timeout) {
+      try {
+        txtSig = await connection.sendRawTransaction(transaction.serialize(), {
+          skipPreflight: true,
+        });
+
+        return await pollTransactionConfirmation(connection, txtSig);
+      } catch (error) {
+        continue;
+      }
+    }
+    throw new Error(`Transaction ${txtSig}'s confirmation timed out`);
+  } catch (error) {
+    throw new Error(`Error sending smart transaction: ${error}`);
+  }
+}
+
 export function useCreateActionConfig({
   connection,
   publicKey,
@@ -155,11 +210,8 @@ export function useCreateActionConfig({
         Buffer.from(tx, 'base64')
       );
       const signedTx = await walletSignTransaction(transaction);
-      const txId = await connection.sendTransaction(signedTx, {
-        skipPreflight: true,
-        maxRetries: 0,
-      });
-      return { signature: txId };
+      const signature = await pollAndSendTransaction(connection, signedTx);
+      return { signature };
     },
   });
 }
