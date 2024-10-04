@@ -4,9 +4,9 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
+import { pollAndSendTransaction } from '../program/transactionBuilder';
 import { DEFAULT_SUPPORTED_BLOCKCHAIN_IDS } from './actions-supportability';
 import { BlockchainIds } from './caip-2';
 
@@ -127,60 +127,6 @@ export class ActionConfig implements ActionAdapter {
     } catch {
       return null;
     }
-  }
-}
-
-async function pollTransactionConfirmation(
-  connection: Connection,
-  txtSig: TransactionSignature
-): Promise<TransactionSignature> {
-  // 15 second timeout
-  const timeout = 15000;
-  // 5 second retry interval
-  const interval = 5000;
-  let elapsed = 0;
-
-  return new Promise<TransactionSignature>((resolve, reject) => {
-    const intervalId = setInterval(async () => {
-      elapsed += interval;
-
-      if (elapsed >= timeout) {
-        clearInterval(intervalId);
-        reject(new Error(`Transaction ${txtSig}'s confirmation timed out`));
-      }
-
-      const status = await connection.getSignatureStatus(txtSig);
-
-      if (status?.value?.confirmationStatus === 'confirmed') {
-        clearInterval(intervalId);
-        resolve(txtSig);
-      }
-    }, interval);
-  });
-}
-async function pollAndSendTransaction(
-  connection: Connection,
-  transaction: VersionedTransaction
-): Promise<TransactionSignature> {
-  try {
-    const timeout = 60000;
-    const startTime = Date.now();
-    let txtSig = '';
-
-    while (Date.now() - startTime < timeout) {
-      try {
-        txtSig = await connection.sendRawTransaction(transaction.serialize(), {
-          skipPreflight: true,
-        });
-
-        return await pollTransactionConfirmation(connection, txtSig);
-      } catch (error) {
-        continue;
-      }
-    }
-    throw new Error(`Transaction ${txtSig}'s confirmation timed out`);
-  } catch (error) {
-    throw new Error(`Error sending smart transaction: ${error}`);
   }
 }
 

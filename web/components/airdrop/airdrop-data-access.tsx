@@ -6,8 +6,8 @@ import {
   deleteCampaign,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
-import { getAssociatedTokenStateAccount } from '@/utils/helper/mint';
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { getAssociatedEscrowAccount } from '@/utils/helper/mint';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { Campaign } from '@/utils/types/campaigns';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
@@ -86,7 +86,7 @@ export function useCreateOrEditCampaign({
           );
           const destination = getAssociatedTokenAddressSync(
             mintToSend,
-            getAssociatedTokenStateAccount(new PublicKey(input.mint!)),
+            getAssociatedEscrowAccount(new PublicKey(input.mint!)),
             true,
             tokenProgram
           );
@@ -97,7 +97,7 @@ export function useCreateOrEditCampaign({
               createAssociatedTokenAccountIdempotentInstruction(
                 wallet.publicKey,
                 destination,
-                getAssociatedTokenStateAccount(new PublicKey(input.mint!)),
+                getAssociatedEscrowAccount(new PublicKey(input.mint!)),
                 mintToSend,
                 tokenProgram
               )

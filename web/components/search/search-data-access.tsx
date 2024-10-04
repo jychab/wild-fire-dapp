@@ -1,4 +1,4 @@
-import { LONG_STALE_TIME, SHORT_STALE_TIME } from '@/utils/consts';
+import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { DAS } from '@/utils/types/das';
 import { useConnection } from '@solana/wallet-adapter-react';
@@ -46,6 +46,6 @@ export function useGetAssetsBatch({ mints }: { mints: string[] }) {
       return data;
     },
     enabled: !!mints && mints.length > 0,
-    staleTime: LONG_STALE_TIME,
+    staleTime: SHORT_STALE_TIME,
   });
 }

@@ -28,12 +28,13 @@
     "encoding": "0.1.13",
     "firebase": "^10.12.2",
     "jotai": "2.8.3",
+    "lightweight-charts": "^4.2.0",
     "next": "14.0.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hot-toast": "2.4.1",
-    "unified-wallet-adapter-with-telegram": "0.1.31",
-    "typesense": "^1.8.2"
+    "typesense": "^1.8.2",
+    "unified-wallet-adapter-with-telegram": "0.1.31"
   },
   "devDependencies": {
     "@nx/eslint": "19.0.0",

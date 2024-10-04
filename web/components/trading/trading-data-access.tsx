@@ -1,4 +1,8 @@
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { NATIVE_MINT_DECIMALS } from '@/utils/consts';
+import { db } from '@/utils/firebase/firebase';
+import { getAsset } from '@/utils/helper/mint';
+import { buy, program, sell } from '@/utils/program/instructions';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   createBurnCheckedInstruction,
@@ -19,6 +23,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
 
@@ -79,13 +84,13 @@ export function useSwapMutation({
       },
     ],
     mutationFn: async ({
-      // poolState,
+      poolState,
       amount,
       inputMint,
       outputMint,
       swapMode,
     }: {
-      // poolState: any | undefined;
+      poolState: any | undefined;
       inputMint: string;
       outputMint: string;
       amount: number;
@@ -94,39 +99,52 @@ export function useSwapMutation({
       if (!mint || !tokenProgram || !publicKey || !signTransaction) return null;
       let signature: TransactionSignature = '';
       try {
-        let payload = {
-          // quoteResponse from /quote api
-          quoteResponse: await (
-            await fetch(
-              `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
-            )
-          ).json(),
-          // user public key to be used for the swap
-          userPublicKey: publicKey.toString(),
-          // auto wrap and unwrap SOL. default is true
-          wrapAndUnwrapSol: true,
-          // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
-        };
-        // get serialized transactions for the swap
-        const { swapTransaction } = await (
-          await fetch('https://quote-api.jup.ag/v6/swap', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          })
-        ).json();
-        // deserialize the transaction
-        const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-        var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-        signature = await buildAndSendTransaction({
-          connection: connection,
-          publicKey: publicKey,
-          signTransaction: signTransaction,
-          partialSignedTx: transaction,
-        });
-
+        if (!poolState.thresholdReached) {
+          const ix =
+            inputMint !== mint.toBase58()
+              ? await buy(amount, mint, publicKey)
+              : await sell(amount, mint, publicKey);
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            publicKey: publicKey,
+            signTransaction: signTransaction,
+            ixs: [ix],
+          });
+        } else {
+          let payload = {
+            // quoteResponse from /quote api
+            quoteResponse: await (
+              await fetch(
+                `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
+              )
+            ).json(),
+            // user public key to be used for the swap
+            userPublicKey: publicKey.toString(),
+            // auto wrap and unwrap SOL. default is true
+            wrapAndUnwrapSol: true,
+            // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
+          };
+          // get serialized transactions for the swap
+          const { swapTransaction } = await (
+            await fetch('https://quote-api.jup.ag/v6/swap', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            })
+          ).json();
+          // deserialize the transaction
+          const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+          var transaction =
+            VersionedTransaction.deserialize(swapTransactionBuf);
+          signature = await buildAndSendTransaction({
+            connection: connection,
+            publicKey: publicKey,
+            signTransaction: signTransaction,
+            partialSignedTx: transaction,
+          });
+        }
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error} ` + signature);
@@ -159,6 +177,12 @@ export function useSwapMutation({
                   tokenProgram
                 ),
               },
+            ],
+          }),
+          client.invalidateQueries({
+            queryKey: [
+              'get-liquidity-pool',
+              { endpoint: connection.rpcEndpoint, mint },
             ],
           }),
         ]);
@@ -414,6 +438,75 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
         await fetch(`https://price.jup.ag/v6/price?ids=${mint.toBase58()}`)
       ).json();
       return result.data[mint.toBase58()] != undefined;
+    },
+    enabled: !!mint,
+  });
+}
+
+export function useGetAsset({ mint }: { mint: PublicKey | null }) {
+  return useQuery({
+    queryKey: ['get-asset', { mint }],
+    queryFn: async () => {
+      if (!mint) return null;
+      return getAsset(mint);
+    },
+    enabled: !!mint,
+  });
+}
+
+export function useGetOhlcv({
+  mint,
+  from,
+  to,
+}: {
+  mint: PublicKey | null;
+  from: number;
+  to: number;
+}) {
+  return useQuery({
+    queryKey: ['get-mint-ohlcv', { mint, from, to }],
+    queryFn: async () => {
+      if (!mint) return null;
+      const data = (
+        await getDocs(
+          query(
+            collection(db, `Mint/${mint}/Ohlcv`),
+            where('time', '>=', from),
+            where('time', '<', to)
+          )
+        )
+      ).docs.map((x) => x.data());
+      return data;
+    },
+    enabled: !!mint,
+  });
+}
+export function calculatePriceInSOL(reserveTokensSold: number) {
+  const square = BigInt(reserveTokensSold) * BigInt(reserveTokensSold);
+  const scaleFactor = BigInt(1_280_000_000_000_000_000_000n);
+
+  // Calculate the floating point result by adjusting the scale
+  const scaledResult = square * BigInt(1000000000000); // Scale up to keep precision
+  const floatResult =
+    Number(scaledResult) / Number(scaleFactor) / 1000000000000; // Scale down
+
+  return floatResult / 10 ** NATIVE_MINT_DECIMALS;
+}
+
+export function useGetLiquidityPool({ mint }: { mint: PublicKey | null }) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-liquidity-pool',
+      { endpoint: connection.rpcEndpoint, mint },
+    ],
+    queryFn: async () => {
+      if (!mint) return null;
+      const [liquidityPool] = PublicKey.findProgramAddressSync(
+        [Buffer.from('liquidity_pool'), mint.toBuffer()],
+        program.programId
+      );
+      return await program.account.liquidityPool.fetch(liquidityPool);
     },
     enabled: !!mint,
   });

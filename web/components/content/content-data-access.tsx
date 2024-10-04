@@ -4,7 +4,7 @@ import {
   deletePost,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {

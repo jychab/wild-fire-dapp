@@ -1,24 +1,16 @@
 'use client';
 
-import {
-  COST_PER_NO_RENT_TRANSFER_IN_SOL,
-  DEFAULT_MINT_DECIMALS,
-} from '@/utils/consts';
+import { COST_PER_NO_RENT_TRANSFER_IN_SOL } from '@/utils/consts';
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getAmountAfterTransferFee, getDerivedMint } from '@/utils/helper/mint';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { Campaign } from '@/utils/types/campaigns';
-import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { useGetMintToken } from '../edit/edit-data-access';
-import {
-  useCreateOrEditCampaign,
-  useGetCampaigns,
-  useStopCampaign,
-} from './airdrop-data-access';
+import { useGetCampaigns, useStopCampaign } from './airdrop-data-access';
 
 // Utility function for opening the modal
 function openCampaignModal(): void {
@@ -135,10 +127,10 @@ export const CampaignModal: FC<{
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
 
-  const campaignMutation = useCreateOrEditCampaign({
-    address: publicKey,
-    payer: mintInfo ? new PublicKey(mintInfo?.payer) : null,
-  });
+  // const campaignMutation = useCreateOrEditCampaign({
+  //   address: publicKey,
+  //   payer: mintInfo ? new PublicKey(mintInfo?.payer) : null,
+  // });
   const stopCampaignMutation = useStopCampaign({ address: publicKey });
   const { data: campaigns } = useGetCampaigns({ address: publicKey });
   const { connection } = useConnection();
@@ -297,17 +289,17 @@ export const CampaignModal: FC<{
               </button>
             )}
             <button
-              disabled={campaignMutation.isPending}
+              // disabled={campaignMutation.isPending}
               onClick={handleCampaignMutation}
               className="btn btn-primary"
             >
-              {campaignMutation.isPending ? (
+              {/* {campaignMutation.isPending ? (
                 <div className="loading loading-spinner" />
               ) : id ? (
                 'Edit Campaign'
               ) : (
                 'Start Campaign'
-              )}
+              )} */}
             </button>
           </div>
         ) : (
@@ -332,57 +324,43 @@ export const CampaignModal: FC<{
   // Handle create or edit campaign
   async function handleCampaignMutation() {
     if (!publicKey || !tokensRemaining || !amount) return;
-    const { differenceAmountAfterTransferFee, difference } =
-      await calculateDifference(
-        tokensRemaining,
-        campaign?.tokensRemaining || 0,
-        publicKey,
-        connection
-      );
+    const { difference } = await calculateDifference(
+      tokensRemaining,
+      campaign?.tokensRemaining || 0
+    );
 
-    const newBudget =
-      (campaign?.budget || 0) + differenceAmountAfterTransferFee;
-    const newTokensRemaining =
-      (campaign?.tokensRemaining || 0) + differenceAmountAfterTransferFee;
-    const topUp = calculateTopUp(differenceAmountAfterTransferFee, amount);
+    const newBudget = (campaign?.budget || 0) + difference;
+    const newTokensRemaining = (campaign?.tokensRemaining || 0) + difference;
+    const topUp = calculateTopUp(difference, amount);
 
-    await campaignMutation.mutateAsync({
-      topUp,
-      id,
-      name,
-      budget: newBudget,
-      tokensRemaining: newTokensRemaining,
-      amount: parseFloat(amount),
-      criteria,
-      eligibility,
-      startDate,
-      endDate,
-      difference,
-      mint: getDerivedMint(publicKey).toBase58(),
-      mintToSend: getDerivedMint(publicKey).toBase58(),
-      mintToSendDecimals: DEFAULT_MINT_DECIMALS,
-      mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
-    });
+    // await campaignMutation.mutateAsync({
+    //   topUp,
+    //   id,
+    //   name,
+    //   budget: newBudget,
+    //   tokensRemaining: newTokensRemaining,
+    //   amount: parseFloat(amount),
+    //   criteria,
+    //   eligibility,
+    //   startDate,
+    //   endDate,
+    //   difference,
+    //   mint: getDerivedMint(publicKey).toBase58(),
+    //   mintToSend: getDerivedMint(publicKey).toBase58(),
+    //   mintToSendDecimals: DEFAULT_MINT_DECIMALS,
+    //   mintToSendTokenProgram: TOKEN_2022_PROGRAM_ID.toBase58(),
+    // });
     closeModal();
   }
 };
 
 async function calculateDifference(
   tokensRemaining: string,
-  currentTokensRemaining: number,
-  publicKey: PublicKey,
-  connection: Connection
+  currentTokensRemaining: number
 ) {
   const difference = parseFloat(tokensRemaining) - currentTokensRemaining;
-  const differenceAmountAfterTransferFee =
-    difference > 0
-      ? await getAmountAfterTransferFee(
-          difference,
-          getDerivedMint(publicKey),
-          connection
-        )
-      : difference;
-  return { differenceAmountAfterTransferFee, difference };
+
+  return { difference };
 }
 
 // Calculate top-up value

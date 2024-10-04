@@ -4,7 +4,6 @@ import { db } from '@/utils/firebase/firebase';
 import { checkIfMetadataExist } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
-import { getTokenMetadata } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
@@ -21,7 +20,7 @@ import {
   uploadMedia,
   uploadMetadata,
 } from '../../utils/firebase/functions';
-import { buildAndSendTransaction } from '../../utils/helper/transactionBuilder';
+import { buildAndSendTransaction } from '../../utils/program/transactionBuilder';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -65,47 +64,30 @@ export function useEditData({
       let signature: TransactionSignature = '';
       let partialTx;
       try {
-        const details = await getTokenMetadata(
-          connection,
-          mint,
-          undefined,
-          metadata?.token_info?.token_program
-            ? new PublicKey(metadata.token_info.token_program)
-            : undefined
-        );
-        if (!details) return; // update token metadata with using old token program
-        const uriMetadata = await (await fetch(details.uri)).json();
-        let fieldsToUpdate: [string, string][] = [];
-        if (uriMetadata.name !== input.name) {
-          fieldsToUpdate.push(['name', input.name]);
-        }
-        if (uriMetadata.symbol !== input.symbol) {
-          fieldsToUpdate.push(['symbol', input.symbol]);
-        }
-        if (
-          input.picture ||
-          input.description != uriMetadata.description ||
-          fieldsToUpdate.length != 0
-        ) {
-          const payload = {
-            ...uriMetadata,
-            name: input.name,
-            symbol: input.symbol,
-            description: input.description,
-            image: imageUrl ? imageUrl : uriMetadata.image,
-          };
-          const uri = await uploadMetadata(
-            JSON.stringify(payload),
-            wallet.publicKey
-          );
-          fieldsToUpdate.push(['uri', uri]);
-        }
-        if (fieldsToUpdate.length == 0) {
+        if (!metadata?.content?.json_uri) {
           return;
         }
+        const uriMetadata = await (
+          await fetch(metadata?.content?.json_uri)
+        ).json();
+
+        const payload = {
+          ...uriMetadata,
+          name: input.name || uriMetadata.name,
+          symbol: input.symbol || uriMetadata.symbol,
+          description: input.description || uriMetadata.description,
+          image: imageUrl || uriMetadata.image,
+        };
+        const uri = await uploadMetadata(
+          JSON.stringify(payload),
+          wallet.publicKey
+        );
+
         partialTx = await updateMetadataInstruction(
           mint.toBase58(),
-          fieldsToUpdate
+          payload.name,
+          payload.symbol,
+          uri
         );
 
         const partialSignedTx = VersionedTransaction.deserialize(
@@ -151,9 +133,9 @@ export function useGetMintToken({ mint }: { mint: PublicKey | null }) {
         return null;
       } else {
         return {
+          memberMint: mintData.data()!.memberMint,
           mint: mintData.data()!.mint,
           admin: mintData.data()!.admin,
-          payer: mintData.data()!.payer,
         } as TokenState;
       }
     },

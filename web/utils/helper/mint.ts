@@ -1,11 +1,14 @@
+import { BN } from '@coral-xyz/anchor';
+import { PublicKey } from '@solana/web3.js';
 import {
-  calculateEpochFee,
-  getMint,
-  getTransferFeeConfig,
-  TOKEN_2022_PROGRAM_ID,
-} from '@solana/spl-token';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { doc, getDoc } from 'firebase/firestore';
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where,
+} from 'firebase/firestore';
 import { PROGRAM_ID } from '../consts';
 import { Scope } from '../enums/das';
 import { db } from '../firebase/firebase';
@@ -18,6 +21,14 @@ export function getDerivedMint(address: PublicKey) {
     PROGRAM_ID
   );
   return derivedMint;
+}
+
+export function getDerivedMemberMint(mint: PublicKey, index: number) {
+  const [memberMint] = PublicKey.findProgramAddressSync(
+    [mint.toBuffer(), new BN(index).toArrayLike(Buffer, 'le', 8)],
+    PROGRAM_ID
+  );
+  return memberMint;
 }
 export function isAuthorized(
   tokenStateData: TokenState | null | undefined,
@@ -34,9 +45,9 @@ export function isAuthorized(
     )?.address == publicKey.toBase58()
   );
 }
-export function getAssociatedTokenStateAccount(mint: PublicKey) {
+export function getAssociatedEscrowAccount(creator: PublicKey) {
   const [tokenState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('token'), mint.toBuffer()],
+    [Buffer.from('escrow'), creator.toBuffer()],
     PROGRAM_ID
   );
 
@@ -62,28 +73,13 @@ export async function getAsset(mint: PublicKey) {
   return data;
 }
 
-export async function getAmountAfterTransferFee(
-  amount: number,
-  mint: PublicKey,
-  connection: Connection,
-  tokenProgram = TOKEN_2022_PROGRAM_ID
-) {
-  const mintInfo = await getMint(connection, mint, undefined, tokenProgram);
-
-  const transferFeeConfig = getTransferFeeConfig(mintInfo);
-  if (!transferFeeConfig) {
-    return amount;
-  }
-  const transferFee = calculateEpochFee(
-    transferFeeConfig,
-    BigInt((await connection.getEpochInfo()).epoch),
-    BigInt(amount)
-  );
-  return amount - Number(transferFee);
-}
-
 export async function getHolders(mint: string) {
-  const result = await getDoc(doc(db, `Mint/${mint}/TokenInfo/Summary`));
+  const mintRef = (
+    await getDocs(
+      query(collection(db, `Mint`), where('memberMint', '==', mint), limit(1))
+    )
+  ).docs[0].ref;
+  const result = await getDoc(doc(db, `${mintRef.path}/TokenInfo/Summary`));
   if (result.exists()) {
     return result.data() as {
       currentHoldersCount: number;

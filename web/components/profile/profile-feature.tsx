@@ -1,6 +1,8 @@
 'use client';
 
+import { PublicKey } from '@solana/web3.js';
 import { FC, useState } from 'react';
+import { useGetMintToken } from '../edit/edit-data-access';
 import { TradingPanel } from '../trading/trading.ui';
 import { ContentPanel, Profile, Tabs, TabsEnum } from './profile-ui';
 
@@ -8,6 +10,9 @@ export const ProfileFeature: FC<{
   mintId: string | null;
   tab: string | null;
 }> = ({ mintId, tab }) => {
+  const { data: mintTokenDetails } = useGetMintToken({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
   const [selectedTab, setSelectedTab] = useState(
     tab
       ? Object.entries(TabsEnum).find(
@@ -24,7 +29,12 @@ export const ProfileFeature: FC<{
           <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
           <div className="rounded border-x border-b border-base-300 h-full md:p-4">
             {selectedTab == TabsEnum.POST && <ContentPanel mintId={mintId} />}
-            {selectedTab == TabsEnum.TRADE && <TradingPanel mintId={mintId} />}
+            {selectedTab == TabsEnum.TRADE && (
+              <TradingPanel
+                collectionMint={mintId}
+                mintId={mintTokenDetails?.memberMint}
+              />
+            )}
           </div>
         </div>
       </div>

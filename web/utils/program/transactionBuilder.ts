@@ -8,6 +8,7 @@ import {
   Transaction,
   TransactionInstruction,
   TransactionMessage,
+  TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
 import { ADDRESS_LOOKUP_TABLE } from '../consts';
@@ -140,39 +141,65 @@ export async function buildAndSendTransaction({
     throw new Error('Undefined Transaction');
   }
   const signedTx = await signTransaction(tx);
-  const txId = await sendAndConfirmTransaction(
+  const txId = await pollAndSendTransaction(
     connection,
-    signedTx,
-    recentBlockhash.blockhash,
-    recentBlockhash.lastValidBlockHeight,
-    commitment
+    signedTx as VersionedTransaction
   );
   return txId;
 }
 
-export async function sendAndConfirmTransaction(
+async function pollTransactionConfirmation(
   connection: Connection,
-  signedTx: Transaction | VersionedTransaction,
-  blockhash: string,
-  lastValidBlockHeight: number,
-  commitment: Commitment | undefined
-) {
-  const txId = await connection.sendTransaction(
-    signedTx as VersionedTransaction,
-    {
-      skipPreflight: true,
+  txtSig: TransactionSignature
+): Promise<TransactionSignature> {
+  // 15 second timeout
+  const timeout = 15000;
+  // 5 second retry interval
+  const interval = 5000;
+  let elapsed = 0;
+
+  return new Promise<TransactionSignature>((resolve, reject) => {
+    const intervalId = setInterval(async () => {
+      elapsed += interval;
+
+      if (elapsed >= timeout) {
+        clearInterval(intervalId);
+        reject(new Error(`Transaction ${txtSig}'s confirmation timed out`));
+      }
+
+      const status = await connection.getSignatureStatus(txtSig);
+
+      if (status?.value?.confirmationStatus === 'confirmed') {
+        clearInterval(intervalId);
+        resolve(txtSig);
+      }
+    }, interval);
+  });
+}
+export async function pollAndSendTransaction(
+  connection: Connection,
+  transaction: VersionedTransaction
+): Promise<TransactionSignature> {
+  try {
+    const timeout = 60000;
+    const startTime = Date.now();
+    let txtSig = '';
+
+    while (Date.now() - startTime < timeout) {
+      try {
+        txtSig = await connection.sendTransaction(transaction, {
+          skipPreflight: true,
+          maxRetries: 0,
+        });
+
+        return await pollTransactionConfirmation(connection, txtSig);
+      } catch (error) {
+        continue;
+      }
     }
-  );
-  const result = await connection.confirmTransaction(
-    {
-      signature: txId,
-      blockhash: blockhash,
-      lastValidBlockHeight: lastValidBlockHeight,
-    },
-    commitment
-  );
-  if (result.value.err) {
-    throw new Error(JSON.stringify(result.value.err));
+    console.log(txtSig);
+    throw new Error(`Transaction ${txtSig}'s confirmation timed out`);
+  } catch (error) {
+    throw new Error(`Error sending smart transaction: ${error}`);
   }
-  return txId;
 }

@@ -1,13 +1,10 @@
 'use client';
 
-import { Scope } from '@/utils/enums/das';
-import { checkIfMetadataExist } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
-import { useGetTokenDetails } from '../profile/profile-data-access';
 import { UploadPost } from './upload-ui';
 import { useGetPostCampaign } from './upload.data-access';
 
@@ -19,33 +16,10 @@ interface UploadFeatureProps {
 
 export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
   const { publicKey } = useWallet();
-  const { data: metadataQuery } = useGetTokenDetails({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
-  });
   const { data: postCampaign } = useGetPostCampaign({
     address: publicKey,
     postId: id || null,
   });
-
-  if (
-    publicKey &&
-    mintId &&
-    getDerivedMint(publicKey).toBase58() != mintId &&
-    !(
-      publicKey &&
-      metadataQuery?.authorities?.find(
-        (x) =>
-          x.scopes.includes(Scope.METADATA) || x.scopes.includes(Scope.FULL)
-      )?.address == publicKey.toBase58()
-    )
-  ) {
-    return (
-      <div className="flex flex-col max-w-2xl h-full items-center justify-center w-full text-center">
-        <span>You are not the update authority for this token.</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full w-full items-center">
       <div className="flex flex-col gap-8 my-4 items-center w-full p-4 animate-fade-right animate-duration-200 sm:animate-none">
@@ -56,8 +30,10 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
           <UploadPost
             id={id}
             mint={
-              !checkIfMetadataExist(metadataQuery)
-                ? new PublicKey(metadataQuery!.id)
+              mintId
+                ? new PublicKey(mintId)
+                : publicKey
+                ? getDerivedMint(publicKey)
                 : null
             }
             post={post}

@@ -40,6 +40,7 @@ import toast from 'react-hot-toast';
 import { isParameterSelectable } from '../actions/guards';
 import { Blinks } from '../blinks/blinks-feature';
 import { useGetJupiterVerifiedTokens } from '../create/create-data-access';
+import { useGetMintToken } from '../edit/edit-data-access';
 import { PreviewContentBtn } from './preview-content';
 import { checkUrlIsValid } from './upload.data-access';
 
@@ -733,10 +734,13 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   setTempCampaign,
 }) => {
   const currentTime = Date.now() / 1000;
+  const { data: tokenDetails } = useGetMintToken({
+    mint: tempCampaign?.mint ? new PublicKey(tempCampaign.mint) : null,
+  });
 
   // Initializing state with a single useState call for all form fields
   const [campaignDetails, setCampaignDetails] = useState({
-    mintToSend: tempCampaign?.mint || '',
+    mintToSend: tokenDetails?.memberMint || '',
     tokensRemaining: '',
     endDate: undefined as number | undefined,
     duration: Duration.UNTILL_BUDGET_FINISHES,
@@ -761,7 +765,7 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
   useEffect(() => {
     if (tempCampaign) {
       setCampaignDetails({
-        mintToSend: tempCampaign.mintToSend || tempCampaign?.mint || '',
+        mintToSend: tempCampaign.mintToSend || tokenDetails?.memberMint || '',
         tokensRemaining: tempCampaign.tokensRemaining?.toString() || '',
         endDate: tempCampaign.endDate,
         duration: tempCampaign.endDate
@@ -771,11 +775,11 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     } else {
       resetForm();
     }
-  }, [tempCampaign]);
+  }, [tempCampaign, tokenDetails]);
 
   const resetForm = () => {
     setCampaignDetails({
-      mintToSend: tempCampaign?.mint || '',
+      mintToSend: tempCampaign?.mintToSend || '',
       tokensRemaining: '',
       endDate: undefined,
       duration: Duration.UNTILL_BUDGET_FINISHES,

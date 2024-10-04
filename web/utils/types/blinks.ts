@@ -4,8 +4,7 @@ import { ActionSupportStrategy } from '../actions/actions-supportability';
 import { DisclaimerType, ExecutionType } from '../enums/blinks';
 import { PostContent } from './post';
 
-export const ACTIONS_REGISTRY_URL_ALL =
-  'https://actions-registry.dialectapi.to/all';
+export const ACTIONS_REGISTRY_URL_ALL = 'https://actions-registry.dial.to/all';
 // Linked action inspired by HAL https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-11
 export const SOFT_LIMIT_BUTTONS = 10;
 export const SOFT_LIMIT_INPUTS = 3;

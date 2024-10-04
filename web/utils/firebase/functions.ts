@@ -46,7 +46,8 @@ export async function createOrEditPost(
   post: Partial<PostContent>
 ) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
-  await createOrEditPost({ mint, post });
+  const result = await createOrEditPost({ mint, post });
+  return result.data as string;
 }
 
 export async function deletePost(mint: string, postId: string) {
@@ -104,13 +105,15 @@ export async function createMintInstruction(metadata: TokenMetadata) {
 
 export async function updateMetadataInstruction(
   mint: string,
-  fieldsToUpdate: [string, string][]
+  name: string,
+  symbol: string,
+  uri: string
 ) {
   const updateMetadataInstruction = httpsCallable(
     functions,
     'updateMetadataInstruction'
   );
-  const result = await updateMetadataInstruction({ mint, fieldsToUpdate });
+  const result = await updateMetadataInstruction({ mint, name, symbol, uri });
   return result.data as string;
 }
 

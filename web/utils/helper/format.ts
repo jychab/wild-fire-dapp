@@ -7,7 +7,7 @@ export function formatLargeNumber(number: number | string) {
   if (number < 1 && number > 0) {
     return number.toPrecision(3);
   } else if (number < 1000) {
-    return number;
+    return number.toPrecision(3);
   } else if (number < 1_000_000) {
     return (number / 1000).toFixed(2) + 'K';
   } else if (number < 1_000_000_000) {

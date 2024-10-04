@@ -8,11 +8,8 @@ import {
   getAvailableAmountInEscrow,
 } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
-import {
-  getAmountAfterTransferFee,
-  getAssociatedTokenStateAccount,
-} from '@/utils/helper/mint';
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { getAssociatedEscrowAccount } from '@/utils/helper/mint';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { PostContent } from '@/utils/types/post';
 import {
@@ -23,7 +20,12 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey, TransactionSignature } from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  TransactionSignature,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -64,20 +66,9 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             postCampaign?.initialTokensRemaining || 0;
           let difference =
             (postCampaign.tokensRemaining || 0) - currentTokensRemaining;
-          const differenceAmountAfterTransferFee =
-            difference > 0
-              ? await getAmountAfterTransferFee(
-                  difference,
-                  new PublicKey(postCampaign.mintToSend),
-                  connection,
-                  new PublicKey(postCampaign.mintToSendTokenProgram)
-                )
-              : difference;
-          postCampaign.budget =
-            (postCampaign?.initialBudget || 0) +
-            differenceAmountAfterTransferFee;
-          postCampaign.tokensRemaining =
-            currentTokensRemaining + differenceAmountAfterTransferFee;
+
+          postCampaign.budget = (postCampaign?.initialBudget || 0) + difference;
+          postCampaign.tokensRemaining = currentTokensRemaining + difference;
           const currentBalance = await getAvailableAmountInEscrow(
             postCampaign.mintToSend,
             postCampaign.mintToSendTokenProgram
@@ -87,7 +78,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             const ixs = await buildSendToDistributorIxs(
               postCampaign,
               wallet.publicKey,
-              mint,
               new PublicKey(postCampaign.mintToSend),
               connection,
               difference
@@ -99,13 +89,24 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
               publicKey: wallet.publicKey,
             });
           }
-        }
-        await createOrEditPost(mint.toBase58(), postContent);
-        if (postCampaign) {
           delete postCampaign.initialTokensRemaining;
           delete postCampaign.initialBudget;
           await createOrEditCampaign(postCampaign);
         }
+        const partialSignedTx = await createOrEditPost(
+          mint.toBase58(),
+          postContent
+        );
+        const tx = VersionedTransaction.deserialize(
+          Buffer.from(partialSignedTx, 'base64')
+        );
+        signature = await buildAndSendTransaction({
+          connection,
+          partialSignedTx: tx,
+          signTransaction: wallet.signTransaction,
+          publicKey: wallet.publicKey,
+        });
+
         return { signature, postId: postContent.id };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);
@@ -135,7 +136,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           }),
         ]);
         revalidateTags('post');
-        transactionToast(res.signature || 'Success');
+        transactionToast(res.signature);
         router.push(`/profile?mintId=${mint?.toBase58()}`);
       }
     },
@@ -148,7 +149,6 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
 async function buildSendToDistributorIxs(
   postCampaign: Partial<TempPostCampaign>,
   publicKey: PublicKey,
-  mint: PublicKey,
   mintToSend: PublicKey,
   connection: Connection,
   difference: number
@@ -162,7 +162,7 @@ async function buildSendToDistributorIxs(
     false,
     tokenProgram
   );
-  const escrowAccount = getAssociatedTokenStateAccount(mint);
+  const escrowAccount = getAssociatedEscrowAccount(publicKey);
   const destination = getAssociatedTokenAddressSync(
     mintToSend,
     escrowAccount,

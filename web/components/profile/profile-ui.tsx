@@ -3,6 +3,7 @@
 import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
+import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -245,15 +246,10 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
   );
 };
 export const LockedContent: FC<{
-  mintId: string | null;
-}> = ({ mintId }) => {
-  const { data: metadata, isLoading } = useGetTokenDetails({
-    mint: mintId ? new PublicKey(mintId) : null,
-  });
-  const locked = !isLoading && checkIfMetadataExist(metadata);
-
+  metadata: DAS.GetAssetResponse | null;
+}> = ({ metadata }) => {
   return (
-    locked && (
+    metadata == null && (
       <div className="flex flex-col flex-1 justify-center items-center bg-opacity-80 p-4 h-full w-full">
         <div className="flex flex-col gap-4 rounded-box bg-base-100 border w-full max-w-sm p-4">
           <div className="flex flex-col gap-4 items-center">

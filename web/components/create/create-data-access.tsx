@@ -8,7 +8,7 @@ import {
   uploadMetadata,
 } from '@/utils/firebase/functions';
 import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
-import { buildAndSendTransaction } from '@/utils/helper/transactionBuilder';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import { TokenMetadata } from '@solana/spl-token-metadata';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';

@@ -72,7 +72,19 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
       if (!mint) return null;
       const docData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
       if (docData.exists()) {
-        return JSON.parse(docData.data().das) as DAS.GetAssetResponse;
+        const parsedData = JSON.parse(
+          docData.data().das
+        ) as DAS.GetAssetResponse;
+        if (
+          parsedData.content?.links &&
+          !parsedData.content.links.image &&
+          parsedData.content?.json_uri
+        ) {
+          parsedData.content.links.image = (
+            await (await fetch(parsedData.content?.json_uri)).json()
+          ).image as string;
+        }
+        return parsedData;
       } else {
         const docData = await getDoc(
           doc(db, `Mint/${mint.toBase58()}/Temporary/Profile`)

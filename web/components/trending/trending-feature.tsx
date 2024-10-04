@@ -39,8 +39,10 @@ export const TrendingTable: FC = () => {
     return filteredList.map((x, i) => {
       const metadata = metadatas.find((y) => y.id == x.mint);
       const holders = holdersData[i];
+      console.log(metadata);
       return {
-        mint: x.mint,
+        mint: metadata?.grouping?.find((x) => x.group_key == 'collection')
+          ?.group_value,
         image: metadata?.content?.links?.image,
         name: metadata?.content?.metadata.name,
         price: x.price,
@@ -54,7 +56,7 @@ export const TrendingTable: FC = () => {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState<
     {
-      mint: string;
+      mint?: string;
       image?: string;
       name?: string;
       price: number;
