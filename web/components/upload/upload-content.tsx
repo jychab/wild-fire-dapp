@@ -1,7 +1,11 @@
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
 import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
-import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
+import {
+  generatePostEndPoint,
+  generatePostSubscribeApiEndPoint,
+  proxify,
+} from '@/utils/helper/endpoints';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC, useCallback, useState } from 'react';
@@ -67,6 +71,13 @@ export const UploadContentBtn: FC<{
           tempCampaign.links.actions = tempCampaign.links?.actions.filter(
             (x) => x.type == action
           );
+          if (action == ActionTypeEnum.SUBSCRIBE) {
+            tempCampaign.links.actions[0].href =
+              generatePostSubscribeApiEndPoint(
+                mint.toBase58(),
+                tempCampaign.postId
+              );
+          }
         }
         const carousel = await Promise.all(
           files

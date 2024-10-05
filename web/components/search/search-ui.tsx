@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 
-interface SearchResult {
+export interface SearchResult {
   id: string;
   image: string;
   name: string;

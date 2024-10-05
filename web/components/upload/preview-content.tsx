@@ -3,13 +3,13 @@
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
 import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
-import { getAsset, getDerivedMint } from '@/utils/helper/mint';
+import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
+import { getDerivedMint } from '@/utils/helper/mint';
 import {
   SOFT_LIMIT_BUTTONS,
   SOFT_LIMIT_FORM_INPUTS,
   SOFT_LIMIT_INPUTS,
 } from '@/utils/types/blinks';
-import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import { ActionGetResponse } from '@solana/actions-spec';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -29,7 +29,7 @@ import { AuthenticationBtn } from '../authentication/authentication-ui';
 import { ActionLayout } from '../blinks/blinks-layout';
 import { BaseButtonProps } from '../blinks/ui/action-button';
 import { CreateAccountBtn } from '../create/create-ui';
-import { SearchBar } from '../search/search-ui';
+import { SearchBar, SearchResult } from '../search/search-ui';
 import {
   useGetMintSummaryDetails,
   useGetTokenDetails,
@@ -232,15 +232,22 @@ export const PreviewBlinksActionButton: FC<{
 }) => {
   const [collection, setCollection] = useState<string>();
   const [recommendations, setRecommendations] = useState<
-    DAS.GetAssetResponse[]
+    Partial<SearchResult>[]
   >([]);
   const { publicKey } = useWallet();
   const { data: metadata } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
   useEffect(() => {
-    if (metadata) {
-      setRecommendations((prev) => [...prev, metadata]);
+    if (!checkIfMetadataIsTemporary(metadata) && metadata) {
+      setRecommendations((prev) => [
+        ...prev,
+        {
+          id: metadata.id,
+          image: metadata.content?.links?.image,
+          name: metadata.content?.metadata.name,
+        },
+      ]);
     }
   }, [metadata]);
 
@@ -278,12 +285,8 @@ export const PreviewBlinksActionButton: FC<{
             <SearchBar
               creatorsOnly={true}
               onClick={async (x) => {
-                if (!recommendations.find((x) => x.id === x.id)) {
-                  const selectedMetadata = await getAsset(new PublicKey(x.id));
-                  setRecommendations((previous) => [
-                    ...previous,
-                    selectedMetadata,
-                  ]);
+                if (!recommendations.find((x) => x.id == x.id)) {
+                  setRecommendations((previous) => [...previous, x]);
                   setCollection(x.id);
                 }
               }}
@@ -306,7 +309,11 @@ export const PreviewBlinksActionButton: FC<{
           </form>
           {collection == undefined ? (
             <button
-              onClick={() => setCollection(metadata?.id || '')}
+              onClick={() =>
+                !checkIfMetadataIsTemporary(metadata) && metadata
+                  ? setCollection(metadata.id)
+                  : setCollection('')
+              }
               className="btn btn-primary"
             >
               Next
@@ -330,12 +337,12 @@ export const PreviewBlinksActionButton: FC<{
   );
 };
 
-const TokenButton: FC<{ x: DAS.GetAssetResponse; collection: string }> = ({
-  x,
-  collection,
-}) => {
+const TokenButton: FC<{
+  x: Partial<SearchResult>;
+  collection: string;
+}> = ({ x, collection }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: new PublicKey(x.id),
+    mint: x.id ? new PublicKey(x.id) : null,
   });
   return (
     <button
@@ -344,18 +351,18 @@ const TokenButton: FC<{ x: DAS.GetAssetResponse; collection: string }> = ({
       }`}
     >
       <div className="w-8 h-8 relative mask mask-circle">
-        {x.content?.links?.image && (
+        {x.image && (
           <Image
             className={`object-cover`}
             fill={true}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             alt=""
-            src={proxify(x.content?.links?.image, true)}
+            src={proxify(x.image, true)}
           />
         )}
       </div>
       <div className="flex flex-col gap-1 items-start">
-        <span className="text-sm font-bold">{x?.content?.metadata.name}</span>
+        <span className="text-sm font-bold">{x.name}</span>
         <span className="stat-desc">
           {`${mintSummaryDetails?.currentHoldersCount} Subscribers`}
         </span>
