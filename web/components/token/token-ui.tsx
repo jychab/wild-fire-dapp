@@ -7,47 +7,45 @@ import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconMoneybag, IconSend, IconWallet } from '@tabler/icons-react';
+import { IconMoneybag, IconSend } from '@tabler/icons-react';
 import { InitDataParsed, retrieveLaunchParams } from '@telegram-apps/sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
-import { TelegramWalletButton } from 'unified-wallet-adapter-with-telegram';
-import { checkIfMetadataIsTemporary } from '../../utils/helper/format';
+import {
+  checkIfMetadataIsTemporary,
+  formatLargeNumber,
+} from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { CreateAccountBtn } from '../create/create-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenDetails } from '../token/token-data-access';
 import {
   useGetTokenAccountInfo,
   useSubscriptionMutation,
 } from '../trading/trading-data-access';
-import { UploadBtn } from '../upload/upload-ui';
-import { useGetPostsFromCreator } from './profile-data-access';
+import {
+  useGetMintSummaryDetails,
+  useGetPostsFromMint,
+  useGetTokenDetails,
+} from './token-data-access';
 
-interface ContentPanelProps {
-  address: string | null;
+export enum TokenTabsEnum {
+  POSTS = 'Posts',
+  TRADE = 'Trade',
 }
 
-export const ContentPanel: FC<ContentPanelProps> = ({ address }) => {
-  const { publicKey } = useWallet();
-  const { data: posts } = useGetPostsFromCreator({
-    creator: address ? new PublicKey(address) : null,
+interface ContentPanelProps {
+  mintId: string | null;
+}
+
+export const ContentPanel: FC<ContentPanelProps> = ({ mintId }) => {
+  const { data: posts } = useGetPostsFromMint({
+    mint: mintId ? new PublicKey(mintId) : null,
   });
   return posts?.posts && posts?.posts.length == 0 ? (
-    address == publicKey?.toBase58() && address ? (
-      <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
-        <div className="w-36">
-          <UploadBtn
-            mintId={getDerivedMint(new PublicKey(address)).toBase58()}
-          />
-        </div>
-      </div>
-    ) : (
-      <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
-        No post found!
-      </div>
-    )
+    <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
+      No post found!
+    </div>
   ) : (
     <ContentGrid
       hideComment={true}
@@ -60,17 +58,53 @@ export const ContentPanel: FC<ContentPanelProps> = ({ address }) => {
   );
 };
 
-interface ProfileProps {
-  mintId: string | null;
+interface TabsProps {
+  selectedTab: TokenTabsEnum;
+  setSelectedTab: (value: TokenTabsEnum) => void;
 }
 
-export const Profile: FC<ProfileProps> = ({ mintId }) => {
+export const TokenTabs: FC<TabsProps> = ({ selectedTab, setSelectedTab }) => {
+  return (
+    <div
+      role="tablist"
+      className="tabs tabs-lifted tabs-md md:tabs-lg w-full rounded"
+    >
+      <input
+        type="radio"
+        role="tab"
+        className={`tab font-semibold [--tab-bg:transparent] ${
+          selectedTab == TokenTabsEnum.POSTS ? 'tab-active' : ''
+        }`}
+        checked={selectedTab == TokenTabsEnum.POSTS}
+        onChange={() => setSelectedTab(TokenTabsEnum.POSTS)}
+        aria-label={TokenTabsEnum.POSTS}
+      />
+      <input
+        type="radio"
+        role="tab"
+        className={`tab font-semibold [--tab-bg:transparent] ${
+          selectedTab == TokenTabsEnum.TRADE ? 'tab-active' : ''
+        }`}
+        checked={selectedTab == TokenTabsEnum.TRADE}
+        onChange={() => setSelectedTab(TokenTabsEnum.TRADE)}
+        aria-label={`${TokenTabsEnum.TRADE}`}
+      />
+    </div>
+  );
+};
+
+export const TokenProfile: FC<{
+  mintId: string | null;
+}> = ({ mintId }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
   const { data: tokenStateData } = useGetMintToken({
     mint: mintId ? new PublicKey(mintId) : null,
   });
   const { data: metadata, isLoading } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
   const [initData, setInitData] = useState<InitDataParsed>();
@@ -132,18 +166,38 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             </span>
           )}
         </div>
-
-        {publicKey && mintId == getDerivedMint(publicKey).toBase58() && (
-          <TelegramWalletButton
-            overrideContent={
-              <div className="btn btn-sm btn-primary btn-outline flex items-center gap-2 justify-start ">
-                <IconWallet />
-                <span className="truncate w-24">{publicKey?.toBase58()}</span>
-              </div>
-            }
-          />
+        <SubscribeBtn mintId={mintId} />
+        {mintSummaryDetails && (
+          <div className="flex items-center gap-2">
+            <>
+              <span>
+                {formatLargeNumber(
+                  mintSummaryDetails.currentHoldersCount || 0
+                ) + ' Subscribers'}
+              </span>
+              <span
+                className={`${
+                  mintSummaryDetails.holdersChange24hPercent < 0
+                    ? 'text-error'
+                    : 'text-success'
+                }`}
+              >
+                {mintSummaryDetails.holdersChange24hPercent < 0
+                  ? `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%`
+                  : `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%`}
+              </span>
+            </>
+            {metadata?.token_info?.price_info?.price_per_token && '||'}
+            {metadata?.token_info?.price_info?.price_per_token && (
+              <>
+                <span>{`$${(
+                  metadata?.token_info?.price_info?.price_per_token || 0
+                ).toPrecision(6)}
+              `}</span>
+              </>
+            )}
+          </div>
         )}
-
         <span className="text-base truncate font-normal">
           {metadata?.content?.metadata.description}
         </span>

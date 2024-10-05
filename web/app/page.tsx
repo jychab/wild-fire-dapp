@@ -53,7 +53,7 @@ export default function Page() {
           </li>
         ))}
       </ul>
-      <div className="max-w-lg w-full h-full sm:p-4">
+      <div className="max-w-lg w-full h-full sm:p-4 pb-16">
         <ContentGrid posts={posts} />
       </div>
     </div>

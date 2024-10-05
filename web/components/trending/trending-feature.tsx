@@ -96,10 +96,7 @@ export const TrendingTable: FC = () => {
                 <tr key={x.mint}>
                   <td>
                     <div className="flex items-center gap-2 ">
-                      <Link
-                        href={`/profile?mintId=${x.mint}`}
-                        className="avatar"
-                      >
+                      <Link href={`/token?mintId=${x.mint}`} className="avatar">
                         <div className="mask mask-circle h-8 w-8">
                           <img src={x.image} alt="" />
                         </div>
@@ -107,7 +104,7 @@ export const TrendingTable: FC = () => {
                       <div className="flex flex-col text-xs">
                         <Link
                           className="link link-hover text-sm"
-                          href={`/profile?mintId=${x.mint}`}
+                          href={`/token?mintId=${x.mint}`}
                         >
                           {x.name}
                         </Link>
@@ -134,7 +131,7 @@ export const TrendingTable: FC = () => {
                   <td>
                     <Link
                       className="link link-hover link-primary"
-                      href={`/profile?mintId=${x.mint}&tab=trade`}
+                      href={`/token?mintId=${x.mint}&tab=trade`}
                     >
                       {`$${formatLargeNumber(x.price * x.supply)}`}
                     </Link>

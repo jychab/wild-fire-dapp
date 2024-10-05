@@ -7,7 +7,7 @@ import { IconPhotoPlus } from '@tabler/icons-react';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../token/token-data-access';
 import { useEditData, useGetMintToken } from './edit-data-access';
 
 interface EditFeatureProps {
@@ -76,9 +76,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
 
   return (
     <div className="flex flex-col gap-4 items-center sm:pt-16 h-full w-full animate-fade-right animate-duration-200 sm:animate-none">
-      <span className="text-3xl md:text-4xl text-center">
-        Edit Token Settings
-      </span>
+      <span className="text-3xl md:text-4xl text-center">Edit Settings</span>
       <div className="px-4 pb-4 flex flex-col gap-4 items-start w-full md:border md:border-base-content rounded">
         <span className="hidden sm:block pt-4">Settings</span>
         <div className="flex flex-col md:flex-row w-full gap-4 items-center md:border-t md:border-base-content md:pt-4">

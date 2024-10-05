@@ -1,10 +1,11 @@
 'use client';
 
 import { proxify } from '@/utils/helper/endpoints';
-import { checkIfMetadataExist } from '@/utils/helper/format';
+import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
+  IconCoin,
   IconLogout,
   IconSquarePlus,
   IconStar,
@@ -17,7 +18,7 @@ import Link from 'next/link';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { UnifiedWalletButton } from 'unified-wallet-adapter-with-telegram';
 import { DAS } from '../../utils/types/das';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../token/token-data-access';
 import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
@@ -67,7 +68,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         tabIndex={0}
         role="button"
         id="user-menu-button"
-        className="relative w-10 h-10 mask mask-circle"
+        className="relative w-10 h-10 mask mask-circle items-center justify-center flex"
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
@@ -83,7 +84,7 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
       </div>
       <ul
         tabIndex={0}
-        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-48 md:w-56"
+        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-48 md:w-60"
       >
         <AuthenticationDropdownMenu />
       </ul>
@@ -118,36 +119,46 @@ export const AuthenticationDropdownMenu: FC = () => {
           </AuthenticationBtn>
         </li>
       )}
-      {publicKey && (
-        <li className="w-full">
-          <Link
-            href={`/profile?mintId=${getDerivedMint(publicKey).toBase58()}`}
-          >
-            <IconUser />
-            Profile
-          </Link>
-        </li>
-      )}
       <li className="w-full">
         <Link href={`/post/create`}>
           <IconSquarePlus />
           Create Post
         </Link>
       </li>
-      {checkIfMetadataExist(metaDataQuery) ? (
+      {publicKey && (
+        <li className="w-full">
+          <Link href={`/profile?address=${publicKey.toBase58()}`}>
+            <IconUser />
+            Profile
+          </Link>
+        </li>
+      )}
+      {checkIfMetadataIsTemporary(metaDataQuery) ? (
         <li className="w-full">
           <Link href={`/mint/create`}>
             <IconStar />
-            Become a Creator
+            Launch Your Own Token
           </Link>
         </li>
       ) : (
-        <li className="w-full">
-          <Link href={`/transactions`}>
-            <IconTransactionBitcoin />
-            Transactions
-          </Link>
-        </li>
+        <>
+          {publicKey && (
+            <li className="w-full">
+              <Link
+                href={`/token?mintId=${getDerivedMint(publicKey).toBase58()}`}
+              >
+                <IconCoin />
+                Your Token
+              </Link>
+            </li>
+          )}
+          <li className="w-full">
+            <Link href={`/transactions`}>
+              <IconTransactionBitcoin />
+              Token Transactions
+            </Link>
+          </li>
+        </>
       )}
       <li className="w-full">
         <ThemeComponent />

@@ -36,7 +36,7 @@ import { FormActionComponent } from '../actions/form-action-component';
 import { isParameterSelectable, isPatternAllowed } from '../actions/guards';
 import { MultiValueActionComponent } from '../actions/multivalue-action-coponent';
 import { SingleValueActionComponent } from '../actions/single-action-value-component';
-import { useGetTokenAccountFromAddress } from '../profile/profile-data-access';
+import { useGetTokenAccountFromAddress } from '../token/token-data-access';
 import { getActionRegistryLookUp } from './blink-data-access';
 import { ActionLayout } from './blinks-layout';
 

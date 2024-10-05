@@ -1026,7 +1026,7 @@ const SelectField: FC<SelectFieldProps> = ({
                   value={value}
                   checked={
                     validationText == value ||
-                    (validationText == '' && value == 'No Validation')
+                    (validationText == '' && value == 'None')
                   }
                   onChange={onChange}
                   className={type}
@@ -1249,9 +1249,18 @@ const ActionModal: FC<{
         </div>
 
         <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
+          {additionalFields.map((field, index) => (
+            <AdditionalFieldComponent
+              key={field.id}
+              field={field}
+              index={index}
+              setAdditionalFields={setAdditionalFields}
+              handleAdditionalFieldChange={handleAdditionalFieldChange}
+            />
+          ))}
           <div className="flex flex-col gap-2">
             <InputField
-              label="Label"
+              label="Button Text"
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
@@ -1266,19 +1275,10 @@ const ActionModal: FC<{
               tooltip="Amount of tokens to reward user for this action."
             />
           </div>
-          {additionalFields.map((field, index) => (
-            <AdditionalFieldComponent
-              key={field.id}
-              field={field}
-              index={index}
-              setAdditionalFields={setAdditionalFields}
-              handleAdditionalFieldChange={handleAdditionalFieldChange}
-            />
-          ))}
         </div>
         <button onClick={handleAddField} className="btn w-fit btn-sm">
           <IconPlus />
-          Add Additional Field
+          Add Input Field
         </button>
         <div className="flex items-center justify-end gap-2">
           {action && query && (
@@ -1377,10 +1377,13 @@ export const AdditionalFieldComponent: FC<{
     },
     [field]
   );
+  useEffect(() => {
+    handleAdditionalFieldChange(field.id, 'fieldName', `field${index + 1}`);
+  }, []);
   return (
     <div className="border input-bordered rounded p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        {`Additional Field ${index + 1}`}
+        {`Input Field ${index + 1}`}
         <button
           onClick={() =>
             setAdditionalFields((prev) => prev.filter((f) => f.id !== field.id))
@@ -1389,14 +1392,26 @@ export const AdditionalFieldComponent: FC<{
           <IconTrash />
         </button>
       </div>
-      <InputField
-        label={'Field Name'}
-        type={'text'}
-        value={field.fieldName}
+
+      <SelectField
+        type="select"
+        label="Field Type"
+        value={field.type}
         onChange={(e) =>
-          handleAdditionalFieldChange(field.id, 'fieldName', e.target.value)
+          handleAdditionalFieldChange(field.id, 'type', e.target.value)
         }
-        placeholder=""
+        options={[
+          'number',
+          'text',
+          'email',
+          'url',
+          'date',
+          'datetime-local',
+          'textarea',
+          'select',
+          'radio',
+          'checkbox',
+        ].map((type) => ({ key: type, value: type }))}
       />
       <InputField
         label={'Placeholder'}
@@ -1407,121 +1422,95 @@ export const AdditionalFieldComponent: FC<{
         }
         placeholder=""
       />
-      <div className="border border-base-300 p-2 rounded flex flex-col gap-2">
-        <SelectField
-          type="select"
-          label="Input Type"
-          value={field.type}
-          onChange={(e) =>
-            handleAdditionalFieldChange(field.id, 'type', e.target.value)
-          }
-          options={[
-            'number',
-            'text',
-            'email',
-            'url',
-            'date',
-            'datetime-local',
-            'textarea',
-            'select',
-            'radio',
-            'checkbox',
-          ].map((type) => ({ key: type, value: type }))}
-        />
-        {(field.type == 'select' ||
-          field.type == 'radio' ||
-          field.type == 'checkbox') && (
-          <>
-            {field.options?.map((x) => (
-              <div key={x.id} className="flex w-full items-center gap-2">
-                <InputField
-                  label={''}
-                  placeholder="Input Label"
-                  type={'text'}
-                  value={x.label}
-                  onChange={(e) => {
+      {(field.type == 'select' ||
+        field.type == 'radio' ||
+        field.type == 'checkbox') && (
+        <>
+          {field.options?.map((x) => (
+            <div key={x.id} className="flex w-full items-center gap-2">
+              <InputField
+                label={''}
+                placeholder="Input Label"
+                type={'text'}
+                value={x.label}
+                onChange={(e) => {
+                  handleSelectableOptionsChange(
+                    x.id,
+                    ['label', 'value'],
+                    e.target.value
+                  );
+                }}
+              />
+              <label className="text-sm flex items-center gap-2">
+                Preselected
+                <input
+                  type="checkbox"
+                  className="checkbox"
+                  checked={x.selected || false}
+                  onChange={(e) =>
                     handleSelectableOptionsChange(
                       x.id,
-                      ['label', 'value'],
-                      e.target.value
-                    );
-                  }}
+                      ['selected'],
+                      e.target.checked
+                    )
+                  }
                 />
-                <label className="text-sm flex items-center gap-2">
-                  Preselected
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    checked={x.selected || false}
-                    onChange={(e) =>
-                      handleSelectableOptionsChange(
-                        x.id,
-                        ['selected'],
-                        e.target.checked
-                      )
-                    }
-                  />
-                </label>
-                <button onClick={() => handleDeleteOption(x)}>
-                  <IconTrash />
-                </button>
-              </div>
-            ))}
-            <div onClick={handleAddOption} className="btn btn-sm w-fit">
-              <IconPlus />
-              Add Input Options
+              </label>
+              <button onClick={() => handleDeleteOption(x)}>
+                <IconTrash />
+              </button>
             </div>
-          </>
-        )}
-        {field.type == 'select' ||
-        field.type == 'radio' ||
-        field.type == 'checkbox' ? (
-          field.options &&
-          field.options.filter((x) => x.label).length > 0 && (
-            <SelectField
-              type={field.type}
-              tooltip="Verify if the user's response matches this field. Only matching response will receive a reward."
-              label={'Validation'}
-              value={field.validation || ''}
-              onChange={(e) =>
-                handleAdditionalFieldChange(
-                  field.id,
-                  'validation',
-                  e.target.value == 'No Validation' ? '' : e.target.value
-                )
-              }
-              options={[
-                {
-                  key: field.options.length.toString(),
-                  value: 'No Validation',
-                },
-              ].concat(
-                field.options
-                  .filter((x) => x.label)
-                  .map((type, index) => ({
-                    key: index.toString(),
-                    value: type.value,
-                  }))
-              )}
-            />
-          )
-        ) : (
-          <InputField
+          ))}
+          <div onClick={handleAddOption} className="btn btn-sm w-fit">
+            <IconPlus />
+            Add Input Options
+          </div>
+        </>
+      )}
+      {field.type == 'select' ||
+      field.type == 'radio' ||
+      field.type == 'checkbox' ? (
+        field.options &&
+        field.options.filter((x) => x.label).length > 0 && (
+          <SelectField
+            type={field.type}
             tooltip="Verify if the user's response matches this field. Only matching response will receive a reward."
             label={'Validation'}
-            type={field.type}
-            value={field.validation}
+            value={field.validation || ''}
             onChange={(e) =>
               handleAdditionalFieldChange(
                 field.id,
                 'validation',
-                e.target.value
+                e.target.value == 'None' ? '' : e.target.value
               )
             }
-            placeholder="Optional"
+            options={[
+              {
+                key: field.options.length.toString(),
+                value: 'None',
+              },
+            ].concat(
+              field.options
+                .filter((x) => x.label)
+                .map((type, index) => ({
+                  key: index.toString(),
+                  value: type.value,
+                }))
+            )}
           />
-        )}
-      </div>
+        )
+      ) : (
+        <InputField
+          tooltip="Verify if the user's response matches this field. Only matching response will receive a reward."
+          label={'Validation'}
+          type={field.type}
+          value={field.validation}
+          onChange={(e) =>
+            handleAdditionalFieldChange(field.id, 'validation', e.target.value)
+          }
+          placeholder="Optional"
+        />
+      )}
     </div>
   );
 };

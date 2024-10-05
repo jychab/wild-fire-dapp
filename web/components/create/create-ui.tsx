@@ -10,7 +10,7 @@ export const CreateAccountBtn: FC = () => {
       className="btn btn-primary rounded btn w-full"
     >
       <IconStar />
-      Become a Creator
+      Launch Your Own Token
     </button>
   );
 };

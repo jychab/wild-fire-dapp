@@ -1,7 +1,7 @@
 'use client';
 
 import { db } from '@/utils/firebase/firebase';
-import { checkIfMetadataExist } from '@/utils/helper/format';
+import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -57,7 +57,7 @@ export function useEditData({
       if (input.picture) {
         imageUrl = await uploadMedia(input.picture, wallet.publicKey);
       }
-      if (checkIfMetadataExist(metadata)) {
+      if (checkIfMetadataIsTemporary(metadata)) {
         await setTemporaryProfile(input.name, input.description, imageUrl);
         return 'Success';
       }
@@ -109,7 +109,7 @@ export function useEditData({
     onSuccess: async (signature) => {
       if (signature) {
         transactionToast(signature);
-        router.push(`/profile?mintId=${mint?.toBase58()}`);
+        router.push(`/token?mintId=${mint?.toBase58()}`);
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-token-details', { mint: mint }],

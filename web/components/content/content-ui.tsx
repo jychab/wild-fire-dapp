@@ -31,8 +31,8 @@ import {
 } from '../blinks/blinks-layout';
 import { BaseButtonProps } from '../blinks/ui/action-button';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenDetails } from '../profile/profile-data-access';
 import { ShareContent } from '../share/share-content';
+import { useGetTokenDetails } from '../token/token-data-access';
 import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import {
   checkUrlIsValid,
@@ -93,7 +93,7 @@ export const UserProfile: FC<{
   return (
     <div className="flex w-full items-center justify-between p-2">
       <Link
-        href={`/profile?mintId=${blinksDetail.mint}`}
+        href={`/token?mintId=${blinksDetail.mint}`}
         className="link link-hover flex items-center gap-2 "
       >
         <div className="relative w-8 h-8 mask mask-circle">
@@ -204,7 +204,7 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
           {!editable && isLiquidityPoolFound && (
             <li>
               <Link
-                href={`/profile?mintId=${blinksDetail?.mint}&tab=trade`}
+                href={`/token?mintId=${blinksDetail?.mint}&tab=trade`}
                 className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
               >
                 <IconChartLine size={18} />

@@ -9,7 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import { useGetTokenDetails } from '../token/token-data-access';
 import {
   useCreateMint,
   useCreateMintWithExistingToken,

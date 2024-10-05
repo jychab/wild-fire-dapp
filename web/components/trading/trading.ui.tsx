@@ -23,8 +23,8 @@ import { useGetMintToken } from '../edit/edit-data-access';
 import {
   useGetLargestAccountFromMint,
   useGetMintSummaryDetails,
-} from '../profile/profile-data-access';
-import { LockedContent } from '../profile/profile-ui';
+} from '../token/token-data-access';
+import { LockedContent } from '../token/token-ui';
 import TradingViewChart from './charts';
 import {
   getQuote,

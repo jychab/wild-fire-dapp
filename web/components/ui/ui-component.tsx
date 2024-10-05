@@ -1,27 +1,33 @@
 'use client';
 
 import { proxify } from '@/utils/helper/endpoints';
+import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
 import {
   IconBrandGithubFilled,
   IconBrandTelegram,
   IconBrandTwitterFilled,
+  IconCoin,
+  IconHome,
   IconMoon,
+  IconSettings,
+  IconSquarePlus,
   IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
+import { useUnifiedWalletContext } from 'unified-wallet-adapter-with-telegram';
 import logo from '../../public/images/logo.png';
 import {
   AuthenticationBtn,
   SignInBtn,
 } from '../authentication/authentication-ui';
-import { useGetTokenDetails } from '../profile/profile-data-access';
-import SearchBar from '../search/search-ui';
+import { SearchBar } from '../search/search-ui';
+import { useGetTokenDetails } from '../token/token-data-access';
 import { UploadBtn } from '../upload/upload-ui';
 
 export const ThemeComponent: FC = ({}) => {
@@ -114,9 +120,7 @@ export const Navbar: FC = () => {
         {publicKey ? (
           <button
             onClick={() =>
-              router.push(
-                `/profile?mintId=${getDerivedMint(publicKey).toBase58()}`
-              )
+              router.push(`/profile?address=${publicKey.toBase58()}`)
             }
             className="relative w-10 h-10 mask mask-circle"
           >
@@ -168,6 +172,54 @@ export const Navbar: FC = () => {
         </div>
       </div>
     </>
+  );
+};
+
+export const BottomNavBar: FC = () => {
+  const { setShowModal } = useUnifiedWalletContext();
+  const { publicKey } = useWallet();
+  const { data: metaDataQuery } = useGetTokenDetails({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
+  const router = useRouter();
+  const path = usePathname();
+  return (
+    <div className="btm-nav flex sm:hidden">
+      <button
+        onClick={() => router.push('/')}
+        className={`${path == '/' ? 'active' : ''}`}
+      >
+        <IconHome />
+      </button>
+      {!checkIfMetadataIsTemporary(metaDataQuery) && (
+        <button
+          className={`${path == '/token' ? 'active' : ''}`}
+          onClick={() =>
+            publicKey
+              ? router.push(`/token?mintId=${getDerivedMint(publicKey)}`)
+              : setShowModal(true)
+          }
+        >
+          <IconCoin />
+        </button>
+      )}
+      <button
+        className={`${path == '/post/create' ? 'active' : ''}`}
+        onClick={() => router.push(`/post/create`)}
+      >
+        <IconSquarePlus />
+      </button>
+      <button
+        className={`${path == '/profile' ? 'active' : ''}`}
+        onClick={() =>
+          publicKey
+            ? router.push(`/profile?address=${publicKey.toBase58()}`)
+            : setShowModal(true)
+        }
+      >
+        <IconSettings />
+      </button>
+    </div>
   );
 };
 

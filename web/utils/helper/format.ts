@@ -85,7 +85,7 @@ export function checkIfTruncated(element: HTMLSpanElement | null) {
   return isTextClamped;
 }
 
-export function checkIfMetadataExist(
+export function checkIfMetadataIsTemporary(
   metadata: DAS.GetAssetResponse | null | undefined
 ) {
   return !metadata || metadata.temporary;
