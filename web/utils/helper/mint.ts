@@ -53,6 +53,14 @@ export function getAssociatedEscrowAccount(creator: PublicKey) {
 
   return tokenState;
 }
+export function getAssociatedPoolAccount(mint: PublicKey) {
+  const [tokenState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('liquidity_pool'), mint.toBuffer()],
+    PROGRAM_ID
+  );
+
+  return tokenState;
+}
 
 export async function getAsset(mint: PublicKey) {
   const response = await fetch(process.env.NEXT_PUBLIC_RPC_ENDPOINT as string, {

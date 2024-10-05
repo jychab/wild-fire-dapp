@@ -1,6 +1,5 @@
 'use client';
 
-import { useWallet } from '@solana/wallet-adapter-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ReactNode, Suspense } from 'react';
@@ -10,7 +9,6 @@ import { RightColumn } from '../trending/trending-feature';
 import { Navbar } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
-  const { publicKey } = useWallet();
   const currentPath = usePathname();
 
   return (
@@ -24,18 +22,15 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 <span className="loading loading-spinner loading-lg"></span>
               }
             >
-              {(!!publicKey || currentPath != '/') && (
-                <ul className="hidden min-[1800px]:flex flex-col menu menu-primary bg-base-100 fixed z-10 border-base-300 border-r left-0 gap-2 min-h-screen w-full flex-1 max-w-[250px]">
-                  <AuthenticationDropdownMenu />
-                </ul>
-              )}
+              <ul className="hidden min-[1800px]:flex flex-col menu menu-primary bg-base-100 fixed z-10 border-base-300 border-r left-0 gap-2 min-h-screen w-full flex-1 max-w-[250px]">
+                <AuthenticationDropdownMenu />
+              </ul>
               {children}
-              {!!publicKey &&
-                (currentPath != '/' ? (
-                  <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
-                ) : (
-                  <RightColumn />
-                ))}
+              {currentPath != '/' ? (
+                <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
+              ) : (
+                <RightColumn />
+              )}
             </Suspense>
           </div>
           <Toaster position="bottom-right" />

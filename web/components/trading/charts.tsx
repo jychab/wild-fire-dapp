@@ -1,4 +1,5 @@
 import { DEFAULT_MINT_DECIMALS, NATIVE_MINT_DECIMALS } from '@/utils/consts';
+import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
@@ -315,19 +316,19 @@ const TradingViewChart = memo(
               className="rounded"
             />
           )}
-          <span>{`${metadata?.content?.metadata.symbol}-SOL`}</span>
+          <span>{`${metadata?.content?.metadata.symbol}`}</span>
           <span>.</span>
           <span>{'15m'}</span>
           <span>.</span>
-          <span>{`$${
+          <span>{`$${formatLargeNumber(
             currentPrice ||
-            (liquidityPoolData &&
-            !Number.isNaN(Number(liquidityPoolData.reserveTokenSold))
-              ? calculatePriceInSOL(
-                  Number(liquidityPoolData.reserveTokenSold)
-                ) * (solPrice?.token_info?.price_info?.price_per_token || 0)
-              : 0)
-          }`}</span>
+              (liquidityPoolData &&
+              !Number.isNaN(Number(liquidityPoolData.reserveTokenSold))
+                ? calculatePriceInSOL(
+                    Number(liquidityPoolData.reserveTokenSold)
+                  ) * (solPrice?.token_info?.price_info?.price_per_token || 0)
+                : 0)
+          )}`}</span>
         </div>
       </div>
     );

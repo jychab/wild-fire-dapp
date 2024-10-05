@@ -1,20 +1,12 @@
 'use client';
 
 import { ContentGrid } from '@/components/content/content-feature';
-import { LandingPage } from '@/components/landingpage/landingpage-feature';
 import { fetchPostByAddress, fetchPostByCategories } from '@/utils/helper/post';
 import { GetPostsResponse } from '@/utils/types/post';
+import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { FC, useEffect, useState } from 'react';
-
-export default function Page() {
-  const { publicKey } = useWallet();
-  if (publicKey) {
-    return <MainPage publicKey={publicKey} />;
-  }
-  return <LandingPage />;
-}
+import { useEffect, useState } from 'react';
 
 enum Categories {
   FOR_YOU = 'For You',
@@ -24,20 +16,21 @@ enum Categories {
   GAMES = 'Games',
 }
 
-const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
+export default function Page() {
+  const { publicKey } = useWallet();
   const [posts, setPosts] = useState<GetPostsResponse | undefined | null>();
   const [category, setCategory] = useState(Categories.FOR_YOU);
 
   useEffect(() => {
     switch (category) {
       case Categories.FOR_YOU:
-        if (publicKey) {
-          fetchPostByAddress(publicKey).then((result) => {
+        fetchPostByAddress(publicKey || new PublicKey(NATIVE_MINT)).then(
+          (result) => {
             if (result) {
               setPosts(result);
             }
-          });
-        }
+          }
+        );
         break;
       default:
         fetchPostByCategories('post', category, 'tags').then((result) => {
@@ -51,7 +44,7 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
 
   return (
     <div className="flex flex-col w-full absolute items-center justify-center">
-      <ul className="menu gap-4 menu-horizontal p-4 ">
+      <ul className="hidden sm:flex menu gap-4 menu-horizontal p-4 ">
         {Object.values(Categories).map((x) => (
           <li key={x} onClick={() => setCategory(x)}>
             <a className={`${category == x ? 'active' : ''} rounded-full`}>
@@ -65,4 +58,4 @@ const MainPage: FC<{ publicKey: PublicKey }> = ({ publicKey }) => {
       </div>
     </div>
   );
-};
+}

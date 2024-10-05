@@ -13,11 +13,13 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import logo from '../../public/images/logo.png';
-import { SignInBtn } from '../authentication/authentication-ui';
-import { Logo } from '../landingpage/landingpage-feature';
+import {
+  AuthenticationBtn,
+  SignInBtn,
+} from '../authentication/authentication-ui';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import SearchBar from '../search/search-ui';
 import { UploadBtn } from '../upload/upload-ui';
@@ -101,15 +103,17 @@ export const Navbar: FC = () => {
   const { data: metaDataQuery } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
-  const path = usePathname();
   return (
     <>
-      {(publicKey || path !== '/') && (
-        <div className="flex sm:hidden justify-between w-full navbar items-center px-4 z-20">
-          <Logo styles="w-10 h-10" hideLogo={true} />
+      <div className="flex sm:hidden justify-between w-full navbar items-center z-20">
+        <Link className="flex sm:hidden items-center" href={'/'}>
+          <span className="block font-luckiestguy text-2xl leading-[0]">
+            BlinksFeed
+          </span>
+        </Link>
+        {publicKey ? (
           <button
             onClick={() =>
-              publicKey &&
               router.push(
                 `/profile?mintId=${getDerivedMint(publicKey).toBase58()}`
               )
@@ -128,10 +132,18 @@ export const Navbar: FC = () => {
               <IconUserCircle size={32} />
             )}
           </button>
-        </div>
-      )}
+        ) : (
+          <AuthenticationBtn
+            children={
+              <div className="btn btn-sm btn-outline bg-base-100">
+                Connect Wallet
+              </div>
+            }
+          />
+        )}
+      </div>
       <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
-        <Link className="flex md:px-4 items-end gap-2 w-fit" href="/">
+        <Link className="flex sm:px-4 items-end gap-2 w-fit" href="/">
           <div className="relative w-8 h-8">
             <Image
               src={logo}
@@ -141,14 +153,14 @@ export const Navbar: FC = () => {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
-          <span className="hidden md:block font-luckiestguy text-3xl leading-[0.75]">
+          <span className="hidden sm:block font-luckiestguy text-3xl leading-[0.75]">
             BlinksFeed
           </span>
         </Link>
         {publicKey && <SearchBar />}
         <div className="flex gap-1 w-fit items-center">
           {publicKey && (
-            <div className="hidden md:flex w-36">
+            <div className="hidden sm:flex w-36">
               <UploadBtn />
             </div>
           )}

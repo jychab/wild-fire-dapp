@@ -5,7 +5,7 @@ import { formatLargeNumber } from '@/utils/helper/format';
 import {
   getAsset,
   getAssociatedEscrowAccount,
-  getDerivedMint,
+  getAssociatedPoolAccount,
 } from '@/utils/helper/mint';
 import {
   calculateAmountLamports,
@@ -401,7 +401,6 @@ interface ActivitiesProps {
 }
 
 export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
-  const { publicKey } = useWallet();
   const { data: largestTokenAccount } = useGetLargestAccountFromMint({
     mint: mintId ? new PublicKey(mintId) : null,
     tokenProgram: metadata?.token_info?.token_program
@@ -409,7 +408,14 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
       : null,
   });
   const { data: tokenStateData } = useGetMintToken({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
+    mint: metadata?.grouping?.find((x) => x.group_key == 'collection')
+      ?.group_value
+      ? new PublicKey(
+          metadata?.grouping?.find(
+            (x) => x.group_key == 'collection'
+          )!.group_value
+        )
+      : null,
   });
   return (
     <div className={`md:bg-base-200 flex flex-col w-full gap-2 rounded p-4`}>
@@ -445,9 +451,17 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                         tokenStateData &&
                         x.owner.toBase58() ==
                           getAssociatedEscrowAccount(
-                            new PublicKey(tokenStateData.mint)
+                            new PublicKey(tokenStateData.admin)
                           ).toBase58()
-                          ? '(Distribution Wallet)'
+                          ? '(Airdrop Wallet)'
+                          : ''
+                      }${
+                        mintId &&
+                        x.owner.toBase58() ==
+                          getAssociatedPoolAccount(
+                            new PublicKey(mintId)
+                          ).toBase58()
+                          ? '(Bonding Curve)'
                           : ''
                       } ${x.owner.toBase58()}`}
                     </Link>
