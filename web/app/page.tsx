@@ -1,8 +1,12 @@
 'use client';
 
-import { ContentGrid } from '@/components/content/content-feature';
+import {
+  ContentGrid,
+  StackedContentGrid,
+  ValidateContent,
+} from '@/components/content/content-feature';
 import { fetchPostByAddress, fetchPostByCategories } from '@/utils/helper/post';
-import { GetPostsResponse } from '@/utils/types/post';
+import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -18,7 +22,7 @@ enum Categories {
 
 export default function Page() {
   const { publicKey } = useWallet();
-  const [posts, setPosts] = useState<GetPostsResponse | undefined | null>();
+  const [posts, setPosts] = useState<PostBlinksDetail[]>();
   const [category, setCategory] = useState(Categories.FOR_YOU);
 
   useEffect(() => {
@@ -27,7 +31,7 @@ export default function Page() {
         fetchPostByAddress(publicKey || new PublicKey(NATIVE_MINT)).then(
           (result) => {
             if (result) {
-              setPosts(result);
+              setPosts(result.posts || []);
             }
           }
         );
@@ -35,7 +39,7 @@ export default function Page() {
       default:
         fetchPostByCategories('post', category, 'tags').then((result) => {
           if (result) {
-            setPosts({ posts: result });
+            setPosts(result);
           }
         });
         break;
@@ -43,8 +47,8 @@ export default function Page() {
   }, [category, publicKey]);
 
   return (
-    <div className="flex flex-col w-full absolute items-center justify-center">
-      <ul className="hidden sm:flex menu gap-4 menu-horizontal p-4 ">
+    <div className="flex flex-col w-full items-center gap-4 py-4 sm:gap-8 overflow-y-scroll scrollbar-none">
+      <ul className="hidden sm:flex menu gap-4 menu-horizontal">
         {Object.values(Categories).map((x) => (
           <li key={x} onClick={() => setCategory(x)}>
             <a className={`${category == x ? 'active' : ''} rounded-full`}>
@@ -53,9 +57,16 @@ export default function Page() {
           </li>
         ))}
       </ul>
-      <div className="max-w-lg w-full h-full sm:p-4 pb-16">
-        <ContentGrid posts={posts} />
+      <div className="max-w-lg w-full px-4">
+        {category === Categories.FOR_YOU ? (
+          <StackedContentGrid posts={posts} />
+        ) : (
+          <ContentGrid posts={posts} />
+        )}
       </div>
+      {posts && posts.length > 0 && category === Categories.FOR_YOU && (
+        <ValidateContent posts={posts} setPosts={setPosts} />
+      )}
     </div>
   );
 }

@@ -39,12 +39,14 @@ export const TokenFeature: FC<{
             {selectedTab == TokenTabsEnum.POSTS && (
               <ContentPanel mintId={mintId} />
             )}
-            {selectedTab == TokenTabsEnum.TRADE && (
-              <TradingPanel
-                collectionMint={mintId}
-                mintId={mintTokenDetails?.memberMint}
-              />
-            )}
+            {selectedTab == TokenTabsEnum.TRADE &&
+              mintId &&
+              mintTokenDetails?.memberMint && (
+                <TradingPanel
+                  collectionMint={mintId}
+                  mintId={mintTokenDetails.memberMint}
+                />
+              )}
           </div>
         </div>
       </div>

@@ -9,7 +9,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconAlertTriangleFilled,
-  IconChartLine,
   IconDotsVertical,
   IconEdit,
   IconExclamationCircle,
@@ -168,6 +167,9 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
     postId: blinksDetail?.id || null,
   });
+  if (!editable) {
+    return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -184,15 +186,6 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
           tabIndex={0}
           className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-0 text-sm w-28"
         >
-          <li>
-            <Link
-              href={`/token?mintId=${blinksDetail?.mint}&tab=trade`}
-              className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-            >
-              <IconChartLine size={18} />
-              Trade
-            </Link>
-          </li>
           {editable &&
             publicKey &&
             blinksDetail.creator == publicKey?.toBase58() && (

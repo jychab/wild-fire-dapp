@@ -36,15 +36,13 @@ import {
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
-  collectionMint: string | null | undefined;
-  mintId: string | null | undefined;
+  collectionMint: string;
+  mintId: string;
 }> = ({ collectionMint, mintId }) => {
   const [metadata, setMetadata] = useState<DAS.GetAssetResponse | null>();
   useEffect(() => {
     if (mintId) {
       getAsset(new PublicKey(mintId)).then((result) => setMetadata(result));
-    } else {
-      setMetadata(null);
     }
   }, [mintId]);
   const { publicKey } = useWallet();
@@ -53,17 +51,17 @@ export const TradingPanel: FC<{
   const [buy, setBuy] = useState(true);
 
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: new PublicKey(mintId),
   });
 
   const swapMutation = useSwapMutation({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: new PublicKey(mintId),
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata?.token_info?.token_program)
       : undefined,
   });
   const { data: liquidityPoolData } = useGetLiquidityPool({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: new PublicKey(mintId),
   });
 
   const { data: userAccountInfo } = useGetAccountInfo({
@@ -222,7 +220,7 @@ export const TradingPanel: FC<{
 
   return (
     <div className="stack w-full h-full">
-      {metadata !== undefined && <LockedContent metadata={metadata} />}
+      {!mintId && <LockedContent />}
       <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
         <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
           <div className="flex flex-col h-[500px] w-full">
@@ -363,7 +361,6 @@ export const TradingPanel: FC<{
               <button
                 disabled={showError != ''}
                 onClick={() => {
-                  if (!mintId) return;
                   swapMutation.mutateAsync({
                     poolState: liquidityPoolData,
                     inputMint: buy ? NATIVE_MINT.toBase58() : mintId,

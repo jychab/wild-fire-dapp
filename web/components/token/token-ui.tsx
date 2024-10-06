@@ -3,7 +3,6 @@
 import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
-import { DAS } from '@/utils/types/das';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -53,7 +52,7 @@ export const ContentPanel: FC<ContentPanelProps> = ({ mintId }) => {
       hideUserPanel={true}
       showMintDetails={false}
       editable={true}
-      posts={posts}
+      posts={posts?.posts}
     />
   );
 };
@@ -205,44 +204,40 @@ export const TokenProfile: FC<{
     </div>
   );
 };
-export const LockedContent: FC<{
-  metadata: DAS.GetAssetResponse | null;
-}> = ({ metadata }) => {
+export const LockedContent: FC = () => {
   return (
-    metadata == null && (
-      <div className="flex flex-col flex-1 justify-center items-center bg-opacity-80 p-4 h-full w-full">
-        <div className="flex flex-col gap-4 rounded-box bg-base-100 border w-full max-w-sm p-4">
-          <div className="flex flex-col gap-4 items-center">
-            <h1 className="font-bold text-xl">Unlock This Feature</h1>
-            <span className="text-center text-sm">
-              Launch your own token to unlock the following features
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <div className="divider mt-0"></div>
-            <div className="flex gap-4 px-4 items-center">
-              <IconMoneybag />
-              <div className="flex flex-col">
-                <h2 className="font-bold">Monetize your Content</h2>
-                <span className="text-sm">Earn trading fees</span>
-              </div>
-            </div>
-            <div className="divider"></div>
-            <div className="flex gap-4 px-4 items-center">
-              <IconSend />
-              <div className="flex flex-col">
-                <h2 className="font-bold">Airdrop to Share</h2>
-                <span className="text-sm">
-                  Distribute your content to 200k users for just 1 SOL.
-                </span>
-              </div>
-            </div>
-            <div className="divider mb-0"></div>
-          </div>
-          <CreateAccountBtn />
+    <div className="flex flex-col flex-1 justify-center items-center bg-opacity-80 p-4 h-full w-full">
+      <div className="flex flex-col gap-4 rounded-box bg-base-100 border w-full max-w-sm p-4">
+        <div className="flex flex-col gap-4 items-center">
+          <h1 className="font-bold text-xl">Unlock This Feature</h1>
+          <span className="text-center text-sm">
+            Launch your own token to unlock the following features
+          </span>
         </div>
+        <div className="flex flex-col">
+          <div className="divider mt-0"></div>
+          <div className="flex gap-4 px-4 items-center">
+            <IconMoneybag />
+            <div className="flex flex-col">
+              <h2 className="font-bold">Monetize your Content</h2>
+              <span className="text-sm">Earn trading fees</span>
+            </div>
+          </div>
+          <div className="divider"></div>
+          <div className="flex gap-4 px-4 items-center">
+            <IconSend />
+            <div className="flex flex-col">
+              <h2 className="font-bold">Airdrop to Share</h2>
+              <span className="text-sm">
+                Distribute your content to 200k users for just 1 SOL.
+              </span>
+            </div>
+          </div>
+          <div className="divider mb-0"></div>
+        </div>
+        <CreateAccountBtn />
       </div>
-    )
+    </div>
   );
 };
 export const SubscribeBtn: FC<{

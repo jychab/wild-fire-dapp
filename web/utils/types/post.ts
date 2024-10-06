@@ -7,11 +7,10 @@ export interface GetPostsResponse {
 export interface PostContent extends ActionGetResponse, PostBlinksDetail {
   carousel?: Carousel[];
   softDelete?: boolean;
-  commentsEngagementScore?: { mint: string; amount: number }[];
-  postEngagementScore?: { mint: string; amount: number }[];
 }
 export interface PostBlinksDetail {
-  creator: string;
+  memberMint?: string;
+  creator?: string;
   url: string;
   mint: string;
   id: string;

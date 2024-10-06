@@ -1,7 +1,10 @@
 'use client';
 
-import { GetPostsResponse, PostContent } from '@/utils/types/post';
-import { FC } from 'react';
+import { validatePost } from '@/utils/firebase/functions';
+import { PostBlinksDetail, PostContent } from '@/utils/types/post';
+import { IconChartLine, IconHeartFilled, IconX } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { DisplayContent } from './content-ui';
 
 interface ContentCardFeatureProps {
@@ -24,7 +27,7 @@ export const ContentCardFeature: FC<ContentCardFeatureProps> = ({ post }) => {
 };
 
 interface ContentGridProps {
-  posts: GetPostsResponse | undefined | null;
+  posts: PostBlinksDetail[] | undefined | null;
   showMintDetails?: boolean;
   editable?: boolean;
   multiGrid?: boolean;
@@ -45,7 +48,7 @@ export const ContentGrid: FC<ContentGridProps> = ({
         multiGrid ? 'grid-cols-2 lg:grid-cols-5' : ''
       }`}
     >
-      {posts.posts?.map((x) => (
+      {posts?.map((x) => (
         <DisplayContent
           key={x.id}
           blinksDetail={x}
@@ -61,6 +64,88 @@ export const ContentGrid: FC<ContentGridProps> = ({
   ) : (
     <div className="flex items-center justify-center w-full ">
       <div className="loading loading-dots" />
+    </div>
+  );
+};
+
+export const StackedContentGrid: FC<ContentGridProps> = ({
+  posts,
+  hideComment = false,
+  showMintDetails = true,
+  editable = false,
+  multiGrid = false,
+  hideUserPanel = false,
+}) => {
+  return !!posts ? (
+    <div className={`w-full stack`}>
+      {posts.length > 0 ? (
+        posts.map((x) => (
+          <DisplayContent
+            key={x.id}
+            blinksDetail={x}
+            hideUserPanel={hideUserPanel}
+            hideComment={hideComment}
+            showMintDetails={showMintDetails}
+            editable={editable}
+            multiGrid={multiGrid}
+            expandAll={!multiGrid}
+          />
+        ))
+      ) : (
+        <div className="border rounded-box p-4 w-full h-96 items-center justify-center flex flex-col  gap-4">
+          <span>You've reached the end of your feed</span>
+          <span>Comeback in 30mins...</span>
+        </div>
+      )}
+    </div>
+  ) : (
+    <div className="flex items-center justify-center w-full ">
+      <div className="loading loading-dots" />
+    </div>
+  );
+};
+
+export const ValidateContent: FC<{
+  posts: PostBlinksDetail[];
+  setPosts: Dispatch<SetStateAction<PostBlinksDetail[] | undefined>>;
+}> = ({ posts, setPosts }) => {
+  const router = useRouter();
+  return (
+    <div className="flex w-full bg-base-100 justify-evenly p-2 items-center max-w-lg">
+      <button
+        onClick={() => {
+          if (posts[0].memberMint) {
+            validatePost(
+              posts[0].memberMint,
+              posts[0].mint,
+              posts[0].id,
+              false
+            );
+            setPosts((prev) => (prev ? prev.slice(1) : undefined));
+          }
+        }}
+        className="btn btn-outline border-base-300 shadow-sm btn-warning rounded-full"
+      >
+        <IconX />
+      </button>
+      <button
+        onClick={() => router.push(`token?mintId=${posts[0].mint}&tab=trade`)}
+        className="btn btn-outline border-base-300 shadow-sm btn-success rounded-box text-base"
+      >
+        <IconChartLine />
+        <span>Buy / Sell</span>
+      </button>
+      <button
+        onClick={() => {
+          if (posts[0].memberMint) {
+            validatePost(posts[0].memberMint, posts[0].mint, posts[0].id, true);
+            setPosts((prev) => (prev ? prev.slice(1) : undefined));
+          }
+        }}
+        className="btn btn-outline border-base-300 shadow-sm btn-error rounded-full"
+      >
+        <IconHeartFilled />
+      </button>
     </div>
   );
 };

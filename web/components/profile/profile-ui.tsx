@@ -49,7 +49,7 @@ export const ContentPanel: FC<ContentPanelProps> = ({ address }) => {
       hideUserPanel={true}
       showMintDetails={false}
       editable={true}
-      posts={posts}
+      posts={posts?.posts}
     />
   );
 };
@@ -137,7 +137,6 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             }
           />
         )}
-
         <span className="text-base truncate font-normal">
           {metadata?.content?.metadata.description}
         </span>

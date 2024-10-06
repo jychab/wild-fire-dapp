@@ -50,6 +50,16 @@ export async function createOrEditPost(
   return result.data as string;
 }
 
+export async function validatePost(
+  memberMint: string,
+  mint: string,
+  postId: string,
+  like: boolean
+) {
+  const validatePost = httpsCallable(functions, 'validatePost');
+  await validatePost({ memberMint, mint, postId, like });
+}
+
 export async function deletePost(mint: string, postId: string) {
   const deletePost = httpsCallable(functions, 'deletePost');
   const result = await deletePost({ mint, postId });

@@ -111,7 +111,7 @@ export const Navbar: FC = () => {
   });
   return (
     <>
-      <div className="flex sm:hidden justify-between w-full navbar items-center z-20">
+      <div className="flex fixed sm:hiddenw-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
         <Link className="flex sm:hidden items-center" href={'/'}>
           <span className="block font-luckiestguy text-2xl leading-[0]">
             BlinksFeed
