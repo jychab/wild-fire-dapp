@@ -137,7 +137,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         ]);
         revalidateTags('post');
         transactionToast(res.signature);
-        router.push(`/token?mintId=${mint?.toBase58()}`);
+        router.push(`/profile?address=${wallet.publicKey?.toBase58()}`);
       }
     },
     onError: (error) => {

@@ -762,6 +762,22 @@ export type Blinksfeed = {
           signer: true;
         },
         {
+          name: 'escrow';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [101, 115, 99, 114, 111, 119];
+              },
+              {
+                kind: 'account';
+                path: 'admin';
+              }
+            ];
+          };
+        },
+        {
           name: 'mint';
           writable: true;
           pda: {
@@ -1019,22 +1035,6 @@ export type Blinksfeed = {
           };
         },
         {
-          name: 'escrow';
-          writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: 'const';
-                value: [101, 115, 99, 114, 111, 119];
-              },
-              {
-                kind: 'account';
-                path: 'admin';
-              }
-            ];
-          };
-        },
-        {
           name: 'tokenProgramMint';
           address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
         },
@@ -1082,6 +1082,9 @@ export type Blinksfeed = {
         {
           name: 'distributor';
           signer: true;
+        },
+        {
+          name: 'admin';
         },
         {
           name: 'metadata';
@@ -1175,6 +1178,18 @@ export type Blinksfeed = {
         },
         {
           name: 'collectionMint';
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [109, 105, 110, 116];
+              },
+              {
+                kind: 'account';
+                path: 'admin';
+              }
+            ];
+          };
         },
         {
           name: 'memberMint';
@@ -1188,6 +1203,22 @@ export type Blinksfeed = {
               {
                 kind: 'arg';
                 path: 'index';
+              }
+            ];
+          };
+        },
+        {
+          name: 'adminEscrow';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [101, 115, 99, 114, 111, 119];
+              },
+              {
+                kind: 'account';
+                path: 'admin';
               }
             ];
           };
@@ -1209,6 +1240,190 @@ export type Blinksfeed = {
           };
         },
         {
+          name: 'collectionMetadata';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [109, 101, 116, 97, 100, 97, 116, 97];
+              },
+              {
+                kind: 'const';
+                value: [
+                  11,
+                  112,
+                  101,
+                  177,
+                  227,
+                  209,
+                  124,
+                  69,
+                  56,
+                  157,
+                  82,
+                  127,
+                  107,
+                  4,
+                  195,
+                  205,
+                  88,
+                  184,
+                  108,
+                  115,
+                  26,
+                  160,
+                  253,
+                  181,
+                  73,
+                  182,
+                  209,
+                  188,
+                  3,
+                  248,
+                  41,
+                  70
+                ];
+              },
+              {
+                kind: 'account';
+                path: 'collectionMint';
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                11,
+                112,
+                101,
+                177,
+                227,
+                209,
+                124,
+                69,
+                56,
+                157,
+                82,
+                127,
+                107,
+                4,
+                195,
+                205,
+                88,
+                184,
+                108,
+                115,
+                26,
+                160,
+                253,
+                181,
+                73,
+                182,
+                209,
+                188,
+                3,
+                248,
+                41,
+                70
+              ];
+            };
+          };
+        },
+        {
+          name: 'collectionMasterEditionMetadata';
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: 'const';
+                value: [109, 101, 116, 97, 100, 97, 116, 97];
+              },
+              {
+                kind: 'const';
+                value: [
+                  11,
+                  112,
+                  101,
+                  177,
+                  227,
+                  209,
+                  124,
+                  69,
+                  56,
+                  157,
+                  82,
+                  127,
+                  107,
+                  4,
+                  195,
+                  205,
+                  88,
+                  184,
+                  108,
+                  115,
+                  26,
+                  160,
+                  253,
+                  181,
+                  73,
+                  182,
+                  209,
+                  188,
+                  3,
+                  248,
+                  41,
+                  70
+                ];
+              },
+              {
+                kind: 'account';
+                path: 'collectionMint';
+              },
+              {
+                kind: 'const';
+                value: [101, 100, 105, 116, 105, 111, 110];
+              }
+            ];
+            program: {
+              kind: 'const';
+              value: [
+                11,
+                112,
+                101,
+                177,
+                227,
+                209,
+                124,
+                69,
+                56,
+                157,
+                82,
+                127,
+                107,
+                4,
+                195,
+                205,
+                88,
+                184,
+                108,
+                115,
+                26,
+                160,
+                253,
+                181,
+                73,
+                182,
+                209,
+                188,
+                3,
+                248,
+                41,
+                70
+              ];
+            };
+          };
+        },
+        {
           name: 'tokenProgramMint';
           address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
         },
@@ -1223,6 +1438,9 @@ export type Blinksfeed = {
         {
           name: 'rent';
           address: 'SysvarRent111111111111111111111111111111111';
+        },
+        {
+          name: 'sysvarInstruction';
         }
       ];
       args: [
@@ -3802,7 +4020,6 @@ export type Blinksfeed = {
         fields: [
           {
             name: 'admin';
-            docs: ['pubkey that controls the collection mint'];
             type: 'pubkey';
           },
           {
@@ -3946,6 +4163,10 @@ export type Blinksfeed = {
           {
             name: 'to';
             type: 'pubkey';
+          },
+          {
+            name: 'index';
+            type: 'u64';
           }
         ];
       };

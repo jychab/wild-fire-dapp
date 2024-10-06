@@ -240,7 +240,11 @@ export const TradingPanel: FC<{
             )}
           </div>
           <div className="flex flex-col gap-4 w-full md:max-w-xs">
-            <MintInfo mintId={mintId} metadata={metadata} liquidity={NaN} />
+            <MintInfo
+              collectionMint={collectionMint}
+              metadata={metadata}
+              liquidity={NaN}
+            />
             <div className="flex flex-col gap-2 p-4 rounded">
               <div className="flex items-center w-full">
                 <button
@@ -491,15 +495,15 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
 };
 
 export const MintInfo: FC<{
-  mintId: string | null | undefined;
+  collectionMint: string | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
   liquidity: number;
-}> = ({ mintId, metadata, liquidity }) => {
+}> = ({ collectionMint, metadata, liquidity }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: collectionMint ? new PublicKey(collectionMint) : null,
   });
   const { data: tokenStateData } = useGetMintToken({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: collectionMint ? new PublicKey(collectionMint) : null,
   });
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">

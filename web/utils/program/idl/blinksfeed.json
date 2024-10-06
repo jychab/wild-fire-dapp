@@ -382,6 +382,22 @@
           "signer": true
         },
         {
+          "name": "escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [101, 115, 99, 114, 111, 119]
+              },
+              {
+                "kind": "account",
+                "path": "admin"
+              }
+            ]
+          }
+        },
+        {
           "name": "mint",
           "writable": true,
           "pda": {
@@ -494,22 +510,6 @@
           }
         },
         {
-          "name": "escrow",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [101, 115, 99, 114, 111, 119]
-              },
-              {
-                "kind": "account",
-                "path": "admin"
-              }
-            ]
-          }
-        },
-        {
           "name": "token_program_mint",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -559,6 +559,9 @@
           "signer": true
         },
         {
+          "name": "admin"
+        },
+        {
           "name": "metadata",
           "writable": true,
           "pda": {
@@ -591,7 +594,19 @@
           }
         },
         {
-          "name": "collection_mint"
+          "name": "collection_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "admin"
+              }
+            ]
+          }
         },
         {
           "name": "member_mint",
@@ -605,6 +620,22 @@
               {
                 "kind": "arg",
                 "path": "index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [101, 115, 99, 114, 111, 119]
+              },
+              {
+                "kind": "account",
+                "path": "admin"
               }
             ]
           }
@@ -626,6 +657,74 @@
           }
         },
         {
+          "name": "collection_metadata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 101, 116, 97, 100, 97, 116, 97]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  11, 112, 101, 177, 227, 209, 124, 69, 56, 157, 82, 127, 107,
+                  4, 195, 205, 88, 184, 108, 115, 26, 160, 253, 181, 73, 182,
+                  209, 188, 3, 248, 41, 70
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collection_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                11, 112, 101, 177, 227, 209, 124, 69, 56, 157, 82, 127, 107, 4,
+                195, 205, 88, 184, 108, 115, 26, 160, 253, 181, 73, 182, 209,
+                188, 3, 248, 41, 70
+              ]
+            }
+          }
+        },
+        {
+          "name": "collection_master_edition_metadata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 101, 116, 97, 100, 97, 116, 97]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  11, 112, 101, 177, 227, 209, 124, 69, 56, 157, 82, 127, 107,
+                  4, 195, 205, 88, 184, 108, 115, 26, 160, 253, 181, 73, 182,
+                  209, 188, 3, 248, 41, 70
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collection_mint"
+              },
+              {
+                "kind": "const",
+                "value": [101, 100, 105, 116, 105, 111, 110]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                11, 112, 101, 177, 227, 209, 124, 69, 56, 157, 82, 127, 107, 4,
+                195, 205, 88, 184, 108, 115, 26, 160, 253, 181, 73, 182, 209,
+                188, 3, 248, 41, 70
+              ]
+            }
+          }
+        },
+        {
           "name": "token_program_mint",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -640,6 +739,9 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "sysvar_instruction"
         }
       ],
       "args": [
@@ -2186,7 +2288,6 @@
         "fields": [
           {
             "name": "admin",
-            "docs": ["pubkey that controls the collection mint"],
             "type": "pubkey"
           },
           {
@@ -2330,6 +2431,10 @@
           {
             "name": "to",
             "type": "pubkey"
+          },
+          {
+            "name": "index",
+            "type": "u64"
           }
         ]
       }

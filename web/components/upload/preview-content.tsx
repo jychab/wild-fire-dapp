@@ -16,7 +16,15 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconX } from '@tabler/icons-react';
 import Image from 'next/image';
-import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Dispatch,
+  FC,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import toast from 'react-hot-toast';
 import { AbstractActionComponent } from '../actions/abstract-action-component';
 import { componentFactory } from '../actions/action';
@@ -34,6 +42,7 @@ import {
   useGetMintSummaryDetails,
   useGetTokenDetails,
 } from '../token/token-data-access';
+import { useGenerateTrendingList } from '../trending/trending-data-access';
 import { UploadContentBtn } from './upload-content';
 import { showModalById, TempPostCampaign, UploadFileTypes } from './upload-ui';
 import { useUploadMutation } from './upload.data-access';
@@ -238,8 +247,13 @@ export const PreviewBlinksActionButton: FC<{
   const { data: metadata } = useGetTokenDetails({
     mint: publicKey ? getDerivedMint(publicKey) : null,
   });
+  const { data: trendingTokens } = useGenerateTrendingList();
   useEffect(() => {
-    if (!checkIfMetadataIsTemporary(metadata) && metadata) {
+    if (
+      !checkIfMetadataIsTemporary(metadata) &&
+      metadata &&
+      !recommendations.find((x) => x.id == x.id)
+    ) {
       setRecommendations((prev) => [
         ...prev,
         {
@@ -249,11 +263,23 @@ export const PreviewBlinksActionButton: FC<{
         },
       ]);
     }
-  }, [metadata]);
+    if (trendingTokens) {
+      setRecommendations((prev) => [
+        ...prev,
+        ...trendingTokens
+          .filter((x) => prev.findIndex((y) => y.id == x.mint) == -1)
+          .slice(0, 3)
+          .map((x) => ({
+            id: x.mint,
+            image: x.image,
+            name: x.name,
+          })),
+      ]);
+    }
+  }, [metadata, trendingTokens]);
 
   const reset = () => {
     setCollection(undefined);
-    setRecommendations([]);
   };
 
   return (
@@ -293,7 +319,12 @@ export const PreviewBlinksActionButton: FC<{
             />
             <span className="stat-desc px-2">Recommended</span>
             {recommendations.map((x) => (
-              <TokenButton key={x.id} x={x} collection={collection} />
+              <TokenButton
+                key={x.id}
+                x={x}
+                setCollection={setCollection}
+                collection={collection}
+              />
             ))}
           </div>
         )}
@@ -340,12 +371,16 @@ export const PreviewBlinksActionButton: FC<{
 const TokenButton: FC<{
   x: Partial<SearchResult>;
   collection: string;
-}> = ({ x, collection }) => {
+  setCollection: Dispatch<SetStateAction<string | undefined>>;
+}> = ({ x, collection, setCollection }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
     mint: x.id ? new PublicKey(x.id) : null,
   });
   return (
     <button
+      onClick={() => {
+        setCollection(x.id);
+      }}
       className={`flex gap-4 w-full items-center border p-2 rounded-box border-base-300 ${
         collection == x.id ? 'border-base-content' : ''
       }`}

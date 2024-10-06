@@ -138,7 +138,7 @@ const useInitializeChart = (
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
       priceScaleId: 'right',
-      priceFormat: { type: 'price', precision: 12, minMove: 0.0000000000001 },
+      priceFormat: { type: 'price', precision: 13, minMove: 0.00000000001 },
     });
 
     chart.applyOptions({
@@ -153,7 +153,6 @@ const useInitializeChart = (
         horzLine: { color: '#9B7DFF', labelBackgroundColor: '#9B7DFF' },
       },
     });
-
     // Set actual data
     series.setData(
       data.map((d) => ({
@@ -217,8 +216,6 @@ const TradingViewChart = memo(
       chartContainerRef,
       data
     );
-
-    const { data: solPrice } = useGetAsset({ mint: NATIVE_MINT });
     const { data: liquidityPoolData } = useGetLiquidityPool({
       mint: metadata ? new PublicKey(metadata.id) : null,
     });
@@ -276,7 +273,7 @@ const TradingViewChart = memo(
           });
         }
       },
-      [seriesRef, volumeRef]
+      [seriesRef, volumeRef, solTokenPrice]
     );
 
     useEffect(() => {
@@ -326,7 +323,8 @@ const TradingViewChart = memo(
               !Number.isNaN(Number(liquidityPoolData.reserveTokenSold))
                 ? calculatePriceInSOL(
                     Number(liquidityPoolData.reserveTokenSold)
-                  ) * (solPrice?.token_info?.price_info?.price_per_token || 0)
+                  ) *
+                  (solTokenPrice?.token_info?.price_info?.price_per_token || 0)
                 : 0)
           )}`}</span>
         </div>

@@ -275,7 +275,6 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
   const { data: metadata } = useGetTokenDetails({
     mint: getDerivedMint(new PublicKey(comment.user)),
   });
-
   const commentRef = useRef<HTMLSpanElement>(null);
   const router = useRouter();
   return (
@@ -287,7 +286,12 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
           onClick={() =>
             checkIfMetadataIsTemporary(metadata)
               ? router.push(`/profile?address=${comment.user}`)
-              : router.push(`/token?mintId=${metadata!.id}`)
+              : router.push(
+                  `/token?mintId=${
+                    metadata?.grouping?.find((x) => x.group_key == 'collection')
+                      ?.group_value
+                  }`
+                )
           }
         >
           <div className="w-8 h-8 relative mask mask-circle">
@@ -308,7 +312,13 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
             onClick={() =>
               checkIfMetadataIsTemporary(metadata)
                 ? router.push(`/profile?address=${comment.user}`)
-                : router.push(`/token?mintId=${metadata!.id}`)
+                : router.push(
+                    `/token?mintId=${
+                      metadata?.grouping?.find(
+                        (x) => x.group_key == 'collection'
+                      )?.group_value
+                    }`
+                  )
             }
             className="truncate text-sm max-w-[120px] sm:max-w-xs"
           >

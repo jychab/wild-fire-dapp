@@ -1,9 +1,7 @@
 import { formatLargeNumber } from '@/utils/helper/format';
-import { getHolders } from '@/utils/helper/mint';
-import { DAS } from '@/utils/types/das';
 import Link from 'next/link';
-import { FC, useEffect, useState } from 'react';
-import { useGetAssetsBatch, useGetSummary } from '../search/search-data-access';
+import { FC } from 'react';
+import { useGenerateTrendingList } from './trending-data-access';
 
 export const RightColumn: FC = () => {
   return (
@@ -14,70 +12,12 @@ export const RightColumn: FC = () => {
 };
 
 export const TrendingTable: FC = () => {
-  const { data } = useGetSummary();
-  const { data: metadatas } = useGetAssetsBatch({
-    mints: data ? data.all : [],
-  });
-
-  const generateTrendingList = async (
-    data: {
-      all: string[];
-      allTokenPrices: {
-        mint: string;
-        price: number;
-        supply: number;
-      }[];
-    },
-    metadatas: DAS.GetAssetResponse[]
-  ) => {
-    const filteredList = data.allTokenPrices
-      .sort((a, b) => b.price * b.supply - a.price * a.supply)
-      .slice(0, 10);
-    const holdersPromises = filteredList.map((x) => getHolders(x.mint));
-    const holdersData = await Promise.all(holdersPromises);
-
-    return filteredList.map((x, i) => {
-      const metadata = metadatas.find((y) => y.id == x.mint);
-      const holders = holdersData[i];
-      return {
-        mint: metadata?.grouping?.find((x) => x.group_key == 'collection')
-          ?.group_value,
-        image: metadata?.content?.links?.image,
-        name: metadata?.content?.metadata.name,
-        price: x.price,
-        supply: x.supply,
-        holders: holders?.currentHoldersCount,
-        holders24HrPercent: holders?.holdersChange24hPercent,
-      };
-    });
-  };
-
-  const [loading, setLoading] = useState(true);
-  const [list, setList] = useState<
-    {
-      mint?: string;
-      image?: string;
-      name?: string;
-      price: number;
-      supply: number;
-      holders?: number;
-      holders24HrPercent?: number;
-    }[]
-  >([]);
-  useEffect(() => {
-    if (metadatas && data && list.length == 0) {
-      setLoading(true);
-      generateTrendingList(data, metadatas).then((res) => {
-        setList(res);
-        setLoading(false);
-      });
-    }
-  }, [data, metadatas]);
+  const { data: list, isLoading } = useGenerateTrendingList();
 
   return (
     <div className="border border-base-300 flex flex-col w-full rounded-box p-4">
       <span className="text-base font-semibold">Trending Creators</span>
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center">
           <div className="loading loading-dots" />
         </div>

@@ -3,7 +3,6 @@
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
 import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
-import { isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -30,10 +29,8 @@ import {
   NotSupportedBlock,
 } from '../blinks/blinks-layout';
 import { BaseButtonProps } from '../blinks/ui/action-button';
-import { useGetMintToken } from '../edit/edit-data-access';
 import { ShareContent } from '../share/share-content';
 import { useGetTokenDetails } from '../token/token-data-access';
-import { useIsLiquidityPoolFound } from '../trading/trading-data-access';
 import {
   checkUrlIsValid,
   useGetPostCampaign,
@@ -159,15 +156,8 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
   editable,
 }) => {
   const { publicKey } = useWallet();
-  const { data: tokenStateData } = useGetMintToken({
-    mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
-  });
   const { data: metadata } = useGetTokenDetails({
     mint: blinksDetail ? new PublicKey(blinksDetail.mint) : null,
-  });
-
-  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
   });
   const { data: postCampaign } = useGetPostCampaign({
     address: publicKey,
@@ -178,13 +168,6 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
     postId: blinksDetail?.id || null,
   });
-
-  if (
-    (!editable || !isAuthorized(tokenStateData, publicKey, metadata)) &&
-    !isLiquidityPoolFound
-  ) {
-    return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
-  }
 
   return (
     <div className="flex items-center gap-2">
@@ -201,44 +184,48 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
           tabIndex={0}
           className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-0 text-sm w-28"
         >
-          {!editable && isLiquidityPoolFound && (
-            <li>
-              <Link
-                href={`/token?mintId=${blinksDetail?.mint}&tab=trade`}
-                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-              >
-                <IconChartLine size={18} />
-                Trade
-              </Link>
-            </li>
-          )}
-          {editable && isAuthorized(tokenStateData, publicKey, metadata) && (
-            <li>
-              <Link
-                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
-              >
-                <IconEdit size={18} />
-                Edit
-              </Link>
-            </li>
-          )}
-          {editable && isAuthorized(tokenStateData, publicKey, metadata) && (
-            <li>
-              <button
-                disabled={removeContentMutation.isPending}
-                onClick={() => removeContentMutation.mutateAsync(postCampaign)}
-                className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-              >
-                {removeContentMutation.isPending ? (
-                  <div className="loading loading-spinner loading-sm" />
-                ) : (
-                  <IconTrash size={18} />
-                )}
-                Delete
-              </button>
-            </li>
-          )}
+          <li>
+            <Link
+              href={`/token?mintId=${blinksDetail?.mint}&tab=trade`}
+              className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+            >
+              <IconChartLine size={18} />
+              Trade
+            </Link>
+          </li>
+          {editable &&
+            publicKey &&
+            blinksDetail.creator == publicKey?.toBase58() && (
+              <li>
+                <Link
+                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                  href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
+                >
+                  <IconEdit size={18} />
+                  Edit
+                </Link>
+              </li>
+            )}
+          {editable &&
+            publicKey &&
+            blinksDetail.creator == publicKey?.toBase58() && (
+              <li>
+                <button
+                  disabled={removeContentMutation.isPending}
+                  onClick={() =>
+                    removeContentMutation.mutateAsync(postCampaign)
+                  }
+                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                >
+                  {removeContentMutation.isPending ? (
+                    <div className="loading loading-spinner loading-sm" />
+                  ) : (
+                    <IconTrash size={18} />
+                  )}
+                  Delete
+                </button>
+              </li>
+            )}
         </ul>
       </div>
     </div>

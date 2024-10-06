@@ -4,6 +4,7 @@ import {
   deletePost,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
+import { getDerivedMemberMint, getDerivedMint } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -43,7 +44,11 @@ export function useRemoveContentMutation({
       try {
         if (
           postCampaign?.budget &&
-          postCampaign.mintToSend != mint.toBase58()
+          !(
+            postCampaign?.mintToSend ==
+              getDerivedMemberMint(mint, 0).toBase58() &&
+            getDerivedMint(wallet.publicKey).toBase58() == mint.toBase58()
+          )
         ) {
           const { partialTx } = await withdrawFromCampaign(
             postCampaign.id,
@@ -60,7 +65,16 @@ export function useRemoveContentMutation({
             signTransaction: wallet.signTransaction,
           });
         }
-        await deletePost(mint.toBase58(), postId);
+        const partialSignedTx = await deletePost(mint.toBase58(), postId);
+        let tx = VersionedTransaction.deserialize(
+          Buffer.from(partialSignedTx, 'base64')
+        );
+        signature = await buildAndSendTransaction({
+          connection: connection,
+          partialSignedTx: tx,
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+        });
         await deleteCampaign(undefined, postId);
         return { signature };
       } catch (error: unknown) {

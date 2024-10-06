@@ -52,7 +52,8 @@ export async function createOrEditPost(
 
 export async function deletePost(mint: string, postId: string) {
   const deletePost = httpsCallable(functions, 'deletePost');
-  await deletePost({ mint, postId });
+  const result = await deletePost({ mint, postId });
+  return result.data as string;
 }
 
 export async function createOrEditComment(

@@ -11,6 +11,7 @@ export interface PostContent extends ActionGetResponse, PostBlinksDetail {
   postEngagementScore?: { mint: string; amount: number }[];
 }
 export interface PostBlinksDetail {
+  creator: string;
   url: string;
   mint: string;
   id: string;

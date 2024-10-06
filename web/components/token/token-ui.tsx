@@ -247,8 +247,7 @@ export const LockedContent: FC<{
 };
 export const SubscribeBtn: FC<{
   mintId: string | null;
-  subscribeOnly?: boolean;
-}> = ({ mintId, subscribeOnly = false }) => {
+}> = ({ mintId }) => {
   const { data: metadata } = useGetTokenDetails({
     mint: mintId ? new PublicKey(mintId) : null,
   });
@@ -278,19 +277,17 @@ export const SubscribeBtn: FC<{
       <button
         disabled={subscribeMutation.isPending}
         onClick={() => {
-          subscribeMutation.mutateAsync(subscribeOnly);
+          subscribeMutation.mutateAsync();
         }}
         className={`btn relative group ${
-          tokenInfo && !subscribeOnly
-            ? 'btn-success hover:btn-warning'
-            : 'btn-primary'
+          tokenInfo ? 'btn-neutral hover:btn-warning' : 'btn-success'
         } btn-sm`}
       >
         {subscribeMutation.isPending && (
           <div className="loading loading-spinner" />
         )}
         {!subscribeMutation.isPending &&
-          (tokenInfo && !subscribeOnly ? (
+          (tokenInfo ? (
             <>
               <span className="hidden group-hover:block">Unsubscribe</span>
               <span className="block group-hover:hidden">Subscribed</span>
