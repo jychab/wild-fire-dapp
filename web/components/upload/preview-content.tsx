@@ -498,6 +498,7 @@ const PreviewContent: FC<{
           websiteUrl={post?.url}
           blinksDetail={{
             ...post,
+            creator: post.creator!,
             url: post.url!,
             mint: post.mint!,
             id: post.id!,

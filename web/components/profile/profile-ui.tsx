@@ -4,7 +4,6 @@ import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
-import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconMoneybag, IconSend, IconWallet } from '@tabler/icons-react';
@@ -13,15 +12,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
 import { TelegramWalletButton } from 'unified-wallet-adapter-with-telegram';
-import { checkIfMetadataIsTemporary } from '../../utils/helper/format';
 import { ContentGrid } from '../content/content-feature';
 import { CreateAccountBtn } from '../create/create-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { useGetTokenDetails } from '../token/token-data-access';
-import {
-  useGetTokenAccountInfo,
-  useSubscriptionMutation,
-} from '../trading/trading-data-access';
 import { UploadBtn } from '../upload/upload-ui';
 import { useGetPostsFromCreator } from './profile-data-access';
 
@@ -188,63 +182,6 @@ export const LockedContent: FC<{
           <CreateAccountBtn />
         </div>
       </div>
-    )
-  );
-};
-export const SubscribeBtn: FC<{
-  mintId: string | null;
-  subscribeOnly?: boolean;
-}> = ({ mintId, subscribeOnly = false }) => {
-  const { data: metadata } = useGetTokenDetails({
-    mint: mintId ? new PublicKey(mintId) : null,
-  });
-  const tokenProgram = metadata?.token_info?.token_program
-    ? new PublicKey(metadata?.token_info?.token_program)
-    : undefined;
-  const { publicKey } = useWallet();
-  const { data: tokenInfo } = useGetTokenAccountInfo({
-    address:
-      metadata && publicKey && metadata.token_info
-        ? getAssociatedTokenAddressSync(
-            new PublicKey(metadata!.id),
-            publicKey,
-            false,
-            new PublicKey(metadata.token_info?.token_program!)
-          )
-        : null,
-    tokenProgram: tokenProgram,
-  });
-
-  const subscribeMutation = useSubscriptionMutation({
-    mint: metadata ? new PublicKey(metadata.id) : null,
-    tokenProgram: tokenProgram,
-  });
-  return (
-    !checkIfMetadataIsTemporary(metadata) && (
-      <button
-        disabled={subscribeMutation.isPending}
-        onClick={() => {
-          subscribeMutation.mutateAsync(subscribeOnly);
-        }}
-        className={`btn relative group ${
-          tokenInfo && !subscribeOnly
-            ? 'btn-success hover:btn-warning'
-            : 'btn-primary'
-        } btn-sm`}
-      >
-        {subscribeMutation.isPending && (
-          <div className="loading loading-spinner" />
-        )}
-        {!subscribeMutation.isPending &&
-          (tokenInfo && !subscribeOnly ? (
-            <>
-              <span className="hidden group-hover:block">Unsubscribe</span>
-              <span className="block group-hover:hidden">Subscribed</span>
-            </>
-          ) : (
-            <span>Subscribe</span>
-          ))}
-      </button>
     )
   );
 };
