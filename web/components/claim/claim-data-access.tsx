@@ -45,11 +45,15 @@ export function useMultipleSellMutation() {
               [Buffer.from('liquidity_pool'), new PublicKey(y.mint).toBuffer()],
               program.programId
             );
-            const poolState = await program.account.liquidityPool.fetch(
+            const poolState = await program.account.liquidityPool.fetchNullable(
               liquidityPool
             );
             if (poolState && !poolState.thresholdReached) {
-              const ix = await sell(y.amount, new PublicKey(y.mint), publicKey);
+              const ix = await sell(
+                Math.round(y.amount),
+                new PublicKey(y.mint),
+                publicKey
+              );
               return await buildTransaction({
                 connection: connection,
                 publicKey: publicKey,
@@ -62,7 +66,9 @@ export function useMultipleSellMutation() {
                   await fetch(
                     `https://quote-api.jup.ag/v6/quote?inputMint=${
                       y.mint
-                    }&outputMint=${NATIVE_MINT.toBase58()}&amount=${y.amount.toString()}&slippageBps=50&swapMode=${'exactIn'}`
+                    }&outputMint=${NATIVE_MINT.toBase58()}&amount=${Math.round(
+                      y.amount
+                    ).toString()}&slippageBps=50&swapMode=${'ExactIn'}`
                   )
                 ).json(),
                 // user public key to be used for the swap
@@ -71,6 +77,7 @@ export function useMultipleSellMutation() {
                 wrapAndUnwrapSol: true,
                 // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
               };
+              console.log(payload);
               // get serialized transactions for the swap
               const { swapTransaction } = await (
                 await fetch('https://quote-api.jup.ag/v6/swap', {
@@ -106,6 +113,7 @@ export function useMultipleSellMutation() {
         );
         return signatures[signatures.length - 1];
       } catch (error: unknown) {
+        console.log(`Transaction failed! ${error} ` + signature);
         toast.error(`Transaction failed! ${error} ` + signature);
         return;
       }

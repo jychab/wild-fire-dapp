@@ -3,7 +3,14 @@ import { formatLargeNumber } from '@/utils/helper/format';
 import { program } from '@/utils/program/instructions';
 import { DAS } from '@/utils/types/das';
 import { IconBellDollar } from '@tabler/icons-react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+} from 'firebase/firestore';
 import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import { useWallet } from 'unified-wallet-adapter-with-telegram';
@@ -40,7 +47,7 @@ export async function getOwnerTokenBalance(address: string) {
 }
 
 async function filterTokenBalances(
-  collectionMints: string[],
+  mints: string[],
   tokenBalances: DAS.GetAssetResponseList
 ) {
   const filteredTokenBalances = tokenBalances.items.filter(
@@ -48,9 +55,7 @@ async function filterTokenBalances(
       x.interface == 'FungibleToken' &&
       x.token_info?.balance &&
       x.token_info?.balance > 0 &&
-      collectionMints.includes(
-        x.grouping?.find((x) => x.group_key == 'collection')?.group_value || ''
-      )
+      mints.includes(x.id)
   );
 
   return { filteredTokenBalances };
@@ -59,6 +64,14 @@ async function filterTokenBalances(
 export const ClaimButton: FC = () => {
   const { publicKey } = useWallet();
   const [dislikes, setDislikes] = useState<string[]>([]);
+  const [allMints, setAllMints] = useState<
+    {
+      collectionMint: string;
+      memberMint: string;
+      price: number;
+      supply: number;
+    }[]
+  >([]);
   const [filteredTokenBalances, setFilteredTokenBalances] = useState<
     DAS.GetAssetResponse[]
   >([]);
@@ -66,28 +79,48 @@ export const ClaimButton: FC = () => {
     address: publicKey,
   });
   useEffect(() => {
-    if (publicKey && tokenBalances) {
+    if (publicKey && tokenBalances && dislikes) {
+      console.log(dislikes);
       filterTokenBalances(dislikes, tokenBalances).then((result) =>
         setFilteredTokenBalances(result.filteredTokenBalances)
       );
     }
   }, [dislikes, publicKey, tokenBalances]);
+
   useEffect(() => {
-    if (publicKey) {
+    getDoc(doc(db, `Summary/mints`)).then((result) => {
+      const data = result.data() as {
+        allTokenPrices: {
+          collectionMint: string;
+          memberMint: string;
+          price: number;
+          supply: number;
+        }[];
+      };
+      setAllMints(data.allTokenPrices);
+    });
+  }, []);
+  useEffect(() => {
+    if (publicKey && allMints) {
       try {
         const q = query(
           collection(db, `Admin/${publicKey.toBase58()}/Dislikes`),
           where('timestamp', '>=', Date.now() / 1000 - 24 * 60 * 60)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-          setDislikes(snapshot.docs.map((x) => x.data().mint));
+          const result = snapshot.docs.map(
+            (x) =>
+              allMints.find((y) => y.collectionMint == x.data().mint)
+                ?.memberMint || ''
+          );
+          setDislikes(Array.from(new Set(result.filter((x) => !!x))));
         });
         return () => unsubscribe();
       } catch (e) {
         console.log(e);
       }
     }
-  }, [publicKey]);
+  }, [publicKey, allMints]);
 
   const sellMutation = useMultipleSellMutation();
   const handleConvert = async () => {
@@ -138,13 +171,13 @@ export const ClaimButton: FC = () => {
           {filteredTokenBalances.length == 0 && (
             <div>No airdrops to convert...</div>
           )}
-          <div className="overflow-y-scroll scrollbar-none">
+          <div className="overflow-y-scroll gap-2 flex flex-col scrollbar-none">
             {filteredTokenBalances.map((x) => (
               <div
                 key={x.id}
                 className="flex items-center justify-between w-full"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Image
                     className={`rounded-full object-cover`}
                     width={32}
@@ -153,16 +186,24 @@ export const ClaimButton: FC = () => {
                     src={x.content?.links?.image || ''}
                     alt={''}
                   />
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm text-error">
-                      {x.content?.metadata.name}
-                    </span>
-                  </div>
+
+                  <span className="text-sm text-error">
+                    {x.content?.metadata.name}
+                  </span>
                 </div>
-                <span className="text-error">{`- ${formatLargeNumber(
-                  (x.token_info?.balance || 0) /
-                    (10 * 10 ** (x.token_info?.decimals || 0))
-                )}`}</span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className="text-error">{`- ${formatLargeNumber(
+                    (x.token_info?.balance || 0) /
+                      (10 * 10 ** (x.token_info?.decimals || 0))
+                  )}`}</span>
+                  <span className="stat-desc">
+                    {`~ $${formatLargeNumber(
+                      ((x.token_info?.balance || 0) /
+                        (10 * 10 ** (x.token_info?.decimals || 0))) *
+                        (allMints.find((y) => y.memberMint == x.id)?.price || 0)
+                    )}`}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
