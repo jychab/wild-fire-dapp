@@ -7,6 +7,7 @@ import {
 import { NATIVE_MINT } from '@solana/spl-token';
 import {
   PublicKey,
+  Transaction,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -93,7 +94,10 @@ export function useMultipleSellMutation() {
           })
         );
         const signedTxs = await signAllTransactions(
-          transactions.filter((x) => !!x)
+          transactions.filter((x) => !!x) as (
+            | VersionedTransaction
+            | Transaction
+          )[]
         );
         const signatures = await Promise.all(
           signedTxs.map((x) =>
