@@ -189,7 +189,7 @@ export const CreatePanel: FC = () => {
             </div>
           )}
           <Link
-            className="hidden link text-center text-sm"
+            className="link text-center text-sm"
             href={'/mint/create/existing'}
           >
             Already have an existing token?
@@ -221,25 +221,29 @@ export const CreateWithExistingPanel: FC = () => {
       {assets && assets.length == 0 && <div>No Tokens Found</div>}
       {!isLoading && assets && assets?.length > 0 && (
         <>
-          <div className="grid gap-2 overflow-scroll border p-4 w-full max-w-sm rounded">
+          <div className="grid sm:grid-cols-2 gap-2 overflow-y-scroll scrollbar-none border p-4 w-full rounded">
             {assets?.map((x) => {
               return (
                 <div
                   key={x.id}
                   onClick={() => setSelected(x)}
-                  className={`btn btn-outline flex items-center w-full justify-start ${
-                    selected && selected.id == x.id ? 'btn-primary' : ''
+                  className={`btn flex items-center w-full justify-start ${
+                    selected && selected.id == x.id
+                      ? 'btn-primary'
+                      : 'btn-outline'
                   }`}
                 >
                   <Image
-                    width={40}
-                    height={40}
+                    width={32}
+                    height={32}
                     src={x.content?.links?.image || ''}
                     alt={''}
                   />
                   <div className="flex flex-col items-start">
-                    <span className="text-sm">{x.content?.metadata.name}</span>
-                    <span className="text-xs">
+                    <span className="text-sm truncate">
+                      {x.content?.metadata.name}
+                    </span>
+                    <span className="text-xs truncate max-w-xs">
                       {x.content?.metadata.symbol}
                     </span>
                   </div>

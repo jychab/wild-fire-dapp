@@ -48,7 +48,7 @@ export function useMultipleSellMutation() {
             const poolState = await program.account.liquidityPool.fetch(
               liquidityPool
             );
-            if (!poolState.thresholdReached) {
+            if (poolState && !poolState.thresholdReached) {
               const ix = await sell(y.amount, new PublicKey(y.mint), publicKey);
               return await buildTransaction({
                 connection: connection,
@@ -134,11 +134,7 @@ export function useMultipleSellMutation() {
   });
 }
 
-export function useGetAssetByAuthority({
-  address,
-}: {
-  address: PublicKey | null;
-}) {
+export function useGetAssetByOwner({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection();
   return useQuery({
     queryKey: [

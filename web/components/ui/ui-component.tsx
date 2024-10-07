@@ -20,10 +20,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { useUnifiedWalletContext } from 'unified-wallet-adapter-with-telegram';
 import logo from '../../public/images/logo.png';
-import {
-  AuthenticationBtn,
-  SignInBtn,
-} from '../authentication/authentication-ui';
+import { SignInBtn } from '../authentication/authentication-ui';
 import { ClaimButton } from '../claim/claim-feature';
 import { SearchBar } from '../search/search-ui';
 import { useGetTokenDetails } from '../token/token-data-access';
@@ -112,18 +109,10 @@ export const Navbar: FC = () => {
             BlinksFeed
           </span>
         </Link>
-
-        {publicKey ? (
-          <ClaimButton />
-        ) : (
-          <AuthenticationBtn
-            children={
-              <div className="btn btn-sm btn-outline bg-base-100">
-                Connect Wallet
-              </div>
-            }
-          />
-        )}
+        <div className="flex gap-1 w-fit items-center">
+          {publicKey && <ClaimButton />}
+          <SignInBtn />
+        </div>
       </div>
       <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
         <Link className="flex sm:px-4 items-end gap-2 w-fit" href="/">

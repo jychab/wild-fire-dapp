@@ -99,11 +99,11 @@ export function useSwapMutation({
       if (!mint || !tokenProgram || !publicKey || !signTransaction) return null;
       let signature: TransactionSignature = '';
       try {
-        if (!poolState.thresholdReached) {
+        if (poolState && !poolState.thresholdReached) {
           const ix =
             inputMint !== mint.toBase58()
-              ? await buy(amount, mint, publicKey)
-              : await sell(amount, mint, publicKey);
+              ? await buy(Math.round(amount), mint, publicKey)
+              : await sell(Math.round(amount), mint, publicKey);
           signature = await buildAndSendTransaction({
             connection: connection,
             publicKey: publicKey,
@@ -115,7 +115,9 @@ export function useSwapMutation({
             // quoteResponse from /quote api
             quoteResponse: await (
               await fetch(
-                `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=50&swapMode=${swapMode}`
+                `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${Math.round(
+                  amount
+                ).toString()}&slippageBps=50&swapMode=${swapMode}`
               )
             ).json(),
             // user public key to be used for the swap

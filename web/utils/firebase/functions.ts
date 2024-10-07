@@ -80,7 +80,8 @@ export async function createOrUpdateAdminForExternalMint(mint: string) {
     functions,
     'createOrUpdateAdminForExternalMint'
   );
-  await createOrUpdateAdminForExternalMint({ mint });
+  const result = await createOrUpdateAdminForExternalMint({ mint });
+  return result.data as string;
 }
 
 export async function setTemporaryProfile(

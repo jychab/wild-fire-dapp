@@ -131,10 +131,10 @@ export async function buildTransaction({
   addressLookupTableAccounts?: AddressLookupTableAccount[];
 }) {
   let tx = partialSignedTx;
-  const recentBlockhash = await connection.getLatestBlockhash({
-    commitment: 'confirmed',
-  });
   if (ixs && ixs.length > 0) {
+    const recentBlockhash = await connection.getLatestBlockhash({
+      commitment: 'confirmed',
+    });
     const lookupTableAccount = (
       await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)
     ).value;

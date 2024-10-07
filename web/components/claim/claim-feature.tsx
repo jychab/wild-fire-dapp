@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { FC, useEffect, useState } from 'react';
 import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import {
-  useGetAssetByAuthority,
+  useGetAssetByOwner,
   useMultipleSellMutation,
 } from './claim-data-access';
 
@@ -62,7 +62,7 @@ export const ClaimButton: FC = () => {
   const [filteredTokenBalances, setFilteredTokenBalances] = useState<
     DAS.GetAssetResponse[]
   >([]);
-  const { data: tokenBalances } = useGetAssetByAuthority({
+  const { data: tokenBalances } = useGetAssetByOwner({
     address: publicKey,
   });
   useEffect(() => {
@@ -106,7 +106,7 @@ export const ClaimButton: FC = () => {
     <div className="indicator group">
       {filteredTokenBalances.length > 0 && (
         <span className="indicator-item badge badge-xs badge-primary group-hover:badge-success">
-          $$$
+          $$
         </span>
       )}
       <button
@@ -146,20 +146,20 @@ export const ClaimButton: FC = () => {
               >
                 <div className="flex items-center gap-1">
                   <Image
-                    className={`rounded-full object-cover cursor-pointer`}
-                    width={28}
-                    height={28}
+                    className={`rounded-full object-cover`}
+                    width={32}
+                    height={32}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     src={x.content?.links?.image || ''}
                     alt={''}
                   />
                   <div className="flex flex-col gap-2">
-                    <span className="text-sm text-warning">
+                    <span className="text-sm text-error">
                       {x.content?.metadata.name}
                     </span>
                   </div>
                 </div>
-                <span className="text-warning">{`- ${formatLargeNumber(
+                <span className="text-error">{`- ${formatLargeNumber(
                   (x.token_info?.balance || 0) /
                     10 ** (x.token_info?.decimals || 0)
                 )}`}</span>

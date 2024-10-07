@@ -15,6 +15,7 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { UnifiedWalletButton } from 'unified-wallet-adapter-with-telegram';
 import { DAS } from '../../utils/types/das';
@@ -62,13 +63,13 @@ interface ProfileButtonProps {
 }
 
 const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
+  const router = useRouter();
+  const { publicKey } = useWallet();
   return (
-    <div className="dropdown dropdown-end dropdown-bottom">
-      <div
-        tabIndex={0}
-        role="button"
-        id="user-menu-button"
-        className="relative w-10 h-10 mask mask-circle items-center justify-center flex"
+    <>
+      <button
+        onClick={() => router.push(`/profile?address=${publicKey?.toBase58()}`)}
+        className="flex sm:hidden relative w-10 h-10 mask mask-circle items-center justify-center"
       >
         {metaDataQuery && metaDataQuery.content?.links?.image ? (
           <Image
@@ -81,14 +82,34 @@ const ProfileButton: FC<ProfileButtonProps> = ({ metaDataQuery }) => {
         ) : (
           <IconUserCircle size={32} />
         )}
+      </button>
+      <div className="hidden sm:block dropdown dropdown-end dropdown-bottom">
+        <div
+          tabIndex={0}
+          role="button"
+          id="user-menu-button"
+          className="relative w-10 h-10 mask mask-circle items-center justify-center flex"
+        >
+          {metaDataQuery && metaDataQuery.content?.links?.image ? (
+            <Image
+              src={proxify(metaDataQuery?.content?.links?.image, true)}
+              className={`object-cover`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              alt={'profile pic'}
+            />
+          ) : (
+            <IconUserCircle size={32} />
+          )}
+        </div>
+        <ul
+          tabIndex={0}
+          className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-48 md:w-60"
+        >
+          <AuthenticationDropdownMenu />
+        </ul>
       </div>
-      <ul
-        tabIndex={0}
-        className="dropdown-content menu border border-base-300 bg-base-100 rounded-box z-[1] shadow w-48 md:w-60"
-      >
-        <AuthenticationDropdownMenu />
-      </ul>
-    </div>
+    </>
   );
 };
 export const AuthenticationDropdownMenu: FC = () => {

@@ -8,6 +8,7 @@ import {
   uploadMetadata,
 } from '@/utils/firebase/functions';
 import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import { TokenMetadata } from '@solana/spl-token-metadata';
@@ -30,6 +31,10 @@ export function useCreateMintWithExistingToken({
 }) {
   const router = useRouter();
   const client = useQueryClient();
+  const { connection } = useConnection();
+  const { publicKey, signTransaction } = useWallet();
+
+  const transactionToast = useTransactionToast();
   return useMutation({
     mutationKey: [
       'create-mint-with-existing-token',
@@ -38,16 +43,34 @@ export function useCreateMintWithExistingToken({
       },
     ],
     mutationFn: async (mint: PublicKey) => {
-      await createOrUpdateAdminForExternalMint(mint.toBase58());
-      return mint;
+      if (!publicKey || !signTransaction) return;
+      const partialSignedTx = await createOrUpdateAdminForExternalMint(
+        mint.toBase58()
+      );
+      const tx = VersionedTransaction.deserialize(
+        Buffer.from(partialSignedTx, 'base64')
+      );
+      const signature = await buildAndSendTransaction({
+        connection,
+        signTransaction,
+        partialSignedTx: tx,
+        publicKey: publicKey,
+      });
+      return signature;
     },
-    onSuccess: async (mint) => {
-      router.push(`/token?mintId=${mint.toBase58()}`);
-      return await Promise.all([
-        client.invalidateQueries({
-          queryKey: ['get-token-details', { mint: mint }],
-        }),
-      ]);
+    onSuccess: async (signature) => {
+      if (signature && publicKey) {
+        transactionToast(signature);
+        router.push(`/token?mintId=${getDerivedMint(publicKey).toBase58()}`);
+        return await Promise.all([
+          client.invalidateQueries({
+            queryKey: [
+              'get-token-details',
+              { mint: getDerivedMint(publicKey).toBase58() },
+            ],
+          }),
+        ]);
+      }
     },
     onError: (error) => {
       console.error(`Transaction failed! ${error}`);

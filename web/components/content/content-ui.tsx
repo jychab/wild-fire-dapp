@@ -172,7 +172,12 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
       editable && blinksDetail?.mint ? new PublicKey(blinksDetail.mint) : null,
     postId: blinksDetail?.id || null,
   });
-  if (!editable) {
+
+  if (
+    !editable ||
+    !publicKey ||
+    blinksDetail.creator !== publicKey?.toBase58()
+  ) {
     return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
   }
 
