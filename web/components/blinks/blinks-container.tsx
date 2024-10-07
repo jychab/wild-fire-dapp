@@ -57,6 +57,7 @@ interface ActionContainerProps {
   hideCaption: boolean;
   hideCarousel: boolean;
   hideBorder: boolean;
+  preview?: boolean;
 }
 
 export const ActionContainer: FC<ActionContainerProps> = ({
@@ -76,6 +77,7 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   hideBorder,
   hideCarousel,
   hideCaption,
+  preview,
 }) => {
   const { setShowModal } = useUnifiedWalletContext();
   const [action, setAction] = useState<Action | undefined | null>(
@@ -101,11 +103,13 @@ export const ActionContainer: FC<ActionContainerProps> = ({
   const overallState = useMemo(
     () =>
       actionState &&
-      mergeActionStates(
-        ...([actionState.action, actionState.origin].filter(
-          Boolean
-        ) as ExtendedActionState[])
-      ),
+      (preview
+        ? 'trusted'
+        : mergeActionStates(
+            ...([actionState.action, actionState.origin].filter(
+              Boolean
+            ) as ExtendedActionState[])
+          )),
     [actionState]
   );
 

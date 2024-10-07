@@ -45,15 +45,17 @@ export function useGenerateTrendingList() {
       const filteredList = data.allTokenPrices
         .sort((a, b) => b.price * b.supply - a.price * a.supply)
         .slice(0, 10);
-      const holdersPromises = filteredList.map((x) => getHolders(x.memberMint));
+      const holdersPromises = filteredList.map((x) =>
+        getHolders(x.collectionMint)
+      );
       const holdersData = await Promise.all(holdersPromises);
 
       return filteredList.map((x, i) => {
         const metadata = metadatas.find((y) => y.id == x.memberMint);
         const holders = holdersData[i];
         return {
-          mint: metadata?.grouping?.find((x) => x.group_key == 'collection')
-            ?.group_value,
+          memberMint: x.memberMint,
+          collectionMint: x.collectionMint,
           image: metadata?.content?.links?.image,
           name: metadata?.content?.metadata.name,
           price: x.price,

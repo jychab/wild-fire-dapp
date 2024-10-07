@@ -20,12 +20,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import {
-  Connection,
-  PublicKey,
-  TransactionSignature,
-  VersionedTransaction,
-} from '@solana/web3.js';
+import { Connection, PublicKey, TransactionSignature } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -93,20 +88,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           delete postCampaign.initialBudget;
           await createOrEditCampaign(postCampaign);
         }
-        const partialSignedTx = await createOrEditPost(
-          mint.toBase58(),
-          postContent
-        );
-        const tx = VersionedTransaction.deserialize(
-          Buffer.from(partialSignedTx, 'base64')
-        );
-        signature = await buildAndSendTransaction({
-          connection,
-          partialSignedTx: tx,
-          signTransaction: wallet.signTransaction,
-          publicKey: wallet.publicKey,
-        });
-
+        await createOrEditPost(mint.toBase58(), postContent);
         return { signature, postId: postContent.id };
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error}`);

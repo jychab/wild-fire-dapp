@@ -207,7 +207,7 @@ export class ActionsURLMapper {
 
 export async function unfurlUrlToActionApiUrl(
   actionUrl: URL | string
-): Promise<string | null> {
+): Promise<string> {
   const url = new URL(actionUrl);
   const strUrl = actionUrl.toString();
   // case 1: if the URL is a solana action URL
@@ -222,12 +222,16 @@ export async function unfurlUrlToActionApiUrl(
   }
 
   // case 3: if the URL is a website URL which has action.json
-  const actionsJsonUrl = url.origin + '/actions.json';
-  const actionsJson = await fetch(proxify(actionsJsonUrl)).then(
-    (res) => res.json() as Promise<ActionsJsonConfig>
-  );
+  try {
+    const actionsJsonUrl = url.origin + '/actions.json';
+    const actionsJson = await fetch(proxify(actionsJsonUrl)).then(
+      (res) => res.json() as Promise<ActionsJsonConfig>
+    );
 
-  const actionsUrlMapper = new ActionsURLMapper(actionsJson);
+    const actionsUrlMapper = new ActionsURLMapper(actionsJson);
 
-  return actionsUrlMapper.mapUrl(url);
+    return actionsUrlMapper.mapUrl(url) || actionUrl.toString();
+  } catch (e) {
+    return actionUrl.toString();
+  }
 }

@@ -375,6 +375,7 @@ export const UploadPost: FC<{
                   {file.fileType == 'blinks' &&
                     (checkUrlIsValid(file.uri) ? (
                       <Blinks
+                        preview={true}
                         actionUrl={new URL(file.uri)}
                         hideCaption={false}
                         hideUserPanel={false}

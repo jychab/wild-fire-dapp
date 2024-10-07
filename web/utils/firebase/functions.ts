@@ -46,8 +46,7 @@ export async function createOrEditPost(
   post: Partial<PostContent>
 ) {
   const createOrEditPost = httpsCallable(functions, 'createOrEditPost');
-  const result = await createOrEditPost({ mint, post });
-  return result.data as string;
+  await createOrEditPost({ mint, post });
 }
 
 export async function validatePost(
@@ -62,8 +61,7 @@ export async function validatePost(
 
 export async function deletePost(mint: string, postId: string) {
   const deletePost = httpsCallable(functions, 'deletePost');
-  const result = await deletePost({ mint, postId });
-  return result.data as string;
+  await deletePost({ mint, postId });
 }
 
 export async function createOrEditComment(

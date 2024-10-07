@@ -4,6 +4,7 @@ import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
+import { GetPostsResponse } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconMoneybag, IconSend, IconWallet } from '@tabler/icons-react';
@@ -17,17 +18,14 @@ import { CreateAccountBtn } from '../create/create-ui';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { useGetTokenDetails } from '../token/token-data-access';
 import { UploadBtn } from '../upload/upload-ui';
-import { useGetPostsFromCreator } from './profile-data-access';
 
 interface ContentPanelProps {
   address: string | null;
+  posts: GetPostsResponse | null | undefined;
 }
 
-export const ContentPanel: FC<ContentPanelProps> = ({ address }) => {
+export const ContentPanel: FC<ContentPanelProps> = ({ address, posts }) => {
   const { publicKey } = useWallet();
-  const { data: posts } = useGetPostsFromCreator({
-    creator: address ? new PublicKey(address) : null,
-  });
   return posts?.posts && posts?.posts.length == 0 ? (
     address == publicKey?.toBase58() && address ? (
       <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">

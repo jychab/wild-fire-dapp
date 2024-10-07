@@ -96,6 +96,40 @@ export async function buildAndSendTransaction({
   commitment?: Commitment;
   signers?: Signer[];
 }): Promise<string> {
+  let tx = await buildTransaction({
+    connection,
+    publicKey,
+    signers,
+    partialSignedTx,
+    ixs,
+    addressLookupTableAccounts,
+  });
+  if (!tx) {
+    throw new Error('Undefined Transaction');
+  }
+  const signedTx = await signTransaction(tx);
+  const txId = await pollAndSendTransaction(
+    connection,
+    signedTx as VersionedTransaction
+  );
+  return txId;
+}
+
+export async function buildTransaction({
+  connection,
+  publicKey,
+  signers,
+  partialSignedTx,
+  ixs,
+  addressLookupTableAccounts,
+}: {
+  connection: Connection;
+  publicKey: PublicKey;
+  signers?: Signer[];
+  partialSignedTx?: Transaction | VersionedTransaction;
+  ixs?: TransactionInstruction[];
+  addressLookupTableAccounts?: AddressLookupTableAccount[];
+}) {
   let tx = partialSignedTx;
   const recentBlockhash = await connection.getLatestBlockhash({
     commitment: 'confirmed',
@@ -137,15 +171,7 @@ export async function buildAndSendTransaction({
       tx.sign(signers);
     }
   }
-  if (!tx) {
-    throw new Error('Undefined Transaction');
-  }
-  const signedTx = await signTransaction(tx);
-  const txId = await pollAndSendTransaction(
-    connection,
-    signedTx as VersionedTransaction
-  );
-  return txId;
+  return tx;
 }
 
 async function pollTransactionConfirmation(

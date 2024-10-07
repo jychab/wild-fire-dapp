@@ -1,37 +1,54 @@
-import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { GetPostsResponse, PostContent } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
 import { useQuery } from '@tanstack/react-query';
 import {
+  and,
   collectionGroup,
   getDocs,
+  or,
   orderBy,
   query,
   where,
 } from 'firebase/firestore';
+import { ProfileTabsEnum } from './profile-feature';
 
 export function useGetPostsFromCreator({
   creator,
+  selectedTab,
 }: {
   creator: PublicKey | null;
+  selectedTab: ProfileTabsEnum;
 }) {
   return useQuery({
-    queryKey: ['get-posts-from-creator', { creator }],
+    queryKey: ['get-posts-from-creator', { creator, selectedTab }],
     queryFn: async () => {
       if (!creator) return null;
-      const docData = await getDocs(
-        query(
-          collectionGroup(db, `Post`),
-          where('creator', '==', creator.toBase58()),
-          orderBy('createdAt', 'desc')
-        )
-      );
-      return {
-        posts: docData.docs.map((x) => x.data() as PostContent),
-      } as GetPostsResponse;
+      const q =
+        selectedTab == ProfileTabsEnum.All
+          ? or(
+              where('likes', 'array-contains', creator.toBase58()),
+              where('creator', '==', creator.toBase58())
+            )
+          : selectedTab == ProfileTabsEnum.Created
+          ? where('creator', '==', creator.toBase58())
+          : where('likes', 'array-contains', creator.toBase58());
+      try {
+        const docData = await getDocs(
+          query(
+            collectionGroup(db, `Post`),
+            and(where('softDelete', '==', false), q),
+            orderBy('createdAt', 'desc')
+          )
+        );
+        return {
+          posts: docData.docs.map((x) => x.data() as PostContent),
+        } as GetPostsResponse;
+      } catch (e) {
+        console.log(e);
+        return null;
+      }
     },
     enabled: !!creator,
-    staleTime: SHORT_STALE_TIME,
   });
 }

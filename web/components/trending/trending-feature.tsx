@@ -33,10 +33,13 @@ export const TrendingTable: FC = () => {
             </thead>
             <tbody>
               {list?.map((x) => (
-                <tr key={x.mint}>
+                <tr key={x.collectionMint}>
                   <td>
                     <div className="flex items-center gap-2 ">
-                      <Link href={`/token?mintId=${x.mint}`} className="avatar">
+                      <Link
+                        href={`/token?mintId=${x.collectionMint}`}
+                        className="avatar"
+                      >
                         <div className="mask mask-circle h-8 w-8">
                           <img src={x.image} alt="" />
                         </div>
@@ -44,7 +47,7 @@ export const TrendingTable: FC = () => {
                       <div className="flex flex-col text-xs">
                         <Link
                           className="link link-hover text-sm"
-                          href={`/token?mintId=${x.mint}`}
+                          href={`/token?mintId=${x.collectionMint}`}
                         >
                           {x.name}
                         </Link>
@@ -71,7 +74,7 @@ export const TrendingTable: FC = () => {
                   <td>
                     <Link
                       className="link link-hover link-primary"
-                      href={`/token?mintId=${x.mint}&tab=trade`}
+                      href={`/token?mintId=${x.collectionMint}&tab=trade`}
                     >
                       {`$${formatLargeNumber(x.price * x.supply)}`}
                     </Link>

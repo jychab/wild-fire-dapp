@@ -91,6 +91,7 @@ export const PreviewContentBtn: FC<{
           return;
         }
         const apiUrl = await unfurlUrlToActionApiUrl(mediaUrl);
+
         if (!apiUrl) {
           toast.error('Unable to unfurl to action api url');
           return;
@@ -249,37 +250,54 @@ export const PreviewBlinksActionButton: FC<{
   });
   const { data: trendingTokens } = useGenerateTrendingList();
   useEffect(() => {
-    if (
-      !checkIfMetadataIsTemporary(metadata) &&
-      metadata &&
-      !recommendations.find((x) => x.id == x.id)
-    ) {
-      setRecommendations((prev) => [
-        ...prev,
-        {
-          id: metadata.id,
-          image: metadata.content?.links?.image,
-          name: metadata.content?.metadata.name,
-        },
-      ]);
-    }
-    if (trendingTokens) {
-      setRecommendations((prev) => [
-        ...prev,
-        ...trendingTokens
-          .filter((x) => prev.findIndex((y) => y.id == x.mint) == -1)
+    if (recommendations.length > 0) return;
+    setRecommendations((prev) => {
+      const updatedRecommendations = [...prev];
+
+      // Handle metadata update if it exists and is valid
+      if (!checkIfMetadataIsTemporary(metadata) && metadata) {
+        const metadataExists = updatedRecommendations.some(
+          (item) => item.id === metadata.id
+        );
+        if (!metadataExists) {
+          updatedRecommendations.push({
+            id: metadata.grouping?.find((x) => x.group_key == 'collection')
+              ?.group_value,
+            image: metadata.content?.links?.image,
+            name: metadata.content?.metadata.name,
+          });
+        }
+      }
+
+      // Handle trending tokens update if they exist
+      if (trendingTokens) {
+        const newTrendingTokens = trendingTokens
+          .filter(
+            (token) =>
+              !updatedRecommendations.some(
+                (item) => item.id === token.collectionMint
+              )
+          )
           .slice(0, 3)
-          .map((x) => ({
-            id: x.mint,
-            image: x.image,
-            name: x.name,
-          })),
-      ]);
-    }
-  }, [metadata, trendingTokens]);
+          .map((token) => ({
+            id: token.collectionMint,
+            image: token.image,
+            name: token.name,
+          }));
+        updatedRecommendations.push(...newTrendingTokens);
+      }
+
+      // Only update state if there are changes
+      if (updatedRecommendations.length !== prev.length) {
+        return updatedRecommendations;
+      }
+      return prev; // No changes, return previous state
+    });
+  }, [metadata, trendingTokens, recommendations]);
 
   const reset = () => {
     setCollection(undefined);
+    setRecommendations([]);
   };
 
   return (
@@ -288,7 +306,7 @@ export const PreviewBlinksActionButton: FC<{
         <div className="flex items-center justify-between">
           <span className="font-bold sm:text-lg">
             {collection != undefined
-              ? 'Select a token to associate with your post'
+              ? 'Associate your post to a token'
               : 'Preview'}
           </span>
           <form method="dialog">
@@ -310,11 +328,8 @@ export const PreviewBlinksActionButton: FC<{
           <div className="flex flex-col gap-4 p-2">
             <SearchBar
               creatorsOnly={true}
-              onClick={async (x) => {
-                if (!recommendations.find((x) => x.id == x.id)) {
-                  setRecommendations((previous) => [...previous, x]);
-                  setCollection(x.id);
-                }
+              onClick={async (selectedItem) => {
+                setCollection(selectedItem.id);
               }}
             />
             <span className="stat-desc px-2">Recommended</span>

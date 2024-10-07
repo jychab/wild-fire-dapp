@@ -1,6 +1,5 @@
 'use client';
 
-import { proxify } from '@/utils/helper/endpoints';
 import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useLocalStorage, useWallet } from '@solana/wallet-adapter-react';
@@ -11,7 +10,6 @@ import {
   IconCoin,
   IconHome,
   IconMoon,
-  IconSettings,
   IconSquarePlus,
   IconSun,
   IconUserCircle,
@@ -26,6 +24,7 @@ import {
   AuthenticationBtn,
   SignInBtn,
 } from '../authentication/authentication-ui';
+import { ClaimButton } from '../claim/claim-feature';
 import { SearchBar } from '../search/search-ui';
 import { useGetTokenDetails } from '../token/token-data-access';
 import { UploadBtn } from '../upload/upload-ui';
@@ -105,37 +104,17 @@ export const SocialComponent: FC = () => {
 
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
-  const router = useRouter();
-  const { data: metaDataQuery } = useGetTokenDetails({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
-  });
   return (
     <>
-      <div className="flex fixed sm:hiddenw-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
-        <Link className="flex sm:hidden items-center" href={'/'}>
-          <span className="block font-luckiestguy text-2xl leading-[0]">
+      <div className="flex fixed sm:hiddenw-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300 pl-4 pr-6">
+        <Link className="flex sm:hidden items-end" href={'/'}>
+          <span className="block font-luckiestguy text-2xl leading-[0]]">
             BlinksFeed
           </span>
         </Link>
+
         {publicKey ? (
-          <button
-            onClick={() =>
-              router.push(`/profile?address=${publicKey.toBase58()}`)
-            }
-            className="relative w-10 h-10 mask mask-circle"
-          >
-            {metaDataQuery && metaDataQuery.content?.links?.image ? (
-              <Image
-                src={proxify(metaDataQuery?.content?.links?.image, true)}
-                className={`object-cover`}
-                fill={true}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                alt={'profile pic'}
-              />
-            ) : (
-              <IconUserCircle size={32} />
-            )}
-          </button>
+          <ClaimButton />
         ) : (
           <AuthenticationBtn
             children={
@@ -164,7 +143,8 @@ export const Navbar: FC = () => {
         {publicKey && <SearchBar />}
         <div className="flex gap-1 w-fit items-center">
           {publicKey && (
-            <div className="hidden sm:flex w-36">
+            <div className="hidden sm:flex items-center gap-4 w-55">
+              <ClaimButton />
               <UploadBtn />
             </div>
           )}
@@ -184,7 +164,7 @@ export const BottomNavBar: FC = () => {
   const router = useRouter();
   const path = usePathname();
   return (
-    <div className="btm-nav flex sm:hidden">
+    <div className="btm-nav z-20 flex sm:hidden">
       <button
         onClick={() => router.push('/')}
         className={`${path == '/' ? 'active' : ''}`}
@@ -217,7 +197,7 @@ export const BottomNavBar: FC = () => {
             : setShowModal(true)
         }
       >
-        <IconSettings />
+        <IconUserCircle />
       </button>
     </div>
   );

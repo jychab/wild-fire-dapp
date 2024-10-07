@@ -94,7 +94,7 @@ export const StackedContentGrid: FC<ContentGridProps> = ({
       ) : (
         <div className="border rounded-box p-4 w-full h-96 items-center justify-center flex flex-col  gap-4">
           <span>You've reached the end of your feed</span>
-          <span>Comeback in 30mins...</span>
+          <span>Refreshing in 15mins ...</span>
         </div>
       )}
     </div>

@@ -1,14 +1,6 @@
 import { BN } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  where,
-} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { PROGRAM_ID } from '../consts';
 import { Scope } from '../enums/das';
 import { db } from '../firebase/firebase';
@@ -82,12 +74,7 @@ export async function getAsset(mint: PublicKey) {
 }
 
 export async function getHolders(mint: string) {
-  const mintRef = (
-    await getDocs(
-      query(collection(db, `Mint`), where('memberMint', '==', mint), limit(1))
-    )
-  ).docs[0].ref;
-  const result = await getDoc(doc(db, `${mintRef.path}/TokenInfo/Summary`));
+  const result = await getDoc(doc(db, `Mint/${mint}/TokenInfo/Summary`));
   if (result.exists()) {
     return result.data() as {
       currentHoldersCount: number;

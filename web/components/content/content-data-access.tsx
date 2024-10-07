@@ -65,16 +65,7 @@ export function useRemoveContentMutation({
             signTransaction: wallet.signTransaction,
           });
         }
-        const partialSignedTx = await deletePost(mint.toBase58(), postId);
-        let tx = VersionedTransaction.deserialize(
-          Buffer.from(partialSignedTx, 'base64')
-        );
-        signature = await buildAndSendTransaction({
-          connection: connection,
-          partialSignedTx: tx,
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction,
-        });
+        await deletePost(mint.toBase58(), postId);
         await deleteCampaign(undefined, postId);
         return { signature };
       } catch (error: unknown) {
@@ -94,7 +85,7 @@ export function useRemoveContentMutation({
         ]);
         revalidateTags('post');
         transactionToast(result.signature || 'Success');
-        router.push(`profile/?mintId=${mint?.toBase58()}`);
+        router.push(`token/?mintId=${mint?.toBase58()}`);
       }
     },
     onError: (error) => {

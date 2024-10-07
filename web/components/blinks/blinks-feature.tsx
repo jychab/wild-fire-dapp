@@ -34,6 +34,7 @@ interface BlinksProps {
   hideBorder?: boolean;
   callbacks?: Partial<ActionCallbacksConfig>;
   options?: Partial<ObserverOptions>;
+  preview?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
   actionUrl,
@@ -49,11 +50,13 @@ export const Blinks: FC<BlinksProps> = ({
   hideBorder = false,
   callbacks = {},
   options = DEFAULT_OPTIONS,
+  preview = false,
 }) => {
   const { publicKey } = useWallet();
   const { data: actionsRegistry } = useGetActionRegistry({
     registryUrl: ACTIONS_REGISTRY_URL_ALL,
   });
+
   // Memoize merged options
   const mergedOptions = useMemo(
     () => normalizeOptions({ securityLevel: 'only-trusted' }),
@@ -116,8 +119,11 @@ export const Blinks: FC<BlinksProps> = ({
   });
 
   const finalActionApiUrl = useMemo(
-    () => actionsUrlMapperApiUrl || actionApiUrl,
-    [actionsUrlMapperApiUrl, actionApiUrl]
+    () =>
+      actionsUrlMapperApiUrl ||
+      actionApiUrl ||
+      (preview ? actionUrl.toString() : ''),
+    [actionsUrlMapperApiUrl, preview, actionApiUrl]
   );
 
   // Get action state and action data
@@ -146,6 +152,7 @@ export const Blinks: FC<BlinksProps> = ({
 
   return (
     <ActionContainer
+      preview={preview}
       actionsRegistry={actionsRegistry}
       action={action}
       websiteText={actionUrl?.hostname}

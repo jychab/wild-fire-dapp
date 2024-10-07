@@ -3,6 +3,7 @@
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
 import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
+import { isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -28,6 +29,7 @@ import {
   NotSupportedBlock,
 } from '../blinks/blinks-layout';
 import { BaseButtonProps } from '../blinks/ui/action-button';
+import { useGetMintToken } from '../edit/edit-data-access';
 import { ShareContent } from '../share/share-content';
 import { useGetTokenDetails } from '../token/token-data-access';
 import {
@@ -155,6 +157,9 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
   editable,
 }) => {
   const { publicKey } = useWallet();
+  const { data: tokenState } = useGetMintToken({
+    mint: blinksDetail ? new PublicKey(blinksDetail.mint) : null,
+  });
   const { data: metadata } = useGetTokenDetails({
     mint: blinksDetail ? new PublicKey(blinksDetail.mint) : null,
   });
@@ -201,7 +206,8 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
             )}
           {editable &&
             publicKey &&
-            blinksDetail.creator == publicKey?.toBase58() && (
+            (blinksDetail.creator == publicKey?.toBase58() ||
+              isAuthorized(tokenState, publicKey, metadata)) && (
               <li>
                 <button
                   disabled={removeContentMutation.isPending}
