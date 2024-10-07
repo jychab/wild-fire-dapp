@@ -97,7 +97,7 @@ export const ClaimButton: FC = () => {
         .filter((x) => !!x.token_info?.balance)
         .map((x) => ({
           mint: x.id,
-          amount: x.token_info?.balance || 0,
+          amount: Math.round(x.token_info?.balance || 0) * 0.1, //sell 10%
         }))
     );
     await sellMutation.mutateAsync(sellIxs);
@@ -161,7 +161,7 @@ export const ClaimButton: FC = () => {
                 </div>
                 <span className="text-error">{`- ${formatLargeNumber(
                   (x.token_info?.balance || 0) /
-                    10 ** (x.token_info?.decimals || 0)
+                    (10 * 10 ** (x.token_info?.decimals || 0))
                 )}`}</span>
               </div>
             ))}
