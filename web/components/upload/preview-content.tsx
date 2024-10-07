@@ -251,15 +251,19 @@ export const PreviewBlinksActionButton: FC<{
   const { data: trendingTokens } = useGenerateTrendingList();
   useEffect(() => {
     if (recommendations.length > 0) return;
-    setRecommendations((prev) => {
-      const updatedRecommendations = [...prev];
+    setRecommendations(() => {
+      const updatedRecommendations: Partial<SearchResult>[] = [];
 
       // Handle metadata update if it exists and is valid
       if (!checkIfMetadataIsTemporary(metadata) && metadata) {
         const metadataExists = updatedRecommendations.some(
           (item) => item.id === metadata.id
         );
-        if (!metadataExists) {
+        if (
+          !metadataExists &&
+          metadata.grouping?.find((x) => x.group_key == 'collection')
+            ?.group_value
+        ) {
           updatedRecommendations.push({
             id: metadata.grouping?.find((x) => x.group_key == 'collection')
               ?.group_value,
@@ -287,11 +291,7 @@ export const PreviewBlinksActionButton: FC<{
         updatedRecommendations.push(...newTrendingTokens);
       }
 
-      // Only update state if there are changes
-      if (updatedRecommendations.length !== prev.length) {
-        return updatedRecommendations;
-      }
-      return prev; // No changes, return previous state
+      return updatedRecommendations; // No changes, return previous state
     });
   }, [metadata, trendingTokens, recommendations]);
 
@@ -330,6 +330,13 @@ export const PreviewBlinksActionButton: FC<{
               creatorsOnly={true}
               onClick={async (selectedItem) => {
                 setCollection(selectedItem.id);
+                setRecommendations((prev) => {
+                  if (!prev.find((x) => x.id === selectedItem.id)) {
+                    return [...prev, selectedItem];
+                  } else {
+                    return prev;
+                  }
+                });
               }}
             />
             <span className="stat-desc px-2">Recommended</span>
@@ -355,11 +362,12 @@ export const PreviewBlinksActionButton: FC<{
           </form>
           {collection == undefined ? (
             <button
-              onClick={() =>
+              onClick={() => {
+                reset();
                 !checkIfMetadataIsTemporary(metadata) && metadata
                   ? setCollection(metadata.id)
-                  : setCollection('')
-              }
+                  : setCollection('');
+              }}
               className="btn btn-primary"
             >
               Next

@@ -176,7 +176,10 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
   if (
     !editable ||
     !publicKey ||
-    blinksDetail.creator !== publicKey?.toBase58()
+    !(
+      blinksDetail.creator == publicKey?.toBase58() ||
+      isAuthorized(tokenState, publicKey, metadata)
+    )
   ) {
     return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
   }

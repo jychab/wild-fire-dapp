@@ -79,10 +79,10 @@ export const StackedContentGrid: FC<ContentGridProps> = ({
   return !!posts ? (
     <div className={`w-full stack`}>
       {posts.length > 0 ? (
-        posts.map((x) => (
+        <>
           <DisplayContent
-            key={x.id}
-            blinksDetail={x}
+            key={posts[0].id}
+            blinksDetail={posts[0]}
             hideUserPanel={hideUserPanel}
             hideComment={hideComment}
             showMintDetails={showMintDetails}
@@ -90,9 +90,19 @@ export const StackedContentGrid: FC<ContentGridProps> = ({
             multiGrid={multiGrid}
             expandAll={!multiGrid}
           />
-        ))
+          <DisplayContent
+            key={posts[0].id + 'stack'}
+            blinksDetail={posts[0]}
+            hideUserPanel={hideUserPanel}
+            hideComment={hideComment}
+            showMintDetails={showMintDetails}
+            editable={editable}
+            multiGrid={multiGrid}
+            expandAll={!multiGrid}
+          />
+        </>
       ) : (
-        <div className="border rounded-box p-4 w-full h-96 items-center justify-center flex flex-col  gap-4">
+        <div className="rounded-box p-4 w-full h-96 items-center justify-center flex flex-col  gap-4">
           <span>You've reached the end of your feed</span>
           <span>Refreshing in 15mins ...</span>
         </div>
