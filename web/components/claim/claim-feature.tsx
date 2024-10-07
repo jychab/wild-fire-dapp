@@ -80,7 +80,6 @@ export const ClaimButton: FC = () => {
   });
   useEffect(() => {
     if (publicKey && tokenBalances && dislikes) {
-      console.log(dislikes);
       filterTokenBalances(dislikes, tokenBalances).then((result) =>
         setFilteredTokenBalances(result.filteredTokenBalances)
       );
