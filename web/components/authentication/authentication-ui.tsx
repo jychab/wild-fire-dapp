@@ -7,9 +7,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import {
   IconCoin,
   IconLogout,
+  IconRocket,
   IconSquarePlus,
   IconStar,
-  IconTransactionBitcoin,
   IconUser,
   IconUserCircle,
 } from '@tabler/icons-react';
@@ -174,9 +174,9 @@ export const AuthenticationDropdownMenu: FC = () => {
             </li>
           )}
           <li className="w-full">
-            <Link href={`/transactions`}>
-              <IconTransactionBitcoin />
-              Token Transactions
+            <Link href={`/airdrop`}>
+              <IconRocket />
+              Airdrop Campaign
             </Link>
           </li>
         </>

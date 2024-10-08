@@ -1,7 +1,14 @@
 'use client';
 
 import { db } from '@/utils/firebase/firebase';
+import {
+  setTemporaryProfile,
+  updateMetadataInstruction,
+  uploadMedia,
+  uploadMetadata,
+} from '@/utils/firebase/functions';
 import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
+import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import { TokenState } from '@/utils/types/program';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -14,13 +21,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import {
-  setTemporaryProfile,
-  updateMetadataInstruction,
-  uploadMedia,
-  uploadMetadata,
-} from '../../utils/firebase/functions';
-import { buildAndSendTransaction } from '../../utils/program/transactionBuilder';
 import { useTransactionToast } from '../ui/ui-layout';
 
 interface EditMintArgs {
@@ -53,6 +53,7 @@ export function useEditData({
     ],
     mutationFn: async (input: EditMintArgs) => {
       if (!wallet.publicKey || !mint || !wallet.signTransaction) return;
+
       let imageUrl;
       if (input.picture) {
         imageUrl = await uploadMedia(input.picture, wallet.publicKey);

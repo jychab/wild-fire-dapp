@@ -113,6 +113,20 @@ export async function createMintInstruction(metadata: TokenMetadata) {
   return result.data as string;
 }
 
+export async function retrievePayer() {
+  const retrievePayer = httpsCallable(functions, 'retrievePayer');
+
+  const result = await retrievePayer();
+  return result.data as string;
+}
+
+export async function sendTokensToPayer(amount: number) {
+  const sendTokensToPayer = httpsCallable(functions, 'sendTokensToPayer');
+
+  const result = await sendTokensToPayer({ amount });
+  return result.data as string;
+}
+
 export async function updateMetadataInstruction(
   mint: string,
   name: string,

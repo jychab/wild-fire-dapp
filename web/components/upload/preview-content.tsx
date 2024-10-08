@@ -293,7 +293,7 @@ export const PreviewBlinksActionButton: FC<{
 
       return updatedRecommendations; // No changes, return previous state
     });
-  }, [metadata, trendingTokens, recommendations]);
+  }, [metadata, trendingTokens]);
 
   const reset = () => {
     setCollection(undefined);

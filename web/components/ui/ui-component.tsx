@@ -10,6 +10,7 @@ import {
   IconCoin,
   IconHome,
   IconMoon,
+  IconRocket,
   IconSquarePlus,
   IconSun,
   IconUserCircle,
@@ -178,6 +179,14 @@ export const BottomNavBar: FC = () => {
       >
         <IconSquarePlus />
       </button>
+      {!checkIfMetadataIsTemporary(metaDataQuery) && (
+        <button
+          className={`${path == '/airdrop' ? 'active' : ''}`}
+          onClick={() => router.push(`/airdrop`)}
+        >
+          <IconRocket />
+        </button>
+      )}
       <button
         className={`${path == '/profile' ? 'active' : ''}`}
         onClick={() =>

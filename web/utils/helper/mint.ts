@@ -84,3 +84,60 @@ export async function getHolders(mint: string) {
     return null;
   }
 }
+
+export async function getAllTokenAccountsForMint(mint: PublicKey) {
+  let allTokenAccounts = new Set<{
+    address: string;
+    mint: string;
+    owner: string;
+    amount: number;
+    frozen: boolean;
+  }>();
+  let cursor;
+
+  while (true) {
+    let params: {
+      limit: number;
+      mint: string;
+      cursor?: any;
+      options: any;
+    } = {
+      limit: 1000,
+      mint: mint.toBase58(),
+      options: {
+        showZeroBalance: true,
+      },
+    };
+
+    if (cursor != undefined) {
+      params.cursor = cursor;
+    }
+
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_RPC_ENDPOINT as string,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: '',
+          method: 'getTokenAccounts',
+          params: params,
+        }),
+      }
+    );
+    const data = await response.json();
+
+    if (!data.result || data.result.token_accounts.length === 0) {
+      break;
+    }
+
+    data.result.token_accounts.forEach((account: any) => {
+      allTokenAccounts.add(account);
+    });
+    cursor = data.result.cursor;
+  }
+  return Array.from(allTokenAccounts);
+}

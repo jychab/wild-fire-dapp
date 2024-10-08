@@ -2,22 +2,15 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import {
-  createOrEditCampaign,
   deleteCampaign,
+  retrievePayer,
   withdrawFromCampaign,
 } from '@/utils/firebase/functions';
-import { getAssociatedEscrowAccount } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { Campaign } from '@/utils/types/campaigns';
-import {
-  createAssociatedTokenAccountIdempotentInstruction,
-  createTransferCheckedInstruction,
-  getAccount,
-  getAssociatedTokenAddressSync,
-  TOKEN_2022_PROGRAM_ID,
-} from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
+  Keypair,
   PublicKey,
   SystemProgram,
   TransactionSignature,
@@ -27,152 +20,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
-
-export function useCreateOrEditCampaign({
-  address,
-  payer,
-}: {
-  address: PublicKey | null;
-  payer: PublicKey | null;
-}) {
-  const { connection } = useConnection();
-  const transactionToast = useTransactionToast();
-  const wallet = useWallet();
-  const client = useQueryClient();
-  return useMutation({
-    mutationKey: [
-      'create-campaign',
-      {
-        address,
-        payer,
-      },
-    ],
-    mutationFn: async (input: any) => {
-      if (
-        !wallet.publicKey ||
-        !wallet.signTransaction ||
-        !input.budget ||
-        !input.amount ||
-        !address ||
-        !payer
-      )
-        return;
-      let signature: TransactionSignature = '';
-
-      const ixs = [];
-      try {
-        if (input.topUp && input.topUp > 0) {
-          ixs.push(
-            SystemProgram.transfer({
-              toPubkey: payer,
-              fromPubkey: wallet.publicKey,
-              lamports: input.topUp,
-            })
-          );
-          delete input.topUp;
-        }
-        if (input.mintToSend && input.difference && input.difference > 0) {
-          // check if payer has enough sol
-          // calculate amount of sol needed to airdrop subscribers
-          const tokenProgram = input.mintToSendTokenProgram
-            ? new PublicKey(input.mintToSendTokenProgram)
-            : TOKEN_2022_PROGRAM_ID;
-          const mintToSend = new PublicKey(input.mintToSend);
-          const source = getAssociatedTokenAddressSync(
-            mintToSend,
-            wallet.publicKey,
-            false,
-            tokenProgram
-          );
-          const destination = getAssociatedTokenAddressSync(
-            mintToSend,
-            getAssociatedEscrowAccount(new PublicKey(input.mint!)),
-            true,
-            tokenProgram
-          );
-          try {
-            await getAccount(connection, destination, undefined, tokenProgram);
-          } catch (e) {
-            ixs.push(
-              createAssociatedTokenAccountIdempotentInstruction(
-                wallet.publicKey,
-                destination,
-                getAssociatedEscrowAccount(new PublicKey(input.mint!)),
-                mintToSend,
-                tokenProgram
-              )
-            );
-          }
-          ixs.push(
-            createTransferCheckedInstruction(
-              source,
-              mintToSend,
-              destination,
-              wallet.publicKey,
-              Math.round(
-                input.difference * 10 ** (input.mintToSendDecimals || 0)
-              ),
-              input.mintToSendDecimals || 0,
-              undefined,
-              tokenProgram
-            )
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            ixs,
-            signTransaction: wallet.signTransaction,
-            publicKey: wallet.publicKey,
-          });
-        } else if (input.id && input.difference && input.difference < 0) {
-          const { partialTx } = await withdrawFromCampaign(
-            input.id,
-            -1 * input.difference
-          );
-          const partialSignedTx = VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          );
-          signature = await buildAndSendTransaction({
-            connection,
-            publicKey: wallet.publicKey,
-            partialSignedTx,
-            signTransaction: wallet.signTransaction,
-          });
-        }
-        if (input.difference != undefined) {
-          delete input.difference;
-        }
-        await createOrEditCampaign(input);
-        return { signature };
-      } catch (error: unknown) {
-        toast.error(`Transaction failed! ${error}` + signature);
-        return;
-      }
-    },
-    onSuccess: async (result) => {
-      if (result) {
-        transactionToast(result.signature || 'Success');
-
-        return await Promise.all([
-          client.invalidateQueries({
-            queryKey: ['get-campaigns', { address: wallet.publicKey! }],
-          }),
-          client.invalidateQueries({
-            queryKey: ['get-transactions', { address: wallet.publicKey! }],
-          }),
-          client.invalidateQueries({
-            queryKey: [
-              'get-account-info',
-              { endpoint: connection.rpcEndpoint, address: payer },
-            ],
-          }),
-        ]);
-      }
-    },
-    onError: (error) => {
-      console.error(`Transaction failed! ${error}`);
-    },
-  });
-}
 
 export function useGetCampaigns({ address }: { address: PublicKey | null }) {
   return useQuery({
@@ -298,5 +145,26 @@ export function useTopUpWallet({ address }: { address: PublicKey | null }) {
     onError: (error) => {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
+  });
+}
+
+export function useGetPayer({ address }: { address: PublicKey | null }) {
+  return useQuery({
+    queryKey: ['get-in-app-payer', { address }],
+    queryFn: async () => {
+      if (!address) return null;
+      try {
+        const payer = await retrievePayer();
+        const keypair = Keypair.fromSecretKey(Buffer.from(payer, 'base64'));
+        return {
+          publicKey: keypair.publicKey.toBase58(),
+          privatekey: payer,
+        };
+      } catch (e) {
+        return null;
+      }
+    },
+    staleTime: Infinity,
+    enabled: !!address,
   });
 }
