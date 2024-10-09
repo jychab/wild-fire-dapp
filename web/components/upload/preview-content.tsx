@@ -250,7 +250,7 @@ export const PreviewBlinksActionButton: FC<{
   });
   const { data: trendingTokens } = useGenerateTrendingList();
   useEffect(() => {
-    if (recommendations.length > 0) return;
+    if (recommendations.length > 0 || collection == undefined) return;
     setRecommendations(() => {
       const updatedRecommendations: Partial<SearchResult>[] = [];
 
@@ -272,7 +272,6 @@ export const PreviewBlinksActionButton: FC<{
           });
         }
       }
-
       // Handle trending tokens update if they exist
       if (trendingTokens) {
         const newTrendingTokens = trendingTokens
@@ -293,7 +292,7 @@ export const PreviewBlinksActionButton: FC<{
 
       return updatedRecommendations; // No changes, return previous state
     });
-  }, [metadata, trendingTokens]);
+  }, [metadata, trendingTokens, collection]);
 
   const reset = () => {
     setCollection(undefined);
@@ -302,7 +301,7 @@ export const PreviewBlinksActionButton: FC<{
 
   return (
     <dialog id="preview_modal" className="modal ">
-      <div className="modal-box flex flex-col gap-4 border p-4">
+      <div className="modal-box flex flex-col gap-4 p-4 w-3/4 scrollbar-none">
         <div className="flex items-center justify-between">
           <span className="font-bold sm:text-lg">
             {collection != undefined
@@ -318,39 +317,40 @@ export const PreviewBlinksActionButton: FC<{
             </button>
           </form>
         </div>
-        {collection == undefined ? (
-          <PreviewContent
-            post={post}
-            isLoading={isLoading}
-            useExistingBlink={useExistingBlink}
-          />
-        ) : (
-          <div className="flex flex-col gap-4 p-2">
-            <SearchBar
-              creatorsOnly={true}
-              onClick={async (selectedItem) => {
-                setCollection(selectedItem.id);
-                setRecommendations((prev) => {
-                  if (!prev.find((x) => x.id === selectedItem.id)) {
-                    return [...prev, selectedItem];
-                  } else {
-                    return prev;
-                  }
-                });
-              }}
+        <div className="grow h-full">
+          {collection == undefined ? (
+            <PreviewContent
+              post={post}
+              isLoading={isLoading}
+              useExistingBlink={useExistingBlink}
             />
-            <span className="stat-desc px-2">Recommended</span>
-            {recommendations.map((x) => (
-              <TokenButton
-                key={x.id}
-                x={x}
-                setCollection={setCollection}
-                collection={collection}
+          ) : (
+            <div className="flex flex-col gap-4 p-2">
+              <SearchBar
+                creatorsOnly={true}
+                onClick={async (selectedItem) => {
+                  setCollection(selectedItem.id);
+                  setRecommendations((prev) => {
+                    if (!prev.find((x) => x.id === selectedItem.id)) {
+                      return [...prev, selectedItem];
+                    } else {
+                      return prev;
+                    }
+                  });
+                }}
               />
-            ))}
-          </div>
-        )}
-
+              <span className="stat-desc px-2">Recommended</span>
+              {recommendations.map((x) => (
+                <TokenButton
+                  key={x.id}
+                  x={x}
+                  setCollection={setCollection}
+                  collection={collection}
+                />
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2 justify-end">
           <form method="dialog">
             <button
@@ -363,7 +363,6 @@ export const PreviewBlinksActionButton: FC<{
           {collection == undefined ? (
             <button
               onClick={() => {
-                reset();
                 !checkIfMetadataIsTemporary(metadata) && metadata
                   ? setCollection(metadata.id)
                   : setCollection('');
@@ -536,7 +535,7 @@ const PreviewContent: FC<{
           expandAll={true}
           multiGrid={false}
           editable={false}
-          showMintDetails={true}
+          showMintDetails={false}
           type={'trusted'}
           title={post.title || ''}
           description={post.description || ''}

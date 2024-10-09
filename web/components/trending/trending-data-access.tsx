@@ -21,6 +21,7 @@ export function useGenerateTrendingList() {
             memberMint: string;
             price: number;
             supply: number;
+            volume: number;
           }[];
         };
       } else {
@@ -43,7 +44,7 @@ export function useGenerateTrendingList() {
       const metadatas = (await response.json())
         .result as DAS.GetAssetResponse[];
       const filteredList = data.allTokenPrices
-        .sort((a, b) => b.price * b.supply - a.price * a.supply)
+        .sort((a, b) => (b.volume || 0) - (a.volume || 0))
         .slice(0, 10);
       const holdersPromises = filteredList.map((x) =>
         getHolders(x.collectionMint)
