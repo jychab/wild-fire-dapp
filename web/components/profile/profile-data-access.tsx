@@ -6,7 +6,6 @@ import {
   and,
   collectionGroup,
   getDocs,
-  or,
   orderBy,
   query,
   where,
@@ -25,12 +24,7 @@ export function useGetPostsFromCreator({
     queryFn: async () => {
       if (!creator) return null;
       const q =
-        selectedTab == ProfileTabsEnum.All
-          ? or(
-              where('likes', 'array-contains', creator.toBase58()),
-              where('creator', '==', creator.toBase58())
-            )
-          : selectedTab == ProfileTabsEnum.Created
+        selectedTab == ProfileTabsEnum.Created
           ? where('creator', '==', creator.toBase58())
           : where('likes', 'array-contains', creator.toBase58());
       try {
