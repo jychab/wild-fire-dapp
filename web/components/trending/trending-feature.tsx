@@ -1,3 +1,4 @@
+import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import Link from 'next/link';
 import { FC } from 'react';
@@ -32,55 +33,57 @@ export const TrendingTable: FC = () => {
               </tr>
             </thead>
             <tbody>
-              {list?.map((x) => (
-                <tr key={x.collectionMint}>
-                  <td>
-                    <div className="flex items-center gap-2 ">
-                      <Link
-                        href={`/token?mintId=${x.collectionMint}`}
-                        className="avatar"
-                      >
-                        <div className="mask mask-circle h-8 w-8">
-                          <img src={x.image} alt="" />
-                        </div>
-                      </Link>
-                      <div className="flex flex-col text-xs">
+              {list
+                ?.filter((x) => !!x.image)
+                .map((x) => (
+                  <tr key={x.collectionMint}>
+                    <td>
+                      <div className="flex items-center gap-2 ">
                         <Link
-                          className="link link-hover text-sm"
                           href={`/token?mintId=${x.collectionMint}`}
+                          className="avatar"
                         >
-                          {x.name}
+                          <div className="mask mask-circle h-8 w-8">
+                            <img src={proxify(x.image!, true)} alt="" />
+                          </div>
                         </Link>
+                        <div className="flex flex-col text-xs">
+                          <Link
+                            className="link link-hover text-sm"
+                            href={`/token?mintId=${x.collectionMint}`}
+                          >
+                            {x.name}
+                          </Link>
 
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {formatLargeNumber(x.holders || 0) + ' Subs'}
-                          </span>
-                          {x.holders24HrPercent != undefined && (
-                            <span
-                              className={`${
-                                x.holders24HrPercent < 0
-                                  ? 'text-error'
-                                  : 'text-success'
-                              }`}
-                            >
-                              {x.holders24HrPercent.toFixed(2)}%
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {formatLargeNumber(x.holders || 0) + ' Subs'}
                             </span>
-                          )}
+                            {x.holders24HrPercent != undefined && (
+                              <span
+                                className={`${
+                                  x.holders24HrPercent < 0
+                                    ? 'text-error'
+                                    : 'text-success'
+                                }`}
+                              >
+                                {x.holders24HrPercent.toFixed(2)}%
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <Link
-                      className="link link-hover link-primary"
-                      href={`/token?mintId=${x.collectionMint}&tab=trade`}
-                    >
-                      {`$${formatLargeNumber(x.price * x.supply)}`}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <Link
+                        className="link link-hover link-primary"
+                        href={`/token?mintId=${x.collectionMint}&tab=trade`}
+                      >
+                        {`$${formatLargeNumber(x.price * x.supply)}`}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

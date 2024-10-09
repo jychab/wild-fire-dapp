@@ -1,7 +1,16 @@
+import { configureDatabase } from '@/components/airdrop/utils';
 import * as web3 from '@solana/web3.js';
 import { expose } from 'comlink';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import * as airdropsender from 'helius-airship-core';
-import { configureDatabase, sqlDb } from './db'; // Adjust the import path as needed
+import { SQLocalDrizzle } from 'sqlocal/drizzle';
+
+const { driver, batchDriver } = new SQLocalDrizzle({
+  databasePath: airdropsender.databaseFile,
+  verbose: false,
+});
+
+const sqlDb = drizzle(driver, batchDriver);
 
 export const create = async (
   signer: string,
@@ -9,7 +18,7 @@ export const create = async (
   amount: bigint,
   mintAddress: string
 ) => {
-  await configureDatabase();
+  await configureDatabase(sqlDb);
   // Call the airdrop sender function
   await airdropsender.create({
     db: sqlDb,

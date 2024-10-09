@@ -21,10 +21,10 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
       );
       if (result.exists()) {
         return result.data() as {
-          currentHoldersCount: number;
-          holdersChange24hPercent: number;
-          currentPrice: number;
-          priceChange24hPercent: number;
+          currentHoldersCount?: number;
+          holdersChange24hPercent?: number;
+          currentPrice?: number;
+          priceChange24hPercent?: number;
         };
       } else {
         return null;

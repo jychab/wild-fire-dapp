@@ -11,10 +11,12 @@ import {
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
+import { getAccount, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { wrap } from 'comlink';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import * as airdropsender from 'helius-airship-core';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,11 +28,19 @@ import {
   useRef,
   useState,
 } from 'react';
-import { configureDatabase, sqlDb } from '../../workers/db';
+import { SQLocalDrizzle } from 'sqlocal/drizzle';
 import { useGetAssetByOwner } from '../claim/claim-data-access';
 import { useGetJupiterVerifiedTokens } from '../create/create-data-access';
 import { useGetCampaigns, useGetPayer } from './airdrop-data-access';
 import { InputLabel } from './airship-ui';
+import { configureDatabase } from './utils';
+
+const { driver, batchDriver } = new SQLocalDrizzle({
+  databasePath: airdropsender.databaseFile,
+  verbose: false,
+});
+
+const sqlDb = drizzle(driver, batchDriver);
 
 let sendWorker: Worker | undefined = undefined;
 let pollWorker: Worker | undefined = undefined;
@@ -102,7 +112,7 @@ export const AirshipModal: FC<{
   useEffect(() => {
     async function initApp() {
       try {
-        await configureDatabase();
+        await configureDatabase(sqlDb);
 
         // Initialize the airdrop sender
         await airdropsender.init({ db: sqlDb });
@@ -145,12 +155,12 @@ export const AirshipModal: FC<{
         setExistingAirdrop(false);
       }
     }
-    if (existingAirdrop && sqlDb) {
+    if (existingAirdrop) {
       void loadAirdropStatus();
     } else {
       setStep(1);
     }
-  }, [existingAirdrop, sqlDb]);
+  }, [existingAirdrop]);
 
   // Handle form state reset on id or campaign change
   useEffect(() => {
@@ -165,7 +175,6 @@ export const AirshipModal: FC<{
 
   // Reset form state
   function resetForm() {
-    handleCancel();
     setRecipients([]);
     setStep(1);
     setName('');
@@ -195,6 +204,7 @@ export const AirshipModal: FC<{
     sendWorker = undefined;
     pollWorker?.terminate();
     pollWorker = undefined;
+    closeModal();
   };
 
   const handleError = (errorMessage: string) => {
@@ -215,7 +225,7 @@ export const AirshipModal: FC<{
   // Handle create or edit campaign
   const handleSendAirdrop = async () => {
     if (!payer?.publicKey || !mintInfo?.memberMint) return false;
-    if (!isAirdropCanceled) {
+    if (!existingAirdrop) {
       workerRef.current = wrap(
         new Worker(new URL('../../workers/create.worker.ts', import.meta.url), {
           type: 'module',
@@ -228,7 +238,7 @@ export const AirshipModal: FC<{
         mintInfo.memberMint
       );
     }
-    setIsAirdropCanceled(false);
+
     setIsAirdropInProgress(true);
 
     if (typeof sendWorker === 'undefined') {
@@ -302,7 +312,7 @@ export const AirshipModal: FC<{
   const handleForward = async () => {
     switch (step) {
       case 1:
-        if (!name || !amount || !publicKey || !criteria || !target) {
+        if (!name || !amount || !publicKey || !criteria) {
           handleError('Error: Please ensure that all fields are filled!');
           return;
         } else {
@@ -310,7 +320,7 @@ export const AirshipModal: FC<{
         }
         setStep(2);
         setLoading(true);
-        getAllTokenAccountsForMint(new PublicKey(target.id)).then((result) => {
+        getAllTokenAccountsForMint(new PublicKey(criteria)).then((result) => {
           setRecipients(result.map((x) => x.owner));
           setLoading(false);
         });
@@ -319,18 +329,36 @@ export const AirshipModal: FC<{
         setStep(3);
         break;
       case 3:
-        if (!signTransaction || !publicKey) return;
-        const partialTx = await sendTokensToPayer(
-          parseInt(amount) * 10 ** DEFAULT_MINT_DECIMALS * recipients.length
-        );
-        await buildAndSendTransaction({
-          connection,
-          signTransaction,
-          partialSignedTx: VersionedTransaction.deserialize(
-            Buffer.from(partialTx, 'base64')
-          ),
-          publicKey: publicKey,
-        });
+        if (!signTransaction || !publicKey || !mintInfo?.memberMint || !payer)
+          return;
+        let difference =
+          parseInt(amount) * 10 ** DEFAULT_MINT_DECIMALS * recipients.length;
+        try {
+          const balance = await getAccount(
+            connection,
+            getAssociatedTokenAddressSync(
+              new PublicKey(mintInfo?.memberMint),
+              new PublicKey(payer?.publicKey),
+              false
+            )
+          );
+          console.log(balance);
+          difference -= Number(balance.amount);
+        } catch (e) {
+          console.log(e);
+        }
+        if (difference > 0) {
+          const partialTx = await sendTokensToPayer(difference);
+          await buildAndSendTransaction({
+            connection,
+            signTransaction,
+            partialSignedTx: VersionedTransaction.deserialize(
+              Buffer.from(partialTx, 'base64')
+            ),
+            publicKey: publicKey,
+          });
+        }
+
         handleSendAirdrop().then((result) => {
           if (result) {
             setStep(4);
@@ -338,11 +366,7 @@ export const AirshipModal: FC<{
         });
         break;
       case 4:
-        isAirdropInProgress
-          ? handleCancel()
-          : isAirdropCanceled
-          ? handleSendAirdrop()
-          : closeModal();
+        isAirdropCanceled ? handleSendAirdrop() : handleCancel();
         break;
       default:
         break;
@@ -352,7 +376,7 @@ export const AirshipModal: FC<{
   const handleBack = () => {
     switch (step) {
       case 1:
-        closeModal();
+        handleCancel();
         break;
       case 2:
         setStep(1);
@@ -378,7 +402,7 @@ export const AirshipModal: FC<{
               ? 'Sending Airdrop'
               : 'Airdrop Campaign'}
           </span>
-          <button onClick={closeModal}>
+          <button onClick={handleCancel}>
             <IconX />
           </button>
         </div>

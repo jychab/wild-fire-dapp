@@ -176,14 +176,16 @@ export const TokenProfile: FC<{
               </span>
               <span
                 className={`${
+                  mintSummaryDetails.holdersChange24hPercent &&
                   mintSummaryDetails.holdersChange24hPercent < 0
                     ? 'text-error'
                     : 'text-success'
                 }`}
               >
-                {mintSummaryDetails.holdersChange24hPercent < 0
-                  ? `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%`
-                  : `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%`}
+                {mintSummaryDetails.holdersChange24hPercent &&
+                  mintSummaryDetails.holdersChange24hPercent < 0 &&
+                  `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%
+                `}
               </span>
             </>
             {metadata?.token_info?.price_info?.price_per_token && '||'}

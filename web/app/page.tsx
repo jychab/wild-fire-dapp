@@ -27,7 +27,7 @@ export default function Page() {
         fetchPostByAddress(publicKey || new PublicKey(NATIVE_MINT)).then(
           (result) => {
             if (result) {
-              setPosts(result.posts || []);
+              setPosts(result.posts);
             }
           }
         );
