@@ -79,7 +79,7 @@ export const SearchBar: FC<{
         <input
           type="text"
           placeholder="Search"
-          className="input input-bordered focus-within:border-none input-md text-base w-full rounded-box"
+          className="hidden sm:block input input-bordered input-sm sm:input-md focus-within:border-none input-md text-base w-full rounded-box"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

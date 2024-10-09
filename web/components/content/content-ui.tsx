@@ -2,7 +2,9 @@
 
 import { ActionSupportability } from '@/utils/actions/actions-supportability';
 import { DisclaimerType } from '@/utils/enums/blinks';
+import { validatePost } from '@/utils/firebase/functions';
 import { proxify, useRelativePathIfPossbile } from '@/utils/helper/endpoints';
+import { formatLargeNumber } from '@/utils/helper/format';
 import { isAuthorized } from '@/utils/helper/mint';
 import { Disclaimer } from '@/utils/types/blinks';
 import { Carousel, PostBlinksDetail, PostContent } from '@/utils/types/post';
@@ -10,9 +12,12 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconAlertTriangleFilled,
+  IconChartLine,
   IconDotsVertical,
   IconEdit,
   IconExclamationCircle,
+  IconEye,
+  IconHeart,
   IconShieldCheckFilled,
   IconTrash,
 } from '@tabler/icons-react';
@@ -31,7 +36,10 @@ import {
 import { BaseButtonProps } from '../blinks/ui/action-button';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { ShareContent } from '../share/share-content';
-import { useGetTokenDetails } from '../token/token-data-access';
+import {
+  useGetMintSummaryDetails,
+  useGetTokenDetails,
+} from '../token/token-data-access';
 import {
   checkUrlIsValid,
   useGetPostCampaign,
@@ -88,6 +96,10 @@ export const UserProfile: FC<{
   const { data: metadata } = useGetTokenDetails({
     mint: new PublicKey(blinksDetail.mint),
   });
+  const { data: summaryDetails } = useGetMintSummaryDetails({
+    mint: new PublicKey(blinksDetail.mint),
+  });
+  const router = useRouter();
   return (
     <div className="flex w-full items-center justify-between p-2">
       <Link
@@ -106,14 +118,30 @@ export const UserProfile: FC<{
           )}
         </div>
         <div className="flex flex-col">
-          <div className="text-sm flex gap-1 items-center">
-            {metadata?.content?.metadata.name}
-            {/* {post?.verified && (
-              <IconDiscountCheckFilled size={18} className="fill-secondary" />
-            )} */}
-          </div>
+          <span className="text-sm">{metadata?.content?.metadata.name}</span>
+          {summaryDetails?.priceChange24hPercent !== undefined &&
+            summaryDetails?.priceChange24hPercent !== 0 && (
+              <span
+                className={`text-xs ${
+                  summaryDetails?.priceChange24hPercent > 0
+                    ? 'text-success'
+                    : 'text-error'
+                }`}
+              >{`${formatLargeNumber(
+                summaryDetails?.priceChange24hPercent
+              )}%`}</span>
+            )}
         </div>
       </Link>
+      <button
+        onClick={() =>
+          router.push(`/token?mintId=${blinksDetail.mint}&tab=trade`)
+        }
+        className="flex btn btn-sm btn-success items-center gap-2"
+      >
+        <IconChartLine />
+        Buy / Sell
+      </button>
     </div>
   );
 };
@@ -126,12 +154,12 @@ export const UserPanel: FC<{
   type: string;
 }> = ({ blinksDetail, editable, websiteText, websiteUrl, type }) => {
   return (
-    <div className="flex justify-between items-center">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-1">
         {websiteUrl && (
           <Link
             href={useRelativePathIfPossbile(websiteUrl)}
-            className="link link-hover max-w-xs text-sm stat-desc truncate"
+            className="link link-hover max-w-xs stat-desc text-sm truncate"
           >
             {websiteText ?? websiteUrl}
           </Link>
@@ -142,11 +170,12 @@ export const UserPanel: FC<{
           rel="noopener noreferrer"
           className="flex items-center"
         >
-          {type === 'malicious' && <IconAlertTriangleFilled size={14} />}
-          {type === 'trusted' && <IconShieldCheckFilled size={14} />}
-          {type === 'unknown' && <IconExclamationCircle size={14} />}
+          {type === 'malicious' && <IconAlertTriangleFilled size={20} />}
+          {type === 'trusted' && <IconShieldCheckFilled size={20} />}
+          {type === 'unknown' && <IconExclamationCircle size={20} />}
         </Link>
       </div>
+
       {blinksDetail && <Menu blinksDetail={blinksDetail} editable={editable} />}
     </div>
   );
@@ -173,68 +202,125 @@ const Menu: FC<{ blinksDetail: PostBlinksDetail; editable: boolean }> = ({
     postId: blinksDetail?.id || null,
   });
 
-  if (
-    !editable ||
-    !publicKey ||
-    !(
-      blinksDetail.creator == publicKey?.toBase58() ||
-      isAuthorized(tokenState, publicKey, metadata)
-    )
-  ) {
-    return <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />;
-  }
-
+  const [liked, setLiked] = useState(blinksDetail.liked);
+  const viewCount = blinksDetail.viewsCount || undefined;
+  const likeCount = blinksDetail.likesCount || undefined;
+  const shareCount = blinksDetail.sharesCount || undefined;
   return (
-    <div className="flex items-center gap-2">
-      <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />
-      <div className="dropdown dropdown-left">
-        <div tabIndex={0} role="button">
-          {removeContentMutation.isPending ? (
-            <div className="loading loading-spinner loading-sm" />
-          ) : (
-            <IconDotsVertical size={18} />
-          )}
+    <div className="flex items-start gap-4">
+      {viewCount && (
+        <div className="flex flex-col items-center">
+          <IconEye />
+          <span className="text-xs">{formatLargeNumber(viewCount)}</span>
         </div>
-        <ul
-          tabIndex={0}
-          className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-0 text-sm w-28"
-        >
-          {editable &&
-            publicKey &&
-            blinksDetail.creator == publicKey?.toBase58() && (
-              <li>
-                <Link
-                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                  href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
-                >
-                  <IconEdit size={18} />
-                  Edit
-                </Link>
-              </li>
-            )}
-          {editable &&
-            publicKey &&
-            (blinksDetail.creator == publicKey?.toBase58() ||
-              isAuthorized(tokenState, publicKey, metadata)) && (
-              <li>
-                <button
-                  disabled={removeContentMutation.isPending}
-                  onClick={() =>
-                    removeContentMutation.mutateAsync(postCampaign)
-                  }
-                  className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
-                >
-                  {removeContentMutation.isPending ? (
-                    <div className="loading loading-spinner loading-sm" />
-                  ) : (
-                    <IconTrash size={18} />
-                  )}
-                  Delete
-                </button>
-              </li>
-            )}
-        </ul>
+      )}
+      <button
+        className="flex flex-col items-center"
+        onClick={() => {
+          if (liked) {
+            setLiked(false);
+            blinksDetail.memberMint &&
+              validatePost(
+                blinksDetail.memberMint,
+                blinksDetail.mint,
+                blinksDetail.id,
+                'Dislikes'
+              );
+          } else {
+            setLiked(true);
+            blinksDetail.memberMint &&
+              validatePost(
+                blinksDetail.memberMint,
+                blinksDetail.mint,
+                blinksDetail.id,
+                'Likes'
+              );
+          }
+        }}
+      >
+        <IconHeart
+          className={`${liked ? 'animate-jump fill-primary' : 'fill-none'}`}
+        />
+        <span className="text-xs">
+          {(!!likeCount || liked) && (
+            <span className="text-xs">{formatLargeNumber(likeCount || 1)}</span>
+          )}
+        </span>
+      </button>
+      <div
+        className="flex flex-col items-center"
+        onClick={() => {
+          blinksDetail.memberMint &&
+            validatePost(
+              blinksDetail.memberMint,
+              blinksDetail.mint,
+              blinksDetail.id,
+              'Shares'
+            );
+        }}
+      >
+        <ShareContent mint={blinksDetail.mint} id={blinksDetail.id} />
+        {shareCount && (
+          <span className="text-xs">{formatLargeNumber(shareCount)}</span>
+        )}
       </div>
+      {!(
+        !editable ||
+        !publicKey ||
+        !(
+          blinksDetail.creator == publicKey?.toBase58() ||
+          isAuthorized(tokenState, publicKey, metadata)
+        )
+      ) && (
+        <div className="dropdown dropdown-left">
+          <div tabIndex={0} role="button">
+            {removeContentMutation.isPending ? (
+              <div className="loading loading-spinner loading-sm" />
+            ) : (
+              <IconDotsVertical size={18} />
+            )}
+          </div>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu bg-base-100 border border-base-300 rounded z-10 p-0 text-sm w-28"
+          >
+            {editable &&
+              publicKey &&
+              blinksDetail.creator == publicKey?.toBase58() && (
+                <li>
+                  <Link
+                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                    href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
+                  >
+                    <IconEdit size={18} />
+                    Edit
+                  </Link>
+                </li>
+              )}
+            {editable &&
+              publicKey &&
+              (blinksDetail.creator == publicKey?.toBase58() ||
+                isAuthorized(tokenState, publicKey, metadata)) && (
+                <li>
+                  <button
+                    disabled={removeContentMutation.isPending}
+                    onClick={() =>
+                      removeContentMutation.mutateAsync(postCampaign)
+                    }
+                    className="btn btn-sm btn-outline border-none rounded-none gap-2 items-center justify-start"
+                  >
+                    {removeContentMutation.isPending ? (
+                      <div className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <IconTrash size={18} />
+                    )}
+                    Delete
+                  </button>
+                </li>
+              )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

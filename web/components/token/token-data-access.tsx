@@ -23,6 +23,8 @@ export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
         return result.data() as {
           currentHoldersCount: number;
           holdersChange24hPercent: number;
+          currentPrice: number;
+          priceChange24hPercent: number;
         };
       } else {
         return null;

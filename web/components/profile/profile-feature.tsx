@@ -7,7 +7,6 @@ import { useGetPostsFromCreator } from './profile-data-access';
 import { ContentPanel, Profile } from './profile-ui';
 
 export enum ProfileTabsEnum {
-  All = 'All',
   Created = 'Created By You',
   Liked = 'Liked By You',
 }
@@ -25,16 +24,6 @@ export const ProfileTabs: FC<ProfileProps> = ({
       role="tablist"
       className="tabs tabs-lifted tabs-md md:tabs-lg w-full rounded"
     >
-      <input
-        type="radio"
-        role="tab"
-        className={`tab font-semibold [--tab-bg:transparent] ${
-          selectedTab == ProfileTabsEnum.All ? 'tab-active' : ''
-        }`}
-        checked={selectedTab == ProfileTabsEnum.All}
-        onChange={() => setSelectedTab(ProfileTabsEnum.All)}
-        aria-label={ProfileTabsEnum.All}
-      />
       <input
         type="radio"
         role="tab"
@@ -60,7 +49,7 @@ export const ProfileTabs: FC<ProfileProps> = ({
 };
 
 export const ProfileFeature: FC<{ address: string | null }> = ({ address }) => {
-  const [selectedTab, setSelectedTab] = useState(ProfileTabsEnum.All);
+  const [selectedTab, setSelectedTab] = useState(ProfileTabsEnum.Created);
   const { data: posts } = useGetPostsFromCreator({
     creator: address ? new PublicKey(address) : null,
     selectedTab,

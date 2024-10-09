@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  ContentGrid,
-  StackedContentGrid,
-  ValidateContent,
-} from '@/components/content/content-feature';
+import { ScrollContentGrid } from '@/components/content/content-feature';
 import { fetchPostByAddress, fetchPostByCategories } from '@/utils/helper/post';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
@@ -47,7 +43,7 @@ export default function Page() {
   }, [category, publicKey]);
 
   return (
-    <div className="flex flex-col w-full items-center gap-4 py-4 sm:gap-8 overflow-y-scroll scrollbar-none">
+    <div className="flex flex-col w-full items-center overflow-y-scroll scrollbar-none">
       <ul className="hidden sm:flex menu gap-4 menu-horizontal">
         {Object.values(Categories).map((x) => (
           <li key={x} onClick={() => setCategory(x)}>
@@ -57,16 +53,9 @@ export default function Page() {
           </li>
         ))}
       </ul>
-      <div className="max-w-lg w-full px-4">
-        {category === Categories.FOR_YOU ? (
-          <StackedContentGrid posts={posts} />
-        ) : (
-          <ContentGrid posts={posts} />
-        )}
+      <div className="max-w-lg w-full">
+        <ScrollContentGrid posts={posts} />
       </div>
-      {posts && posts.length > 0 && category === Categories.FOR_YOU && (
-        <ValidateContent posts={posts} setPosts={setPosts} />
-      )}
     </div>
   );
 }

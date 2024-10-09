@@ -104,9 +104,9 @@ export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
     <>
-      <div className="flex fixed sm:hiddenw-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300 pl-4 pr-6">
+      <div className="flex sm:hiddenw-full navbar items-center justify-between z-20 gap-4 px-4">
         <Link className="flex sm:hidden items-end" href={'/'}>
-          <span className="block font-luckiestguy text-2xl leading-[0]]">
+          <span className="block font-luckiestguy text-xl leading-[0]]">
             BlinksFeed
           </span>
         </Link>
@@ -116,7 +116,7 @@ export const Navbar: FC = () => {
         </div>
       </div>
       <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
-        <Link className="flex sm:px-4 items-end gap-2 w-fit" href="/">
+        <Link className="sm:px-4 items-end gap-2 w-fit" href="/">
           <div className="relative w-8 h-8">
             <Image
               src={logo}
@@ -130,13 +130,15 @@ export const Navbar: FC = () => {
             BlinksFeed
           </span>
         </Link>
-        {publicKey && <SearchBar />}
-        <div className="flex gap-1 w-fit items-center">
+        <div className="grow items-center justify-center">
+          {publicKey && <SearchBar />}
+        </div>
+        <div className="w-fit gap-1 items-center">
           {publicKey && (
-            <div className="hidden sm:flex items-center gap-4 w-55">
+            <>
               <ClaimButton />
               <UploadBtn />
-            </div>
+            </>
           )}
           <SignInBtn />
         </div>
@@ -161,13 +163,22 @@ export const BottomNavBar: FC = () => {
       >
         <IconHome />
       </button>
-      {!checkIfMetadataIsTemporary(metaDataQuery) && (
+      {!checkIfMetadataIsTemporary(metaDataQuery) ? (
         <button
           className={`${path == '/token' ? 'active' : ''}`}
           onClick={() =>
             publicKey
               ? router.push(`/token?mintId=${getDerivedMint(publicKey)}`)
               : setShowModal(true)
+          }
+        >
+          <IconCoin />
+        </button>
+      ) : (
+        <button
+          className={`${path == '/mint/create' ? 'active' : ''}`}
+          onClick={() =>
+            publicKey ? router.push(`/mint/create`) : setShowModal(true)
           }
         >
           <IconCoin />

@@ -13,12 +13,7 @@ import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import {
-  IconDiscountCheck,
-  IconExclamationCircle,
-  IconPlus,
-  IconX,
-} from '@tabler/icons-react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 import { wrap } from 'comlink';
 import * as airdropsender from 'helius-airship-core';
 import Image from 'next/image';
@@ -782,19 +777,13 @@ export const Step1: FC<{
                 >
                   {`Name: ${target?.content?.metadata.name}`}
                 </Link>
-                {verifiedTokens?.map((x) => x.address).includes(target?.id) ? (
-                  <IconDiscountCheck className="fill-secondary text-black" />
-                ) : (
-                  <div
-                    className="tooltip tooltip-primary"
-                    data-tip="Token not on Jupiter verified list"
-                  >
-                    <IconExclamationCircle size={18} className="text-warning" />
-                  </div>
-                )}
               </div>
               <span className="text-sm">
-                {`Symbol: ${target?.content?.metadata.symbol}`}
+                {`${
+                  target.grouping
+                    ? ``
+                    : `Symbol: ${target?.content?.metadata.symbol}`
+                }`}
               </span>
             </div>
           </div>

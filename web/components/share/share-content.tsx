@@ -37,7 +37,7 @@ export const ShareContent: FC<{
           ).showModal()
         }
       >
-        <IconShare3 />
+        <IconShare3 className="fill-primary" />
       </button>
       <dialog id="share_content" className="modal modal-middle">
         <div

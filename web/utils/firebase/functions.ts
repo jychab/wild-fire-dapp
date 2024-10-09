@@ -53,10 +53,10 @@ export async function validatePost(
   memberMint: string,
   mint: string,
   postId: string,
-  like: boolean
+  type: string
 ) {
   const validatePost = httpsCallable(functions, 'validatePost');
-  await validatePost({ memberMint, mint, postId, like });
+  await validatePost({ memberMint, mint, postId, type });
 }
 
 export async function deletePost(mint: string, postId: string) {
@@ -80,8 +80,7 @@ export async function createOrUpdateAdminForExternalMint(mint: string) {
     functions,
     'createOrUpdateAdminForExternalMint'
   );
-  const result = await createOrUpdateAdminForExternalMint({ mint });
-  return result.data as string;
+  await createOrUpdateAdminForExternalMint({ mint });
 }
 
 export async function setTemporaryProfile(

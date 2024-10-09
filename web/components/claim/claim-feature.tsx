@@ -2,7 +2,7 @@ import { db } from '@/utils/firebase/firebase';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { program } from '@/utils/program/instructions';
 import { DAS } from '@/utils/types/das';
-import { IconBellDollar } from '@tabler/icons-react';
+import { IconBellFilled } from '@tabler/icons-react';
 import {
   collection,
   doc,
@@ -137,7 +137,7 @@ export const ClaimButton: FC = () => {
   return (
     <div className="indicator group">
       {filteredTokenBalances.length > 0 && (
-        <span className="indicator-item badge badge-xs badge-primary group-hover:badge-success">
+        <span className="indicator-item badge badge-xs badge-primary group-hover:badge-success group-hover:bg-transparent">
           $$
         </span>
       )}
@@ -149,9 +149,9 @@ export const ClaimButton: FC = () => {
             ).showModal();
           }
         }}
-        className="btn btn-xs group-hover:text-success"
+        className="btn btn-xs btn-outline border-none group-hover:text-success group-hover:bg-transparent"
       >
-        <IconBellDollar />
+        <IconBellFilled />
       </button>
       <dialog id="claim" className="modal modal-middle">
         <div
