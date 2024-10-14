@@ -1,11 +1,7 @@
 import { ActionTypeEnum } from '@/utils/enums/post';
 import { uploadMedia } from '@/utils/firebase/functions';
-import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
-import {
-  generatePostEndPoint,
-  generatePostSubscribeApiEndPoint,
-  proxify,
-} from '@/utils/helper/endpoints';
+import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
+import { unfurlUrlToActionApiUrl } from '@dialectlabs/blinks';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC, useCallback, useState } from 'react';
@@ -60,6 +56,7 @@ export const UploadContentBtn: FC<{
         await uploadMutation.mutateAsync({
           postContent: {
             ...response,
+            creator: publicKey?.toBase58(),
             url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
             mint: mint.toBase58(),
             id: postId,
@@ -71,13 +68,6 @@ export const UploadContentBtn: FC<{
           tempCampaign.links.actions = tempCampaign.links?.actions.filter(
             (x) => x.type == action
           );
-          if (action == ActionTypeEnum.SUBSCRIBE) {
-            tempCampaign.links.actions[0].href =
-              generatePostSubscribeApiEndPoint(
-                mint.toBase58(),
-                tempCampaign.postId
-              );
-          }
         }
         const carousel = await Promise.all(
           files
@@ -111,11 +101,12 @@ export const UploadContentBtn: FC<{
               )
             : carousel[0]!.uri;
           const postContent = {
+            creator: publicKey?.toBase58(),
             tags: tags.split(','),
             icon: iconUrl,
             title,
             description,
-            label: 'Subscribe', // default
+            label: '',
             url: generatePostEndPoint(mint.toBase58(), postId),
             mint: mint.toBase58(),
             id: postId,

@@ -110,7 +110,7 @@ export function useEditData({
     onSuccess: async (signature) => {
       if (signature) {
         transactionToast(signature);
-        router.push(`/token?mintId=${mint?.toBase58()}`);
+        router.push(`/profile?address=${wallet.publicKey?.toBase58()}`);
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-token-details', { mint: mint }],

@@ -1,4 +1,4 @@
-import { ContentCardFeature } from '@/components/content/content-feature';
+import { Blinks } from '@/components/blinks/blinks-feature';
 import { fetchPost } from '@/utils/helper/post';
 import { Metadata } from 'next';
 
@@ -39,5 +39,11 @@ export async function generateMetadata({
 export default async function Page({ searchParams }: Props) {
   const { mint, id } = searchParams;
   const post = await fetchPost(mint as string, id as string);
-  return <ContentCardFeature post={post} />;
+  return (
+    <div className="flex flex-col justify-center items-center w-full">
+      <div className="max-w-lg w-full p-4">
+        <Blinks blinksDetail={post} editable={true} />
+      </div>
+    </div>
+  );
 }

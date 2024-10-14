@@ -3,15 +3,16 @@ import { PublicKey } from '@solana/web3.js';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
 import { generateRandomU64Number } from '../helper/post';
-import { Campaign, PostCampaign } from '../types/campaigns';
+import { PostCampaign } from '../types/campaigns';
 import { PostContent } from '../types/post';
 import { functions, storage } from './firebase';
 
-export async function createOrEditCampaign(
-  data: Partial<PostCampaign | Campaign>
-) {
-  const createOrEditCampaign = httpsCallable(functions, 'createOrEditCampaign');
-  await createOrEditCampaign(data);
+export async function createOrEditPostCampaign(data: Partial<PostCampaign>) {
+  const createOrEditPostCampaign = httpsCallable(
+    functions,
+    'createOrEditPostCampaign'
+  );
+  await createOrEditPostCampaign(data);
 }
 
 export async function deleteCampaign(id?: number, postId?: string) {
@@ -109,20 +110,6 @@ export async function createMintInstruction(metadata: TokenMetadata) {
       updateAuthority: metadata.updateAuthority?.toBase58(),
     },
   });
-  return result.data as string;
-}
-
-export async function retrievePayer() {
-  const retrievePayer = httpsCallable(functions, 'retrievePayer');
-
-  const result = await retrievePayer();
-  return result.data as string;
-}
-
-export async function sendTokensToPayer(amount: number) {
-  const sendTokensToPayer = httpsCallable(functions, 'sendTokensToPayer');
-
-  const result = await sendTokensToPayer({ amount });
   return result.data as string;
 }
 

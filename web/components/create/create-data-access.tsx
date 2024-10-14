@@ -54,7 +54,7 @@ export function useCreateMintWithExistingToken({
     onSuccess: async (mint) => {
       if (mint) {
         transactionToast('Success');
-        // router.push(`/token?mintId=${mint.toBase58()}`);
+        router.push(`/profile?address=${publicKey?.toBase58()}`);
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-token-details', { mint: mint.toBase58() }],
@@ -122,7 +122,7 @@ export function useCreateMint({ address }: { address: PublicKey | null }) {
     onSuccess: async (result) => {
       if (result) {
         transactionToast(result.signature);
-        router.push(`/token?mintId=${result.mint.toBase58()}`);
+        router.push(`/profile?address=${wallet.publicKey?.toBase58()}`);
         return await Promise.all([
           client.invalidateQueries({
             queryKey: ['get-token-details', { mint: result.mint }],

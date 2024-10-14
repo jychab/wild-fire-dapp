@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { ReactNode, Suspense } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { AuthenticationDropdownMenu } from '../authentication/authentication-ui';
-import { RightColumn } from '../trending/trending-feature';
 import { BottomNavBar, Navbar } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
@@ -15,7 +14,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
     <div className="flex w-full bg-base-100 min-h-screen flex-1">
       <div className=" flex flex-col w-full flex-1 items-center">
         <Navbar />
-        <div className="flex flex-1 w-full mb-16 ">
+        <div className="flex flex-1 w-full sm:mt-16 mb-16 ">
           <div className="w-full flex gap-16 flex-1 justify-center">
             <Suspense
               fallback={
@@ -26,11 +25,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 <AuthenticationDropdownMenu />
               </ul>
               {children}
-              {currentPath != '/' ? (
-                <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
-              ) : (
-                <RightColumn />
-              )}
+              <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
             </Suspense>
           </div>
           <Toaster position="bottom-right" />

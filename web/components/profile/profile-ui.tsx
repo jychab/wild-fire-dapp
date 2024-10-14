@@ -1,38 +1,44 @@
 'use client';
 
 import { proxify } from '@/utils/helper/endpoints';
-import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
+import {
+  checkIfMetadataIsTemporary,
+  formatLargeNumber,
+} from '@/utils/helper/format';
+import { getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconMoneybag, IconSend, IconWallet } from '@tabler/icons-react';
+import { IconMoneybag, IconSend } from '@tabler/icons-react';
 import { InitDataParsed, retrieveLaunchParams } from '@telegram-apps/sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
-import { TelegramWalletButton } from 'unified-wallet-adapter-with-telegram';
 import { ContentGrid } from '../content/content-feature';
 import { CreateAccountBtn } from '../create/create-ui';
-import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenDetails } from '../token/token-data-access';
+import {
+  useGetTokenAccountInfo,
+  useSubscriptionMutation,
+} from '../trading/trading-data-access';
 import { UploadBtn } from '../upload/upload-ui';
+import {
+  useGetMintSummaryDetails,
+  useGetTokenDetails,
+} from './profile-data-access';
 
-interface ContentPanelProps {
+export const ContentPanel: FC<{
   address: string | null;
   posts: GetPostsResponse | null | undefined;
-}
-
-export const ContentPanel: FC<ContentPanelProps> = ({ address, posts }) => {
+}> = ({ address, posts }) => {
   const { publicKey } = useWallet();
   return posts?.posts && posts?.posts.length == 0 ? (
     address == publicKey?.toBase58() && address ? (
       <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
         <div className="w-36">
-          <UploadBtn
-            mintId={getDerivedMint(new PublicKey(address)).toBase58()}
-          />
+          <UploadBtn />
         </div>
       </div>
     ) : (
@@ -41,29 +47,34 @@ export const ContentPanel: FC<ContentPanelProps> = ({ address, posts }) => {
       </div>
     )
   ) : (
-    <ContentGrid
-      hideComment={true}
-      multiGrid={true}
-      hideUserPanel={true}
-      showMintDetails={false}
-      editable={true}
-      posts={posts?.posts}
-    />
+    <ContentGrid multiGrid={true} posts={posts?.posts} />
+  );
+};
+
+export const FavouritesContentPanel: FC<{
+  posts: GetPostsResponse | null | undefined;
+}> = ({ posts }) => {
+  return posts?.posts && posts?.posts.length == 0 ? (
+    <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
+      {`No liked post :(`}
+    </div>
+  ) : (
+    <ContentGrid multiGrid={true} posts={posts?.posts} />
   );
 };
 
 interface ProfileProps {
-  mintId: string | null;
+  address: string | null;
 }
 
-export const Profile: FC<ProfileProps> = ({ mintId }) => {
+export const Profile: FC<ProfileProps> = ({ address }) => {
   const router = useRouter();
   const { publicKey } = useWallet();
-  const { data: tokenStateData } = useGetMintToken({
-    mint: mintId ? new PublicKey(mintId) : null,
-  });
+  const collectionMint = address
+    ? getDerivedMint(new PublicKey(address))
+    : null;
   const { data: metadata, isLoading } = useGetTokenDetails({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: collectionMint,
   });
   const [initData, setInitData] = useState<InitDataParsed>();
   useEffect(() => {
@@ -74,14 +85,16 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
       }
     } catch (e) {}
   }, []);
-  const isOwner =
-    publicKey &&
-    (isAuthorized(tokenStateData, publicKey, metadata) ||
-      getDerivedMint(publicKey).toBase58() == mintId);
+  const isOwner = address == publicKey?.toBase58();
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
+    mint: collectionMint,
+  });
   return (
     <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
       <button
-        onClick={() => isOwner && router.push(`/mint/edit?mintId=${mintId}`)}
+        onClick={() =>
+          isOwner && router.push(`/mint/edit?mintId=${collectionMint}`)
+        }
         className={`w-40 h-40 items-center justify-center group flex ${
           isOwner ? 'avatar indicator' : ''
         }`}
@@ -120,20 +133,33 @@ export const Profile: FC<ProfileProps> = ({ mintId }) => {
             <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
               {metadata?.content?.metadata.name ||
                 initData?.user?.username ||
-                publicKey?.toBase58()}
+                address}
             </span>
           )}
         </div>
-
-        {publicKey && mintId == getDerivedMint(publicKey).toBase58() && (
-          <TelegramWalletButton
-            overrideContent={
-              <div className="btn btn-sm btn-primary btn-outline flex items-center gap-2 justify-start ">
-                <IconWallet />
-                <span className="truncate w-24">{publicKey?.toBase58()}</span>
-              </div>
-            }
-          />
+        {collectionMint && <SubscribeBtn mintId={collectionMint.toBase58()} />}
+        {mintSummaryDetails && (
+          <div className="flex items-center gap-2">
+            <>
+              <span>
+                {formatLargeNumber(
+                  mintSummaryDetails.currentHoldersCount || 0
+                ) + ' Subscribers'}
+              </span>
+              <span
+                className={`${
+                  mintSummaryDetails.holdersChange24hPercent &&
+                  mintSummaryDetails.holdersChange24hPercent < 0
+                    ? 'text-error'
+                    : 'text-success'
+                }`}
+              >
+                {mintSummaryDetails.holdersChange24hPercent != undefined &&
+                  `${mintSummaryDetails.holdersChange24hPercent.toFixed(2)}%
+                `}
+              </span>
+            </>
+          </div>
         )}
         <span className="text-base truncate font-normal">
           {metadata?.content?.metadata.description}
@@ -179,6 +205,60 @@ export const LockedContent: FC<{
           <CreateAccountBtn />
         </div>
       </div>
+    )
+  );
+};
+export const SubscribeBtn: FC<{
+  mintId: string | null;
+}> = ({ mintId }) => {
+  const { data: metadata } = useGetTokenDetails({
+    mint: mintId ? new PublicKey(mintId) : null,
+  });
+  const tokenProgram = metadata?.token_info?.token_program
+    ? new PublicKey(metadata?.token_info?.token_program)
+    : undefined;
+  const { publicKey } = useWallet();
+  const { data: tokenInfo } = useGetTokenAccountInfo({
+    address:
+      metadata && publicKey && metadata.token_info
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(metadata!.id),
+            publicKey,
+            false,
+            new PublicKey(metadata.token_info?.token_program!)
+          )
+        : null,
+    tokenProgram: tokenProgram,
+  });
+
+  const subscribeMutation = useSubscriptionMutation({
+    mint: metadata ? new PublicKey(metadata.id) : null,
+    tokenProgram: tokenProgram,
+  });
+  return (
+    !checkIfMetadataIsTemporary(metadata) && (
+      <button
+        disabled={subscribeMutation.isPending}
+        onClick={() => {
+          subscribeMutation.mutateAsync();
+        }}
+        className={`btn relative group ${
+          tokenInfo ? 'btn-neutral hover:btn-warning' : 'btn-success'
+        } btn-sm`}
+      >
+        {subscribeMutation.isPending && (
+          <div className="loading loading-spinner" />
+        )}
+        {!subscribeMutation.isPending &&
+          (tokenInfo ? (
+            <>
+              <span className="hidden group-hover:block">Unsubscribe</span>
+              <span className="block group-hover:hidden">Subscribed</span>
+            </>
+          ) : (
+            <span>Subscribe</span>
+          ))}
+      </button>
     )
   );
 };

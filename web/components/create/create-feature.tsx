@@ -9,7 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useEffect, useState } from 'react';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { useGetTokenDetails } from '../token/token-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import {
   useCreateMint,
   useCreateMintWithExistingToken,
@@ -80,7 +80,7 @@ export const CreatePanel: FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 items-center sm:pt-16 h-full w-full animate-fade-right animate-duration-200 sm:animate-none">
+    <div className="flex flex-col gap-8 my-4 items-center w-full p-4 animate-fade-right animate-duration-200 sm:animate-none">
       <span className="text-3xl md:text-4xl text-center">
         Create Your Token
       </span>

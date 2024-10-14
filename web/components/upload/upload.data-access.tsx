@@ -3,8 +3,8 @@
 import revalidateTags from '@/app/action';
 import { db } from '@/utils/firebase/firebase';
 import {
-  createOrEditCampaign,
   createOrEditPost,
+  createOrEditPostCampaign,
   getAvailableAmountInEscrow,
 } from '@/utils/firebase/functions';
 import { generatePostApiEndPoint } from '@/utils/helper/endpoints';
@@ -86,7 +86,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           }
           delete postCampaign.initialTokensRemaining;
           delete postCampaign.initialBudget;
-          await createOrEditCampaign(postCampaign);
+          await createOrEditPostCampaign(postCampaign);
         }
         await createOrEditPost(mint.toBase58(), postContent);
         return { signature, postId: postContent.id };

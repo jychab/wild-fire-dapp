@@ -1,4 +1,5 @@
 import revalidateTags from '@/app/action';
+import { MEDIUM_STALE_TIME } from '@/utils/consts';
 import {
   deleteCampaign,
   deletePost,
@@ -7,13 +8,19 @@ import {
 import { getDerivedMemberMint, getDerivedMint } from '@/utils/helper/mint';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { PostCampaign } from '@/utils/types/campaigns';
+import {
+  Action,
+  ActionConfig,
+  setProxyUrl,
+  unfurlUrlToActionApiUrl,
+} from '@dialectlabs/blinks';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,
   TransactionSignature,
   VersionedTransaction,
 } from '@solana/web3.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTransactionToast } from '../ui/ui-layout';
@@ -91,5 +98,35 @@ export function useRemoveContentMutation({
     onError: (error) => {
       console.error(`Transaction failed! ${JSON.stringify(error)}`);
     },
+  });
+}
+
+export function useGetActionFromApiUrlQuery({
+  url,
+  adapter,
+}: {
+  url: string | undefined;
+  adapter: ActionConfig | null;
+}) {
+  return useQuery({
+    queryKey: ['get-action', { url, adapter: adapter != null }],
+    queryFn: async () => {
+      if (!adapter || !url) return null;
+      let apiUrl = await unfurlUrlToActionApiUrl(url);
+      if (!apiUrl) {
+        apiUrl = url;
+      }
+      if (apiUrl) {
+        const action = await Action.fetch(apiUrl).catch(() => null);
+        if (action) {
+          setProxyUrl('https://proxify.blinksfeed.com');
+          action.setAdapter(adapter);
+          return action;
+        }
+      }
+      return null;
+    },
+    staleTime: MEDIUM_STALE_TIME,
+    enabled: !!adapter && !!url,
   });
 }

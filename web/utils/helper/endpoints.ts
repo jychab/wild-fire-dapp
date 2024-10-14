@@ -22,8 +22,8 @@ export function generatePostApiEndPoint(mint: string, id: string) {
   return `https://api.blinksfeed.com/post?mint=${mint}&id=${id}`;
 }
 
-export function generatePostSubscribeApiEndPoint(mint: string, id: string) {
-  return `https://api.blinksfeed.com/post/actions/subscribe?mint=${mint}&id=${id}`;
+export function generatePostDefaultApiEndPoint(mint: string, id: string) {
+  return `https://api.blinksfeed.com/post/actions/sentiment?mint=${mint}&id=${id}`;
 }
 
 export function generatePostTransferApiEndPoint(mint: string, id: string) {
@@ -32,6 +32,9 @@ export function generatePostTransferApiEndPoint(mint: string, id: string) {
 
 export function proxify(targetUrl: string, image = false) {
   // Encode the target URL to ensure it is safely passed as a query parameter
+  if (targetUrl.startsWith('blob')) {
+    return targetUrl;
+  }
   const encodedTargetUrl = encodeURIComponent(targetUrl);
 
   // Construct the full URL for the proxy

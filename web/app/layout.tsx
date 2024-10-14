@@ -1,7 +1,9 @@
 import { AuthenticationProvider } from '@/components/authentication/authentication-provider';
+import { ActionsRegistryProvider } from '@/components/blinks/provider';
 import { SolanaProvider } from '@/components/solana/solana-provider';
 import { TelegramProvider } from '@/components/telegram/telegram-provider';
-import { UiLayout } from '@/components/ui/ui-layout';
+import { UiProvider } from '@/components/ui/ui-provider';
+import '@dialectlabs/blinks/index.css';
 import './global.css';
 import { ReactQueryProvider } from './react-query-provider';
 export const metadata = {
@@ -27,7 +29,9 @@ export default function RootLayout({
           <ReactQueryProvider>
             <AuthenticationProvider>
               <TelegramProvider>
-                <UiLayout>{children}</UiLayout>
+                <ActionsRegistryProvider>
+                  <UiProvider>{children}</UiProvider>
+                </ActionsRegistryProvider>
               </TelegramProvider>
             </AuthenticationProvider>
           </ReactQueryProvider>

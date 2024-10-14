@@ -1,10 +1,12 @@
 'use client';
 
+import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { PostContent } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { FC } from 'react';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { UploadPost } from './upload-ui';
 import { useGetPostCampaign } from './upload.data-access';
 
@@ -20,6 +22,9 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
     address: publicKey,
     postId: id || null,
   });
+  const { data: metadata } = useGetTokenDetails({
+    mint: publicKey ? getDerivedMint(publicKey) : null,
+  });
   return (
     <div className="flex flex-col h-full w-full items-center">
       <div className="flex flex-col gap-8 my-4 items-center w-full p-4 animate-fade-right animate-duration-200 sm:animate-none">
@@ -32,7 +37,7 @@ export const UploadFeature: FC<UploadFeatureProps> = ({ mintId, id, post }) => {
             mint={
               mintId
                 ? new PublicKey(mintId)
-                : publicKey
+                : !checkIfMetadataIsTemporary(metadata) && publicKey
                 ? getDerivedMint(publicKey)
                 : null
             }

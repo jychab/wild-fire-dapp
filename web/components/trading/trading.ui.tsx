@@ -3,7 +3,6 @@ import { Scope } from '@/utils/enums/das';
 import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import {
-  getAsset,
   getAssociatedEscrowAccount,
   getAssociatedPoolAccount,
 } from '@/utils/helper/mint';
@@ -18,17 +17,17 @@ import { PublicKey } from '@solana/web3.js';
 import { IconCurrencySolana } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { useGetMintToken } from '../edit/edit-data-access';
 import {
-  useGetLargestAccountFromMint,
   useGetMintSummaryDetails,
-} from '../token/token-data-access';
-import { LockedContent } from '../token/token-ui';
+  useGetTokenDetails,
+} from '../profile/profile-data-access';
 import TradingViewChart from './charts';
 import {
   getQuote,
   useGetAccountInfo,
+  useGetLargestAccountFromMint,
   useGetLiquidityPool,
   useGetTokenAccountInfo,
   useIsLiquidityPoolFound,
@@ -37,31 +36,41 @@ import {
 
 export const TradingPanel: FC<{
   collectionMint: string;
-  mintId: string;
-}> = ({ collectionMint, mintId }) => {
-  const [metadata, setMetadata] = useState<DAS.GetAssetResponse | null>();
-  useEffect(() => {
-    if (mintId) {
-      getAsset(new PublicKey(mintId)).then((result) => setMetadata(result));
-    }
-  }, [mintId]);
+  hideMintInfo?: boolean;
+  hideActivities?: boolean;
+  compact?: boolean;
+}> = ({
+  collectionMint,
+  hideMintInfo = false,
+  hideActivities = false,
+  compact = false,
+}) => {
+  const { data: mintTokenDetails } = useGetMintToken({
+    mint: collectionMint ? new PublicKey(collectionMint) : null,
+  });
+  const mint = mintTokenDetails?.memberMint
+    ? new PublicKey(mintTokenDetails.memberMint)
+    : null;
+  const { data: metadata } = useGetTokenDetails({
+    mint: new PublicKey(collectionMint),
+  });
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
   const [showError, setShowError] = useState('');
   const [buy, setBuy] = useState(true);
 
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
-    mint: new PublicKey(mintId),
+    mint,
   });
 
   const swapMutation = useSwapMutation({
-    mint: new PublicKey(mintId),
+    mint,
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata?.token_info?.token_program)
       : undefined,
   });
   const { data: liquidityPoolData } = useGetLiquidityPool({
-    mint: new PublicKey(mintId),
+    mint,
   });
 
   const { data: userAccountInfo } = useGetAccountInfo({
@@ -108,7 +117,7 @@ export const TradingPanel: FC<{
 
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
-      if (!mintId) return;
+      if (!mint) return;
       if (!inputToken || amount > inputToken) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
@@ -119,8 +128,8 @@ export const TradingPanel: FC<{
         let inputAmount = BigInt(amount);
         let outAmount = isLiquidityPoolFound
           ? await getQuote(
-              buy ? NATIVE_MINT.toBase58() : mintId,
-              buy ? mintId : NATIVE_MINT.toBase58(),
+              buy ? NATIVE_MINT.toBase58() : mint.toBase58(),
+              buy ? mint.toBase58() : NATIVE_MINT.toBase58(),
               inputAmount,
               'ExactIn'
             )
@@ -141,7 +150,7 @@ export const TradingPanel: FC<{
       }
     },
     [
-      mintId,
+      mint,
       publicKey,
       metadata,
       connection,
@@ -219,191 +228,180 @@ export const TradingPanel: FC<{
   );
 
   return (
-    <div className="stack w-full h-full">
-      {!mintId && <LockedContent />}
-      <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
-        <div className="flex flex-col md:flex-row items-start w-full md:gap-4 my-4">
-          <div className="flex flex-col h-[500px] w-full">
-            {isLiquidityPoolFound ? (
-              <iframe
-                width="100%"
-                height="500"
-                src={`https://birdeye.so/tv-widget/${mintId}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=hide&theme=dark`}
-              />
-            ) : (
-              <TradingViewChart
-                collectionMint={collectionMint}
-                metadata={metadata}
-              />
-            )}
-          </div>
-          <div className="flex flex-col gap-4 w-full md:max-w-xs">
+    <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
+      <div
+        className={`flex flex-col ${
+          compact ? 'flex-row' : 'md:flex-row md:gap-4'
+        } items-start w-full my-4`}
+      >
+        <TradingChart collectionMint={collectionMint} />
+        <div
+          className={`flex flex-col gap-4 w-full ${
+            compact ? '' : 'md:max-w-xs'
+          }`}
+        >
+          {!hideMintInfo && (
             <MintInfo
               collectionMint={collectionMint}
               metadata={metadata}
               liquidity={NaN}
             />
-            <div className="flex flex-col gap-2 p-4 rounded">
-              <div className="flex items-center w-full">
-                <button
-                  onClick={() => {
-                    setBuy(true);
-                    setInputAmount('');
-                    setOutputAmount('');
-                  }}
-                  className={`btn ${
-                    !buy ? 'btn-outline' : 'btn-success'
-                  } w-1/2  btn-sm rounded-r-none `}
-                >
-                  Buy
-                </button>
-                <button
-                  onClick={() => {
-                    setBuy(false);
-                    setInputAmount('');
-                    setOutputAmount('');
-                  }}
-                  className={`btn w-1/2  ${
-                    buy ? 'btn-outline ' : 'btn-error'
-                  } btn-sm rounded-l-none `}
-                >
-                  Sell
-                </button>
-              </div>
-              <label>
-                <div className="label">
-                  <span className="label-text text-xs">You're Paying</span>
-                  <div className="label-text-alt flex items-end gap-2 max-w-[200px] truncate">
-                    <span>{`${formatLargeNumber(
-                      buy
-                        ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
-                        : (inputToken || 0) /
-                            10 **
-                              (metadata?.token_info?.decimals ||
-                                DEFAULT_MINT_DECIMALS)
-                    )} ${
-                      buy ? 'SOL' : metadata?.content?.metadata.symbol
-                    }`}</span>
-                    <button
-                      onClick={() => {
-                        setInputAmount(
-                          (
-                            inputToken /
-                            (2 *
-                              10 **
-                                (buy
-                                  ? NATIVE_MINT_DECIMALS
-                                  : DEFAULT_MINT_DECIMALS))
-                          ).toString()
-                        );
-                        handleOutputAmountGivenInput(
-                          Math.round((inputToken || 0) / 2)
-                        );
-                      }}
-                      className="badge badge-xs badge-outline badge-secondary p-2 "
-                    >
-                      Half
-                    </button>
-                    <button
-                      onClick={() => {
-                        setInputAmount(
-                          (
-                            inputToken /
+          )}
+          <div className="flex flex-col gap-2 p-4 rounded">
+            <div className="flex items-center w-full">
+              <button
+                onClick={() => {
+                  setBuy(true);
+                  setInputAmount('');
+                  setOutputAmount('');
+                }}
+                className={`btn ${
+                  !buy ? 'btn-outline' : 'btn-success'
+                } w-1/2  btn-sm rounded-r-none `}
+              >
+                Buy
+              </button>
+              <button
+                onClick={() => {
+                  setBuy(false);
+                  setInputAmount('');
+                  setOutputAmount('');
+                }}
+                className={`btn w-1/2  ${
+                  buy ? 'btn-outline ' : 'btn-error'
+                } btn-sm rounded-l-none `}
+              >
+                Sell
+              </button>
+            </div>
+            <label>
+              <div className="label">
+                <span className="label-text text-xs">You're Paying</span>
+                <div className="label-text-alt flex items-end gap-2 max-w-[200px] truncate">
+                  <span>{`${formatLargeNumber(
+                    buy
+                      ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
+                      : (inputToken || 0) /
+                          10 **
+                            (metadata?.token_info?.decimals ||
+                              DEFAULT_MINT_DECIMALS)
+                  )} ${
+                    buy ? 'SOL' : metadata?.content?.metadata.symbol
+                  }`}</span>
+                  <button
+                    onClick={() => {
+                      setInputAmount(
+                        (
+                          inputToken /
+                          (2 *
                             10 **
                               (buy
                                 ? NATIVE_MINT_DECIMALS
-                                : DEFAULT_MINT_DECIMALS)
-                          ).toString()
-                        );
-                        handleOutputAmountGivenInput(inputToken || 0);
-                      }}
-                      className="badge badge-xs badge-outline badge-secondary p-2 "
-                    >
-                      Max
-                    </button>
-                  </div>
+                                : DEFAULT_MINT_DECIMALS))
+                        ).toString()
+                      );
+                      handleOutputAmountGivenInput(
+                        Math.round((inputToken || 0) / 2)
+                      );
+                    }}
+                    className="badge badge-xs badge-outline badge-secondary p-2 "
+                  >
+                    Half
+                  </button>
+                  <button
+                    onClick={() => {
+                      setInputAmount(
+                        (
+                          inputToken /
+                          10 **
+                            (buy ? NATIVE_MINT_DECIMALS : DEFAULT_MINT_DECIMALS)
+                        ).toString()
+                      );
+                      handleOutputAmountGivenInput(inputToken || 0);
+                    }}
+                    className="badge badge-xs badge-outline badge-secondary p-2 "
+                  >
+                    Max
+                  </button>
                 </div>
-                <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? SOLButton : MintButton}
-                </div>
-              </label>
+              </div>
+              <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
+                {buy ? SOLButton : MintButton}
+              </div>
+            </label>
 
-              <label>
-                <div className="label">
-                  <span className="label-text text-xs">To Receive</span>
-                  <div className="label-text-alt max-w-[100px] truncate">
-                    <span>{`${formatLargeNumber(
-                      !buy
-                        ? (outputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
-                        : (outputToken || 0) /
-                            10 **
-                              (metadata?.token_info?.decimals ||
-                                DEFAULT_MINT_DECIMALS)
-                    )} ${
-                      !buy ? 'SOL' : metadata?.content?.metadata.symbol
-                    }`}</span>
-                  </div>
+            <label>
+              <div className="label">
+                <span className="label-text text-xs">To Receive</span>
+                <div className="label-text-alt max-w-[100px] truncate">
+                  <span>{`${formatLargeNumber(
+                    !buy
+                      ? (outputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
+                      : (outputToken || 0) /
+                          10 **
+                            (metadata?.token_info?.decimals ||
+                              DEFAULT_MINT_DECIMALS)
+                  )} ${
+                    !buy ? 'SOL' : metadata?.content?.metadata.symbol
+                  }`}</span>
                 </div>
-                <div className=" input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
-                  {buy ? MintButton : SOLButton}
-                </div>
-              </label>
-              {showWarning != '' && (
-                <span className="text-right text-xs text-warning">
-                  {showWarning}
+              </div>
+              <div className=" input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
+                {buy ? MintButton : SOLButton}
+              </div>
+            </label>
+            {showWarning != '' && (
+              <span className="text-right text-xs text-warning">
+                {showWarning}
+              </span>
+            )}
+            {showError != '' && (
+              <span className="text-right text-xs text-error">{showError}</span>
+            )}
+            <button
+              disabled={showError != ''}
+              onClick={() => {
+                if (!mint) return;
+                swapMutation.mutateAsync({
+                  poolState: liquidityPoolData,
+                  inputMint: buy ? NATIVE_MINT.toBase58() : mint?.toBase58(),
+                  outputMint: buy ? mint?.toBase58() : NATIVE_MINT.toBase58(),
+                  amount:
+                    parseFloat(inputAmount) *
+                    10 ** (buy ? NATIVE_MINT_DECIMALS : DEFAULT_MINT_DECIMALS),
+                  swapMode: 'ExactIn',
+                });
+              }}
+              className={`mt-4 btn btn-sm ${
+                buy ? 'btn-success' : 'btn-error'
+              } w-full`}
+            >
+              {swapMutation.isPending ? (
+                <div className="loading loading-spinner" />
+              ) : (
+                <span>
+                  {buy
+                    ? `Buy ${metadata?.content?.metadata.symbol}`
+                    : `Sell ${metadata?.content?.metadata.symbol}`}
                 </span>
               )}
-              {showError != '' && (
-                <span className="text-right text-xs text-error">
-                  {showError}
-                </span>
-              )}
-              <button
-                disabled={showError != ''}
-                onClick={() => {
-                  swapMutation.mutateAsync({
-                    poolState: liquidityPoolData,
-                    inputMint: buy ? NATIVE_MINT.toBase58() : mintId,
-                    outputMint: buy ? mintId : NATIVE_MINT.toBase58(),
-                    amount:
-                      parseFloat(inputAmount) *
-                      10 **
-                        (buy ? NATIVE_MINT_DECIMALS : DEFAULT_MINT_DECIMALS),
-                    swapMode: 'ExactIn',
-                  });
-                }}
-                className={`mt-4 btn btn-sm ${
-                  buy ? 'btn-success' : 'btn-error'
-                } w-full`}
-              >
-                {swapMutation.isPending ? (
-                  <div className="loading loading-spinner" />
-                ) : (
-                  <span>
-                    {buy
-                      ? `Buy ${metadata?.content?.metadata.symbol}`
-                      : `Sell ${metadata?.content?.metadata.symbol}`}
-                  </span>
-                )}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
-
-        <Activities metadata={metadata} mintId={mintId} />
       </div>
+
+      {!hideActivities && <Activities metadata={metadata} />}
     </div>
   );
 };
 
 interface ActivitiesProps {
-  mintId: string | null | undefined;
   metadata: DAS.GetAssetResponse | null | undefined;
 }
 
-export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
+export const Activities: FC<ActivitiesProps> = ({ metadata }) => {
   const { data: largestTokenAccount } = useGetLargestAccountFromMint({
-    mint: mintId ? new PublicKey(mintId) : null,
+    mint: metadata ? new PublicKey(metadata.id) : null,
     tokenProgram: metadata?.token_info?.token_program
       ? new PublicKey(metadata.token_info.token_program)
       : null,
@@ -457,10 +455,10 @@ export const Activities: FC<ActivitiesProps> = ({ metadata, mintId }) => {
                           ? '(Airdrop Wallet)'
                           : ''
                       }${
-                        mintId &&
+                        metadata &&
                         x.owner.toBase58() ==
                           getAssociatedPoolAccount(
-                            new PublicKey(mintId)
+                            new PublicKey(metadata.id)
                           ).toBase58()
                           ? '(Bonding Curve)'
                           : ''
@@ -557,6 +555,36 @@ export const MintInfo: FC<{
         <span className="text-right col-span-3">
           {mintSummaryDetails.currentHoldersCount}
         </span>
+      )}
+    </div>
+  );
+};
+
+const TradingChart: FC<{
+  collectionMint: string;
+}> = ({ collectionMint }) => {
+  const { data: metadata } = useGetTokenDetails({
+    mint: new PublicKey(collectionMint),
+  });
+  const { data: mintTokenDetails } = useGetMintToken({
+    mint: new PublicKey(collectionMint),
+  });
+  const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
+    mint: mintTokenDetails ? new PublicKey(mintTokenDetails?.memberMint) : null,
+  });
+  return (
+    <div className="flex flex-col h-[500px] w-full">
+      {isLiquidityPoolFound ? (
+        <iframe
+          width="100%"
+          height="500"
+          src={`https://birdeye.so/tv-widget/${mintTokenDetails?.memberMint}?chain=solana&viewMode=pair&chartInterval=15&chartType=CANDLE&chartTimezone=Asia%2FSingapore&chartLeftToolbar=hide&theme=dark`}
+          allow="fullscreen"
+          title="TradingView Chart"
+          className="flex-grow"
+        />
+      ) : (
+        <TradingViewChart collectionMint={collectionMint} metadata={metadata} />
       )}
     </div>
   );

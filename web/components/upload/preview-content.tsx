@@ -1,48 +1,20 @@
 'use client';
 
 import { ActionTypeEnum } from '@/utils/enums/post';
-import { unfurlUrlToActionApiUrl } from '@/utils/helper/blinks';
 import { generatePostEndPoint, proxify } from '@/utils/helper/endpoints';
-import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
-import { getDerivedMint } from '@/utils/helper/mint';
-import {
-  SOFT_LIMIT_BUTTONS,
-  SOFT_LIMIT_FORM_INPUTS,
-  SOFT_LIMIT_INPUTS,
-} from '@/utils/types/blinks';
-import { PostContent } from '@/utils/types/post';
+import { PostBlinksDetail, PostContent } from '@/utils/types/post';
+import { unfurlUrlToActionApiUrl } from '@dialectlabs/blinks';
 import { ActionGetResponse } from '@solana/actions-spec';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconX } from '@tabler/icons-react';
-import Image from 'next/image';
-import {
-  Dispatch,
-  FC,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { AbstractActionComponent } from '../actions/abstract-action-component';
-import { componentFactory } from '../actions/action';
-import { ButtonActionComponent } from '../actions/button-action-component';
-import { FormActionComponent } from '../actions/form-action-component';
-import { isParameterSelectable, isPatternAllowed } from '../actions/guards';
-import { MultiValueActionComponent } from '../actions/multivalue-action-coponent';
-import { SingleValueActionComponent } from '../actions/single-action-value-component';
 import { AuthenticationBtn } from '../authentication/authentication-ui';
-import { ActionLayout } from '../blinks/blinks-layout';
-import { BaseButtonProps } from '../blinks/ui/action-button';
+import { BaseBlinkLayout } from '../blinks/base-blink-layout';
+import { useLayoutPropNormalizer } from '../blinks/normalizeProps';
+import { UserProfile } from '../content/content-ui';
 import { CreateAccountBtn } from '../create/create-ui';
-import { SearchBar, SearchResult } from '../search/search-ui';
-import {
-  useGetMintSummaryDetails,
-  useGetTokenDetails,
-} from '../token/token-data-access';
-import { useGenerateTrendingList } from '../trending/trending-data-access';
 import { UploadContentBtn } from './upload-content';
 import { showModalById, TempPostCampaign, UploadFileTypes } from './upload-ui';
 import { useUploadMutation } from './upload.data-access';
@@ -90,17 +62,18 @@ export const PreviewContentBtn: FC<{
           toast.error('No Blinks Url Found');
           return;
         }
-        const apiUrl = await unfurlUrlToActionApiUrl(mediaUrl);
+        let apiUrl = await unfurlUrlToActionApiUrl(mediaUrl);
 
         if (!apiUrl) {
-          toast.error('Unable to unfurl to action api url');
-          return;
+          apiUrl = mediaUrl;
         }
+
         const response = (await (
           await fetch(proxify(apiUrl))
         ).json()) as ActionGetResponse;
         postContent = {
           ...response,
+          creator: publicKey?.toBase58(),
           url: generatePostEndPoint(mint.toBase58(), postId, apiUrl),
           mint: mint.toBase58(),
           id: postId,
@@ -136,6 +109,7 @@ export const PreviewContentBtn: FC<{
                 ?.thumbnail!
             : carousel[0]!.uri;
           postContent = {
+            creator: publicKey?.toBase58(),
             icon: iconUrl,
             title,
             description,
@@ -240,319 +214,57 @@ export const PreviewBlinksActionButton: FC<{
   isLoading,
   tags,
 }) => {
-  const [collection, setCollection] = useState<string>();
-  const [recommendations, setRecommendations] = useState<
-    Partial<SearchResult>[]
-  >([]);
-  const { publicKey } = useWallet();
-  const { data: metadata } = useGetTokenDetails({
-    mint: publicKey ? getDerivedMint(publicKey) : null,
-  });
-  const { data: trendingTokens } = useGenerateTrendingList();
-  useEffect(() => {
-    if (recommendations.length > 0 || collection == undefined) return;
-    setRecommendations(() => {
-      const updatedRecommendations: Partial<SearchResult>[] = [];
-
-      // Handle metadata update if it exists and is valid
-      if (!checkIfMetadataIsTemporary(metadata) && metadata) {
-        const metadataExists = updatedRecommendations.some(
-          (item) => item.id === metadata.id
-        );
-        if (
-          !metadataExists &&
-          metadata.grouping?.find((x) => x.group_key == 'collection')
-            ?.group_value
-        ) {
-          updatedRecommendations.push({
-            id: metadata.grouping?.find((x) => x.group_key == 'collection')
-              ?.group_value,
-            image: metadata.content?.links?.image,
-            name: metadata.content?.metadata.name,
-          });
-        }
-      }
-      // Handle trending tokens update if they exist
-      if (trendingTokens) {
-        const newTrendingTokens = trendingTokens
-          .filter(
-            (token) =>
-              !updatedRecommendations.some(
-                (item) => item.id === token.collectionMint
-              )
-          )
-          .slice(0, 3)
-          .map((token) => ({
-            id: token.collectionMint,
-            image: token.image,
-            name: token.name,
-          }));
-        updatedRecommendations.push(...newTrendingTokens);
-      }
-
-      return updatedRecommendations; // No changes, return previous state
-    });
-  }, [metadata, trendingTokens, collection]);
-
-  const reset = () => {
-    setCollection(undefined);
-    setRecommendations([]);
-  };
-
   return (
     <dialog id="preview_modal" className="modal ">
-      <div className="modal-box flex flex-col gap-4 p-4 w-3/4 scrollbar-none">
+      <div className="modal-box flex flex-col gap-4 p-4 scrollbar-none">
         <div className="flex items-center justify-between">
-          <span className="font-bold sm:text-lg">
-            {collection != undefined
-              ? 'Associate your post to a token'
-              : 'Preview'}
-          </span>
+          <span className="font-bold sm:text-lg">Preview</span>
           <form method="dialog">
-            <button
-              className="flex items-center justify-center"
-              onClick={() => reset()}
-            >
+            <button className="flex items-center justify-center">
               <IconX />
             </button>
           </form>
         </div>
         <div className="grow h-full">
-          {collection == undefined ? (
-            <PreviewContent
-              post={post}
-              isLoading={isLoading}
-              useExistingBlink={useExistingBlink}
-            />
-          ) : (
-            <div className="flex flex-col gap-4 p-2">
-              <SearchBar
-                creatorsOnly={true}
-                onClick={async (selectedItem) => {
-                  setCollection(selectedItem.id);
-                  setRecommendations((prev) => {
-                    if (!prev.find((x) => x.id === selectedItem.id)) {
-                      return [...prev, selectedItem];
-                    } else {
-                      return prev;
-                    }
-                  });
-                }}
-              />
-              <span className="stat-desc px-2">Recommended</span>
-              {recommendations.map((x) => (
-                <TokenButton
-                  key={x.id}
-                  x={x}
-                  setCollection={setCollection}
-                  collection={collection}
-                />
-              ))}
-            </div>
-          )}
+          <PreviewContent post={post} />
         </div>
         <div className="flex items-center gap-2 justify-end">
           <form method="dialog">
-            <button
-              onClick={() => reset()}
-              className="btn btn-outline btn-primary"
-            >
-              Close
-            </button>
+            <button className="btn btn-outline btn-primary">Close</button>
           </form>
-          {collection == undefined ? (
-            <button
-              onClick={() => {
-                !checkIfMetadataIsTemporary(metadata) && metadata
-                  ? setCollection(metadata.id)
-                  : setCollection('');
-              }}
-              className="btn btn-primary"
-            >
-              Next
-            </button>
-          ) : (
-            <UploadContentBtn
-              tags={tags}
-              tempCampaign={tempCampaign}
-              useExistingBlink={useExistingBlink}
-              mint={collection ? new PublicKey(collection) : null}
-              files={files}
-              title={title}
-              description={description}
-              action={action}
-              id={id}
-            />
-          )}
+          <UploadContentBtn
+            tags={tags}
+            tempCampaign={tempCampaign}
+            useExistingBlink={useExistingBlink}
+            mint={mint}
+            files={files}
+            title={title}
+            description={description}
+            action={action}
+            id={id}
+          />
         </div>
       </div>
     </dialog>
   );
 };
 
-const TokenButton: FC<{
-  x: Partial<SearchResult>;
-  collection: string;
-  setCollection: Dispatch<SetStateAction<string | undefined>>;
-}> = ({ x, collection, setCollection }) => {
-  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: x.id ? new PublicKey(x.id) : null,
-  });
-  return (
-    <button
-      onClick={() => {
-        setCollection(x.id);
-      }}
-      className={`flex gap-4 w-full items-center border p-2 rounded-box border-base-300 ${
-        collection == x.id ? 'border-base-content' : ''
-      }`}
-    >
-      <div className="w-8 h-8 relative mask mask-circle">
-        {x.image && (
-          <Image
-            className={`object-cover`}
-            fill={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            alt=""
-            src={proxify(x.image, true)}
-          />
-        )}
-      </div>
-      <div className="flex flex-col gap-1 items-start">
-        <span className="text-sm font-bold">{x.name}</span>
-        <span className="stat-desc">
-          {`${mintSummaryDetails?.currentHoldersCount} Subscribers`}
-        </span>
-      </div>
-    </button>
-  );
-};
-
 const PreviewContent: FC<{
   post: Partial<PostContent> | undefined;
-  isLoading: boolean;
-  useExistingBlink: boolean;
-}> = ({ post, isLoading, useExistingBlink }) => {
-  const [buttons, inputs, form] = useMemo(() => {
-    const actionComponent = post?.links?.actions?.map((x) =>
-      componentFactory(null, x.label, x.href, x.parameters)
-    );
-    const buttons = actionComponent
-      ?.filter((it) => it instanceof ButtonActionComponent)
-      .slice(0, SOFT_LIMIT_BUTTONS);
-
-    const inputs = actionComponent
-      ?.filter(
-        (it) =>
-          it instanceof SingleValueActionComponent ||
-          it instanceof MultiValueActionComponent
-      )
-      .slice(0, SOFT_LIMIT_INPUTS);
-
-    const [formComponent] =
-      actionComponent?.filter((it) => it instanceof FormActionComponent) ?? [];
-
-    return [buttons, inputs, formComponent];
-  }, [post?.links?.actions]);
-
-  const asButtonProps = (component: AbstractActionComponent) => {
-    const it = component as ButtonActionComponent;
-    return {
-      text: it.label,
-      loading: false,
-      disabled: false,
-      variant: 'default',
-      onClick: (params?: Record<string, string | string[]>) => {},
-    } as BaseButtonProps;
-  };
-
-  const asInputProps = (
-    component: AbstractActionComponent,
-    { placement }: { placement: 'form' | 'standalone' } = {
-      placement: 'standalone',
-    }
-  ) => {
-    const it = component as
-      | SingleValueActionComponent
-      | MultiValueActionComponent;
-    return {
-      type: it.parameter.type ?? 'text',
-      placeholder: it.parameter.label,
-      disabled: false,
-      name: it.parameter.name,
-      required: it.parameter.required,
-      min: it.parameter.min,
-      max: it.parameter.max,
-      pattern:
-        it instanceof SingleValueActionComponent &&
-        isPatternAllowed(it.parameter)
-          ? it.parameter.pattern
-          : undefined,
-      options: isParameterSelectable(it.parameter)
-        ? it.parameter.options
-        : undefined,
-      description: it.parameter.patternDescription,
-      button:
-        placement === 'standalone'
-          ? asButtonProps(it.toButtonActionComponent())
-          : undefined,
-    };
-  };
-
-  const asFormProps = (component: AbstractActionComponent) => {
-    const it = component as FormActionComponent;
-    return {
-      button: asButtonProps(it.toButtonActionComponent()),
-      inputs: it.parameters.slice(0, SOFT_LIMIT_FORM_INPUTS).map((parameter) =>
-        asInputProps(it.toInputActionComponent(parameter.name), {
-          placement: 'form',
-        })
-      ),
-    };
-  };
-
+}> = ({ post }) => {
+  const normalizedProps = useLayoutPropNormalizer({ post });
   return (
-    <div className="overflow-y-scroll scrollbar-none ">
-      {post ? (
-        <ActionLayout
-          blinksImageUrl={useExistingBlink ? post?.icon : undefined}
-          websiteText={post.url ? new URL(post.url).hostname : ''}
-          websiteUrl={post?.url}
-          blinksDetail={{
-            ...post,
-            url: post.url!,
-            mint: post.mint!,
-            id: post.id!,
-            createdAt: Date.now() / 1000,
-            updatedAt: Date.now() / 1000,
-          }}
-          hideBorder={false}
-          post={post}
-          hideCarousel={false}
-          hideCaption={false}
-          hideUserPanel={false}
-          hideComment={true}
-          expandAll={true}
-          multiGrid={false}
-          editable={false}
-          showMintDetails={false}
-          type={'trusted'}
-          title={post.title || ''}
-          description={post.description || ''}
-          supportability={{
-            isSupported: true,
-          }}
-          buttons={buttons?.map(asButtonProps)}
-          inputs={inputs?.map((input) => asInputProps(input))}
-          form={form ? asFormProps(form) : undefined}
+    !!post && (
+      <div
+        className={`"flex flex-col w-full animate-fade-up animate-once animate-duration-300 border bg-base-300 border-2 border-primary shadow-md shadow-primary rounded-2xl`}
+      >
+        <UserProfile
+          blinksDetail={post as PostBlinksDetail}
+          trade={false}
+          setTrade={() => {}}
         />
-      ) : (
-        isLoading && (
-          <div className="flex items-center justify-center">
-            <div className="loading loading-dots" />
-          </div>
-        )
-      )}
-    </div>
+        <BaseBlinkLayout stylePreset="custom" {...normalizedProps} />
+      </div>
+    )
   );
 };

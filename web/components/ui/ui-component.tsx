@@ -23,8 +23,8 @@ import { useUnifiedWalletContext } from 'unified-wallet-adapter-with-telegram';
 import logo from '../../public/images/logo.png';
 import { SignInBtn } from '../authentication/authentication-ui';
 import { ClaimButton } from '../claim/claim-feature';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { SearchBar } from '../search/search-ui';
-import { useGetTokenDetails } from '../token/token-data-access';
 import { UploadBtn } from '../upload/upload-ui';
 
 export const ThemeComponent: FC = ({}) => {
@@ -103,47 +103,36 @@ export const SocialComponent: FC = () => {
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
-    <>
-      <div className="flex sm:hiddenw-full navbar items-center justify-between z-20 gap-4 px-4">
-        <Link className="flex sm:hidden items-end" href={'/'}>
-          <span className="block font-luckiestguy text-xl leading-[0]]">
-            BlinksFeed
-          </span>
-        </Link>
-        <div className="flex gap-1 w-fit items-center">
-          {publicKey && <ClaimButton />}
-          <SignInBtn />
+    <div className="flex w-full sm:fixed navbar items-center justify-between gap-4 border-b bg-base-100 border-base-300 z-20">
+      <Link className="sm:px-4 flex items-start gap-2 w-64" href="/">
+        <div className="hidden sm:block relative w-8 h-8">
+          <Image
+            src={logo}
+            alt={'logo'}
+            className={`object-cover`}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
         </div>
+        <span className="sm:hidden font-luckiestguy text-xl sm:text-3xl leading-[0.75]">
+          BlinksFeed
+        </span>
+      </Link>
+      <div className="grow items-center justify-center">
+        {publicKey && <SearchBar />}
       </div>
-      <div className="hidden sm:flex fixed w-full navbar items-center justify-between gap-4 z-20 bg-base-100 border-b border-base-300">
-        <Link className="sm:px-4 items-end gap-2 w-fit" href="/">
-          <div className="relative w-8 h-8">
-            <Image
-              src={logo}
-              alt={'logo'}
-              className={`object-cover`}
-              fill={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-          <span className="hidden sm:block font-luckiestguy text-3xl leading-[0.75]">
-            BlinksFeed
-          </span>
-        </Link>
-        <div className="grow items-center justify-center">
-          {publicKey && <SearchBar />}
-        </div>
-        <div className="w-fit gap-1 items-center">
-          {publicKey && (
-            <>
-              <ClaimButton />
+      <div className="w-64 gap-4 items-center justify-end">
+        {publicKey && (
+          <>
+            <ClaimButton />
+            <div className="hidden md:block">
               <UploadBtn />
-            </>
-          )}
-          <SignInBtn />
-        </div>
+            </div>
+          </>
+        )}
+        <SignInBtn />
       </div>
-    </>
+    </div>
   );
 };
 
@@ -163,17 +152,20 @@ export const BottomNavBar: FC = () => {
       >
         <IconHome />
       </button>
+      <button
+        className={`${path == '/post/create' ? 'active' : ''}`}
+        onClick={() => router.push(`/post/create`)}
+      >
+        <IconSquarePlus />
+      </button>
       {!checkIfMetadataIsTemporary(metaDataQuery) ? (
-        <button
-          className={`${path == '/token' ? 'active' : ''}`}
-          onClick={() =>
-            publicKey
-              ? router.push(`/token?mintId=${getDerivedMint(publicKey)}`)
-              : setShowModal(true)
-          }
+        <Link
+          target="_blank"
+          rel="noopener noreferrer"
+          href={'https://airship.blinksfeed.com'}
         >
-          <IconCoin />
-        </button>
+          <IconRocket />
+        </Link>
       ) : (
         <button
           className={`${path == '/mint/create' ? 'active' : ''}`}
@@ -182,20 +174,6 @@ export const BottomNavBar: FC = () => {
           }
         >
           <IconCoin />
-        </button>
-      )}
-      <button
-        className={`${path == '/post/create' ? 'active' : ''}`}
-        onClick={() => router.push(`/post/create`)}
-      >
-        <IconSquarePlus />
-      </button>
-      {!checkIfMetadataIsTemporary(metaDataQuery) && (
-        <button
-          className={`${path == '/airdrop' ? 'active' : ''}`}
-          onClick={() => router.push(`/airdrop`)}
-        >
-          <IconRocket />
         </button>
       )}
       <button

@@ -8,6 +8,6 @@ export enum ActionCostEnum {
 }
 
 export enum ActionTypeEnum {
-  SUBSCRIBE = 'SUBSCRIBE',
+  DEFAULT = 'DEFAULT',
   REWARD = 'REWARD',
 }

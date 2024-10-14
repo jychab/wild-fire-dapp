@@ -1,173 +1,168 @@
-import {
-  checkSecurity,
-  DEFAULT_OPTIONS,
-  isInterstitial,
-  normalizeOptions,
-} from '@/utils/helper/blinks';
-import {
-  ActionCallbacksConfig,
-  ACTIONS_REGISTRY_URL_ALL,
-  ObserverOptions,
-} from '@/utils/types/blinks';
+'use client';
+
+import { validatePost } from '@/utils/firebase/functions';
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { PostBlinksDetail } from '@/utils/types/post';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { FC, useMemo } from 'react';
-import {
-  getActionRegistryLookUp,
-  useGetActionRegistry,
-  useGetBlinkAction,
-  useGetBlinkActionJsonUrl,
-} from './blink-data-access';
-import { ActionContainer } from './blinks-container';
+import { Blink } from '@dialectlabs/blinks';
+import { IconEye, IconHeart, IconHeartFilled } from '@tabler/icons-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { FC, useState } from 'react';
+import { useWallet } from 'unified-wallet-adapter-with-telegram';
+import { CommentsSection } from '../comments/comments-ui';
+import { useGetActionFromApiUrlQuery } from '../content/content-data-access';
+import { UserProfile } from '../content/content-ui';
+import { ShareContent } from '../share/share-content';
+import { TradingPanel } from '../trading/trading.ui';
+import { checkUrlIsValid } from '../upload/upload.data-access';
+import { useActionsRegistry } from './provider';
 
 interface BlinksProps {
-  actionUrl: URL;
-  blinksDetail?: PostBlinksDetail;
-  showMintDetails?: boolean;
-  editable?: boolean;
+  blinksDetail: PostBlinksDetail | undefined | null;
   multiGrid?: boolean;
-  hideComment?: boolean;
-  expandAll?: boolean;
-  hideUserPanel?: boolean;
-  hideCaption?: boolean;
-  hideCarousel?: boolean;
-  hideBorder?: boolean;
-  callbacks?: Partial<ActionCallbacksConfig>;
-  options?: Partial<ObserverOptions>;
-  preview?: boolean;
+  editable?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
-  actionUrl,
   blinksDetail,
-  showMintDetails = true,
-  hideUserPanel = false,
-  editable = false,
   multiGrid = false,
-  hideComment = false,
-  expandAll = false,
-  hideCaption = false,
-  hideCarousel = false,
-  hideBorder = false,
-  callbacks = {},
-  options = DEFAULT_OPTIONS,
-  preview = false,
+  editable = false,
 }) => {
   const { publicKey } = useWallet();
-  const { data: actionsRegistry } = useGetActionRegistry({
-    registryUrl: ACTIONS_REGISTRY_URL_ALL,
+  const { adapter } = useActionsRegistry();
+  const { data: action } = useGetActionFromApiUrlQuery({
+    url: blinksDetail?.url,
+    adapter,
   });
+  const [trade, setTrade] = useState(false);
+  const [liked, setLiked] = useState(blinksDetail?.liked);
+  const [animateHeart, setAnimateHeart] = useState(false);
 
-  // Memoize merged options
-  const mergedOptions = useMemo(
-    () => normalizeOptions({ securityLevel: 'only-trusted' }),
-    []
-  );
-  const interstitialData = useMemo(
-    () =>
-      actionUrl
-        ? isInterstitial(actionUrl)
-        : { isInterstitial: false, decodedActionUrl: '' },
-    [actionUrl]
-  );
-
-  const interstitialState = useMemo(() => {
-    if (!!actionsRegistry && interstitialData.isInterstitial) {
-      return getActionRegistryLookUp({
-        url: actionUrl,
-        type: 'interstitial',
-        actionsRegistry,
-      });
+  const toggleLike = () => {
+    if (!blinksDetail?.memberMint || !publicKey) return;
+    if (liked) {
+      validatePost(
+        blinksDetail.memberMint,
+        blinksDetail.mint,
+        blinksDetail.id,
+        'Dislikes'
+      );
+      setLiked(false);
     } else {
-      return null;
+      validatePost(
+        blinksDetail.memberMint,
+        blinksDetail.mint,
+        blinksDetail.id,
+        'Likes'
+      );
+      setLiked(true);
+      triggerHeartAnimation();
     }
-  }, [actionUrl, interstitialData, actionsRegistry]);
+  };
+  // Trigger the heart animation
+  const triggerHeartAnimation = () => {
+    setAnimateHeart(true);
+    setTimeout(() => {
+      setAnimateHeart(false);
+    }, 500); // Show animation for 600ms
+  };
 
-  // Determine the final action URL based on interstitial or website checks
-  const actionApiUrl = useMemo(
-    () =>
-      actionUrl &&
-      interstitialData.isInterstitial &&
-      interstitialState &&
-      checkSecurity(
-        interstitialState.state,
-        mergedOptions.securityLevel.interstitials
-      )
-        ? interstitialData.decodedActionUrl
-        : null,
-    [actionUrl, interstitialData, interstitialState, mergedOptions]
-  );
-
-  const websiteState = useMemo(() => {
-    if (!!actionsRegistry && !interstitialData.isInterstitial) {
-      return getActionRegistryLookUp({
-        url: actionUrl,
-        type: 'website',
-        actionsRegistry,
-      });
-    } else {
-      return null;
-    }
-  }, [actionUrl, actionsRegistry, interstitialData]);
-
-  const { data: actionsUrlMapperApiUrl } = useGetBlinkActionJsonUrl({
-    actionUrl: actionUrl,
-    enabled:
-      !!actionsRegistry &&
-      !interstitialData.isInterstitial &&
-      !!websiteState &&
-      checkSecurity(websiteState.state, mergedOptions.securityLevel.websites),
-  });
-
-  const finalActionApiUrl = useMemo(
-    () =>
-      actionsUrlMapperApiUrl ||
-      actionApiUrl ||
-      (preview ? actionUrl.toString() : ''),
-    [actionsUrlMapperApiUrl, preview, actionApiUrl]
-  );
-
-  // Get action state and action data
-  const actionState = useMemo(() => {
-    if (!!actionsRegistry && !!finalActionApiUrl) {
-      return getActionRegistryLookUp({
-        url: finalActionApiUrl,
-        type: 'action',
-        actionsRegistry,
-      });
-    } else {
-      return null;
-    }
-  }, [finalActionApiUrl, actionsRegistry]);
-
-  const { data: action } = useGetBlinkAction({
-    actionUrl: finalActionApiUrl,
-    publicKey: publicKey,
-    options: options,
-    enabled:
-      !!options &&
-      !!finalActionApiUrl &&
-      !!actionState &&
-      checkSecurity(actionState.state, mergedOptions.securityLevel.actions),
-  });
-
+  if (!(blinksDetail && checkUrlIsValid(blinksDetail.url))) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2">
+        Url is invalid
+        <div className="loading loading-dots" />
+      </div>
+    );
+  }
+  if (!action) {
+    return null;
+  }
+  if (multiGrid) {
+    return (
+      <Link
+        href={useRelativePathIfPossbile(blinksDetail.url)}
+        className="relative flex items-center aspect-square h-auto justify-center"
+      >
+        <Image
+          className={`object-cover `}
+          fill={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt=""
+          src={action.icon}
+        />
+      </Link>
+    );
+  }
   return (
-    <ActionContainer
-      preview={preview}
-      actionsRegistry={actionsRegistry}
-      action={action}
-      websiteText={actionUrl?.hostname}
-      websiteUrl={actionUrl?.toString()}
-      normalizedSecurityLevel={{ ...mergedOptions.securityLevel }}
-      blinksDetail={blinksDetail}
-      multiGrid={multiGrid}
-      showMintDetails={showMintDetails}
-      hideBorder={hideBorder}
-      hideCarousel={hideCarousel}
-      hideCaption={hideCaption}
-      hideUserPanel={hideUserPanel}
-      hideComment={hideComment}
-      expandAll={expandAll}
-      editable={editable}
-    />
+    <div
+      className={`"flex flex-col w-full animate-fade-up animate-once animate-duration-300 border bg-base-300 border-2 border-primary shadow-md shadow-primary rounded-2xl`}
+    >
+      {animateHeart && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <IconHeartFilled
+            size={120}
+            className="animate-duration-300 animate-jump animate-ease-out fill-primary opacity-85"
+          />
+        </div>
+      )}
+      <UserProfile
+        trade={trade}
+        setTrade={setTrade}
+        blinksDetail={blinksDetail}
+        editable={editable}
+      />
+      {!trade ? (
+        <div className="animate-flip-up" onDoubleClick={toggleLike}>
+          <Blink
+            stylePreset={'custom'}
+            action={action}
+            websiteText={new URL(blinksDetail.url).hostname}
+          />
+        </div>
+      ) : (
+        <div className="p-4 animate-flip-down">
+          <TradingPanel
+            compact={true}
+            hideMintInfo={true}
+            hideActivities={true}
+            collectionMint={blinksDetail.mint}
+          />
+        </div>
+      )}
+      <BlinksFooter
+        blinksDetail={blinksDetail}
+        toggleLike={toggleLike}
+        liked={liked}
+      />
+    </div>
+  );
+};
+export const BlinksFooter: FC<{
+  blinksDetail: PostBlinksDetail;
+  toggleLike: () => void;
+  liked: boolean | undefined;
+}> = ({ blinksDetail, toggleLike, liked }) => {
+  return (
+    <div className="flex justify-between items-end w-full px-6 pb-5">
+      <CommentsSection blinksDetail={blinksDetail} />
+      <div className="flex flex-col items-end gap-2">
+        <ShareContent blinksDetail={blinksDetail} />
+        <div className="flex items-end gap-2">
+          <IconEye size={16} />
+          <span className="stat-desc">{`${
+            blinksDetail.viewsCount || 0
+          } views`}</span>
+          <button onClick={toggleLike} className="link link-hover flex gap-2">
+            <IconHeart
+              size={16}
+              className={`${liked ? 'fill-primary animate-jump' : ''}`}
+            />
+            <span className="stat-desc">{`${
+              blinksDetail.likesCount || 0
+            } likes`}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

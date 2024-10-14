@@ -1,4 +1,5 @@
 import { CreatePanel } from '@/components/create/create-feature';
+import { proxify } from '@/utils/helper/endpoints';
 import { Metadata } from 'next';
 
 export async function generateMetadata({}): Promise<Metadata> {
@@ -10,7 +11,10 @@ export async function generateMetadata({}): Promise<Metadata> {
       url: 'https://blinksfeed.com/mint/create',
       images: [
         {
-          url: 'https://buckets.blinksfeed.com/blinksfeed/main.gif',
+          url: proxify(
+            'https://buckets.blinksfeed.com/blinksfeed/main.gif',
+            true
+          ),
           alt: '',
         },
       ],

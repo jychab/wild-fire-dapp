@@ -5,7 +5,6 @@ import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
-  IconCoin,
   IconLogout,
   IconRocket,
   IconSquarePlus,
@@ -19,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { UnifiedWalletButton } from 'unified-wallet-adapter-with-telegram';
 import { DAS } from '../../utils/types/das';
-import { useGetTokenDetails } from '../token/token-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 import { ThemeComponent } from '../ui/ui-component';
 
 export const SignInBtn: FC = () => {
@@ -163,18 +162,12 @@ export const AuthenticationDropdownMenu: FC = () => {
         </li>
       ) : (
         <>
-          {publicKey && (
-            <li className="w-full">
-              <Link
-                href={`/token?mintId=${getDerivedMint(publicKey).toBase58()}`}
-              >
-                <IconCoin />
-                Your Token
-              </Link>
-            </li>
-          )}
           <li className="w-full">
-            <Link href={`/airdrop`}>
+            <Link
+              href={`https://airship.blinksfeed.com`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <IconRocket />
               Airdrop Campaign
             </Link>

@@ -1,18 +1,14 @@
 import { db } from '@/utils/firebase/firebase';
 import { createOrEditComment } from '@/utils/firebase/functions';
 import { proxify } from '@/utils/helper/endpoints';
-import {
-  checkIfMetadataIsTemporary,
-  checkIfTruncated,
-  getTimeAgo,
-} from '@/utils/helper/format';
+import { checkIfTruncated, getTimeAgo } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconDiscountCheckFilled, IconSend, IconX } from '@tabler/icons-react';
+import { IconSend, IconX } from '@tabler/icons-react';
 import {
   collection,
   DocumentData,
@@ -27,7 +23,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useGetTokenDetails } from '../token/token-data-access';
+import { useGetTokenDetails } from '../profile/profile-data-access';
 
 interface Comment {
   commentId: string;
@@ -43,8 +39,7 @@ interface Comment {
 
 export const CommentsSection: FC<{
   blinksDetail: PostBlinksDetail;
-  multiGrid: boolean;
-}> = ({ blinksDetail: post, multiGrid }) => {
+}> = ({ blinksDetail: post }) => {
   const [commentsLimit, setCommentsLimit] = useState(20);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -183,22 +178,20 @@ export const CommentsSection: FC<{
   };
 
   return (
-    <div className="flex flex-col pt-2 gap-1 items-start">
-      {post.commentsCount && (
-        <button
-          onClick={() => {
-            if (multiGrid) {
-              router.push(post.url);
-            } else {
+    <>
+      <div className="flex flex-col gap-1 items-start">
+        {post.commentsCount && (
+          <button
+            onClick={() => {
               toggleModal(true);
-            }
-          }}
-          className="stat-desc link link-hover"
-        >{`View ${post.commentsCount} comments`}</button>
-      )}
-      <button className="stat-desc" onClick={() => toggleModal(true)}>
-        Add a comment
-      </button>
+            }}
+            className="stat-desc link link-hover"
+          >{`View ${post.commentsCount} comments`}</button>
+        )}
+        <button className="stat-desc" onClick={() => toggleModal(true)}>
+          Add a comment
+        </button>
+      </div>
       <dialog
         id={post.id + '/comments'}
         className="modal modal-bottom sm:modal-middle"
@@ -266,7 +259,7 @@ export const CommentsSection: FC<{
           </label>
         </div>
       </dialog>
-    </div>
+    </>
   );
 };
 
@@ -283,16 +276,7 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
         <button
           disabled={!metadata}
           className="chat-image avatar"
-          onClick={() =>
-            checkIfMetadataIsTemporary(metadata)
-              ? router.push(`/profile?address=${comment.user}`)
-              : router.push(
-                  `/token?mintId=${
-                    metadata?.grouping?.find((x) => x.group_key == 'collection')
-                      ?.group_value
-                  }`
-                )
-          }
+          onClick={() => router.push(`/profile?address=${comment.user}`)}
         >
           <div className="w-8 h-8 relative mask mask-circle">
             <Image
@@ -309,24 +293,11 @@ export const AvatarWithText: FC<{ comment: Comment }> = ({ comment }) => {
         <div className="chat-header flex items-center gap-1">
           <button
             disabled={!metadata}
-            onClick={() =>
-              checkIfMetadataIsTemporary(metadata)
-                ? router.push(`/profile?address=${comment.user}`)
-                : router.push(
-                    `/token?mintId=${
-                      metadata?.grouping?.find(
-                        (x) => x.group_key == 'collection'
-                      )?.group_value
-                    }`
-                  )
-            }
+            onClick={() => router.push(`/profile?address=${comment.user}`)}
             className="truncate text-sm max-w-[120px] sm:max-w-xs"
           >
             {metadata ? metadata.content?.metadata.name : comment.user}
           </button>
-          {!checkIfMetadataIsTemporary(metadata) && (
-            <IconDiscountCheckFilled size={20} className="text-secondary" />
-          )}
           <time className="text-xs opacity-50">
             {`${getTimeAgo(comment.updatedAt)}${
               comment.updatedAt != comment.createdAt ? ' (edited)' : ''

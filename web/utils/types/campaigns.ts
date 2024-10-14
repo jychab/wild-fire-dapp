@@ -1,11 +1,6 @@
 import { Criteria, Eligibility } from '../enums/campaign';
 import { ActionCostEnum } from '../enums/post';
 
-export interface Campaign extends CampaignDetails {
-  name: string;
-  amount: number;
-}
-
 export interface AmountPerQuery {
   href: string;
   query: {

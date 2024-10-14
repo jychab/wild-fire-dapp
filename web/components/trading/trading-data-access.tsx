@@ -1,4 +1,4 @@
-import { NATIVE_MINT_DECIMALS } from '@/utils/consts';
+import { NATIVE_MINT_DECIMALS, SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { getAsset } from '@/utils/helper/mint';
 import { buy, program, sell } from '@/utils/program/instructions';
@@ -10,6 +10,7 @@ import {
   getAccount,
   getAssociatedTokenAddressSync,
   getMint,
+  getMultipleAccounts,
   NATIVE_MINT,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -511,5 +512,36 @@ export function useGetLiquidityPool({ mint }: { mint: PublicKey | null }) {
       return await program.account.liquidityPool.fetch(liquidityPool);
     },
     enabled: !!mint,
+  });
+}
+export function useGetLargestAccountFromMint({
+  mint,
+  tokenProgram,
+}: {
+  mint: PublicKey | null;
+  tokenProgram: PublicKey | null;
+}) {
+  const { connection } = useConnection();
+  return useQuery({
+    queryKey: [
+      'get-largest-token-accounts-from-mint',
+      { endpoint: connection.rpcEndpoint, mint, tokenProgram },
+    ],
+    queryFn: async () => {
+      if (!mint || !tokenProgram) return null;
+      const result = await connection.getTokenLargestAccounts(
+        mint,
+        'confirmed'
+      );
+      const accounts = await getMultipleAccounts(
+        connection,
+        result.value.map((x) => x.address),
+        undefined,
+        tokenProgram
+      );
+      return accounts;
+    },
+    staleTime: SHORT_STALE_TIME,
+    enabled: !!mint && !!tokenProgram,
   });
 }

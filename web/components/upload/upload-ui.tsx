@@ -3,25 +3,25 @@
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { ActionTypeEnum } from '@/utils/enums/post';
 import {
-  generatePostSubscribeApiEndPoint,
+  generatePostDefaultApiEndPoint,
   generatePostTransferApiEndPoint,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getAsset } from '@/utils/helper/mint';
+import { getAsset, getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostCampaign } from '@/utils/types/campaigns';
 import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
+import { isParameterSelectable } from '@dialectlabs/blinks';
 import { LinkedAction } from '@solana/actions';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheck,
   IconExclamationCircle,
-  IconPhoto,
   IconPlus,
+  IconRefresh,
   IconTrash,
-  IconVideo,
   IconX,
 } from '@tabler/icons-react';
 import Image from 'next/image';
@@ -37,12 +37,11 @@ import {
   useState,
 } from 'react';
 import toast from 'react-hot-toast';
-import { isParameterSelectable } from '../actions/guards';
+import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { Blinks } from '../blinks/blinks-feature';
 import { useGetJupiterVerifiedTokens } from '../create/create-data-access';
 import { useGetMintToken } from '../edit/edit-data-access';
 import { PreviewContentBtn } from './preview-content';
-import { checkUrlIsValid } from './upload.data-access';
 
 export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
   const router = useRouter();
@@ -85,15 +84,16 @@ export const UploadPost: FC<{
   mint: PublicKey | null;
   id?: string;
 }> = ({ post, mint, id, postCampaign }) => {
+  const { publicKey } = useWallet();
   const [tempCampaign, setTempCampaign] = useState<Partial<TempPostCampaign>>();
   const [files, setFiles] = useState<UploadFileTypes[]>([]);
   const previousFilesRef = useRef(files);
   const [useExistingBlink, setUseExistingBlink] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  // const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const [uri, setUri] = useState('');
-  const [action, setAction] = useState(ActionTypeEnum.SUBSCRIBE);
+  const [action, setAction] = useState(ActionTypeEnum.DEFAULT);
   const [tags, setTags] = useState('');
 
   const updateFiles = useCallback((newFiles: any) => {
@@ -123,10 +123,10 @@ export const UploadPost: FC<{
         initialTokensRemaining: postCampaign.tokensRemaining,
         initialBudget: postCampaign.budget,
       }));
-    } else if (mint && !tempCampaign?.mint && !tempCampaign?.postId) {
+    } else if (!tempCampaign?.mint) {
       setTempCampaign((prev) => ({
         ...prev,
-        mint: mint.toBase58(),
+        mint: mint ? mint.toBase58() : undefined,
         postId: id || generateRandomU64Number().toString(),
       }));
     }
@@ -162,7 +162,7 @@ export const UploadPost: FC<{
         setTitle(post.title || '');
         setUseExistingBlink(false);
         setAction(
-          isSubscribe(
+          getActionType(
             post?.links?.actions[0].href!,
             tempCampaign?.mint,
             tempCampaign?.postId
@@ -174,7 +174,7 @@ export const UploadPost: FC<{
             actions:
               post.links?.actions.map((x) => ({
                 ...x,
-                type: isSubscribe(
+                type: getActionType(
                   x.href,
                   tempCampaign?.mint!,
                   tempCampaign?.postId!
@@ -205,62 +205,62 @@ export const UploadPost: FC<{
     []
   );
 
-  const captureThumbnail = useCallback(
-    (id: string) => {
-      const video = videoRefs.current[id];
-      if (video && video.readyState >= 2) {
-        const canvasSize = Math.max(video.videoWidth, video.videoHeight);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          canvas.width = canvasSize;
-          canvas.height = canvasSize;
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          const offsetX = (canvasSize - video.videoWidth) / 2;
-          const offsetY = (canvasSize - video.videoHeight) / 2;
-          ctx.drawImage(
-            video,
-            offsetX,
-            offsetY,
-            video.videoWidth,
-            video.videoHeight
-          );
+  // const captureThumbnail = useCallback(
+  //   (id: string) => {
+  //     const video = videoRefs.current[id];
+  //     if (video && video.readyState >= 2) {
+  //       const canvasSize = Math.max(video.videoWidth, video.videoHeight);
+  //       const canvas = document.createElement('canvas');
+  //       const ctx = canvas.getContext('2d');
+  //       if (ctx) {
+  //         canvas.width = canvasSize;
+  //         canvas.height = canvasSize;
+  //         ctx.fillStyle = '#000000';
+  //         ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //         const offsetX = (canvasSize - video.videoWidth) / 2;
+  //         const offsetY = (canvasSize - video.videoHeight) / 2;
+  //         ctx.drawImage(
+  //           video,
+  //           offsetX,
+  //           offsetY,
+  //           video.videoWidth,
+  //           video.videoHeight
+  //         );
 
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const thumbnail = new File([blob], `${id}-thumbnail.png`, {
-                type: 'image/png',
-              });
-              const dataUrl = URL.createObjectURL(thumbnail);
+  //         canvas.toBlob((blob) => {
+  //           if (blob) {
+  //             const thumbnail = new File([blob], `${id}-thumbnail.png`, {
+  //               type: 'image/png',
+  //             });
+  //             const dataUrl = URL.createObjectURL(thumbnail);
 
-              updateFiles({
-                id,
-                thumbnail: dataUrl,
-                duration: video.duration,
-                thumbnailFile: thumbnail,
-              });
-            }
-          }, 'image/png');
-        }
-      }
-    },
-    [updateFiles]
-  );
+  //             updateFiles({
+  //               id,
+  //               thumbnail: dataUrl,
+  //               duration: video.duration,
+  //               thumbnailFile: thumbnail,
+  //             });
+  //           }
+  //         }, 'image/png');
+  //       }
+  //     }
+  //   },
+  //   [updateFiles]
+  // );
 
-  const handleLoadedMetadata = useCallback(
-    (id: string) => {
-      const video = videoRefs.current[id];
+  // const handleLoadedMetadata = useCallback(
+  //   (id: string) => {
+  //     const video = videoRefs.current[id];
 
-      if (video) {
-        video.currentTime = 1; // Seek to 1 second to capture the thumbnail
-        video.addEventListener('seeked', () => captureThumbnail(id), {
-          once: true,
-        });
-      }
-    },
-    [captureThumbnail]
-  );
+  //     if (video) {
+  //       video.currentTime = 1; // Seek to 1 second to capture the thumbnail
+  //       video.addEventListener('seeked', () => captureThumbnail(id), {
+  //         once: true,
+  //       });
+  //     }
+  //   },
+  //   [captureThumbnail]
+  // );
 
   useEffect(() => {
     const previousFiles = previousFilesRef.current;
@@ -297,15 +297,15 @@ export const UploadPost: FC<{
     [files]
   );
 
-  const handleVideoRef = useCallback(
-    (id: string) => (el: HTMLVideoElement | null) => {
-      if (el) {
-        el.setAttribute('crossorigin', 'anonymous');
-        videoRefs.current[id] = el;
-      }
-    },
-    []
-  );
+  // const handleVideoRef = useCallback(
+  //   (id: string) => (el: HTMLVideoElement | null) => {
+  //     if (el) {
+  //       el.setAttribute('crossorigin', 'anonymous');
+  //       videoRefs.current[id] = el;
+  //     }
+  //   },
+  //   []
+  // );
 
   return (
     <div className="flex flex-col w-full gap-4">
@@ -350,21 +350,17 @@ export const UploadPost: FC<{
         {files.length == 0 ? (
           <label className="btn btn-outline" htmlFor="file-upload">
             <IconPlus />
-            <span>Add Image / Video</span>
+            <span>Add Image</span>
             <input
               id="file-upload"
               type="file"
               className="hidden"
-              accept="image/*, video/*"
+              accept="image/*"
               onChange={handleFilesAdd}
             />
           </label>
         ) : (
-          <div
-            className={`flex flex-col ${
-              useExistingBlink ? 'border border-base-300' : ''
-            }`}
-          >
+          <div className={`flex flex-col `}>
             <div className="carousel w-full z-0">
               {files.map((file) => (
                 <div
@@ -372,23 +368,22 @@ export const UploadPost: FC<{
                   key={file.id}
                   className="carousel-item relative z-0 items-center justify-center flex aspect-square w-full"
                 >
-                  {file.fileType == 'blinks' &&
-                    (checkUrlIsValid(file.uri) ? (
-                      <Blinks
-                        preview={true}
-                        actionUrl={new URL(file.uri)}
-                        hideCaption={false}
-                        hideUserPanel={false}
-                        hideBorder={true}
-                        hideComment={true}
-                        expandAll={true}
-                      />
-                    ) : (
-                      <div className="flex gap-2 flex-col items-center ">
-                        <span>Url Is Invalid</span>
-                        <div className="loading loading-dots" />
-                      </div>
-                    ))}
+                  {file.fileType == 'blinks' && (
+                    <Blinks
+                      blinksDetail={{
+                        creator: publicKey?.toBase58(),
+                        mint: mint
+                          ? mint.toBase58()
+                          : publicKey
+                          ? getDerivedMint(publicKey).toBase58()
+                          : '',
+                        id: id || generateRandomU64Number().toString(),
+                        url: file.uri,
+                        createdAt: Date.now() / 1000,
+                        updatedAt: Date.now() / 1000,
+                      }}
+                    />
+                  )}
                   {file.fileType.startsWith('image/') && (
                     <Image
                       className={`object-contain bg-black`}
@@ -398,7 +393,7 @@ export const UploadPost: FC<{
                       alt={''}
                     />
                   )}
-                  {file.fileType.startsWith('video/') && (
+                  {/* {file.fileType.startsWith('video/') && (
                     <video
                       ref={handleVideoRef(file.id)}
                       className="w-full h-full bg-black"
@@ -411,7 +406,7 @@ export const UploadPost: FC<{
                       <source src={file.uri} type={file.fileType} />
                       Your browser does not support the video tag.
                     </video>
-                  )}
+                  )} */}
                   <button
                     onClick={() => {
                       if (useExistingBlink) {
@@ -440,67 +435,6 @@ export const UploadPost: FC<{
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        {!useExistingBlink && files.length > 0 && (
-          <div className="flex items-center gap-2">
-            {files.map((file) => (
-              <button
-                key={file.id}
-                className="aspect-square w-14 h-14 relative flex border border-base-300 items-center justify-center"
-                onClick={() =>
-                  document.getElementById(file.id)?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center',
-                  })
-                }
-              >
-                {file.fileType.startsWith('image') && (
-                  <>
-                    <Image
-                      className="cursor-pointer bg-black object-contain"
-                      fill={true}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      src={file.uri}
-                      alt={''}
-                    />
-                    <div className="absolute btn btn-xs p-0 bottom-1 right-1">
-                      <IconPhoto />
-                    </div>
-                  </>
-                )}
-                {file.fileType.startsWith('video') && file.thumbnail && (
-                  <>
-                    <Image
-                      className="cursor-pointer bg-black object-contain"
-                      fill={true}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      src={file.thumbnail}
-                      alt={''}
-                    />
-                    <div className="absolute btn btn-xs p-0 bottom-1 right-1">
-                      <IconVideo />
-                    </div>
-                  </>
-                )}
-              </button>
-            ))}
-            {files.length < 3 && (
-              <label
-                className="border-base-300 rounded-none w-14 h-14 btn btn-outline"
-                htmlFor="file-upload"
-              >
-                <IconPlus />
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/*, video/*"
-                  onChange={handleFilesAdd}
-                />
-              </label>
-            )}
           </div>
         )}
         {!useExistingBlink && (
@@ -551,9 +485,9 @@ export const UploadPost: FC<{
   );
 };
 
-function isSubscribe(href: string, mint: string, postId: string) {
-  return href == generatePostSubscribeApiEndPoint(mint, postId)
-    ? ActionTypeEnum.SUBSCRIBE
+function getActionType(href: string, mint: string, postId: string) {
+  return href.startsWith(generatePostDefaultApiEndPoint(mint, postId))
+    ? ActionTypeEnum.DEFAULT
     : ActionTypeEnum.REWARD;
 }
 
@@ -572,19 +506,35 @@ export const AddActions: FC<{
       const actions =
         tempCampaign.links?.actions.map((x) => ({
           ...x,
-          type: isSubscribe(x.href, tempCampaign.mint!, tempCampaign.postId!),
+          type: getActionType(x.href, tempCampaign.mint!, tempCampaign.postId!),
         })) || [];
       if (
-        actions?.find((x) => x.type == ActionTypeEnum.SUBSCRIBE) == undefined &&
-        action == ActionTypeEnum.SUBSCRIBE
+        actions?.find((x) => x.type == ActionTypeEnum.DEFAULT) == undefined &&
+        action == ActionTypeEnum.DEFAULT
       ) {
         actions.push({
-          href: generatePostSubscribeApiEndPoint(
-            tempCampaign.mint,
-            tempCampaign.postId
-          ),
-          type: ActionTypeEnum.SUBSCRIBE,
-          label: 'Subscribe',
+          type: ActionTypeEnum.DEFAULT,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=dislike`,
+          label: '❌ Dislike',
+          actionTypeEnum: 'post',
+        });
+        actions.push({
+          type: ActionTypeEnum.DEFAULT,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=like`,
+          label: '🩷 Like',
+          actionTypeEnum: 'post',
+        });
+        actions.push({
+          type: ActionTypeEnum.DEFAULT,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=share`,
+          label: '🔗 Share',
+          actionTypeEnum: 'post',
+        });
+        actions.push({
+          type: ActionTypeEnum.DEFAULT,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=trade`,
+          label: '📈 Buy / Sell',
+          actionTypeEnum: 'post',
         });
         setTempCampaign((prev) => {
           if (prev) {
@@ -605,9 +555,9 @@ export const AddActions: FC<{
   const renderActionButtons = () => (
     <div className="flex items-center gap-2">
       <ActionButton
-        label="Subscribe"
-        isActive={action === ActionTypeEnum.SUBSCRIBE}
-        onClick={() => setAction(ActionTypeEnum.SUBSCRIBE)}
+        label="Default"
+        isActive={action === ActionTypeEnum.DEFAULT}
+        onClick={() => setAction(ActionTypeEnum.DEFAULT)}
       />
       <ActionButton
         label="Reward"
@@ -638,8 +588,8 @@ export const AddActions: FC<{
       Actions:
       {renderActionButtons()}
       <span className="text-sm">
-        {action === ActionTypeEnum.SUBSCRIBE
-          ? 'Users can click on this button to create an associated token account for your token.'
+        {action === ActionTypeEnum.DEFAULT
+          ? 'Add buttons for users to like, share or trade your post.'
           : 'Create customizable rewards for your users.'}
       </span>
       {action === ActionTypeEnum.REWARD && (
@@ -681,6 +631,7 @@ export const AddActions: FC<{
                     setSelectedQuery(
                       !x.parameters
                         ? {
+                            actionTypeEnum: 'transaction',
                             type: ActionTypeEnum.REWARD,
                             href: x.href,
                             label: x.label,
@@ -825,8 +776,6 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
     ).close();
   };
 
-  const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
-
   return (
     <dialog id="overall_post_campaign_modal" className="modal">
       <div className="modal-box flex flex-col gap-4">
@@ -842,53 +791,12 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
             </button>
           </form>
         </div>
-        <div className="flex w-full gap-2 items-center">
-          <div className="w-10 h-10 relative mask mask-circle">
-            <Image
-              className={`object-cover`}
-              fill={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              alt=""
-              src={mintToSendDetails?.content?.links?.image || placeholderImage}
-            />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex gap-1 items-center">
-              <Link
-                rel="noopener noreferrer"
-                target="_blank"
-                href={`https://solscan.io/address/${mintToSendDetails?.id}`}
-                className="link link-hover text-sm font-bold"
-              >
-                {`Name: ${mintToSendDetails?.content?.metadata.name}`}
-              </Link>
-              {verifiedTokens
-                ?.map((x) => x.address)
-                .includes(mintToSendDetails?.id) ? (
-                <IconDiscountCheck className="fill-secondary text-black" />
-              ) : (
-                <div
-                  className="tooltip tooltip-primary"
-                  data-tip="Token not on Jupiter verified list"
-                >
-                  <IconExclamationCircle size={18} className="text-warning" />
-                </div>
-              )}
-            </div>
-            <span className="text-sm">
-              {`Symbol: ${mintToSendDetails?.content?.metadata.symbol}`}
-            </span>
-          </div>
-        </div>
-        <InputField
-          tooltip="Mint token to reward users. Defaults to your account token."
-          label="Mint"
-          type="text"
-          value={mintToSend}
-          onChange={(e) => handleInputChange('mintToSend', e.target.value)}
-          placeholder="Enter a mint address"
-        />
 
+        <MintInputField
+          mintToSendDetails={mintToSendDetails}
+          value={mintToSend}
+          setValue={(e) => handleInputChange('mintToSend', e.target.value)}
+        />
         <InputField
           tooltip="Total amount of tokens allocated as rewards for this post."
           label="Budget"
@@ -934,6 +842,77 @@ export const OverallPostCampaignModal: FC<OverallPostCampaignModalProps> = ({
         </div>
       </div>
     </dialog>
+  );
+};
+
+export const MintInputField: FC<{
+  mintToSendDetails: DAS.GetAssetResponse | undefined | null;
+  value: string;
+  setValue: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ mintToSendDetails, value, setValue }) => {
+  const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
+  const [showInput, setShowInput] = useState(false);
+  return (
+    <>
+      <div className="flex w-full items-center justify-between">
+        <div className="flex gap-2">
+          <div className="w-10 h-10 relative mask mask-circle">
+            <Image
+              className={`object-cover`}
+              fill={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              alt=""
+              src={mintToSendDetails?.content?.links?.image || placeholderImage}
+            />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex gap-1 items-center">
+              <Link
+                rel="noopener noreferrer"
+                target="_blank"
+                href={`https://solscan.io/address/${mintToSendDetails?.id}`}
+                className="link link-hover text-sm font-bold"
+              >
+                {`Name: ${mintToSendDetails?.content?.metadata.name}`}
+              </Link>
+              {verifiedTokens
+                ?.map((x) => x.address)
+                .includes(mintToSendDetails?.id) ? (
+                <IconDiscountCheck className="fill-secondary text-black" />
+              ) : (
+                <div
+                  className="tooltip tooltip-primary"
+                  data-tip="Token not on Jupiter verified list"
+                >
+                  <IconExclamationCircle size={18} className="text-warning" />
+                </div>
+              )}
+            </div>
+            <span className="text-sm">
+              {`Symbol: ${mintToSendDetails?.content?.metadata.symbol}`}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowInput(!showInput)}
+          className="flex items-center gap-1 text-sm link link-hover"
+        >
+          <IconRefresh />
+          <span>Change Token</span>
+        </button>
+      </div>
+
+      {showInput && (
+        <InputField
+          tooltip="Mint token to reward users. Defaults to your account token."
+          label="Mint"
+          type="text"
+          value={value}
+          onChange={setValue}
+          placeholder="Enter a mint address"
+        />
+      )}
+    </>
   );
 };
 
@@ -1169,6 +1148,7 @@ const ActionModal: FC<{
       return;
     }
     const newLinkedAction = {
+      actionTypeEnum: 'transaction',
       type: ActionTypeEnum.REWARD,
       href: newHref,
       label,
@@ -1185,7 +1165,7 @@ const ActionModal: FC<{
               })),
             }))
           : undefined,
-    };
+    } as LinkedActionWithType;
 
     const existingAmountPerQueryIndex = tempCampaign.amountPerQuery?.findIndex(
       (x) => query && x.href === query.href

@@ -1,26 +1,22 @@
 'use client';
 
-import { WalletError } from '@solana/wallet-adapter-base';
+import { proxify } from '@/utils/helper/endpoints';
 import { ConnectionProvider } from '@solana/wallet-adapter-react';
-import { ReactNode, useCallback, useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { UnifiedWalletProvider } from 'unified-wallet-adapter-with-telegram';
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
-  const endpoint = useMemo(
-    () => process.env.NEXT_PUBLIC_RPC_ENDPOINT!,
-    ['mainnet']
-  );
-  const onError = useCallback((error: WalletError) => {
-    console.error(error);
-  }, []);
-
+  const endpoint = useMemo(() => process.env.NEXT_PUBLIC_RPC_ENDPOINT!, []);
   return (
     <ConnectionProvider endpoint={endpoint}>
       <UnifiedWalletProvider
         wallets={[]}
         config={{
           telegramConfig: {
-            botDisplayPic: 'https://buckets.blinksfeed.com/blinksfeed/logo.png',
+            botDisplayPic: proxify(
+              'https://buckets.blinksfeed.com/blinksfeed/logo.png',
+              true
+            ),
             botDirectLink: 'https://t.me/blinksfeedbot/blinksfeed',
             rpcEndpoint: 'https://rpc.blinksfeed.com',
             backendEndpoint: `https://api.blinksfeed.com`,
