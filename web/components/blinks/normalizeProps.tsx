@@ -1,7 +1,8 @@
 import { proxify } from '@/utils/helper/endpoints';
 import { PostContent } from '@/utils/types/post';
-import { LinkedAction, TypedActionParameter } from '@dialectlabs/blinks';
+import { TypedActionParameter } from '@dialectlabs/blinks';
 import { isParameterSelectable } from '@dialectlabs/blinks-core';
+import { LinkedAction } from '@solana/actions';
 import { useMemo } from 'react';
 import type { InnerLayoutProps } from './base-blink-layout';
 
@@ -61,9 +62,7 @@ export const useLayoutPropNormalizer = ({
       disabled: false,
       variant: buttonVariantMap['idle'],
       ctaType:
-        it.actionTypeEnum === 'external-link'
-          ? ('link' as const)
-          : ('button' as const),
+        it.type === 'external-link' ? ('link' as const) : ('button' as const),
       onClick: async () => {},
     };
   };
@@ -108,7 +107,7 @@ export const useLayoutPropNormalizer = ({
     buttons = [
       {
         label: post.label,
-        actionTypeEnum: 'post',
+        type: 'post',
         href: '',
       },
     ];

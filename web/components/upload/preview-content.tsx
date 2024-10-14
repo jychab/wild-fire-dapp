@@ -118,10 +118,12 @@ export const PreviewContentBtn: FC<{
             mint: mint.toBase58(),
             id: postId,
             carousel,
-            links: tempCampaign.links?.actions.filter((x) => x.type == action)
+            links: tempCampaign.links?.actions.filter(
+              (x) => x.actionTypeEnum == action
+            )
               ? {
                   actions: tempCampaign.links?.actions.filter(
-                    (x) => x.type == action
+                    (x) => x.actionTypeEnum == action
                   ),
                 }
               : undefined,

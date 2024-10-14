@@ -68,7 +68,7 @@ export interface UploadFileTypes {
   thumbnailFile?: File;
 }
 interface LinkedActionWithType extends LinkedAction {
-  type: ActionTypeEnum;
+  actionTypeEnum: ActionTypeEnum;
 }
 export interface TempPostCampaign extends PostCampaign {
   initialTokensRemaining?: number;
@@ -174,7 +174,7 @@ export const UploadPost: FC<{
             actions:
               post.links?.actions.map((x) => ({
                 ...x,
-                type: getActionType(
+                actionTypeEnum: getActionType(
                   x.href,
                   tempCampaign?.mint!,
                   tempCampaign?.postId!
@@ -506,35 +506,40 @@ export const AddActions: FC<{
       const actions =
         tempCampaign.links?.actions.map((x) => ({
           ...x,
-          type: getActionType(x.href, tempCampaign.mint!, tempCampaign.postId!),
+          actionTypeEnum: getActionType(
+            x.href,
+            tempCampaign.mint!,
+            tempCampaign.postId!
+          ),
         })) || [];
       if (
-        actions?.find((x) => x.type == ActionTypeEnum.DEFAULT) == undefined &&
+        actions?.find((x) => x.actionTypeEnum == ActionTypeEnum.DEFAULT) ==
+          undefined &&
         action == ActionTypeEnum.DEFAULT
       ) {
         actions.push({
-          type: ActionTypeEnum.DEFAULT,
+          actionTypeEnum: ActionTypeEnum.DEFAULT,
           href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=dislike`,
           label: '❌ Dislike',
-          actionTypeEnum: 'post',
+          type: 'post',
         });
         actions.push({
-          type: ActionTypeEnum.DEFAULT,
+          actionTypeEnum: ActionTypeEnum.DEFAULT,
           href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=like`,
           label: '🩷 Like',
-          actionTypeEnum: 'post',
+          type: 'post',
         });
         actions.push({
-          type: ActionTypeEnum.DEFAULT,
+          actionTypeEnum: ActionTypeEnum.DEFAULT,
           href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=share`,
           label: '🔗 Share',
-          actionTypeEnum: 'post',
+          type: 'post',
         });
         actions.push({
-          type: ActionTypeEnum.DEFAULT,
+          actionTypeEnum: ActionTypeEnum.DEFAULT,
           href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=trade`,
           label: '📈 Buy / Sell',
-          actionTypeEnum: 'post',
+          type: 'post',
         });
         setTempCampaign((prev) => {
           if (prev) {
@@ -623,7 +628,7 @@ export const AddActions: FC<{
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {tempCampaign?.links?.actions
-              .filter((x) => x.type == ActionTypeEnum.REWARD)
+              .filter((x) => x.actionTypeEnum == ActionTypeEnum.REWARD)
               .map((x, index) => (
                 <button
                   key={index}
@@ -631,8 +636,8 @@ export const AddActions: FC<{
                     setSelectedQuery(
                       !x.parameters
                         ? {
-                            actionTypeEnum: 'transaction',
-                            type: ActionTypeEnum.REWARD,
+                            type: 'transaction',
+                            actionTypeEnum: ActionTypeEnum.REWARD,
                             href: x.href,
                             label: x.label,
                           }
@@ -1148,8 +1153,8 @@ const ActionModal: FC<{
       return;
     }
     const newLinkedAction = {
-      actionTypeEnum: 'transaction',
-      type: ActionTypeEnum.REWARD,
+      type: 'transaction',
+      actionTypeEnum: ActionTypeEnum.REWARD,
       href: newHref,
       label,
       parameters:

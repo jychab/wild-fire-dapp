@@ -66,7 +66,7 @@ export const UploadContentBtn: FC<{
       } else if (publicKey) {
         if (tempCampaign?.links) {
           tempCampaign.links.actions = tempCampaign.links?.actions.filter(
-            (x) => x.type == action
+            (x) => x.actionTypeEnum == action
           );
         }
         const carousel = await Promise.all(
