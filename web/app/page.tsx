@@ -7,6 +7,7 @@ import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
@@ -64,14 +65,14 @@ export default function Page() {
     event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
-    if (!postRefs.current[currentIndex]) return;
+    const currentRef = postRefs.current[currentIndex];
+    if (!currentRef) return;
     let threshold = 50;
     const isAtBottom =
-      postRefs.current[currentIndex].scrollHeight -
-        postRefs.current[currentIndex].scrollTop <=
-      postRefs.current[currentIndex].clientHeight + 1 + threshold;
+      currentRef.scrollHeight - currentRef.scrollTop <=
+      currentRef.clientHeight + 1 + threshold;
 
-    const isAtTop = postRefs.current[currentIndex].scrollTop <= threshold;
+    const isAtTop = currentRef.scrollTop <= threshold;
     const offsetY = info.offset.y;
 
     if (
@@ -93,34 +94,50 @@ export default function Page() {
   const opacity = useTransform(y, [-150, 0, 150], [0.5, 1, 0.5]);
 
   return (
-    <div className="w-full flex sm:p-8 items-center justify-center">
-      {posts.map((post, index) => (
-        <motion.div
-          key={post.id}
-          ref={(el) => {
-            postRefs.current[index] = el;
-          }}
-          className={`w-full max-w-lg h-[calc(100vh-8rem)] scrollbar-none overflow-scroll ${
-            currentIndex === index ? 'block' : 'hidden'
-          }`}
-          onDragEnd={handleDragEnd} // Handle drag end event
-          style={{
-            y,
-            opacity,
-          }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-        >
-          <Blinks blinksDetail={post} />
-        </motion.div>
-      ))}
-      {loading && (
-        <div className="flex flex-col items-center justify-center w-full py-4">
-          <span>Loading posts...</span>
-          <div className="loading loading-dots" />
-        </div>
-      )}
+    <div className="w-full flex flex-1 items-center justify-center">
+      <div className="w-full sm:max-w-[650px] items-center justify-center flex relative ">
+        {posts.map((post, index) => (
+          <motion.div
+            key={post.id}
+            ref={(el) => {
+              postRefs.current[index] = el;
+            }}
+            className={`w-full max-w-lg h-[calc(100vh-8rem)] scrollbar-none overflow-scroll ${
+              currentIndex === index ? 'block' : 'hidden'
+            }`}
+            onDragEnd={handleDragEnd} // Handle drag end event
+            style={{
+              y,
+              opacity,
+            }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+          >
+            <Blinks blinksDetail={post} />
+            <button
+              disabled={currentIndex == 0}
+              onClick={() => setCurrentIndex(currentIndex - 1)}
+              className="hidden sm:flex gap-4 absolute top-1/2 left-0 btn rounded-full btn-primary"
+            >
+              <IconChevronLeft />
+            </button>
+            <button
+              disabled={currentIndex == posts.length - 1}
+              onClick={() => setCurrentIndex(currentIndex + 1)}
+              className="hidden sm:flex gap-4 absolute top-1/2 right-0 btn rounded-full btn-primary"
+            >
+              <IconChevronRight />
+            </button>
+          </motion.div>
+        ))}
+        {loading && (
+          <div className="flex flex-col items-center justify-center w-full py-4">
+            <span>Loading posts...</span>
+            <div className="loading loading-dots" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
