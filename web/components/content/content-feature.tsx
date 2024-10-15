@@ -35,7 +35,7 @@ export const StackContentGrid: FC<ContentGridProps> = ({
     );
   }
   return (
-    <div className="scroll-container flex flex-col sm:gap-4 w-full sm:p-4">
+    <div className="flex flex-col sm:gap-4 w-full max-w-lg h-full sm:p-4">
       {posts.length > 0 ? (
         posts.map((post) => (
           <div key={post.id} className={`scroll-post`}>

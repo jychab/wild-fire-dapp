@@ -98,7 +98,7 @@ body::-webkit-scrollbar {
 .scroll-container {
   scroll-snap-type: y proximity; /* Enable snap behavior on the y-axis */
   overflow-y: auto; /* Allow vertical scrolling */
-  height: 100vh; /* Full viewport height */
+  height: 100lvh;
 }
 
 .scroll-post {

@@ -35,12 +35,8 @@ export default function Page() {
   }, [category, publicKey]);
 
   return (
-    <div className="flex flex-col w-full items-center">
-      <div className="items-center justify-center w-full flex flex-col gap-2">
-        <div className="max-w-lg w-full h-full">
-          <StackContentGrid posts={posts} />
-        </div>
-      </div>
+    <div className="w-full flex flex-col justify-center items-center scroll-container scrollbar-none">
+      <StackContentGrid posts={posts} />
     </div>
   );
 }
