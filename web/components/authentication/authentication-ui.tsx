@@ -174,7 +174,8 @@ export const AuthenticationDropdownMenu: FC = () => {
           </li>
         </>
       )}
-      <li className="w-full">
+
+      <li className="hidden w-full">
         <ThemeComponent />
       </li>
 

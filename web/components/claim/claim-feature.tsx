@@ -160,7 +160,7 @@ export const ClaimButton: FC = () => {
           }
           className="modal-backdrop"
         />
-        <div className="modal-box border flex flex-col gap-4 animate-fade-up animate-once animate-duration-500 animate-ease-out">
+        <div className="modal-box border flex flex-col gap-4 animate-fade-up animate-once animate-duration-500 animate-ease-out border-base-300">
           <div className="flex justify-between items-center">
             <h3 className="font-bold">Convert Airdrops to SOL</h3>
             <form method="dialog">

@@ -1,5 +1,6 @@
 import { validatePost } from '@/utils/firebase/functions';
 import { PostBlinksDetail } from '@/utils/types/post';
+import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
 import {
   IconBrandTelegram,
   IconBrandTwitterFilled,
@@ -85,12 +86,14 @@ export const ShareContent: FC<{
             <button
               onClick={() => {
                 if (!blinksDetail.memberMint) return;
-                validatePost(
-                  blinksDetail.memberMint,
-                  blinksDetail.mint,
-                  blinksDetail.id,
-                  'Shares'
-                );
+                if (publicKey) {
+                  validatePost(
+                    blinksDetail.memberMint,
+                    blinksDetail.mint,
+                    blinksDetail.id,
+                    'Shares'
+                  );
+                }
                 handleCopy(url);
               }}
               className="btn btn-sm btn-primary"

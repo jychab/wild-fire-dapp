@@ -180,17 +180,21 @@ export const CommentsSection: FC<{
   return (
     <>
       <div className="flex flex-col gap-1 items-start">
-        {post.commentsCount && (
+        {post.commentsCount ? (
           <button
             onClick={() => {
               toggleModal(true);
             }}
             className="stat-desc link link-hover"
           >{`View ${post.commentsCount} comments`}</button>
+        ) : (
+          <button
+            className="stat-desc link link-hover"
+            onClick={() => toggleModal(true)}
+          >
+            Add a comment
+          </button>
         )}
-        <button className="stat-desc" onClick={() => toggleModal(true)}>
-          Add a comment
-        </button>
       </div>
       <dialog
         id={post.id + '/comments'}

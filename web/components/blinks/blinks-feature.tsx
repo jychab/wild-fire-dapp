@@ -2,6 +2,7 @@
 
 import { validatePost } from '@/utils/firebase/functions';
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
+import { getTimeAgo } from '@/utils/helper/format';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { Blink } from '@dialectlabs/blinks';
 import { IconEye, IconHeart, IconHeartFilled } from '@tabler/icons-react';
@@ -95,40 +96,42 @@ export const Blinks: FC<BlinksProps> = ({
   }
   return (
     <div
-      className={`"flex flex-col w-full animate-fade-up animate-once animate-duration-300 border bg-base-300 border-2 border-primary shadow-md shadow-primary rounded-2xl`}
+      className={`flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
     >
       {animateHeart && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="z-10 absolute inset-0 flex items-center justify-center">
           <IconHeartFilled
             size={120}
-            className="animate-duration-300 animate-jump animate-ease-out fill-primary opacity-85"
+            className="animate-duration-200 animate-jump animate-ease-out fill-error opacity-50"
           />
         </div>
       )}
-      <UserProfile
-        trade={trade}
-        setTrade={setTrade}
-        blinksDetail={blinksDetail}
-        editable={editable}
-      />
-      {!trade ? (
-        <div className="animate-flip-up" onDoubleClick={toggleLike}>
-          <Blink
-            stylePreset={'custom'}
-            action={action}
-            websiteText={new URL(blinksDetail.url).hostname}
-          />
-        </div>
-      ) : (
-        <div className="p-4 animate-flip-down">
-          <TradingPanel
-            compact={true}
-            hideMintInfo={true}
-            hideActivities={true}
-            collectionMint={blinksDetail.mint}
-          />
-        </div>
-      )}
+      <div className="w-full">
+        <UserProfile
+          trade={trade}
+          setTrade={setTrade}
+          blinksDetail={blinksDetail}
+          editable={editable}
+        />
+        {!trade ? (
+          <div className="animate-flip-up" onDoubleClick={toggleLike}>
+            <Blink
+              stylePreset={'custom'}
+              action={action}
+              websiteText={new URL(blinksDetail.url).hostname}
+            />
+          </div>
+        ) : (
+          <div className="px-4 animate-flip-down">
+            <TradingPanel
+              compact={true}
+              hideMintInfo={true}
+              hideActivities={true}
+              collectionMint={blinksDetail.mint}
+            />
+          </div>
+        )}
+      </div>
       <BlinksFooter
         blinksDetail={blinksDetail}
         toggleLike={toggleLike}
@@ -144,8 +147,11 @@ export const BlinksFooter: FC<{
 }> = ({ blinksDetail, toggleLike, liked }) => {
   return (
     <div className="flex justify-between items-end w-full px-6 pb-5">
-      <CommentsSection blinksDetail={blinksDetail} />
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col gap-1 items-start">
+        <CommentsSection blinksDetail={blinksDetail} />
+        <span className="stat-desc">{getTimeAgo(blinksDetail.createdAt)}</span>
+      </div>
+      <div className="flex flex-col gap-1 items-end">
         <ShareContent blinksDetail={blinksDetail} />
         <div className="flex items-end gap-2">
           <IconEye size={16} />

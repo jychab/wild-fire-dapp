@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  ContentGrid,
-  StackContentGrid,
-} from '@/components/content/content-feature';
-import { AppHero } from '@/components/ui/ui-component';
+import { StackContentGrid } from '@/components/content/content-feature';
 import { Categories, useCategory } from '@/components/ui/ui-provider';
 import { fetchPostByAddress, fetchPostByCategories } from '@/utils/helper/post';
 import { PostBlinksDetail } from '@/utils/types/post';
@@ -39,18 +35,11 @@ export default function Page() {
   }, [category, publicKey]);
 
   return (
-    <div className="flex flex-col w-full items-center overflow-y-scroll scrollbar-none sm:p-4">
+    <div className="flex flex-col w-full items-center">
       <div className="items-center justify-center w-full flex flex-col gap-2">
-        {category == Categories.FOR_YOU ? (
-          <div className="max-w-lg w-full h-full">
-            <StackContentGrid posts={posts} />
-          </div>
-        ) : (
-          <div className="max-w-5xl w-full h-full">
-            <AppHero title={category} subtitle={undefined} />
-            <ContentGrid posts={posts} multiGrid={true} />
-          </div>
-        )}
+        <div className="max-w-lg w-full h-full">
+          <StackContentGrid posts={posts} />
+        </div>
       </div>
     </div>
   );

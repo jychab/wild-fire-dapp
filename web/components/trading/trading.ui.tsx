@@ -230,8 +230,8 @@ export const TradingPanel: FC<{
   return (
     <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
       <div
-        className={`flex flex-col ${
-          compact ? 'flex-row' : 'md:flex-row md:gap-4'
+        className={`flex flex-col gap-4 ${
+          compact ? 'flex-row' : 'md:flex-row '
         } items-start w-full my-4`}
       >
         <TradingChart collectionMint={collectionMint} />
@@ -247,7 +247,7 @@ export const TradingPanel: FC<{
               liquidity={NaN}
             />
           )}
-          <div className="flex flex-col gap-2 p-4 rounded">
+          <div className="flex flex-col gap-2 rounded">
             <div className="flex items-center w-full">
               <button
                 onClick={() => {

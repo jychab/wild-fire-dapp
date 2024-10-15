@@ -57,7 +57,7 @@ body::-webkit-scrollbar {
   --blink-icon-primary-hover: #949ca4;
   --blink-icon-warning: #ffb545;
   --blink-icon-warning-hover: #ffc875;
-  --blink-input-bg: #202327;
+  --blink-input-bg: transparent;
   --blink-input-stroke: #3d4144;
   --blink-input-stroke-disabled: #2f3336;
   --blink-input-stroke-error: #e7e5e4;
@@ -92,4 +92,15 @@ body::-webkit-scrollbar {
   --blink-border-radius-rounded-2xl: 1.125rem;
   --blink-border-radius-rounded-button: 624.9375rem;
   --blink-border-radius-rounded-input: 624.9375rem;
+}
+
+/* In your global CSS file (e.g., styles/globals.css) */
+.scroll-container {
+  scroll-snap-type: y proximity; /* Enable snap behavior on the y-axis */
+  overflow-y: auto; /* Allow vertical scrolling */
+  height: 100vh; /* Full viewport height */
+}
+
+.scroll-post {
+  scroll-snap-align: start; /* Align the start of the post */
 }
