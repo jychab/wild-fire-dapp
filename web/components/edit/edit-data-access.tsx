@@ -76,7 +76,7 @@ export function useEditData({
           ...uriMetadata,
           name: input.name || uriMetadata.name,
           symbol: input.symbol || uriMetadata.symbol,
-          description: input.description || uriMetadata.description,
+          description: input.description,
           image: imageUrl || uriMetadata.image,
         };
         const uri = await uploadMetadata(

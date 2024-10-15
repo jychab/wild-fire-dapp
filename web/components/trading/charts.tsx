@@ -138,7 +138,7 @@ const useInitializeChart = (
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
       priceScaleId: 'right',
-      priceFormat: { type: 'price', precision: 13, minMove: 0.00000000001 },
+      priceFormat: { type: 'price', precision: 12, minMove: 0.00000000001 },
     });
 
     chart.applyOptions({

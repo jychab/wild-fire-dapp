@@ -1,6 +1,7 @@
 'use client';
 
 import { proxify } from '@/utils/helper/endpoints';
+import { formatLargeNumber } from '@/utils/helper/format';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { PostBlinksDetail } from '@/utils/types/post';
@@ -9,6 +10,7 @@ import { PublicKey } from '@solana/web3.js';
 import {
   IconArrowDownLeft,
   IconArrowUpRight,
+  IconDotsVertical,
   IconEdit,
   IconTrash,
 } from '@tabler/icons-react';
@@ -16,7 +18,10 @@ import { default as Image } from 'next/image';
 import Link from 'next/link';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { useGetMintToken } from '../edit/edit-data-access';
-import { useGetTokenDetails } from '../profile/profile-data-access';
+import {
+  useGetMintSummaryDetails,
+  useGetTokenDetails,
+} from '../profile/profile-data-access';
 import { useGetPostCampaign } from '../upload/upload.data-access';
 import { useRemoveContentMutation } from './content-data-access';
 
@@ -44,7 +49,11 @@ export const UserProfile: FC<{
     address: publicKey,
     postId: blinksDetail?.id || null,
   });
-
+  const { data: mintSummaryDetails } = useGetMintSummaryDetails({
+    mint: blinksDetail.creator
+      ? getDerivedMint(new PublicKey(blinksDetail.creator))
+      : null,
+  });
   return (
     <div className="flex w-full items-center justify-between px-5 pt-5">
       <Link
@@ -67,45 +76,67 @@ export const UserProfile: FC<{
           <span className="truncate text-sm w-full max-w-[150px]">
             {metadata?.content?.metadata.name || blinksDetail.creator}
           </span>
+          {mintSummaryDetails?.currentHoldersCount && (
+            <span className="stat-desc">
+              {`${formatLargeNumber(
+                mintSummaryDetails?.currentHoldersCount
+              )} Subscribers`}
+            </span>
+          )}
         </div>
       </Link>
 
-      {!editable && (
+      <div className="flex items-center gap-2">
         <button
           onClick={() => {
             setTrade((prev) => !prev);
           }}
-          className="btn text-success gap-0 btn-sm "
+          className="btn text-success gap-0 btn-sm px-2"
         >
           <span className="text-xs">{!trade ? 'Live Trade' : 'Back'}</span>
           {!trade ? <IconArrowUpRight /> : <IconArrowDownLeft />}
         </button>
-      )}
-
-      {editable &&
-        publicKey &&
-        (blinksDetail.creator == publicKey?.toBase58() ||
-          isAuthorized(tokenState, publicKey, metadata)) && (
-          <>
-            <Link
-              className="btn btn-sm btn-ghost"
-              href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
-            >
-              <IconEdit />
-            </Link>
-            <button
-              disabled={removeContentMutation.isPending}
-              onClick={() => removeContentMutation.mutateAsync(postCampaign)}
-              className="btn btn-sm btn-ghost"
-            >
-              {removeContentMutation.isPending ? (
-                <div className="loading loading-spinner loading-sm" />
-              ) : (
-                <IconTrash />
-              )}
-            </button>
-          </>
-        )}
+        {editable &&
+          publicKey &&
+          (blinksDetail.creator == publicKey?.toBase58() ||
+            isAuthorized(tokenState, publicKey, metadata)) && (
+            <div className="dropdown dropdown-end">
+              <div tabIndex={0} role="button" className="">
+                <IconDotsVertical />
+              </div>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu bg-base-100 rounded-box z-[1]  p-2 shadow"
+              >
+                <li>
+                  <Link
+                    href={`/post/edit?mint=${blinksDetail.mint}&id=${blinksDetail.id}`}
+                  >
+                    <IconEdit />
+                    Edit
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    disabled={removeContentMutation.isPending}
+                    onClick={() =>
+                      removeContentMutation.mutateAsync(postCampaign)
+                    }
+                  >
+                    {removeContentMutation.isPending ? (
+                      <div className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <>
+                        <IconTrash />
+                        <span>Delete</span>
+                      </>
+                    )}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
+      </div>
     </div>
   );
 };

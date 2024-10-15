@@ -37,6 +37,19 @@ export const Blinks: FC<BlinksProps> = ({
   const [trade, setTrade] = useState(false);
   const [liked, setLiked] = useState(blinksDetail?.liked);
   const [animateHeart, setAnimateHeart] = useState(false);
+  const [lastTap, setLastTap] = useState<number | null>(null);
+
+  // Double-tap detection logic
+  const handleDoubleTap = () => {
+    const currentTime = new Date().getTime();
+    const tapGap = 300; // Max time allowed between taps (in ms)
+
+    if (lastTap && currentTime - lastTap < tapGap) {
+      toggleLike(); // If the second tap is within 300ms, treat it as a double-tap
+    } else {
+      setLastTap(currentTime); // Otherwise, set this as the last tap time
+    }
+  };
 
   const toggleLike = () => {
     if (!blinksDetail?.memberMint || !publicKey) return;
@@ -69,7 +82,7 @@ export const Blinks: FC<BlinksProps> = ({
 
   if (!(blinksDetail && checkUrlIsValid(blinksDetail.url))) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2">
+      <div className="flex flex-col items-center min-h-[calc(100vh-8rem)] justify-center gap-2">
         Url is invalid
         <div className="loading loading-dots" />
       </div>
@@ -96,10 +109,10 @@ export const Blinks: FC<BlinksProps> = ({
   }
   return (
     <div
-      className={`flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
+      className={`flex flex-col w-full min-h-[calc(100vh-8rem)] items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
     >
       {animateHeart && (
-        <div className="z-10 absolute inset-0 flex items-center justify-center">
+        <div className="z-10 absolute inset-0 flex top-[200px] justify-center">
           <IconHeartFilled
             size={120}
             className="animate-duration-200 animate-jump animate-ease-out fill-error opacity-50"
@@ -114,7 +127,11 @@ export const Blinks: FC<BlinksProps> = ({
           editable={editable}
         />
         {!trade ? (
-          <div className="animate-flip-up" onDoubleClick={toggleLike}>
+          <div
+            className="animate-flip-up"
+            onDoubleClick={toggleLike}
+            onTouchStart={handleDoubleTap}
+          >
             <Blink
               stylePreset={'custom'}
               action={action}

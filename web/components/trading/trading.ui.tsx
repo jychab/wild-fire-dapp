@@ -237,7 +237,7 @@ export const TradingPanel: FC<{
         <TradingChart collectionMint={collectionMint} />
         <div
           className={`flex flex-col gap-4 w-full ${
-            compact ? '' : 'md:max-w-xs'
+            compact ? '' : 'p-4 md:max-w-xs'
           }`}
         >
           {!hideMintInfo && (

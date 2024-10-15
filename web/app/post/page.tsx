@@ -40,8 +40,8 @@ export default async function Page({ searchParams }: Props) {
   const { mint, id } = searchParams;
   const post = await fetchPost(mint as string, id as string);
   return (
-    <div className="flex flex-col justify-center items-center w-full">
-      <div className="max-w-lg w-full p-4">
+    <div className="flex flex-col sm:p-4 items-center w-full">
+      <div className="max-w-lg w-full">
         <Blinks blinksDetail={post} editable={true} />
       </div>
     </div>
