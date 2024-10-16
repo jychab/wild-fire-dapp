@@ -35,7 +35,7 @@ import {
 } from './trading-data-access';
 
 export const TradingPanel: FC<{
-  collectionMint: string;
+  collectionMint: PublicKey | null;
   hideMintInfo?: boolean;
   hideActivities?: boolean;
   compact?: boolean;
@@ -52,7 +52,7 @@ export const TradingPanel: FC<{
     ? new PublicKey(mintTokenDetails.memberMint)
     : null;
   const { data: metadata } = useGetTokenDetails({
-    mint: new PublicKey(collectionMint),
+    mint: collectionMint,
   });
   const { publicKey } = useWallet();
   const [showWarning, setShowWarning] = useState('');
@@ -490,15 +490,15 @@ export const Activities: FC<ActivitiesProps> = ({ metadata }) => {
 };
 
 export const MintInfo: FC<{
-  collectionMint: string | null | undefined;
+  collectionMint: PublicKey | null;
   metadata: DAS.GetAssetResponse | null | undefined;
   liquidity: number;
 }> = ({ collectionMint, metadata, liquidity }) => {
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
-    mint: collectionMint ? new PublicKey(collectionMint) : null,
+    mint: collectionMint,
   });
   const { data: tokenStateData } = useGetMintToken({
-    mint: collectionMint ? new PublicKey(collectionMint) : null,
+    mint: collectionMint,
   });
   return (
     <div className="hidden md:grid card rounded bg-base-200 grid-cols-4 gap-2 p-4 items-center">
@@ -561,13 +561,13 @@ export const MintInfo: FC<{
 };
 
 const TradingChart: FC<{
-  collectionMint: string;
+  collectionMint: PublicKey | null;
 }> = ({ collectionMint }) => {
   const { data: metadata } = useGetTokenDetails({
-    mint: new PublicKey(collectionMint),
+    mint: collectionMint,
   });
   const { data: mintTokenDetails } = useGetMintToken({
-    mint: new PublicKey(collectionMint),
+    mint: collectionMint,
   });
   const { data: isLiquidityPoolFound } = useIsLiquidityPoolFound({
     mint: mintTokenDetails ? new PublicKey(mintTokenDetails?.memberMint) : null,

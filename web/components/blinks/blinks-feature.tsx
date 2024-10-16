@@ -5,6 +5,7 @@ import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { getTimeAgo } from '@/utils/helper/format';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { Blink } from '@dialectlabs/blinks';
+import { PublicKey } from '@solana/web3.js';
 import {
   IconEye,
   IconHeart,
@@ -191,7 +192,7 @@ export const Blinks: FC<BlinksProps> = ({
               compact={true}
               hideMintInfo={true}
               hideActivities={true}
-              collectionMint={blinksDetail.mint}
+              collectionMint={new PublicKey(blinksDetail.mint)}
             />
           </div>
         )}

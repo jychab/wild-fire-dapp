@@ -51,7 +51,7 @@ const handleSearch = async (search: string) => {
           id: x.mint,
           image: x.image,
           name: x.name,
-          url: `/profile?address=${x.admin}`,
+          url: `/profile?mint=${x.mint}`,
           type: 'Creator',
           score: x.score,
         };

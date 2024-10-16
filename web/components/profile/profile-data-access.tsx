@@ -1,7 +1,6 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { generateMintApiEndPoint, proxify } from '@/utils/helper/endpoints';
-import { getDerivedMint } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse, PostContent } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
@@ -15,35 +14,37 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { ProfileTabsEnum } from './profile-feature';
 
-export function useGetPostsFromCreator({
-  creator,
+export function useGetPostsFromMint({
+  mint,
   selectedTab,
 }: {
-  creator: PublicKey | null;
+  mint: PublicKey | null;
   selectedTab: ProfileTabsEnum;
 }) {
+  const { publicKey } = useWallet();
   return useQuery({
-    queryKey: ['get-posts-from-creator', { creator, selectedTab }],
+    queryKey: ['get-posts-from-mint', { mint, selectedTab }],
     queryFn: async () => {
       try {
-        if (!creator) return null;
+        if (!mint) return null;
         if (selectedTab == ProfileTabsEnum.TRADE) return null;
         if (selectedTab == ProfileTabsEnum.POSTS) {
-          const mint = getDerivedMint(creator);
           const uriMetadata = await (
             await fetch(proxify(generateMintApiEndPoint(mint)))
           ).json();
           let posts = uriMetadata as GetPostsResponse | undefined;
+          console.log(posts);
           return posts;
         }
-        if (selectedTab == ProfileTabsEnum.FAVOURTIES) {
+        if (selectedTab == ProfileTabsEnum.FAVOURTIES && publicKey) {
           const docData = await getDocs(
             query(
               collectionGroup(db, `Post`),
               where('softDelete', '==', false),
-              where('likes', 'array-contains', creator.toBase58()),
+              where('likes', 'array-contains', publicKey.toBase58()),
               orderBy('createdAt', 'desc')
             )
           );
@@ -58,7 +59,7 @@ export function useGetPostsFromCreator({
       }
     },
     staleTime: SHORT_STALE_TIME,
-    enabled: !!creator,
+    enabled: !!mint,
   });
 }
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {

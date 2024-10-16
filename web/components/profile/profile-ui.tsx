@@ -5,7 +5,6 @@ import {
   checkIfMetadataIsTemporary,
   formatLargeNumber,
 } from '@/utils/helper/format';
-import { getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
 import { GetPostsResponse } from '@/utils/types/post';
@@ -30,12 +29,11 @@ import {
 } from './profile-data-access';
 
 export const ContentPanel: FC<{
-  address: string | null;
+  isOwner: boolean;
   posts: GetPostsResponse | null | undefined;
-}> = ({ address, posts }) => {
-  const { publicKey } = useWallet();
+}> = ({ isOwner, posts }) => {
   return posts?.posts && posts?.posts.length == 0 ? (
-    address == publicKey?.toBase58() && address ? (
+    isOwner ? (
       <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
         <div className="w-36">
           <UploadBtn />
@@ -64,15 +62,12 @@ export const FavouritesContentPanel: FC<{
 };
 
 interface ProfileProps {
-  address: string | null;
+  collectionMint: PublicKey | null;
+  isOwner: boolean;
 }
 
-export const Profile: FC<ProfileProps> = ({ address }) => {
+export const Profile: FC<ProfileProps> = ({ isOwner, collectionMint }) => {
   const router = useRouter();
-  const { publicKey } = useWallet();
-  const collectionMint = address
-    ? getDerivedMint(new PublicKey(address))
-    : null;
   const { data: metadata, isLoading } = useGetTokenDetails({
     mint: collectionMint,
   });
@@ -85,7 +80,6 @@ export const Profile: FC<ProfileProps> = ({ address }) => {
       }
     } catch (e) {}
   }, []);
-  const isOwner = address == publicKey?.toBase58();
   const { data: mintSummaryDetails } = useGetMintSummaryDetails({
     mint: collectionMint,
   });
@@ -127,13 +121,16 @@ export const Profile: FC<ProfileProps> = ({ address }) => {
           </div>
         )}
       </button>
-      <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start">
+      <div className="flex flex-col gap-4 items-center lg:items-start text-center lg:text-start px-4">
         <div className="flex flex-col">
           {!isLoading && (
             <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
-              {metadata?.content?.metadata.name ||
-                initData?.user?.username ||
-                address}
+              {metadata?.content?.metadata.name || initData?.user?.username}
+            </span>
+          )}
+          {!isLoading && metadata?.content?.metadata.symbol && (
+            <span className="text-base stat-desc lg:text-xl truncate max-w-sm">
+              {metadata?.content?.metadata.symbol}
             </span>
           )}
         </div>
@@ -161,7 +158,7 @@ export const Profile: FC<ProfileProps> = ({ address }) => {
             </>
           </div>
         )}
-        <span className="text-base truncate font-normal">
+        <span className="text-base line-clamp-4 max-w-lg sm:max-w-3xl lg:max-w-5xl font-normal">
           {metadata?.content?.metadata.description}
         </span>
       </div>

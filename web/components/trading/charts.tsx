@@ -198,7 +198,7 @@ const TradingViewChart = memo(
     collectionMint,
     metadata,
   }: {
-    collectionMint: string | null | undefined;
+    collectionMint: PublicKey | null;
     metadata: DAS.GetAssetResponse | null | undefined;
   }) => {
     const [currentPrice, setCurrentPrice] = useState<number>();
@@ -207,7 +207,7 @@ const TradingViewChart = memo(
 
     const currentCandle = useRef<Candle>();
     const { data } = useGetOhlcv({
-      mint: collectionMint ? new PublicKey(collectionMint) : null,
+      mint: collectionMint,
       from: currentTimeRef.current - 60 * 60 * 24,
       to: currentTimeRef.current,
     });
@@ -280,7 +280,7 @@ const TradingViewChart = memo(
       if (!seriesRef || !volumeRef) return;
       const swapEventsRef = collection(
         db,
-        `Mint/${collectionMint}/TradeEvents`
+        `Mint/${collectionMint?.toBase58()}/TradeEvents`
       );
 
       const q = query(
