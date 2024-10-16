@@ -88,10 +88,8 @@ export const Blinks: FC<BlinksProps> = ({
       </div>
     );
   }
-  if (!action) {
-    return null;
-  }
-  if (multiGrid) {
+
+  if (multiGrid && action) {
     return (
       <Link
         href={useRelativePathIfPossbile(blinksDetail.url)}
@@ -109,7 +107,7 @@ export const Blinks: FC<BlinksProps> = ({
   }
   return (
     <div
-      className={`flex flex-col w-full min-h-[calc(100vh-8rem)] items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
+      className={`snap-start min-h-[calc(100vh-8rem)] flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
     >
       {animateHeart && (
         <div className="z-10 absolute inset-0 flex top-[200px] justify-center">
@@ -126,27 +124,31 @@ export const Blinks: FC<BlinksProps> = ({
           blinksDetail={blinksDetail}
           editable={editable}
         />
-        {!trade ? (
-          <div
-            className="animate-flip-up"
-            onDoubleClick={toggleLike}
-            onTouchStart={handleDoubleTap}
-          >
-            <Blink
-              stylePreset={'custom'}
-              action={action}
-              websiteText={new URL(blinksDetail.url).hostname}
-            />
-          </div>
+        {action ? (
+          !trade ? (
+            <div
+              className="animate-flip-up"
+              onDoubleClick={toggleLike}
+              onTouchStart={handleDoubleTap}
+            >
+              <Blink
+                stylePreset={'custom'}
+                action={action}
+                websiteText={new URL(blinksDetail.url).hostname}
+              />
+            </div>
+          ) : (
+            <div className="px-4 animate-flip-down">
+              <TradingPanel
+                compact={true}
+                hideMintInfo={true}
+                hideActivities={true}
+                collectionMint={blinksDetail.mint}
+              />
+            </div>
+          )
         ) : (
-          <div className="px-4 animate-flip-down">
-            <TradingPanel
-              compact={true}
-              hideMintInfo={true}
-              hideActivities={true}
-              collectionMint={blinksDetail.mint}
-            />
-          </div>
+          <div className="flex-grow" />
         )}
       </div>
       <BlinksFooter

@@ -7,8 +7,6 @@ import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 export default function Page() {
@@ -17,8 +15,8 @@ export default function Page() {
   const { category } = useCategory();
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const postRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const loadMorePosts = async () => {
     if (loading) return; // Prevent multiple fetches
     setLoading(true);
@@ -61,75 +59,20 @@ export default function Page() {
     loadMorePosts();
   }, [category, publicKey]);
 
-  const handleDragEnd = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    const currentRef = postRefs.current[currentIndex];
-    if (!currentRef) return;
-    let threshold = 50;
-    const isAtBottom =
-      currentRef.scrollHeight - currentRef.scrollTop <=
-      currentRef.clientHeight + 1 + threshold;
-
-    const isAtTop = currentRef.scrollTop <= threshold;
-    const offsetY = info.offset.y;
-
-    if (
-      Math.abs(offsetY) > threshold &&
-      ((offsetY < 0 && isAtBottom) || (offsetY > 0 && isAtTop))
-    ) {
-      // Swipe left or right
-      setCurrentIndex((prevIndex) => {
-        const newIndex = prevIndex + (offsetY < 0 ? 1 : -1);
-        return Math.min(Math.max(newIndex, 0), posts.length - 1);
-      });
-    } else {
-      // Reset to current index if not swiped enough
-      setCurrentIndex((prevIndex) => prevIndex);
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const y = useMotionValue(0);
-  const opacity = useTransform(y, [-150, 0, 150], [0.5, 1, 0.5]);
+  }, [posts]);
 
   return (
     <div className="w-full flex flex-1 items-center justify-center">
-      <div className="w-full sm:max-w-[650px] items-center justify-center flex relative ">
-        {posts.map((post, index) => (
-          <motion.div
-            key={post.id}
-            ref={(el) => {
-              postRefs.current[index] = el;
-            }}
-            className={`w-full max-w-lg h-[calc(100vh-8rem)] scrollbar-none overflow-scroll ${
-              currentIndex === index ? 'block' : 'hidden'
-            }`}
-            onDragEnd={handleDragEnd} // Handle drag end event
-            style={{
-              y,
-              opacity,
-            }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-          >
-            <Blinks blinksDetail={post} />
-            <button
-              disabled={currentIndex == 0}
-              onClick={() => setCurrentIndex(currentIndex - 1)}
-              className="hidden sm:flex gap-4 absolute top-1/2 left-0 btn rounded-full btn-primary"
-            >
-              <IconChevronLeft />
-            </button>
-            <button
-              disabled={currentIndex == posts.length - 1}
-              onClick={() => setCurrentIndex(currentIndex + 1)}
-              className="hidden sm:flex gap-4 absolute top-1/2 right-0 btn rounded-full btn-primary"
-            >
-              <IconChevronRight />
-            </button>
-          </motion.div>
+      <div
+        ref={containerRef}
+        className="w-full max-w-lg sm:p-4 overflow-y-scroll h-[calc(100vh-8rem)] scrollbar-none snap-mandatory snap-y"
+      >
+        {posts.map((post) => (
+          <Blinks key={post.id} blinksDetail={post} />
         ))}
         {loading && (
           <div className="flex flex-col items-center justify-center w-full py-4">
