@@ -107,7 +107,7 @@ export const Blinks: FC<BlinksProps> = ({
   }
   return (
     <div
-      className={`snap-start min-h-[calc(100vh-8rem)] flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
+      className={`min-h-[calc(100vh-4rem)] sm:my-4 flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
     >
       {animateHeart && (
         <div className="z-10 absolute inset-0 flex top-[200px] justify-center">

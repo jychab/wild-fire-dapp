@@ -1,15 +1,22 @@
 'use client';
 
+import { SignInBtn } from '@/components/authentication/authentication-ui';
 import { Blinks } from '@/components/blinks/blinks-feature';
+import { ClaimButton } from '@/components/claim/claim-feature';
 import { Categories, useCategory } from '@/components/ui/ui-provider';
 import { fetchPostByAddress, fetchPostByCategories } from '@/utils/helper/post';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 export default function Page() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true); // Indicate that the component has mounted
+  }, []);
   const { publicKey } = useWallet();
   const [posts, setPosts] = useState<PostBlinksDetail[]>([]);
   const { category } = useCategory();
@@ -65,22 +72,40 @@ export default function Page() {
     }
   }, [posts]);
 
+  if (!isMounted) {
+    return null;
+  }
+
   return (
-    <div className="w-full flex flex-1 items-center justify-center">
-      <div
-        ref={containerRef}
-        className="w-full max-w-lg sm:p-4 overflow-y-scroll h-[calc(100vh-8rem)] scrollbar-none snap-mandatory snap-y"
-      >
-        {posts.map((post) => (
-          <Blinks key={post.id} blinksDetail={post} />
-        ))}
-        {loading && (
-          <div className="flex flex-col items-center justify-center w-full py-4">
-            <span>Loading posts...</span>
-            <div className="loading loading-dots" />
-          </div>
-        )}
+    <div
+      ref={containerRef}
+      className="w-full flex flex-col items-center sm:p-4 overflow-y-scroll h-screen scrollbar-none snap-proximity snap-y"
+    >
+      <div className="flex w-full p-4 items-center gap-4 border-b bg-base-100 border-base-300">
+        <Link
+          className="sm:px-4 flex items-start justify-start gap-2 w-64"
+          href="/"
+        >
+          <span className="sm:hidden font-luckiestguy text-xl leading-[0.75]">
+            BlinksFeed
+          </span>
+        </Link>
+        <div className="w-64 gap-4 flex items-center justify-end">
+          {publicKey && <ClaimButton />}
+          <SignInBtn />
+        </div>
       </div>
+      {posts.map((post) => (
+        <div key={post.id} className="max-w-lg snap-start w-full">
+          <Blinks blinksDetail={post} />
+        </div>
+      ))}
+      {loading && (
+        <div className="flex flex-col items-center justify-center w-full py-4">
+          <span>Loading posts...</span>
+          <div className="loading loading-dots" />
+        </div>
+      )}
     </div>
   );
 }

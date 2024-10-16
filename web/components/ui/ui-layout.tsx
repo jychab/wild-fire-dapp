@@ -9,10 +9,11 @@ import { BottomNavBar, Navbar } from './ui-component';
 export function UiLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex w-full bg-base-100 min-h-screen flex-1">
-      <div className=" flex flex-col w-full flex-1 items-center">
+      <div className=" flex flex-col w-full items-center">
         <Navbar />
-        <div className="flex flex-1 w-full mt-16 mb-16 sm:mb-0 ">
-          <div className="w-full flex gap-16 justify-center">
+
+        <div className="flex flex-1 w-full sm:mt-16 mb-16 sm:mb-0 ">
+          <div className="w-full flex gap-16 items-start justify-center">
             <Suspense
               fallback={
                 <span className="loading loading-spinner loading-lg"></span>

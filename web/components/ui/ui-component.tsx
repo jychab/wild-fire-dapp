@@ -103,8 +103,11 @@ export const SocialComponent: FC = () => {
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
-    <div className="flex w-full fixed navbar items-center justify-between gap-4 border-b bg-base-100 border-base-300 z-20">
-      <Link className="sm:px-4 flex items-start gap-2 w-64" href="/">
+    <div className="flex hidden sm:fixed sm:z-20 w-full p-4 items-center gap-4 border-b bg-base-100 border-base-300">
+      <Link
+        className="sm:px-4 flex items-start justify-start gap-2 w-64"
+        href="/"
+      >
         <div className="hidden sm:block relative w-8 h-8">
           <Image
             src={logo}
@@ -118,10 +121,10 @@ export const Navbar: FC = () => {
           BlinksFeed
         </span>
       </Link>
-      <div className="grow items-center justify-center">
+      <div className="grow flex items-center justify-center">
         {publicKey && <SearchBar />}
       </div>
-      <div className="w-64 gap-4 items-center justify-end">
+      <div className="w-64 gap-4 flex items-center justify-end">
         {publicKey && (
           <>
             <ClaimButton />
