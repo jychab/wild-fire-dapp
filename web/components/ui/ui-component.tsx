@@ -103,7 +103,7 @@ export const SocialComponent: FC = () => {
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
-    <div className="flex hidden sm:fixed sm:z-20 w-full p-4 items-center gap-4 border-b bg-base-100 border-base-300">
+    <div className="flex fixed z-20 w-full p-4 items-center gap-4 border-b bg-base-100 border-base-300">
       <Link
         className="sm:px-4 flex items-start justify-start gap-2 w-64"
         href="/"

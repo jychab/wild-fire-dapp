@@ -12,7 +12,7 @@ export function UiLayout({ children }: { children: ReactNode }) {
       <div className=" flex flex-col w-full items-center">
         <Navbar />
 
-        <div className="flex flex-1 w-full sm:mt-16 mb-16 sm:mb-0 ">
+        <div className="flex flex-1 w-full mt-16 mb-16 sm:mb-0 ">
           <div className="w-full flex gap-16 items-start justify-center">
             <Suspense
               fallback={

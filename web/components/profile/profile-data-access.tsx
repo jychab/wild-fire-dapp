@@ -57,6 +57,7 @@ export function useGetPostsFromCreator({
         return null;
       }
     },
+    staleTime: SHORT_STALE_TIME,
     enabled: !!creator,
   });
 }

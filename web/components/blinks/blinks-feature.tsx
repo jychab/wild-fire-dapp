@@ -5,11 +5,19 @@ import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { getTimeAgo } from '@/utils/helper/format';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { Blink } from '@dialectlabs/blinks';
-import { IconEye, IconHeart, IconHeartFilled } from '@tabler/icons-react';
+import {
+  IconEye,
+  IconHeart,
+  IconThumbDown,
+  IconThumbUp,
+} from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useState } from 'react';
-import { useWallet } from 'unified-wallet-adapter-with-telegram';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import {
+  useUnifiedWalletContext,
+  useWallet,
+} from 'unified-wallet-adapter-with-telegram';
 import { CommentsSection } from '../comments/comments-ui';
 import { useGetActionFromApiUrlQuery } from '../content/content-data-access';
 import { UserProfile } from '../content/content-ui';
@@ -22,12 +30,17 @@ interface BlinksProps {
   blinksDetail: PostBlinksDetail | undefined | null;
   multiGrid?: boolean;
   editable?: boolean;
+  draggedResult?: boolean;
+  setDraggedResult?: Dispatch<SetStateAction<boolean | undefined>>;
 }
 export const Blinks: FC<BlinksProps> = ({
   blinksDetail,
   multiGrid = false,
   editable = false,
+  draggedResult,
+  setDraggedResult,
 }) => {
+  const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
   const { adapter } = useActionsRegistry();
   const { data: action } = useGetActionFromApiUrlQuery({
@@ -45,32 +58,47 @@ export const Blinks: FC<BlinksProps> = ({
     const tapGap = 300; // Max time allowed between taps (in ms)
 
     if (lastTap && currentTime - lastTap < tapGap) {
-      toggleLike(); // If the second tap is within 300ms, treat it as a double-tap
+      toggleLike(true); // If the second tap is within 300ms, treat it as a double-tap
     } else {
       setLastTap(currentTime); // Otherwise, set this as the last tap time
     }
   };
 
-  const toggleLike = () => {
-    if (!blinksDetail?.memberMint || !publicKey) return;
-    if (liked) {
-      validatePost(
-        blinksDetail.memberMint,
-        blinksDetail.mint,
-        blinksDetail.id,
-        'Dislikes'
-      );
-      setLiked(false);
-    } else {
-      validatePost(
-        blinksDetail.memberMint,
-        blinksDetail.mint,
-        blinksDetail.id,
-        'Likes'
-      );
-      setLiked(true);
-      triggerHeartAnimation();
+  useEffect(() => {
+    if (draggedResult != undefined && setDraggedResult) {
+      toggleLike(draggedResult);
+      setDraggedResult(undefined);
     }
+  }, [draggedResult]);
+
+  const toggleLike = (like: boolean) => {
+    if (!blinksDetail?.memberMint || !publicKey) {
+      setShowModal(true);
+      return;
+    }
+    if (like) {
+      if (!liked) {
+        validatePost(
+          blinksDetail.memberMint,
+          blinksDetail.mint,
+          blinksDetail.id,
+          'Likes'
+        );
+      }
+      setLiked(true);
+    } else {
+      if (liked) {
+        validatePost(
+          blinksDetail.memberMint,
+          blinksDetail.mint,
+          blinksDetail.id,
+          'Dislikes'
+        );
+      }
+      setLiked(false);
+    }
+
+    triggerHeartAnimation();
   };
   // Trigger the heart animation
   const triggerHeartAnimation = () => {
@@ -89,7 +117,11 @@ export const Blinks: FC<BlinksProps> = ({
     );
   }
 
-  if (multiGrid && action) {
+  if (!action) {
+    return null;
+  }
+
+  if (multiGrid) {
     return (
       <Link
         href={useRelativePathIfPossbile(blinksDetail.url)}
@@ -105,18 +137,11 @@ export const Blinks: FC<BlinksProps> = ({
       </Link>
     );
   }
+
   return (
     <div
-      className={`min-h-[calc(100vh-4rem)] sm:my-4 flex flex-col w-full items-start justify-between animate-fade-up animate-once animate-duration-300 shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
+      className={`flex flex-col w-full items-start bg-base-100 justify-between animate-fade-up animate-once animate-duration-300 shadow-md rounded-2xl border border-base-300 `}
     >
-      {animateHeart && (
-        <div className="z-10 absolute inset-0 flex top-[200px] justify-center">
-          <IconHeartFilled
-            size={120}
-            className="animate-duration-200 animate-jump animate-ease-out fill-error opacity-50"
-          />
-        </div>
-      )}
       <div className="w-full">
         <UserProfile
           trade={trade}
@@ -124,31 +149,51 @@ export const Blinks: FC<BlinksProps> = ({
           blinksDetail={blinksDetail}
           editable={editable}
         />
-        {action ? (
-          !trade ? (
-            <div
-              className="animate-flip-up"
-              onDoubleClick={toggleLike}
-              onTouchStart={handleDoubleTap}
-            >
-              <Blink
-                stylePreset={'custom'}
-                action={action}
-                websiteText={new URL(blinksDetail.url).hostname}
-              />
+        {!trade ? (
+          <div
+            className="animate-flip-up"
+            onDoubleClick={() => toggleLike(true)}
+            onTouchStart={handleDoubleTap}
+          >
+            <div className="z-10 fixed w-full h-[450px]">
+              {animateHeart &&
+                (liked ? (
+                  <div className="z-10 absolute inset-0 flex flex-col gap-2 top-[200px] items-center">
+                    <IconThumbUp
+                      size={100}
+                      className="animate-duration-400 animate-jump animate-ease-out fill-error opacity-75"
+                    />
+                    <span className="btn btn-outline btn-error text-3xl font-bold opacity-75">
+                      Like
+                    </span>
+                  </div>
+                ) : (
+                  <div className="z-10 absolute inset-0 flex flex-col gap-2 top-[200px] items-center">
+                    <IconThumbDown
+                      size={100}
+                      className="animate-duration-400 animate-jump animate-ease-out fill-error opacity-75"
+                    />
+                    <span className="btn btn-outline btn-error text-3xl font-bold opacity-75">
+                      Dislike
+                    </span>
+                  </div>
+                ))}
             </div>
-          ) : (
-            <div className="px-4 animate-flip-down">
-              <TradingPanel
-                compact={true}
-                hideMintInfo={true}
-                hideActivities={true}
-                collectionMint={blinksDetail.mint}
-              />
-            </div>
-          )
+            <Blink
+              stylePreset={'custom'}
+              action={action}
+              websiteText={new URL(blinksDetail.url).hostname}
+            />
+          </div>
         ) : (
-          <div className="flex-grow" />
+          <div className="px-4 animate-flip-down">
+            <TradingPanel
+              compact={true}
+              hideMintInfo={true}
+              hideActivities={true}
+              collectionMint={blinksDetail.mint}
+            />
+          </div>
         )}
       </div>
       <BlinksFooter
@@ -161,7 +206,7 @@ export const Blinks: FC<BlinksProps> = ({
 };
 export const BlinksFooter: FC<{
   blinksDetail: PostBlinksDetail;
-  toggleLike: () => void;
+  toggleLike: (like: boolean) => void;
   liked: boolean | undefined;
 }> = ({ blinksDetail, toggleLike, liked }) => {
   return (
@@ -177,7 +222,12 @@ export const BlinksFooter: FC<{
           <span className="stat-desc">{`${
             blinksDetail.viewsCount || 0
           } views`}</span>
-          <button onClick={toggleLike} className="link link-hover flex gap-2">
+          <button
+            onClick={() => {
+              toggleLike(!liked);
+            }}
+            className="link link-hover flex gap-2"
+          >
             <IconHeart
               size={16}
               className={`${liked ? 'fill-primary animate-jump' : ''}`}
