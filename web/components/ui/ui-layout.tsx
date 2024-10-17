@@ -1,12 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ReactNode, Suspense } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { AuthenticationDropdownMenu } from '../authentication/authentication-ui';
+import { RightColumn } from '../trending/trending-feature';
 import { BottomNavBar, Navbar } from './ui-component';
 
 export function UiLayout({ children }: { children: ReactNode }) {
+  const pathName = usePathname();
   return (
     <div className="flex w-full bg-base-100 min-h-screen flex-1">
       <div className=" flex flex-col w-full items-center">
@@ -23,7 +26,11 @@ export function UiLayout({ children }: { children: ReactNode }) {
                 <AuthenticationDropdownMenu />
               </ul>
               {children}
-              <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
+              {pathName == '/' ? (
+                <RightColumn />
+              ) : (
+                <div className="hidden min-[1800px]:flex w-full fixed max-w-[250px]" />
+              )}
             </Suspense>
           </div>
           <Toaster position="bottom-right" />

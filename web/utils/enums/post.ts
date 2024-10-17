@@ -11,3 +11,9 @@ export enum ActionTypeEnum {
   DEFAULT = 'DEFAULT',
   REWARD = 'REWARD',
 }
+export enum Sentiment {
+  LIKE = 'like',
+  DISLIKE = 'dislike',
+  SHARE = 'share',
+  TRADE = 'trade',
+}

@@ -1,4 +1,5 @@
 import { DEFAULT_MINT_DECIMALS, NATIVE_MINT_DECIMALS } from '@/utils/consts';
+import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import { NATIVE_MINT } from '@solana/spl-token';
@@ -308,7 +309,7 @@ const TradingViewChart = memo(
             <Image
               width={28}
               height={28}
-              src={metadata?.content?.links?.image!}
+              src={proxify(metadata?.content?.links?.image, true)}
               alt={''}
               className="rounded"
             />

@@ -1,4 +1,5 @@
 import { db } from '@/utils/firebase/firebase';
+import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { program } from '@/utils/program/instructions';
 import { DAS } from '@/utils/types/das';
@@ -182,7 +183,7 @@ export const ClaimButton: FC = () => {
                     width={32}
                     height={32}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    src={x.content?.links?.image || ''}
+                    src={proxify(x.content?.links?.image || '', true)}
                     alt={''}
                   />
 

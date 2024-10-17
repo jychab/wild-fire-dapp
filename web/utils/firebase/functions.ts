@@ -2,6 +2,7 @@ import { TokenMetadata } from '@solana/spl-token-metadata';
 import { PublicKey } from '@solana/web3.js';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, uploadString } from 'firebase/storage';
+import { Sentiment } from '../enums/post';
 import { generateRandomU64Number } from '../helper/post';
 import { PostCampaign } from '../types/campaigns';
 import { PostContent } from '../types/post';
@@ -54,7 +55,7 @@ export async function validatePost(
   memberMint: string,
   mint: string,
   postId: string,
-  type: string
+  type: Sentiment
 ) {
   const validatePost = httpsCallable(functions, 'validatePost');
   await validatePost({ memberMint, mint, postId, type });

@@ -113,6 +113,7 @@ export function useGetActionFromApiUrlQuery({
     queryFn: async () => {
       if (!adapter || !url) return null;
       let apiUrl = await unfurlUrlToActionApiUrl(url);
+
       if (!apiUrl) {
         apiUrl = url;
       }

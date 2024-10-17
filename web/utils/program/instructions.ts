@@ -11,11 +11,7 @@ import { Blinksfeed } from './types/blinksfeed';
 export const program = new Program<Blinksfeed>(Idl as unknown as Blinksfeed, {
   connection: new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT as string),
 });
-export async function collectFees(
-  payer: PublicKey,
-  admin: PublicKey,
-  mint: PublicKey
-) {
+export async function collectFees(payer: PublicKey, admin: PublicKey) {
   const ix = await program.methods
     .collectFees()
     .accounts({

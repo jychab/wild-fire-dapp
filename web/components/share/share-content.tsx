@@ -1,3 +1,4 @@
+import { Sentiment } from '@/utils/enums/post';
 import { validatePost } from '@/utils/firebase/functions';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
@@ -91,7 +92,7 @@ export const ShareContent: FC<{
                     blinksDetail.memberMint,
                     blinksDetail.mint,
                     blinksDetail.id,
-                    'Shares'
+                    Sentiment.SHARE
                   );
                 }
                 handleCopy(url);

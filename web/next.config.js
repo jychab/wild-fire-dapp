@@ -26,7 +26,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*',
+        hostname: 'proxify.blinksfeed.com',
       },
     ],
   },

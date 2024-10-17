@@ -77,8 +77,10 @@ export async function getHolders(mint: string) {
   const result = await getDoc(doc(db, `Mint/${mint}/TokenInfo/Summary`));
   if (result.exists()) {
     return result.data() as {
-      currentHoldersCount: number;
-      holdersChange24hPercent: number;
+      currentHoldersCount?: number;
+      holdersChange24hPercent?: number;
+      currentPrice?: number;
+      priceChange24hPercent?: number;
     };
   } else {
     return null;

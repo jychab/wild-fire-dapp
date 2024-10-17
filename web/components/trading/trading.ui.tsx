@@ -196,7 +196,7 @@ export const TradingPanel: FC<{
               className={`rounded-full object-cover`}
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={proxify(metadata?.content?.links?.image!, true)}
+              src={proxify(metadata?.content?.links?.image, true)}
               alt={''}
             />
           </div>

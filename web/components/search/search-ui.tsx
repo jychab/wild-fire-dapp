@@ -128,7 +128,9 @@ export const SearchBar: FC = ({}) => {
                   <div className="flex flex-col">
                     <span className="text-sm font-bold">{x?.name}</span>
                     {x.type == 'Creator' && (
-                      <span className="text-xs stat-desc">{'Creator'}</span>
+                      <span className="text-xs stat-desc">
+                        {'Fungible Token'}
+                      </span>
                     )}
                   </div>
                 </button>

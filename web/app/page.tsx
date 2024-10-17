@@ -7,6 +7,7 @@ import { PostBlinksDetail } from '@/utils/types/post';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
+import { IconThumbDown, IconThumbUp } from '@tabler/icons-react';
 import {
   motion,
   PanInfo,
@@ -76,7 +77,8 @@ export default function Page() {
   const opacity = useTransform(x, [-150, 0, 150], [0.5, 1, 0.5]);
   const scale = useTransform(x, [-150, 0, 150], [0.8, 1, 0.8]);
   const rotate = useTransform(x, [-150, 150], [-30, 30]);
-
+  const likeOpacity = useTransform(x, [0, 50], [0, 1]);
+  const dislikeOpacity = useTransform(x, [-50, 0], [1, 0]);
   return (
     <div
       ref={containerRef}
@@ -91,7 +93,7 @@ export default function Page() {
         posts.map((post, index) => (
           <motion.div
             key={post.id}
-            className={`max-w-lg w-full  ${
+            className={`relative max-w-lg w-full  ${
               currentIndex === index ? 'block' : 'hidden'
             }`}
             dragSnapToOrigin
@@ -107,6 +109,20 @@ export default function Page() {
             dragConstraints={{ left: 0, right: 0 }}
             dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
           >
+            <motion.div
+              style={{ x, opacity: likeOpacity }}
+              className="absolute z-20 top-1/2 right-1/2 btn btn-outline btn-error font-bold text-3xl"
+            >
+              <span>Like</span>
+              <IconThumbUp className=" fill-error" />
+            </motion.div>
+            <motion.div
+              style={{ x, opacity: dislikeOpacity }}
+              className="absolute z-20 top-1/2 left-1/2 btn btn-outline btn-error font-bold text-3xl"
+            >
+              <span>Dislike</span>
+              <IconThumbDown className=" fill-error" />
+            </motion.div>
             <Blinks
               setDraggedResult={setDraggedResult}
               draggedResult={draggedResult}

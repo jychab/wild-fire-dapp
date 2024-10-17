@@ -1,6 +1,6 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { getHolders } from '@/utils/helper/mint';
+import { getHolders as getMintSummaryInfo } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
@@ -23,6 +23,10 @@ export function useGenerateTrendingList() {
             supply: number;
             volume: number;
           }[];
+          initializedMints: {
+            collectionMint: string;
+            memberMint: string;
+          }[];
         };
       } else {
         return null;
@@ -37,30 +41,36 @@ export function useGenerateTrendingList() {
           id: '',
           method: 'getAssetBatch',
           params: {
-            ids: data.all.map((x) => x.memberMint),
+            ids: data.initializedMints.map((x) => x.memberMint),
           },
         }),
       });
       const metadatas = (await response.json())
         .result as DAS.GetAssetResponse[];
       const filteredList = data.allTokenPrices
+        .filter(
+          (x) =>
+            data.initializedMints.find(
+              (y) => y.collectionMint == x.collectionMint
+            ) != undefined
+        )
         .sort((a, b) => (b.volume || 0) - (a.volume || 0))
         .slice(0, 10);
-      const holdersPromises = filteredList.map((x) =>
-        getHolders(x.collectionMint)
+      const mintInfoPromises = filteredList.map((x) =>
+        getMintSummaryInfo(x.collectionMint)
       );
-      const holdersData = await Promise.all(holdersPromises);
+      const mintData = await Promise.all(mintInfoPromises);
 
       return filteredList.map((x, i) => {
         const metadata = metadatas.find((y) => y.id == x.memberMint);
-        const holders = holdersData[i];
+        const holders = mintData[i];
         return {
           memberMint: x.memberMint,
           collectionMint: x.collectionMint,
           image: metadata?.content?.links?.image,
           name: metadata?.content?.metadata.name,
-          price: x.price,
-          supply: x.supply,
+          price: holders?.currentPrice,
+          price24HrPercent: holders?.priceChange24hPercent,
           holders: holders?.currentHoldersCount,
           holders24HrPercent: holders?.holdersChange24hPercent,
         };

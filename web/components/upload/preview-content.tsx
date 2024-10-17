@@ -113,7 +113,7 @@ export const PreviewContentBtn: FC<{
             icon: iconUrl,
             title,
             description,
-            label: 'Subscribe', // default
+            label: '', // default
             url: generatePostEndPoint(mint.toBase58(), postId),
             mint: mint.toBase58(),
             id: postId,
@@ -258,7 +258,7 @@ const PreviewContent: FC<{
   return (
     !!post && (
       <div
-        className={`"flex flex-col w-full animate-fade-up animate-once animate-duration-300 border bg-base-300 border-2 border-primary shadow-md shadow-primary rounded-2xl`}
+        className={`"flex flex-col w-full animate-fade-up animate-once animate-duration-300 border bg-base-100 border-2 border-base-300 shadow-md rounded-2xl`}
       >
         <UserProfile
           blinksDetail={post as PostBlinksDetail}

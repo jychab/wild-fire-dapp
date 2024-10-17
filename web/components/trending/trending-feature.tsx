@@ -17,7 +17,7 @@ export const TrendingTable: FC = () => {
 
   return (
     <div className="border border-base-300 flex flex-col w-full rounded-box p-4">
-      <span className="text-base font-semibold">Trending Creators</span>
+      <span className="text-base font-semibold">Trending</span>
       {isLoading ? (
         <div className="flex items-center justify-center">
           <div className="loading loading-dots" />
@@ -29,7 +29,7 @@ export const TrendingTable: FC = () => {
             <thead>
               <tr>
                 <th>Token</th>
-                <th>Market Cap</th>
+                <th>Price</th>
               </tr>
             </thead>
             <tbody>
@@ -40,7 +40,7 @@ export const TrendingTable: FC = () => {
                     <td>
                       <div className="flex items-center gap-2 ">
                         <Link
-                          href={`/token?mintId=${x.collectionMint}`}
+                          href={`/profile?mint=${x.collectionMint}`}
                           className="avatar"
                         >
                           <div className="mask mask-circle h-8 w-8">
@@ -50,18 +50,18 @@ export const TrendingTable: FC = () => {
                         <div className="flex flex-col text-xs">
                           <Link
                             className="link link-hover text-sm"
-                            href={`/token?mintId=${x.collectionMint}`}
+                            href={`/profile?mint=${x.collectionMint}`}
                           >
                             {x.name}
                           </Link>
 
                           <div className="flex items-center gap-2">
-                            <span>
+                            <span className="text-xs">
                               {formatLargeNumber(x.holders || 0) + ' Subs'}
                             </span>
                             {x.holders24HrPercent != undefined && (
                               <span
-                                className={`${
+                                className={`text-xs ${
                                   x.holders24HrPercent < 0
                                     ? 'text-error'
                                     : 'text-success'
@@ -75,12 +75,22 @@ export const TrendingTable: FC = () => {
                       </div>
                     </td>
                     <td>
-                      <Link
-                        className="link link-hover link-primary"
-                        href={`/token?mintId=${x.collectionMint}&tab=trade`}
-                      >
-                        {`$${formatLargeNumber(x.price * x.supply)}`}
-                      </Link>
+                      <div className="flex flex-col items-center gap-2">
+                        {x.price24HrPercent != undefined && (
+                          <span
+                            className={`text-xs ${
+                              x.price24HrPercent < 0
+                                ? 'text-error'
+                                : 'text-success'
+                            }`}
+                          >
+                            {x.price24HrPercent?.toFixed(2)}%
+                          </span>
+                        )}
+                        <span className="text-xs">
+                          ${formatLargeNumber(x.price || 0)}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}

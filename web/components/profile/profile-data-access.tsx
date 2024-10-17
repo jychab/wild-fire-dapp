@@ -36,7 +36,6 @@ export function useGetPostsFromMint({
             await fetch(proxify(generateMintApiEndPoint(mint)))
           ).json();
           let posts = uriMetadata as GetPostsResponse | undefined;
-          console.log(posts);
           return posts;
         }
         if (selectedTab == ProfileTabsEnum.FAVOURTIES && publicKey) {

@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -236,7 +237,7 @@ export const CreateWithExistingPanel: FC = () => {
                   <Image
                     width={32}
                     height={32}
-                    src={x.content?.links?.image || ''}
+                    src={proxify(x.content?.links?.image || '', true)}
                     alt={''}
                   />
                   <div className="flex flex-col items-start">

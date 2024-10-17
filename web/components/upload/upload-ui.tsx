@@ -1,10 +1,11 @@
 'use client';
 
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
-import { ActionTypeEnum } from '@/utils/enums/post';
+import { ActionTypeEnum, Sentiment } from '@/utils/enums/post';
 import {
   generatePostDefaultApiEndPoint,
   generatePostTransferApiEndPoint,
+  proxify,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
 import { getAsset, getDerivedMint } from '@/utils/helper/mint';
@@ -389,7 +390,7 @@ export const UploadPost: FC<{
                       className={`object-contain bg-black`}
                       fill={true}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      src={file.uri}
+                      src={proxify(file.uri, true)}
                       alt={''}
                     />
                   )}
@@ -519,25 +520,25 @@ export const AddActions: FC<{
       ) {
         actions.push({
           actionTypeEnum: ActionTypeEnum.DEFAULT,
-          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=dislike`,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=${Sentiment.DISLIKE}`,
           label: '❌ Dislike',
           type: 'post',
         });
         actions.push({
           actionTypeEnum: ActionTypeEnum.DEFAULT,
-          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=like`,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=${Sentiment.LIKE}`,
           label: '🩷 Like',
           type: 'post',
         });
         actions.push({
           actionTypeEnum: ActionTypeEnum.DEFAULT,
-          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=share`,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=${Sentiment.SHARE}`,
           label: '🔗 Share',
           type: 'post',
         });
         actions.push({
           actionTypeEnum: ActionTypeEnum.DEFAULT,
-          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=trade`,
+          href: `https://api.blinksfeed.com/post/actions/sentiment?mint=${tempCampaign.mint}&id=${tempCampaign.postId}&response=${Sentiment.TRADE}`,
           label: '📈 Buy / Sell',
           type: 'post',
         });
@@ -867,7 +868,10 @@ export const MintInputField: FC<{
               fill={true}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               alt=""
-              src={mintToSendDetails?.content?.links?.image || placeholderImage}
+              src={proxify(
+                mintToSendDetails?.content?.links?.image || placeholderImage,
+                true
+              )}
             />
           </div>
           <div className="flex flex-col">

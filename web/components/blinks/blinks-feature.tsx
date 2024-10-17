@@ -1,5 +1,6 @@
 'use client';
 
+import { Sentiment } from '@/utils/enums/post';
 import { validatePost } from '@/utils/firebase/functions';
 import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { getTimeAgo } from '@/utils/helper/format';
@@ -83,7 +84,7 @@ export const Blinks: FC<BlinksProps> = ({
           blinksDetail.memberMint,
           blinksDetail.mint,
           blinksDetail.id,
-          'Likes'
+          Sentiment.LIKE
         );
       }
       setLiked(true);
@@ -93,12 +94,11 @@ export const Blinks: FC<BlinksProps> = ({
           blinksDetail.memberMint,
           blinksDetail.mint,
           blinksDetail.id,
-          'Dislikes'
+          Sentiment.DISLIKE
         );
       }
       setLiked(false);
     }
-
     triggerHeartAnimation();
   };
   // Trigger the heart animation
@@ -159,24 +159,18 @@ export const Blinks: FC<BlinksProps> = ({
             <div className="z-10 fixed w-full h-[450px]">
               {animateHeart &&
                 (liked ? (
-                  <div className="z-10 absolute inset-0 flex flex-col gap-2 top-[200px] items-center">
-                    <IconThumbUp
-                      size={100}
-                      className="animate-duration-400 animate-jump animate-ease-out fill-error opacity-75"
-                    />
-                    <span className="btn btn-outline btn-error text-3xl font-bold opacity-75">
+                  <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
+                    <button className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Like
-                    </span>
+                      <IconThumbUp className=" fill-error" />
+                    </button>
                   </div>
                 ) : (
-                  <div className="z-10 absolute inset-0 flex flex-col gap-2 top-[200px] items-center">
-                    <IconThumbDown
-                      size={100}
-                      className="animate-duration-400 animate-jump animate-ease-out fill-error opacity-75"
-                    />
-                    <span className="btn btn-outline btn-error text-3xl font-bold opacity-75">
+                  <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
+                    <button className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Dislike
-                    </span>
+                      <IconThumbDown className=" fill-error" />
+                    </button>
                   </div>
                 ))}
             </div>
@@ -225,7 +219,7 @@ export const BlinksFooter: FC<{
           } views`}</span>
           <button
             onClick={() => {
-              toggleLike(!liked);
+              toggleLike(true);
             }}
             className="link link-hover flex gap-2"
           >
