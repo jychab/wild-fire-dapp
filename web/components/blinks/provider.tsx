@@ -22,7 +22,7 @@ export const ActionsRegistryProvider = ({
 }) => {
   const { connection } = useConnection();
   const { isRegistryLoaded } = useActionsRegistryInterval();
-  const { adapter } = useActionSolanaWalletAdapter(connection.rpcEndpoint);
+  const { adapter } = useActionSolanaWalletAdapter(connection);
 
   // Pass values to context
   return (

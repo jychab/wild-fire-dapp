@@ -113,14 +113,13 @@ export function useGetActionFromApiUrlQuery({
     queryFn: async () => {
       if (!adapter || !url) return null;
       let apiUrl = await unfurlUrlToActionApiUrl(url);
-
       if (!apiUrl) {
         apiUrl = url;
       }
       if (apiUrl) {
+        setProxyUrl('https://proxify.blinksfeed.com');
         const action = await Action.fetch(apiUrl).catch(() => null);
         if (action) {
-          setProxyUrl('https://proxify.blinksfeed.com');
           action.setAdapter(adapter);
           return action;
         }

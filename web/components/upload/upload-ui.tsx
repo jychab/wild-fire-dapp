@@ -8,7 +8,12 @@ import {
   proxify,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import { getAsset, getDerivedMint } from '@/utils/helper/mint';
+import {
+  getAsset,
+  getAssociatedEscrowAccount,
+  getDerivedMemberMint,
+  getDerivedMint,
+} from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostCampaign } from '@/utils/types/campaigns';
@@ -16,6 +21,7 @@ import { DAS } from '@/utils/types/das';
 import { PostContent } from '@/utils/types/post';
 import { isParameterSelectable } from '@dialectlabs/blinks';
 import { LinkedAction } from '@solana/actions';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { PublicKey } from '@solana/web3.js';
 import {
   IconDiscountCheck,
@@ -42,6 +48,7 @@ import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { Blinks } from '../blinks/blinks-feature';
 import { useGetJupiterVerifiedTokens } from '../create/create-data-access';
 import { useGetMintToken } from '../edit/edit-data-access';
+import { useGetTokenAccountInfo } from '../trading/trading-data-access';
 import { PreviewContentBtn } from './preview-content';
 
 export const UploadBtn: FC<{ mintId?: string }> = ({ mintId }) => {
@@ -858,6 +865,49 @@ export const MintInputField: FC<{
 }> = ({ mintToSendDetails, value, setValue }) => {
   const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
   const [showInput, setShowInput] = useState(false);
+  const { publicKey } = useWallet();
+
+  const { data: airdropTokenAccountInfo } = useGetTokenAccountInfo({
+    address:
+      mintToSendDetails?.token_info?.token_program &&
+      publicKey &&
+      mintToSendDetails.id ==
+        getDerivedMemberMint(getDerivedMint(publicKey), 0).toBase58()
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(mintToSendDetails.id),
+            getAssociatedEscrowAccount(publicKey),
+            true,
+            new PublicKey(mintToSendDetails.token_info?.token_program)
+          )
+        : null,
+    tokenProgram: mintToSendDetails?.token_info?.token_program
+      ? new PublicKey(mintToSendDetails.token_info?.token_program)
+      : undefined,
+  });
+  const airdropAmountAvailable =
+    airdropTokenAccountInfo?.amount && mintToSendDetails?.token_info?.decimals
+      ? Number(airdropTokenAccountInfo?.amount) /
+        10 ** mintToSendDetails?.token_info?.decimals
+      : 0;
+  const { data: tokenAccountInfo } = useGetTokenAccountInfo({
+    address:
+      mintToSendDetails?.token_info?.token_program && publicKey
+        ? getAssociatedTokenAddressSync(
+            new PublicKey(mintToSendDetails.id),
+            publicKey,
+            true,
+            new PublicKey(mintToSendDetails.token_info?.token_program)
+          )
+        : null,
+    tokenProgram: mintToSendDetails?.token_info?.token_program
+      ? new PublicKey(mintToSendDetails.token_info?.token_program)
+      : undefined,
+  });
+  const amountAvailable =
+    tokenAccountInfo?.amount && mintToSendDetails?.token_info?.decimals
+      ? Number(tokenAccountInfo?.amount) /
+        10 ** mintToSendDetails?.token_info?.decimals
+      : 0;
   return (
     <>
       <div className="flex w-full items-center justify-between">
@@ -902,13 +952,23 @@ export const MintInputField: FC<{
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setShowInput(!showInput)}
-          className="flex items-center gap-1 text-sm link link-hover"
-        >
-          <IconRefresh />
-          <span>Change Token</span>
-        </button>
+        <div className="flex flex-col gap-1 items-end">
+          <button
+            onClick={() => setShowInput(!showInput)}
+            className="flex items-center gap-1 text-sm link link-hover"
+          >
+            <IconRefresh />
+            <span>Change Token</span>
+          </button>
+          <span className="stat-desc">{`Your Wallet Amount: ${formatLargeNumber(
+            amountAvailable
+          )}`}</span>
+          {airdropAmountAvailable > 0 && (
+            <span className="stat-desc">{`Airdrop Wallet Amount: ${formatLargeNumber(
+              airdropAmountAvailable
+            )}`}</span>
+          )}
+        </div>
       </div>
 
       {showInput && (
@@ -961,7 +1021,7 @@ const InputField: FC<InputFieldProps> = ({
         min={min}
       />
     </div>
-    {suffix && <span>{suffix}</span>}
+    {suffix && <span className="whitespace-nowrap">{suffix}</span>}
   </label>
 );
 

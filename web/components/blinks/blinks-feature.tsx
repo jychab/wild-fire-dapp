@@ -44,7 +44,7 @@ export const Blinks: FC<BlinksProps> = ({
 }) => {
   const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
-  const { adapter } = useActionsRegistry();
+  const { adapter, isRegistryLoaded } = useActionsRegistry();
   const { data: action } = useGetActionFromApiUrlQuery({
     url: blinksDetail?.url,
     adapter,
@@ -118,7 +118,7 @@ export const Blinks: FC<BlinksProps> = ({
     );
   }
 
-  if (!action) {
+  if (!isRegistryLoaded || !action) {
     return null;
   }
 

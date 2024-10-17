@@ -135,11 +135,13 @@ export const Profile: FC<ProfileProps> = ({
                 address}
             </span>
           )}
-          {!isLoading && metadata?.content?.metadata.symbol && (
-            <span className="text-base stat-desc lg:text-xl truncate max-w-sm">
-              {metadata?.content?.metadata.symbol}
-            </span>
-          )}
+          {!isLoading &&
+            !checkIfMetadataIsTemporary(metadata) &&
+            metadata?.content?.metadata.symbol && (
+              <span className="text-base stat-desc lg:text-xl truncate max-w-sm">
+                {metadata?.content?.metadata.symbol}
+              </span>
+            )}
         </div>
         {collectionMint && <SubscribeBtn mintId={collectionMint.toBase58()} />}
         {mintSummaryDetails && (
