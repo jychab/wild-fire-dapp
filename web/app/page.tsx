@@ -111,14 +111,14 @@ export default function Page() {
           >
             <motion.div
               style={{ x, opacity: likeOpacity }}
-              className="absolute z-20 top-1/2 right-1/2 btn btn-outline btn-error font-bold text-3xl"
+              className="absolute z-20 top-1/2 right-1/2 btn btn-outline btn-error font-bold text-3xl cursor-default"
             >
               <span>Like</span>
               <IconThumbUp className=" fill-error" />
             </motion.div>
             <motion.div
               style={{ x, opacity: dislikeOpacity }}
-              className="absolute z-20 top-1/2 left-1/2 btn btn-outline btn-error font-bold text-3xl"
+              className="absolute z-20 top-1/2 left-1/2 btn btn-outline btn-error font-bold text-3xl cursour-default"
             >
               <span>Dislike</span>
               <IconThumbDown className=" fill-error" />

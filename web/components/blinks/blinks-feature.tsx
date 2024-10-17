@@ -151,26 +151,26 @@ export const Blinks: FC<BlinksProps> = ({
           editable={editable}
         />
         {!trade ? (
-          <div
-            className="animate-flip-up"
-            onDoubleClick={() => toggleLike(true)}
-            onTouchStart={handleDoubleTap}
-          >
-            <div className="z-10 fixed w-full h-[450px]">
+          <div className="animate-flip-up">
+            <div
+              onDoubleClick={() => toggleLike(true)}
+              onTouchStart={handleDoubleTap}
+              className="z-10 fixed w-full h-[450px]"
+            >
               {animateHeart &&
                 (liked ? (
                   <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
-                    <button className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
+                    <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Like
                       <IconThumbUp className=" fill-error" />
-                    </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
-                    <button className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
+                    <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Dislike
                       <IconThumbDown className=" fill-error" />
-                    </button>
+                    </div>
                   </div>
                 ))}
             </div>

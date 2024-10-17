@@ -64,9 +64,14 @@ export const FavouritesContentPanel: FC<{
 interface ProfileProps {
   collectionMint: PublicKey | null;
   isOwner: boolean;
+  address?: string | null;
 }
 
-export const Profile: FC<ProfileProps> = ({ isOwner, collectionMint }) => {
+export const Profile: FC<ProfileProps> = ({
+  isOwner,
+  collectionMint,
+  address,
+}) => {
   const router = useRouter();
   const { data: metadata, isLoading } = useGetTokenDetails({
     mint: collectionMint,
@@ -125,7 +130,9 @@ export const Profile: FC<ProfileProps> = ({ isOwner, collectionMint }) => {
         <div className="flex flex-col">
           {!isLoading && (
             <span className="text-xl lg:text-3xl font-bold truncate max-w-sm">
-              {metadata?.content?.metadata.name || initData?.user?.username}
+              {metadata?.content?.metadata.name ||
+                initData?.user?.username ||
+                address}
             </span>
           )}
           {!isLoading && metadata?.content?.metadata.symbol && (

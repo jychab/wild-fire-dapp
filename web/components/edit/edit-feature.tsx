@@ -1,5 +1,6 @@
 'use client';
 
+import { proxify } from '@/utils/helper/endpoints';
 import { getDerivedMint, isAuthorized } from '@/utils/helper/mint';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
@@ -92,7 +93,7 @@ export const EditFeature: FC<EditFeatureProps> = ({ mintId }) => {
                   className={`rounded-full object-cover cursor-pointer`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  src={tempImageUrl}
+                  src={proxify(tempImageUrl, true)}
                   alt={''}
                 />
               ) : (

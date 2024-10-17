@@ -304,7 +304,7 @@ const TradingViewChart = memo(
         className="z-0 w-full flex"
         style={{ position: 'relative', width: '100%', height: '100%' }}
       >
-        <div className="absolute top-4 left-4 text-base z-10 flex items-center gap-2 bg-base-100 px-4 py-2 rounded">
+        <div className="absolute top-2 left-2 text-base z-10 flex items-center gap-2 bg-base-100 px-4 py-2 rounded opacity-80">
           {metadata?.content?.links?.image && (
             <Image
               width={28}

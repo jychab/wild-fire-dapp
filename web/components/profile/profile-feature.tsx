@@ -109,7 +109,11 @@ export const ProfileFeature: FC<{
   return (
     <div className="flex flex-col w-full flex-1 h-full items-center animate-fade-right animate-duration-200 sm:animate-none">
       <div className="flex flex-col gap-8 items-start w-full max-w-7xl py-8 h-full">
-        <Profile collectionMint={collectionMint} isOwner={isOwner} />
+        <Profile
+          collectionMint={collectionMint}
+          isOwner={isOwner}
+          address={address}
+        />
         <div className="flex flex-col flex-1 h-full w-full">
           <ProfileTabs
             selectedTab={selectedTab}
