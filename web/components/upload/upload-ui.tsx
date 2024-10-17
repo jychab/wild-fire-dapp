@@ -1217,7 +1217,7 @@ const ActionModal: FC<{
       return;
     }
     const newLinkedAction = {
-      type: 'transaction',
+      type: 'message',
       actionTypeEnum: ActionTypeEnum.REWARD,
       href: newHref,
       label,

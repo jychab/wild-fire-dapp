@@ -101,7 +101,7 @@ export const CreatePanel: FC = () => {
                   className={`rounded-full object-cover cursor-pointer`}
                   fill={true}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  src={tempImageUrl}
+                  src={proxify(tempImageUrl, true)}
                   alt={''}
                 />
               ) : (

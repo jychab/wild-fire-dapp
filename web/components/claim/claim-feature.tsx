@@ -1,4 +1,5 @@
-import { db } from '@/utils/firebase/firebase';
+import { Sentiment } from '@/utils/enums/post';
+import { auth, db } from '@/utils/firebase/firebase';
 import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import { program } from '@/utils/program/instructions';
@@ -101,10 +102,10 @@ export const ClaimButton: FC = () => {
     });
   }, []);
   useEffect(() => {
-    if (publicKey && allMints) {
+    if (publicKey && allMints && !auth.currentUser?.isAnonymous) {
       try {
         const q = query(
-          collection(db, `Admin/${publicKey.toBase58()}/Dislikes`),
+          collection(db, `Admin/${publicKey.toBase58()}/${Sentiment.DISLIKE}`),
           where('timestamp', '>=', Date.now() / 1000 - 24 * 60 * 60)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -120,7 +121,7 @@ export const ClaimButton: FC = () => {
         console.log(e);
       }
     }
-  }, [publicKey, allMints]);
+  }, [publicKey, allMints, auth.currentUser]);
 
   const sellMutation = useMultipleSellMutation();
   const handleConvert = async () => {
