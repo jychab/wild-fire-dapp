@@ -365,11 +365,9 @@ export async function getOwnerTokenBalance(connection: Rpc, address: string) {
             balance: x.balance,
           },
         };
-      } else {
-        return null;
       }
     })
-    .filter((x) => x != null);
+    .filter((x) => x != null) as DAS.GetAssetResponse[];
 
   return nonCompressedData
     .filter((x) => x.interface === 'FungibleToken')
