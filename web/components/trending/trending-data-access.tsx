@@ -1,20 +1,18 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import { getHolders as getMintSummaryInfo } from '@/utils/helper/mint';
+import { program } from '@/utils/program/instructions';
 import { DAS } from '@/utils/types/das';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
-import { useConnection } from 'unified-wallet-adapter-with-telegram';
 
-export function useGenerateTrendingList() {
-  const { connection } = useConnection();
+export function useGetSummary() {
   return useQuery({
-    queryKey: ['generate-trending-list'],
+    queryKey: ['get-summary'],
     queryFn: async () => {
-      let data;
       const result = await getDoc(doc(db, `Summary/mints`));
       if (result.exists()) {
-        data = result.data() as {
+        return result.data() as {
           all: { collectionMint: string; memberMint: string }[];
           allTokenPrices: {
             collectionMint: string;
@@ -31,26 +29,40 @@ export function useGenerateTrendingList() {
       } else {
         return null;
       }
-      const response = await fetch(connection.rpcEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: '',
-          method: 'getAssetBatch',
-          params: {
-            ids: data.initializedMints.map((x) => x.memberMint),
-          },
-        }),
-      });
-      const metadatas = (await response.json())
-        .result as DAS.GetAssetResponse[];
-      const filteredList = data.allTokenPrices
+    },
+    staleTime: SHORT_STALE_TIME,
+  });
+}
+
+export function useGenerateTrendingList({
+  summary,
+}: {
+  summary: {
+    all: { collectionMint: string; memberMint: string }[];
+    allTokenPrices: {
+      collectionMint: string;
+      memberMint: string;
+      price: number;
+      supply: number;
+      volume: number;
+    }[];
+    initializedMints: {
+      collectionMint: string;
+      memberMint: string;
+    }[];
+  } | null;
+}) {
+  return useQuery({
+    queryKey: ['generate-trending-list', summary],
+    queryFn: async () => {
+      if (!summary) return null;
+      const metadatas = await getAssetBatch(
+        summary.initializedMints.map((x) => x.memberMint)
+      );
+      const filteredList = summary.allTokenPrices
         .filter(
           (x) =>
-            data.initializedMints.find(
+            summary.initializedMints.find(
               (y) => y.collectionMint == x.collectionMint
             ) != undefined
         )
@@ -78,4 +90,22 @@ export function useGenerateTrendingList() {
     },
     staleTime: SHORT_STALE_TIME,
   });
+}
+export async function getAssetBatch(mints: string[]) {
+  const response = await fetch(program.provider.connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: '',
+      method: 'getAssetBatch',
+      params: {
+        ids: mints,
+      },
+    }),
+  });
+  const result = (await response.json()).result as DAS.GetAssetResponse[];
+  return result;
 }

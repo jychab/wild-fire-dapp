@@ -1,8 +1,14 @@
-import { NATIVE_MINT_DECIMALS, SHORT_STALE_TIME } from '@/utils/consts';
+import { DEFAULT_MINT_DECIMALS, SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { getAsset } from '@/utils/helper/mint';
-import { buy, program, sell } from '@/utils/program/instructions';
+import {
+  buy,
+  decompressTokenIxs,
+  mergeTokenAccounts,
+  program,
+  sell,
+} from '@/utils/program/instructions';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
+import { createRpc, Rpc } from '@lightprotocol/stateless.js';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   createBurnCheckedInstruction,
@@ -12,6 +18,7 @@ import {
   getMint,
   getMultipleAccounts,
   NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -43,9 +50,47 @@ export function useGetTokenAccountInfo({
     ],
     queryFn: async () => {
       if (!address || !tokenProgram) return null;
+
       return getAccount(connection, address, undefined, tokenProgram);
     },
     enabled: !!address && !!tokenProgram,
+  });
+}
+
+export function useGetCompressedTokenAccountBalanceInfo({
+  address,
+  mint,
+  tokenProgram,
+}: {
+  address: PublicKey | null;
+  mint: PublicKey | null;
+  tokenProgram: PublicKey | undefined;
+}) {
+  const connection: Rpc = createRpc(
+    process.env.NEXT_PUBLIC_RPC_ENDPOINT,
+    process.env.NEXT_PUBLIC_RPC_ENDPOINT
+  );
+  return useQuery({
+    queryKey: [
+      'get-compressed-token-account-info',
+      { endpoint: connection.rpcEndpoint, address, mint, tokenProgram },
+    ],
+    queryFn: async () => {
+      if (
+        !address ||
+        tokenProgram?.toBase58() !== TOKEN_PROGRAM_ID.toBase58() ||
+        !mint
+      )
+        return null;
+      const result = await connection.getCompressedTokenBalancesByOwner(
+        address,
+        {
+          mint,
+        }
+      );
+      return result.items.reduce((acc, x) => acc + Number(x.balance), 0);
+    },
+    enabled: !!address && !!tokenProgram && !!mint,
   });
 }
 
@@ -71,10 +116,13 @@ export function useSwapMutation({
   mint: PublicKey | null;
   tokenProgram: PublicKey | undefined;
 }) {
-  const { connection } = useConnection();
+  const connection: Rpc = createRpc(
+    process.env.NEXT_PUBLIC_RPC_ENDPOINT,
+    process.env.NEXT_PUBLIC_RPC_ENDPOINT
+  );
   const transactionToast = useTransactionToast();
   const client = useQueryClient();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signAllTransactions, signTransaction } = useWallet();
 
   return useMutation({
     mutationKey: [
@@ -97,14 +145,54 @@ export function useSwapMutation({
       amount: number;
       swapMode: string;
     }) => {
-      if (!mint || !tokenProgram || !publicKey || !signTransaction) return null;
+      if (
+        !mint ||
+        !tokenProgram ||
+        !publicKey ||
+        !signAllTransactions ||
+        !signTransaction
+      )
+        return null;
       let signature: TransactionSignature = '';
+      const amountRounded = Math.round(amount);
+      const sellEvent = inputMint === mint.toBase58();
+
       try {
+        if (
+          sellEvent &&
+          tokenProgram.toBase58() == TOKEN_PROGRAM_ID.toBase58()
+        ) {
+          const sourceTokenAccount = await getAccount(
+            connection,
+            getAssociatedTokenAddressSync(mint, publicKey)
+          );
+          if (sourceTokenAccount.amount < BigInt(amount)) {
+            await mergeTokenAccounts(
+              connection,
+              publicKey,
+              mint,
+              publicKey,
+              signAllTransactions
+            );
+            const ixs = await decompressTokenIxs(
+              connection,
+              publicKey,
+              mint,
+              amount - Number(sourceTokenAccount.amount)
+            );
+            signature = await buildAndSendTransaction({
+              connection: connection,
+              publicKey: publicKey,
+              ixs,
+              signTransaction,
+            });
+          }
+        }
         if (poolState && !poolState.thresholdReached) {
-          const ix =
-            inputMint !== mint.toBase58()
-              ? await buy(Math.round(amount), mint, publicKey)
-              : await sell(Math.round(amount), mint, publicKey);
+          const ix = !sellEvent
+            ? await buy(amountRounded, mint, publicKey)
+            : await sell(amountRounded, mint, publicKey);
+
           signature = await buildAndSendTransaction({
             connection: connection,
             publicKey: publicKey,
@@ -112,22 +200,16 @@ export function useSwapMutation({
             ixs: [ix],
           });
         } else {
+          const quoteResponse = await (
+            await fetch(
+              `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountRounded.toString()}&slippageBps=50&swapMode=${swapMode}`
+            )
+          ).json();
           let payload = {
-            // quoteResponse from /quote api
-            quoteResponse: await (
-              await fetch(
-                `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${Math.round(
-                  amount
-                ).toString()}&slippageBps=50&swapMode=${swapMode}`
-              )
-            ).json(),
-            // user public key to be used for the swap
+            quoteResponse: quoteResponse,
             userPublicKey: publicKey.toString(),
-            // auto wrap and unwrap SOL. default is true
             wrapAndUnwrapSol: true,
-            // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
           };
-          // get serialized transactions for the swap
           const { swapTransaction } = await (
             await fetch('https://quote-api.jup.ag/v6/swap', {
               method: 'POST',
@@ -137,7 +219,6 @@ export function useSwapMutation({
               body: JSON.stringify(payload),
             })
           ).json();
-          // deserialize the transaction
           const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
           var transaction =
             VersionedTransaction.deserialize(swapTransactionBuf);
@@ -446,14 +527,18 @@ export function useIsLiquidityPoolFound({ mint }: { mint: PublicKey | null }) {
   });
 }
 
-export function useGetAsset({ mint }: { mint: PublicKey | null }) {
+export function useGetTokenPrice({ mint }: { mint: PublicKey | null }) {
   return useQuery({
-    queryKey: ['get-asset', { mint }],
+    queryKey: ['get-token-price', { mint }],
     queryFn: async () => {
       if (!mint) return null;
-      return getAsset(mint);
+      const result = await (
+        await fetch(`https://price.jup.ag/v6/price?ids=${mint.toBase58()}`)
+      ).json();
+      return result.data[mint.toBase58()].price as number;
     },
     enabled: !!mint,
+    staleTime: SHORT_STALE_TIME,
   });
 }
 
@@ -484,16 +569,21 @@ export function useGetOhlcv({
     enabled: !!mint,
   });
 }
-export function calculatePriceInSOL(reserveTokensSold: number) {
-  const square = BigInt(reserveTokensSold) * BigInt(reserveTokensSold);
-  const scaleFactor = BigInt(1_280_000_000_000_000_000_000n);
+export function calculatePriceInLamports(reserveTokensSold: number): number {
+  const reserveTokensSoldBigInt = BigInt(reserveTokensSold);
 
-  // Calculate the floating point result by adjusting the scale
-  const scaledResult = square * BigInt(1000000000000); // Scale up to keep precision
-  const floatResult =
-    Number(scaledResult) / Number(scaleFactor) / 1000000000000; // Scale down
+  // Calculate the square of reserveTokensSold
+  const square = reserveTokensSoldBigInt * reserveTokensSoldBigInt;
 
-  return floatResult / 10 ** NATIVE_MINT_DECIMALS;
+  // Scale factor and precision to avoid overflow
+  const scaleFactor = BigInt(1_280_000_000_000_000_000_000n); // Scale factor in BigInt
+  const scaledResult = (square * BigInt(10 ** 12)) / scaleFactor; // Scale up by 10^12 for precision, then divide
+
+  // Final result: Adjust according to DEFAULT_DECIMAL = 2
+  const finalResult =
+    scaledResult / BigInt(10 ** Number(12 - DEFAULT_MINT_DECIMALS)); // Adjust based on DEFAULT_DECIMAL
+
+  return Number(finalResult); // Convert to Number at the end
 }
 
 export function useGetLiquidityPool({ mint }: { mint: PublicKey | null }) {

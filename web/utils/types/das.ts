@@ -122,6 +122,8 @@ export declare namespace DAS {
     mint_extensions?: MintExtensions;
     token_info?: TokenInfo;
     temporary?: boolean;
+    compressedToken?: boolean;
+    collectionMint?: string;
   };
   type GetRwaAssetResponse = {
     items: FullRwaAccount;

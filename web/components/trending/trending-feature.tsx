@@ -2,7 +2,7 @@ import { proxify } from '@/utils/helper/endpoints';
 import { formatLargeNumber } from '@/utils/helper/format';
 import Link from 'next/link';
 import { FC } from 'react';
-import { useGenerateTrendingList } from './trending-data-access';
+import { useGenerateTrendingList, useGetSummary } from './trending-data-access';
 
 export const RightColumn: FC = () => {
   return (
@@ -13,7 +13,10 @@ export const RightColumn: FC = () => {
 };
 
 export const TrendingTable: FC = () => {
-  const { data: list, isLoading } = useGenerateTrendingList();
+  const { data: summary } = useGetSummary();
+  const { data: list, isLoading } = useGenerateTrendingList({
+    summary: summary || null,
+  });
 
   return (
     <div className="border border-base-300 flex flex-col w-full rounded-box p-4">

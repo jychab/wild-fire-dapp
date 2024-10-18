@@ -13,6 +13,11 @@ export const DEFAULT_MINT_DECIMALS = 2;
 export const ADDRESS_LOOKUP_TABLE = new PublicKey(
   '49vVdqGZ8BfxtJFkY4oaWVhGgwhFkC27FWZki5S93vS7'
 );
+
+export const LIGHT_PROTOCOL_LOOKUP_TABLE = new PublicKey(
+  '9NYFyEqPkyXUhkerbGHXUXkvb4qpzeEdHuGpgbgpH1NJ'
+);
+
 export const COST_PER_NO_RENT_TRANSFER_IN_SOL = 0.000005;
 
 export const PROGRAM_ID = new PublicKey(

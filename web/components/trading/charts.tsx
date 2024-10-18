@@ -30,10 +30,10 @@ import {
 } from 'react';
 import { db } from '../../utils/firebase/firebase';
 import {
-  calculatePriceInSOL,
-  useGetAsset,
+  calculatePriceInLamports,
   useGetLiquidityPool,
   useGetOhlcv,
+  useGetTokenPrice,
 } from './trading-data-access';
 
 function getNearestPrevious15Minutes(currentTime: number) {
@@ -139,7 +139,7 @@ const useInitializeChart = (
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
       priceScaleId: 'right',
-      priceFormat: { type: 'price', precision: 12, minMove: 0.00000000001 },
+      priceFormat: { type: 'price', precision: 10, minMove: 0.0000000001 },
     });
 
     chart.applyOptions({
@@ -212,7 +212,7 @@ const TradingViewChart = memo(
       from: currentTimeRef.current - 60 * 60 * 24,
       to: currentTimeRef.current,
     });
-    const { data: solTokenPrice } = useGetAsset({ mint: NATIVE_MINT });
+    const { data: solTokenPrice } = useGetTokenPrice({ mint: NATIVE_MINT });
     const { seriesRef, volumeRef } = useInitializeChart(
       chartContainerRef,
       data
@@ -238,8 +238,7 @@ const TradingViewChart = memo(
             };
             const time = newRealTimeData.timestamp;
             const price =
-              (newRealTimeData.priceInLamports *
-                solTokenPrice!.token_info!.price_info!.price_per_token) /
+              (newRealTimeData.priceInLamports * (solTokenPrice || 0)) /
               10 ** NATIVE_MINT_DECIMALS;
             const volume = newRealTimeData.volume / 10 ** DEFAULT_MINT_DECIMALS;
             if (!currentCandle.current || currentCandle.current.time < time) {
@@ -322,10 +321,11 @@ const TradingViewChart = memo(
             currentPrice ||
               (liquidityPoolData &&
               !Number.isNaN(Number(liquidityPoolData.reserveTokenSold))
-                ? calculatePriceInSOL(
-                    Number(liquidityPoolData.reserveTokenSold)
+                ? (calculatePriceInLamports(
+                    liquidityPoolData.reserveTokenSold
                   ) *
-                  (solTokenPrice?.token_info?.price_info?.price_per_token || 0)
+                    (solTokenPrice || 0)) /
+                  10 ** NATIVE_MINT_DECIMALS
                 : 0)
           )}`}</span>
         </div>

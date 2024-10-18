@@ -22,7 +22,7 @@ import { FC, ReactNode, useEffect, useState } from 'react';
 import { useUnifiedWalletContext } from 'unified-wallet-adapter-with-telegram';
 import logo from '../../public/images/logo.png';
 import { SignInBtn } from '../authentication/authentication-ui';
-import { ClaimButton } from '../claim/claim-feature';
+import { ConvertToSolButton } from '../convert/convert-feature';
 import { useGetTokenDetails } from '../profile/profile-data-access';
 import { SearchBar } from '../search/search-ui';
 import { UploadBtn } from '../upload/upload-ui';
@@ -103,7 +103,7 @@ export const SocialComponent: FC = () => {
 export const Navbar: FC = () => {
   const { publicKey } = useWallet();
   return (
-    <div className="flex fixed z-20 w-full p-4 items-center gap-4 border-b bg-base-100 border-base-300">
+    <div className="flex fixed z-20 w-full navbar items-center gap-4 border-b bg-base-100 border-base-300">
       <Link
         className="sm:px-4 flex items-start justify-start gap-2 w-64"
         href="/"
@@ -127,7 +127,7 @@ export const Navbar: FC = () => {
       <div className="w-64 gap-4 flex items-center justify-end">
         {publicKey && (
           <>
-            <ClaimButton />
+            <ConvertToSolButton />
             <div className="hidden md:block">
               <UploadBtn />
             </div>

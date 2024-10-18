@@ -5,7 +5,7 @@ export function formatLargeNumber(number: number | string) {
     number = parseFloat(number);
   }
   if (number < 1 && number > 0) {
-    return number.toPrecision(3);
+    return number.toPrecision(6);
   } else if (number < 1000) {
     return number.toFixed(2);
   } else if (number < 1_000_000) {

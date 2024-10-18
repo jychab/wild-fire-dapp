@@ -27,6 +27,7 @@ import TradingViewChart from './charts';
 import {
   getQuote,
   useGetAccountInfo,
+  useGetCompressedTokenAccountBalanceInfo,
   useGetLargestAccountFromMint,
   useGetLiquidityPool,
   useGetTokenAccountInfo,
@@ -91,6 +92,14 @@ export const TradingPanel: FC<{
       : undefined,
   });
 
+  const { data: compressedTokensBalance } =
+    useGetCompressedTokenAccountBalanceInfo({
+      address: publicKey,
+      tokenProgram: metadata?.token_info?.token_program
+        ? new PublicKey(metadata?.token_info?.token_program)
+        : undefined,
+      mint: metadata ? new PublicKey(metadata.id) : null,
+    });
   const inputToken = buy
     ? Number(userAccountInfo?.lamports)
     : Number(userMintInfo?.amount);
@@ -118,7 +127,7 @@ export const TradingPanel: FC<{
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       if (!mint) return;
-      if (!inputToken || amount > inputToken) {
+      if (!inputToken || amount > inputToken + (compressedTokensBalance || 0)) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
         setShowWarning('');
@@ -157,6 +166,8 @@ export const TradingPanel: FC<{
       buy,
       isLiquidityPoolFound,
       liquidityPoolData,
+      inputToken,
+      compressedTokensBalance,
     ]
   );
 
@@ -231,13 +242,13 @@ export const TradingPanel: FC<{
     <div className="flex flex-col md:gap-4 w-full h-full justify-center items-center">
       <div
         className={`flex flex-col gap-4 ${
-          compact ? 'flex-row' : 'md:flex-row '
+          compact ? 'flex-row' : 'lg:flex-row '
         } items-start w-full my-4`}
       >
         <TradingChart collectionMint={collectionMint} />
         <div
           className={`flex flex-col gap-4 w-full ${
-            compact ? '' : 'p-4 md:max-w-xs'
+            compact ? '' : 'p-4 lg:max-w-md'
           }`}
         >
           {!hideMintInfo && (
@@ -277,7 +288,7 @@ export const TradingPanel: FC<{
             <label>
               <div className="label">
                 <span className="label-text text-xs">You're Paying</span>
-                <div className="label-text-alt flex items-end gap-2 max-w-[200px] truncate">
+                <div className="label-text-alt flex items-end gap-2 max-w-[400px] truncate">
                   <span>{`${formatLargeNumber(
                     buy
                       ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
@@ -286,8 +297,17 @@ export const TradingPanel: FC<{
                             (metadata?.token_info?.decimals ||
                               DEFAULT_MINT_DECIMALS)
                   )} ${
-                    buy ? 'SOL' : metadata?.content?.metadata.symbol
-                  }`}</span>
+                    compressedTokensBalance && compressedTokensBalance > 0
+                      ? buy
+                        ? ''
+                        : `+ ${formatLargeNumber(
+                            compressedTokensBalance /
+                              10 **
+                                (metadata?.token_info?.decimals ||
+                                  DEFAULT_MINT_DECIMALS)
+                          )}(C)`
+                      : ''
+                  } ${buy ? 'SOL' : metadata?.content?.metadata.symbol}`}</span>
                   <button
                     onClick={() => {
                       setInputAmount(
@@ -323,6 +343,24 @@ export const TradingPanel: FC<{
                   >
                     Max
                   </button>
+                  {!buy && (
+                    <button
+                      onClick={() => {
+                        setInputAmount(
+                          (
+                            (inputToken + (compressedTokensBalance || 0)) /
+                            10 ** DEFAULT_MINT_DECIMALS
+                          ).toString()
+                        );
+                        handleOutputAmountGivenInput(
+                          inputToken + (compressedTokensBalance || 0)
+                        );
+                      }}
+                      className="badge badge-xs badge-outline badge-secondary p-2 "
+                    >
+                      All
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
