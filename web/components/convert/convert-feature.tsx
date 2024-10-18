@@ -23,7 +23,7 @@ export const ConvertToSolButton: FC = () => {
   const { data: summary } = useGetSummary();
   const { data: tokenBalances } = useGetOwnTokenBalance({
     address: publicKey,
-    summary: summary || null,
+    summary: summary,
     solPrice,
   });
   const router = useRouter();

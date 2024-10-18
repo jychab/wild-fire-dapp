@@ -15,7 +15,7 @@ import {
   useMotionValue,
   useTransform,
 } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Page() {
   const { publicKey } = useWallet();
@@ -25,7 +25,6 @@ export default function Page() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [draggedResult, setDraggedResult] = useState<boolean | undefined>();
   const [endOfPost, setEndOfPost] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const loadMorePosts = async () => {
     if (loading) return; // Prevent multiple fetches
     setLoading(true);
@@ -51,12 +50,6 @@ export default function Page() {
     loadMorePosts();
   }, [category, publicKey]);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [posts]);
-
   const handleDragEnd = (_event: any, info: PanInfo) => {
     const threshold = 150;
     const offsetX = info.offset.x;
@@ -80,10 +73,7 @@ export default function Page() {
   const likeOpacity = useTransform(x, [0, 50], [0, 1]);
   const dislikeOpacity = useTransform(x, [-50, 0], [1, 0]);
   return (
-    <div
-      ref={containerRef}
-      className="w-full flex flex-col items-center overflow-y-scroll scrollbar-none p-4 overflow-x-hidden h-[calc(100vh-8rem)] sm:h-[calc(100vh-4rem)]"
-    >
+    <div className="w-full flex flex-col items-center overflow-y-scroll scrollbar-none p-4 overflow-x-hidden h-[calc(100vh-8rem)] sm:h-[calc(100vh-4rem)]">
       {endOfPost ? (
         <div className="flex flex-col items-center justify-center w-full py-4">
           <span>You've reached the end of your feed.</span>
@@ -106,7 +96,7 @@ export default function Page() {
               rotate,
             }}
             drag={'x'}
-            dragConstraints={{ left: 0, right: 0 }}
+            dragConstraints={{ left: -200, right: 200 }}
             dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
           >
             <motion.div

@@ -92,6 +92,7 @@ export function useGenerateTrendingList({
   });
 }
 export async function getAssetBatch(mints: string[]) {
+  if (mints.length == 0) return [];
   const response = await fetch(program.provider.connection.rpcEndpoint, {
     method: 'POST',
     headers: {

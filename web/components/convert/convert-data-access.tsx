@@ -229,20 +229,23 @@ export function useGetOwnTokenBalance({
   solPrice,
 }: {
   address: PublicKey | null;
-  summary: {
-    all: { collectionMint: string; memberMint: string }[];
-    allTokenPrices: {
-      collectionMint: string;
-      memberMint: string;
-      price: number;
-      supply: number;
-      volume: number;
-    }[];
-    initializedMints: {
-      collectionMint: string;
-      memberMint: string;
-    }[];
-  } | null;
+  summary:
+    | {
+        all: { collectionMint: string; memberMint: string }[];
+        allTokenPrices: {
+          collectionMint: string;
+          memberMint: string;
+          price: number;
+          supply: number;
+          volume: number;
+        }[];
+        initializedMints: {
+          collectionMint: string;
+          memberMint: string;
+        }[];
+      }
+    | null
+    | undefined;
   solPrice: number | null | undefined;
 }) {
   const connection: Rpc = createRpc(
@@ -255,64 +258,62 @@ export function useGetOwnTokenBalance({
       { endpoint: connection.rpcEndpoint, address, summary, solPrice },
     ],
     queryFn: async () => {
-      if (!address) return null;
+      if (!address || !summary || !solPrice) return null;
       const result = await getOwnerTokenBalance(connection, address.toBase58());
-      if (summary && solPrice) {
-        const filteredResults = await Promise.all(
-          result
-            .filter((x) => summary.all.map((x) => x.memberMint).includes(x.id))
-            .map(async (x) => {
-              let price = x.token_info?.price_info?.price_per_token;
-              if (
-                !price &&
-                summary.all.find((y) => y.memberMint == x.id)?.collectionMint
-              ) {
-                const docData = await getDocs(
-                  query(
-                    collection(
-                      db,
-                      `Mint/${
-                        summary.all.find((y) => y.memberMint == x.id)
-                          ?.collectionMint
-                      }/TradeEvents`
-                    ),
-                    orderBy('timestamp', 'desc'),
-                    limit(1)
-                  )
-                );
-                const realTimeData = docData.docs[0].data() as {
-                  event: 'buy' | 'sell';
-                  amount: number;
-                  amountOut: number;
-                  memberMint: string;
-                  priceInLamports: number;
-                  volume: number;
-                  timestamp: number;
-                };
-                price =
-                  (realTimeData.priceInLamports * solPrice) /
-                  10 ** NATIVE_MINT_DECIMALS;
-              }
 
-              return {
-                collectionMint: summary.all.find((y) => y.memberMint == x.id)
-                  ?.collectionMint,
-                ...x,
-                token_info: {
-                  ...x.token_info,
-                  price_info: {
-                    currency: 'USDC',
-                    price_per_token: price || 0,
-                  },
-                },
+      const filteredResults = await Promise.all(
+        result
+          .filter((x) => summary.all.map((x) => x.memberMint).includes(x.id))
+          .map(async (x) => {
+            let price = x.token_info?.price_info?.price_per_token;
+            if (
+              !price &&
+              summary.all.find((y) => y.memberMint == x.id)?.collectionMint
+            ) {
+              const docData = await getDocs(
+                query(
+                  collection(
+                    db,
+                    `Mint/${
+                      summary.all.find((y) => y.memberMint == x.id)
+                        ?.collectionMint
+                    }/TradeEvents`
+                  ),
+                  orderBy('timestamp', 'desc'),
+                  limit(1)
+                )
+              );
+              const realTimeData = docData.docs[0].data() as {
+                event: 'buy' | 'sell';
+                amount: number;
+                amountOut: number;
+                memberMint: string;
+                priceInLamports: number;
+                volume: number;
+                timestamp: number;
               };
-            })
-        );
-        return filteredResults;
-      }
-      return result;
+              price =
+                (realTimeData.priceInLamports * solPrice) /
+                10 ** NATIVE_MINT_DECIMALS;
+            }
+
+            return {
+              collectionMint: summary.all.find((y) => y.memberMint == x.id)
+                ?.collectionMint,
+              ...x,
+              token_info: {
+                ...x.token_info,
+                price_info: {
+                  currency: 'USDC',
+                  price_per_token: price || 0,
+                },
+              },
+            };
+          })
+      );
+      return filteredResults;
     },
-    enabled: !!address,
+    enabled: !!address || !solPrice || !summary,
     staleTime: SHORT_STALE_TIME,
   });
 }
