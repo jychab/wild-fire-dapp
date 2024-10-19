@@ -1,4 +1,10 @@
+import {
+  AddressLookupTableAccount,
+  PublicKey,
+  TransactionInstruction,
+} from '@solana/web3.js';
 import { SCALE } from '../consts';
+import { program } from '../program/instructions';
 
 function integerCubeRoot(n: bigint): bigint {
   // Use a binary search method to find the cube root of a BigInt
@@ -70,3 +76,41 @@ export function calculateAmountLamports(
 
   return amountLamports;
 }
+
+export const getAddressLookupTableAccounts = async (
+  keys: string[]
+): Promise<AddressLookupTableAccount[]> => {
+  const addressLookupTableAccountInfos =
+    await program.provider.connection.getMultipleAccountsInfo(
+      keys.map((key) => new PublicKey(key))
+    );
+
+  return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
+    const addressLookupTableAddress = keys[index];
+    if (accountInfo) {
+      const addressLookupTableAccount = new AddressLookupTableAccount({
+        key: new PublicKey(addressLookupTableAddress),
+        state: AddressLookupTableAccount.deserialize(accountInfo.data),
+      });
+      acc.push(addressLookupTableAccount);
+    }
+
+    return acc;
+  }, new Array<AddressLookupTableAccount>());
+};
+
+export const deserializeInstruction = (instruction: {
+  programId: string;
+  accounts: { pubkey: string; isSigner: boolean; isWritable: boolean }[];
+  data: string;
+}) => {
+  return new TransactionInstruction({
+    programId: new PublicKey(instruction.programId),
+    keys: instruction.accounts.map((key) => ({
+      pubkey: new PublicKey(key.pubkey),
+      isSigner: key.isSigner,
+      isWritable: key.isWritable,
+    })),
+    data: Buffer.from(instruction.data, 'base64'),
+  });
+};

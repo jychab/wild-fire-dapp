@@ -132,18 +132,16 @@ export async function buildTransaction({
 }) {
   let tx = partialSignedTx;
   if (ixs && ixs.length > 0) {
-    const recentBlockhash = await connection.getLatestBlockhash({
-      commitment: 'confirmed',
-    });
     const lookupTableAccount = (
       await connection.getAddressLookupTable(ADDRESS_LOOKUP_TABLE)
     ).value;
     const lookupTables = (
       lookupTableAccount ? [lookupTableAccount] : []
     ).concat(addressLookupTableAccounts || []);
-    const [microLamports, units] = await Promise.all([
+    const [microLamports, units, recentBlockhash] = await Promise.all([
       getPriorityFeeEstimate(ixs, publicKey, connection, lookupTables),
       getSimulationUnits(connection, ixs, publicKey, lookupTables),
+      connection.getLatestBlockhash(),
     ]);
     ixs.unshift(
       ComputeBudgetProgram.setComputeUnitPrice({

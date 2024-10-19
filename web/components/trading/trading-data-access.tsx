@@ -3,6 +3,7 @@ import { db } from '@/utils/firebase/firebase';
 import {
   buy,
   decompressTokenIxs,
+  jupiterInstructions,
   mergeTokenAccounts,
   program,
   sell,
@@ -28,7 +29,6 @@ import {
   PublicKeyInitData,
   TransactionInstruction,
   TransactionSignature,
-  VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -158,23 +158,19 @@ export function useSwapMutation({
       const sellEvent = inputMint === mint.toBase58();
 
       try {
+        let ixs = [];
+        const lookUpTableAccounts: AddressLookupTableAccount[] = [];
+        let existingAmount = 0;
+        const ata = getAssociatedTokenAddressSync(mint, publicKey);
+        try {
+          existingAmount = Number((await getAccount(connection, ata)).amount);
+        } catch (e) {}
+
         if (
           sellEvent &&
           tokenProgram.toBase58() == TOKEN_PROGRAM_ID.toBase58()
         ) {
-          let existingAmount = 0;
-          try {
-            existingAmount = Number(
-              (
-                await getAccount(
-                  connection,
-                  getAssociatedTokenAddressSync(mint, publicKey)
-                )
-              ).amount
-            );
-          } catch (e) {}
-
-          if (existingAmount < BigInt(amount)) {
+          if (existingAmount < amount) {
             await mergeTokenAccounts(
               connection,
               publicKey,
@@ -182,61 +178,46 @@ export function useSwapMutation({
               publicKey,
               signAllTransactions
             );
-            const ixs = await decompressTokenIxs(
-              connection,
-              publicKey,
-              mint,
-              amount - existingAmount
+            ixs.push(
+              ...(await decompressTokenIxs(
+                connection,
+                publicKey,
+                mint,
+                amount - existingAmount
+              ))
             );
-            signature = await buildAndSendTransaction({
-              connection: connection,
-              publicKey: publicKey,
-              ixs,
-              signTransaction,
-            });
           }
         }
         if (poolState && !poolState.thresholdReached) {
-          const ix = !sellEvent
-            ? await buy(amountRounded, mint, publicKey)
-            : await sell(amountRounded, mint, publicKey);
-
-          signature = await buildAndSendTransaction({
-            connection: connection,
-            publicKey: publicKey,
-            signTransaction: signTransaction,
-            ixs: [ix],
-          });
+          ixs.push(
+            !sellEvent
+              ? await buy(amountRounded, mint, publicKey)
+              : await sell(amountRounded, mint, publicKey)
+          );
         } else {
-          const quoteResponse = await (
-            await fetch(
-              `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountRounded.toString()}&slippageBps=50&swapMode=${swapMode}`
-            )
-          ).json();
-          let payload = {
-            quoteResponse: quoteResponse,
-            userPublicKey: publicKey.toString(),
-            wrapAndUnwrapSol: true,
-          };
-          const { swapTransaction } = await (
-            await fetch('https://quote-api.jup.ag/v6/swap', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(payload),
-            })
-          ).json();
-          const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-          var transaction =
-            VersionedTransaction.deserialize(swapTransactionBuf);
-          signature = await buildAndSendTransaction({
-            connection: connection,
-            publicKey: publicKey,
-            signTransaction: signTransaction,
-            partialSignedTx: transaction,
-          });
+          const { instructions, addressLookupTableAccounts } =
+            await jupiterInstructions(
+              new PublicKey(inputMint),
+              new PublicKey(outputMint),
+              amount
+            );
+          ixs.push(...instructions);
+          lookUpTableAccounts.push(...addressLookupTableAccounts);
         }
+        // assume that we will always try to sell the non compressed tokens first, then if thats the case we can close the source token account if
+        // amount we are trying to sell exceeds or equals to the existing amount in the ata
+
+        if (existingAmount <= amount) {
+          ixs.push(createCloseAccountInstruction(ata, publicKey, publicKey));
+        }
+
+        signature = await buildAndSendTransaction({
+          connection: connection,
+          publicKey: publicKey,
+          signTransaction: signTransaction,
+          ixs,
+          addressLookupTableAccounts: lookUpTableAccounts,
+        });
         return signature;
       } catch (error: unknown) {
         toast.error(`Transaction failed! ${error} ` + signature);

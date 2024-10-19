@@ -1,4 +1,5 @@
 import { BN, Program } from '@coral-xyz/anchor';
+import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
 import {
   CompressedTokenProgram,
   selectMinCompressedTokenAccountsForTransfer,
@@ -19,9 +20,14 @@ import {
   PublicKey,
   SYSVAR_INSTRUCTIONS_PUBKEY,
   Transaction,
+  TransactionInstruction,
   VersionedTransaction,
 } from '@solana/web3.js';
 import { getDerivedMemberMint } from '../helper/mint';
+import {
+  deserializeInstruction,
+  getAddressLookupTableAccounts,
+} from '../helper/trading';
 import Idl from './idl/blinksfeed.json';
 import { Blinksfeed } from './types/blinksfeed';
 
@@ -174,7 +180,6 @@ export async function mergeTokenAccounts(
         const subBatch = batch.slice(j, j + 3);
 
         if (subBatch.length > 1) {
-          await delay(1000); // prevent being rate limited
           const proof = await rpc.getValidityProof(
             subBatch.map((account) => bn(account.compressedAccount.hash))
           );
@@ -189,6 +194,7 @@ export async function mergeTokenAccounts(
               recentInputStateRootIndices: proof.rootIndices,
             });
           instructions.push(...batchInstructions);
+          await delay(2000);
         }
       }
 
@@ -219,4 +225,47 @@ export async function mergeTokenAccounts(
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function jupiterInstructions(
+  inputMint: PublicKey,
+  outputMint: PublicKey,
+  amount: number
+) {
+  const quoteResponse = await (
+    await fetch(
+      `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint.toBase58()}&outputMint=${outputMint.toBase58()}&amount=${amount.toString()}&slippageBps=50&swapMode=${'ExactIn'}`
+    )
+  ).json();
+  let payload = {
+    quoteResponse: quoteResponse,
+    userPublicKey: publicKey.toString(),
+    wrapAndUnwrapSol: true,
+  };
+  const {
+    setupInstructions,
+    swapInstruction: swapInstructionPayload,
+    cleanupInstruction,
+    addressLookupTableAddresses,
+  } = await (
+    await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  ).json();
+  const addressLookupTableAccounts = [];
+  addressLookupTableAccounts.push(
+    ...(await getAddressLookupTableAccounts(addressLookupTableAddresses))
+  );
+  return {
+    instructions: [
+      ...setupInstructions.map(deserializeInstruction),
+      deserializeInstruction(swapInstructionPayload),
+      deserializeInstruction(cleanupInstruction),
+    ] as TransactionInstruction[],
+    addressLookupTableAccounts,
+  };
 }

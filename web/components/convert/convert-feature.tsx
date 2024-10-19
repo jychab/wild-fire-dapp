@@ -4,7 +4,6 @@ import { DAS } from '@/utils/types/das';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { IconWallet } from '@tabler/icons-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { FC, useState } from 'react';
 import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { useGetTokenPrice } from '../trading/trading-data-access';
@@ -26,7 +25,6 @@ export const ConvertToSolButton: FC = () => {
     summary: summary,
     solPrice,
   });
-  const router = useRouter();
   const sellMutation = useMultipleSellMutation();
   const handleConvert = async () => {
     if (!publicKey) return;
@@ -41,6 +39,7 @@ export const ConvertToSolButton: FC = () => {
     );
     await sellMutation.mutateAsync({ mints: sellIxs, summary, solPrice });
   };
+
   return (
     <div className="indicator group mr-2">
       {tokenBalances && tokenBalances.length > 0 && (

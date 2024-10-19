@@ -101,12 +101,12 @@ export const TradingPanel: FC<{
       mint: metadata ? new PublicKey(metadata.id) : null,
     });
   const inputToken = buy
-    ? Number(userAccountInfo?.lamports)
-    : Number(userMintInfo?.amount);
+    ? Number(userAccountInfo?.lamports || 0)
+    : Number(userMintInfo?.amount || 0) + (compressedTokensBalance || 0);
 
   const outputToken = buy
-    ? Number(userMintInfo?.amount)
-    : Number(userAccountInfo?.lamports);
+    ? Number(userMintInfo?.amount || 0) + (compressedTokensBalance || 0)
+    : Number(userAccountInfo?.lamports || 0);
 
   const [inputAmount, setInputAmount] = useState('');
   const [outputAmount, setOutputAmount] = useState('');
@@ -127,7 +127,7 @@ export const TradingPanel: FC<{
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       if (!mint) return;
-      if (amount > inputToken + (compressedTokensBalance || 0)) {
+      if (amount > inputToken) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
         setShowWarning('');
@@ -288,11 +288,11 @@ export const TradingPanel: FC<{
             <label>
               <div className="label">
                 <span className="label-text text-xs">You're Paying</span>
-                <div className="label-text-alt flex items-end gap-2 max-w-[400px] truncate">
+                <div className="label-text-alt flex items-end gap-2 truncate">
                   <span>{`${formatLargeNumber(
                     buy
-                      ? (inputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
-                      : (inputToken || 0) /
+                      ? inputToken / 10 ** NATIVE_MINT_DECIMALS
+                      : (inputToken - (compressedTokensBalance || 0)) /
                           10 **
                             (metadata?.token_info?.decimals ||
                               DEFAULT_MINT_DECIMALS)
@@ -305,7 +305,7 @@ export const TradingPanel: FC<{
                               10 **
                                 (metadata?.token_info?.decimals ||
                                   DEFAULT_MINT_DECIMALS)
-                          )}(C)`
+                          )} (zk)`
                       : ''
                   } ${buy ? 'SOL' : metadata?.content?.metadata.symbol}`}</span>
                   <button
@@ -320,9 +320,7 @@ export const TradingPanel: FC<{
                                 : DEFAULT_MINT_DECIMALS))
                         ).toString()
                       );
-                      handleOutputAmountGivenInput(
-                        Math.round((inputToken || 0) / 2)
-                      );
+                      handleOutputAmountGivenInput(Math.round(inputToken / 2));
                     }}
                     className="badge badge-xs badge-outline badge-secondary p-2 "
                   >
@@ -337,30 +335,12 @@ export const TradingPanel: FC<{
                             (buy ? NATIVE_MINT_DECIMALS : DEFAULT_MINT_DECIMALS)
                         ).toString()
                       );
-                      handleOutputAmountGivenInput(inputToken || 0);
+                      handleOutputAmountGivenInput(inputToken);
                     }}
                     className="badge badge-xs badge-outline badge-secondary p-2 "
                   >
                     Max
                   </button>
-                  {!buy && (
-                    <button
-                      onClick={() => {
-                        setInputAmount(
-                          (
-                            (inputToken + (compressedTokensBalance || 0)) /
-                            10 ** DEFAULT_MINT_DECIMALS
-                          ).toString()
-                        );
-                        handleOutputAmountGivenInput(
-                          inputToken + (compressedTokensBalance || 0)
-                        );
-                      }}
-                      className="badge badge-xs badge-outline badge-secondary p-2 "
-                    >
-                      All
-                    </button>
-                  )}
                 </div>
               </div>
               <div className="input input-bordered border-base-content flex items-center gap-2 input-md rounded-lg px-2">
@@ -371,15 +351,26 @@ export const TradingPanel: FC<{
             <label>
               <div className="label">
                 <span className="label-text text-xs">To Receive</span>
-                <div className="label-text-alt max-w-[100px] truncate">
+                <div className="label-text-alt flex items-end gap-2 truncate">
                   <span>{`${formatLargeNumber(
                     !buy
-                      ? (outputToken || 0) / 10 ** NATIVE_MINT_DECIMALS
-                      : (outputToken || 0) /
+                      ? outputToken / 10 ** NATIVE_MINT_DECIMALS
+                      : (outputToken - (compressedTokensBalance || 0)) /
                           10 **
                             (metadata?.token_info?.decimals ||
                               DEFAULT_MINT_DECIMALS)
                   )} ${
+                    compressedTokensBalance && compressedTokensBalance > 0
+                      ? !buy
+                        ? ''
+                        : `+ ${formatLargeNumber(
+                            compressedTokensBalance /
+                              10 **
+                                (metadata?.token_info?.decimals ||
+                                  DEFAULT_MINT_DECIMALS)
+                          )} (zk)`
+                      : ''
+                  } ${
                     !buy ? 'SOL' : metadata?.content?.metadata.symbol
                   }`}</span>
                 </div>

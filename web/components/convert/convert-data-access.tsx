@@ -2,6 +2,7 @@ import { NATIVE_MINT_DECIMALS, SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
 import {
   decompressTokenIxs,
+  jupiterInstructions,
   mergeTokenAccounts,
   program,
   sell,
@@ -12,8 +13,14 @@ import {
 } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
 import { createRpc, Rpc } from '@lightprotocol/stateless.js';
-import { NATIVE_MINT } from '@solana/spl-token';
 import {
+  createCloseAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddressSync,
+  NATIVE_MINT,
+} from '@solana/spl-token';
+import {
+  AddressLookupTableAccount,
   PublicKey,
   Transaction,
   TransactionSignature,
@@ -77,6 +84,8 @@ export function useMultipleSellMutation() {
           const amount = x.mints[i].amount;
 
           try {
+            let ixs = [];
+            const lookUpTableAccounts: AddressLookupTableAccount[] = [];
             if (x.mints[i].compressed) {
               await mergeTokenAccounts(
                 connection,
@@ -85,17 +94,14 @@ export function useMultipleSellMutation() {
                 publicKey,
                 signAllTransactions
               );
-              const ixs = await decompressTokenIxs(
-                connection,
-                publicKey,
-                mint,
-                amount
+              ixs.push(
+                ...(await decompressTokenIxs(
+                  connection,
+                  publicKey,
+                  mint,
+                  amount
+                ))
               );
-              await buildTransaction({
-                connection: connection,
-                publicKey: publicKey,
-                ixs,
-              });
             }
             const [liquidityPool] = PublicKey.findProgramAddressSync(
               [Buffer.from('liquidity_pool'), mint.toBuffer()],
@@ -105,52 +111,41 @@ export function useMultipleSellMutation() {
               liquidityPool
             );
             if (poolState && !poolState.thresholdReached) {
-              let ixs = [];
               ixs.push(await sell(amount, mint, publicKey));
-              transactions.push(
-                await buildTransaction({
-                  connection: connection,
-                  publicKey: publicKey,
-                  ixs,
-                })
-              );
             } else {
-              const quoteResponse = await (
-                await fetch(
-                  `https://quote-api.jup.ag/v6/quote?inputMint=${mint.toBase58()}&outputMint=${NATIVE_MINT.toBase58()}&amount=${amount.toString()}&slippageBps=50&swapMode=${'ExactIn'}`
-                )
-              ).json();
-              let payload = {
-                // quoteResponse from /quote api
-                quoteResponse: quoteResponse,
-                // user public key to be used for the swap
-                userPublicKey: publicKey.toString(),
-                // auto wrap and unwrap SOL. default is true
-                wrapAndUnwrapSol: true,
-                // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
-              };
-              // get serialized transactions for the swap
-              const { swapTransaction } = await (
-                await fetch('https://quote-api.jup.ag/v6/swap', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(payload),
-                })
-              ).json();
-              // deserialize the transaction
-              const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-              var transaction =
-                VersionedTransaction.deserialize(swapTransactionBuf);
-              transactions.push(
-                await buildTransaction({
-                  connection: connection,
-                  publicKey: publicKey,
-                  partialSignedTx: transaction,
-                })
+              const { instructions, addressLookupTableAccounts } =
+                await jupiterInstructions(mint, NATIVE_MINT, amount);
+              ixs.push(...instructions);
+              lookUpTableAccounts.push(...addressLookupTableAccounts);
+            }
+
+            // check if we can close aTa account
+            // if it is a compressed mint and source ata doesn't exist yet or amount == 0, we can close it
+            // if it is not a compressed mint and source ata amount == amount, we can close it
+            let ata = getAssociatedTokenAddressSync(mint, publicKey);
+            let existingAmount = 0;
+            try {
+              const sourceTokenAccount = await getAccount(connection, ata);
+              existingAmount = Number(sourceTokenAccount.amount);
+            } catch (e) {}
+
+            if (
+              (x.mints[i].compressed && existingAmount == 0) ||
+              (!x.mints[i].compressed && existingAmount == amount)
+            ) {
+              ixs.push(
+                createCloseAccountInstruction(ata, publicKey, publicKey)
               );
             }
+
+            transactions.push(
+              await buildTransaction({
+                connection: connection,
+                publicKey: publicKey,
+                ixs,
+                addressLookupTableAccounts: lookUpTableAccounts,
+              })
+            );
           } catch (e) {
             console.error(e);
             failed.push(mint.toBase58());
@@ -313,7 +308,7 @@ export function useGetOwnTokenBalance({
       );
       return filteredResults;
     },
-    enabled: !!address || !solPrice || !summary,
+    enabled: !!address || !!solPrice || !!summary,
     staleTime: SHORT_STALE_TIME,
   });
 }
