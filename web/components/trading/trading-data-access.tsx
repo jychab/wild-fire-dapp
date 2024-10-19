@@ -162,11 +162,19 @@ export function useSwapMutation({
           sellEvent &&
           tokenProgram.toBase58() == TOKEN_PROGRAM_ID.toBase58()
         ) {
-          const sourceTokenAccount = await getAccount(
-            connection,
-            getAssociatedTokenAddressSync(mint, publicKey)
-          );
-          if (sourceTokenAccount.amount < BigInt(amount)) {
+          let existingAmount = 0;
+          try {
+            existingAmount = Number(
+              (
+                await getAccount(
+                  connection,
+                  getAssociatedTokenAddressSync(mint, publicKey)
+                )
+              ).amount
+            );
+          } catch (e) {}
+
+          if (existingAmount < BigInt(amount)) {
             await mergeTokenAccounts(
               connection,
               publicKey,
@@ -178,7 +186,7 @@ export function useSwapMutation({
               connection,
               publicKey,
               mint,
-              amount - Number(sourceTokenAccount.amount)
+              amount - existingAmount
             );
             signature = await buildAndSendTransaction({
               connection: connection,

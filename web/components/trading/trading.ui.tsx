@@ -127,7 +127,7 @@ export const TradingPanel: FC<{
   const handleOutputAmountGivenInput = useCallback(
     async (amount: number) => {
       if (!mint) return;
-      if (!inputToken || amount > inputToken + (compressedTokensBalance || 0)) {
+      if (amount > inputToken + (compressedTokensBalance || 0)) {
         setShowWarning('Input Amount Exceeds Balance');
       } else {
         setShowWarning('');
