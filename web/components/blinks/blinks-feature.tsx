@@ -15,7 +15,7 @@ import {
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import { FC, useState } from 'react';
 import {
   useUnifiedWalletContext,
   useWallet,
@@ -32,15 +32,13 @@ interface BlinksProps {
   blinksDetail: PostBlinksDetail | undefined | null;
   multiGrid?: boolean;
   editable?: boolean;
-  draggedResult?: boolean;
-  setDraggedResult?: Dispatch<SetStateAction<boolean | undefined>>;
+  initialTrade?: boolean;
 }
 export const Blinks: FC<BlinksProps> = ({
   blinksDetail,
   multiGrid = false,
   editable = false,
-  draggedResult,
-  setDraggedResult,
+  initialTrade = false,
 }) => {
   const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
@@ -49,7 +47,7 @@ export const Blinks: FC<BlinksProps> = ({
     url: blinksDetail?.url,
     adapter,
   });
-  const [trade, setTrade] = useState(false);
+  const [trade, setTrade] = useState(initialTrade);
   const [liked, setLiked] = useState(blinksDetail?.liked);
   const [animateHeart, setAnimateHeart] = useState(false);
   const [lastTap, setLastTap] = useState<number | null>(null);
@@ -65,13 +63,6 @@ export const Blinks: FC<BlinksProps> = ({
       setLastTap(currentTime); // Otherwise, set this as the last tap time
     }
   };
-
-  useEffect(() => {
-    if (draggedResult != undefined && setDraggedResult) {
-      toggleLike(draggedResult);
-      setDraggedResult(undefined);
-    }
-  }, [draggedResult]);
 
   const toggleLike = (like: boolean) => {
     if (!blinksDetail?.memberMint || !publicKey) {
@@ -155,18 +146,18 @@ export const Blinks: FC<BlinksProps> = ({
             <div
               onDoubleClick={() => toggleLike(true)}
               onTouchStart={handleDoubleTap}
-              className="z-10 fixed w-full h-[450px]"
+              className="z-10 absolute w-full aspect-square"
             >
               {animateHeart &&
                 (liked ? (
-                  <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
+                  <div className="z-10 absolute inset-0 flex gap-2 top-1/2 justify-center">
                     <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Like
                       <IconThumbUp className=" fill-error" />
                     </div>
                   </div>
                 ) : (
-                  <div className="z-10 absolute inset-0 flex gap-2 top-[200px] justify-center">
+                  <div className="z-10 absolute inset-0 flex gap-2 top-1/2 justify-center">
                     <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
                       Dislike
                       <IconThumbDown className=" fill-error" />
@@ -225,7 +216,7 @@ export const BlinksFooter: FC<{
           } views`}</span>
           <button
             onClick={() => {
-              toggleLike(true);
+              toggleLike(!liked);
             }}
             className="link link-hover flex gap-2"
           >

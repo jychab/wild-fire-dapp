@@ -55,18 +55,13 @@ export function proxify(targetUrl: string, image = false) {
   }`;
 }
 export function useRelativePathIfPossbile(urlString: string) {
-  try {
-    const url = new URL(urlString);
-    const domain = window.location.hostname;
-
-    // Check if the domain matches
-    if (url.hostname === domain) {
-      // Return relative path including search parameters
-      return `${url.pathname}${url.search}`;
-    } else {
-      return urlString; // Or handle as needed
-    }
-  } catch (error) {
-    return urlString;
+  const url = new URL(urlString);
+  const domain = 'blinksfeed.com';
+  // Check if the domain matches
+  if (url.hostname === domain) {
+    // Return relative path including search parameters
+    return `${url.pathname}${url.search}`;
+  } else {
+    return urlString; // Or handle as needed
   }
 }

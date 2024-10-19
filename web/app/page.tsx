@@ -2,18 +2,13 @@
 import { Blinks } from '@/components/blinks/blinks-feature';
 import { useGetPostsFromAddress } from '@/components/content/content-data-access';
 import { useCategory } from '@/components/ui/ui-provider';
-import { PostBlinksDetail } from '@/utils/types/post';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { IconThumbDown, IconThumbUp } from '@tabler/icons-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function Page() {
   const { publicKey } = useWallet();
   const { category } = useCategory();
-  const [draggedResult, setDraggedResult] = useState<boolean | undefined>();
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isFetching } =
     useGetPostsFromAddress({ category, publicKey });
   const allRows = data ? data.pages.flatMap((d) => d.rows) : [];
@@ -60,57 +55,7 @@ export default function Page() {
     isFetchingNextPage,
     rowVirtualizer.getVirtualItems(),
   ]);
-  const x = useMotionValue(0);
-  const opacity = useTransform(x, [-150, 0, 150], [0.9, 1, 0.9]);
-  const likeOpacity = useTransform(x, [0, 50], [0, 0.85]);
-  const dislikeOpacity = useTransform(x, [-50, 0], [0.85, 0]);
 
-  const Post = (index: number, post: PostBlinksDetail) => {
-    return (
-      <motion.div
-        onPointerDown={() => setCurrentIndex(index)}
-        key={post.id}
-        className={`w-full max-w-lg sm:py-4`}
-        dragSnapToOrigin
-        style={{
-          x: currentIndex == index ? x : undefined,
-          opacity: currentIndex == index ? opacity : undefined,
-        }}
-        drag={'x'}
-        dragConstraints={{ left: -200, right: 200 }}
-        dragTransition={{
-          bounceStiffness: 600,
-          bounceDamping: 20,
-        }}
-      >
-        <motion.div
-          style={{
-            x: currentIndex == index ? x : undefined,
-            opacity: currentIndex == index ? likeOpacity : 0,
-          }}
-          className="absolute z-20 top-[250px] right-1/2 btn btn-outline btn-error font-bold text-3xl cursor-default"
-        >
-          <span>Like</span>
-          <IconThumbUp className=" fill-error" />
-        </motion.div>
-        <motion.div
-          style={{
-            x: currentIndex == index ? x : undefined,
-            opacity: currentIndex == index ? dislikeOpacity : 0,
-          }}
-          className="absolute z-20 top-[250px] left-1/2 btn btn-outline btn-error font-bold text-3xl cursour-default"
-        >
-          <span>Dislike</span>
-          <IconThumbDown className=" fill-error" />
-        </motion.div>
-        <Blinks
-          setDraggedResult={setDraggedResult}
-          draggedResult={draggedResult}
-          blinksDetail={post}
-        />
-      </motion.div>
-    );
-  };
   return (
     <div
       ref={parentRef}
@@ -151,11 +96,13 @@ export default function Page() {
               ref={rowVirtualizer.measureElement}
               className={
                 virtualRow.index % 2
-                  ? 'ListItemOdd w-full flex items-center justify-center'
-                  : 'ListItemEven w-full flex items-center justify-center'
+                  ? 'w-full flex items-center justify-center '
+                  : 'w-full flex items-center justify-center '
               }
             >
-              {Post(virtualRow.index, post)}
+              <div className="max-w-lg w-full sm:py-4">
+                <Blinks blinksDetail={post} />
+              </div>
             </div>
           );
         })}
