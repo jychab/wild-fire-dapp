@@ -27,8 +27,7 @@ export const TrendingTable: FC = () => {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="table">
-            {/* head */}
+          <table className="table table-sm">
             <thead>
               <tr>
                 <th>Token</th>
@@ -59,7 +58,7 @@ export const TrendingTable: FC = () => {
                           </Link>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-xs">
+                            <span className="stat-desc">
                               {formatLargeNumber(x.holders || 0) + ' Subs'}
                             </span>
                             {x.holders24HrPercent != undefined && (

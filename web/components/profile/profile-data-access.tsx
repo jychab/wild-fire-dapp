@@ -1,10 +1,10 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { generateMintApiEndPoint, proxify } from '@/utils/helper/endpoints';
+import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
 import { DAS } from '@/utils/types/das';
-import { GetPostsResponse, PostContent } from '@/utils/types/post';
+import { GetPostsResponse, PostBlinksDetail } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
   collectionGroup,
   doc,
@@ -14,53 +14,36 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { ProfileTabsEnum } from './profile-feature';
 
 export function useGetPostsFromMint({
-  mint,
+  collectionMint,
+  publicKey,
   selectedTab,
 }: {
-  mint: PublicKey | null;
+  collectionMint: PublicKey | null;
+  publicKey: PublicKey | null;
   selectedTab: ProfileTabsEnum;
 }) {
-  const { publicKey } = useWallet();
-  return useQuery({
-    queryKey: ['get-posts-from-mint', { mint, selectedTab }],
-    queryFn: async () => {
-      try {
-        if (!mint) return null;
-        if (selectedTab == ProfileTabsEnum.TRADE) return null;
-        if (selectedTab == ProfileTabsEnum.POSTS) {
-          const uriMetadata = await (
-            await fetch(proxify(generateMintApiEndPoint(mint)))
-          ).json();
-          let posts = uriMetadata as GetPostsResponse | undefined;
-          return posts;
-        }
-        if (selectedTab == ProfileTabsEnum.FAVOURTIES && publicKey) {
-          const docData = await getDocs(
-            query(
-              collectionGroup(db, `Post`),
-              where('softDelete', '==', false),
-              where('likes', 'array-contains', publicKey.toBase58()),
-              orderBy('createdAt', 'desc')
-            )
-          );
-          return {
-            posts: docData.docs.map((x) => x.data() as PostContent),
-          } as GetPostsResponse;
-        }
-        return null;
-      } catch (e) {
-        console.log(e);
-        return null;
-      }
-    },
-    staleTime: SHORT_STALE_TIME,
-    enabled: !!mint,
+  return useInfiniteQuery({
+    queryKey: [
+      'get-posts-from-mint',
+      { collectionMint, address: publicKey, selectedTab },
+    ],
+    queryFn: (ctx) =>
+      fetchPostFromMint(
+        selectedTab,
+        collectionMint,
+        publicKey,
+        10,
+        ctx.pageParam
+      ),
+    getNextPageParam: (lastGroup) => lastGroup.nextPage,
+    initialPageParam: 0,
+    enabled: !!collectionMint && !!selectedTab,
   });
 }
+
 export function useGetMintSummaryDetails({ mint }: { mint: PublicKey | null }) {
   return useQuery({
     queryKey: ['get-mint-summary-details', { mint }],
@@ -117,4 +100,36 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
     enabled: !!mint,
     staleTime: SHORT_STALE_TIME,
   });
+}
+
+async function fetchPostFromMint(
+  selectedTab: ProfileTabsEnum,
+  mint: PublicKey | null,
+  address: PublicKey | null,
+  limit: number = 15,
+  page: number = 0
+) {
+  let newPosts: PostBlinksDetail[] = [];
+
+  if (selectedTab == ProfileTabsEnum.POSTS && mint) {
+    const uriMetadata = await (
+      await fetch(generateMintApiEndPoint(mint, limit, page * limit))
+    ).json();
+    let posts = uriMetadata as GetPostsResponse | undefined;
+    newPosts = posts?.posts || [];
+  }
+  if (selectedTab == ProfileTabsEnum.FAVOURTIES && address) {
+    const docData = await getDocs(
+      query(
+        collectionGroup(db, `Post`),
+        where('softDelete', '==', false),
+        where('likes', 'array-contains', address.toBase58()),
+        orderBy('createdAt', 'desc')
+      )
+    );
+    newPosts = docData.docs.map((x) => x.data() as PostBlinksDetail);
+  }
+
+  const hasMorePosts = newPosts.length === limit;
+  return { rows: newPosts, nextPage: hasMorePosts ? page + 1 : undefined };
 }

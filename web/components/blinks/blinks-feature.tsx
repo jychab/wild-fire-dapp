@@ -44,7 +44,7 @@ export const Blinks: FC<BlinksProps> = ({
 }) => {
   const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
-  const { adapter, isRegistryLoaded } = useActionsRegistry();
+  const { adapter } = useActionsRegistry();
   const { data: action } = useGetActionFromApiUrlQuery({
     url: blinksDetail?.url,
     adapter,
@@ -111,15 +111,11 @@ export const Blinks: FC<BlinksProps> = ({
 
   if (!(blinksDetail && checkUrlIsValid(blinksDetail.url))) {
     return (
-      <div className="flex flex-col items-center min-h-[calc(100vh-8rem)] justify-center gap-2">
+      <div className="flex flex-col items-center justify-center gap-2">
         Url is invalid
         <div className="loading loading-dots" />
       </div>
     );
-  }
-
-  if (!isRegistryLoaded || !action) {
-    return null;
   }
 
   if (multiGrid) {
@@ -128,20 +124,24 @@ export const Blinks: FC<BlinksProps> = ({
         href={useRelativePathIfPossbile(blinksDetail.url)}
         className="relative flex items-center aspect-square h-auto justify-center"
       >
-        <Image
-          className={`object-cover `}
-          fill={true}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          alt=""
-          src={action.icon}
-        />
+        {action ? (
+          <Image
+            className={`object-cover `}
+            fill={true}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            alt=""
+            src={action.icon}
+          />
+        ) : (
+          <div className="loading loading-spinner" />
+        )}
       </Link>
     );
   }
 
   return (
     <div
-      className={`flex flex-col w-full items-start bg-base-100 justify-between animate-fade-up animate-once animate-duration-300 shadow-md rounded-2xl border border-base-300 `}
+      className={`flex flex-col w-full items-start bg-base-100 justify-between animate-fade-up animate-once animate-duration-300 sm:shadow-md sm:rounded-2xl sm:border sm:border-base-300 `}
     >
       <div className="w-full">
         <UserProfile
@@ -174,11 +174,17 @@ export const Blinks: FC<BlinksProps> = ({
                   </div>
                 ))}
             </div>
-            <Blink
-              stylePreset={'custom'}
-              action={action}
-              websiteText={new URL(blinksDetail.url).hostname}
-            />
+            {action ? (
+              <Blink
+                stylePreset={'custom'}
+                action={action}
+                websiteText={new URL(blinksDetail.url).hostname}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[400px] w-full">
+                <div className="loading loading-spinner" />
+              </div>
+            )}
           </div>
         ) : (
           <div className="px-4 animate-flip-down">

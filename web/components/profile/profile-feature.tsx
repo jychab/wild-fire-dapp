@@ -98,10 +98,9 @@ export const ProfileFeature: FC<{
   const isOwner =
     address != null && publicKey != null && address == publicKey.toBase58();
 
-  const { data: posts } = useGetPostsFromMint({
-    mint: collectionMint,
-    selectedTab,
-  });
+  const { data, isFetching, fetchNextPage, isFetchingNextPage, hasNextPage } =
+    useGetPostsFromMint({ collectionMint, selectedTab, publicKey });
+  const posts = data ? data.pages.flatMap((d) => d.rows) : [];
   const { data: metadata } = useGetTokenDetails({
     mint: collectionMint,
   });
@@ -123,14 +122,27 @@ export const ProfileFeature: FC<{
           />
           <div className="rounded sm:border-x sm:border-b border-base-300 h-full w-full md:p-4">
             {selectedTab == ProfileTabsEnum.POSTS && (
-              <ContentPanel posts={posts} isOwner={isOwner} />
+              <ContentPanel
+                isOwner={isOwner}
+                posts={posts}
+                fetchNextPage={fetchNextPage}
+                isFetching={isFetching}
+                isFetchingNextPage={isFetchingNextPage}
+                hasNextPage={hasNextPage}
+              />
             )}
             {selectedTab == ProfileTabsEnum.TRADE &&
               !checkIfMetadataIsTemporary(metadata) && (
                 <TradingPanel collectionMint={collectionMint} />
               )}
             {selectedTab == ProfileTabsEnum.FAVOURTIES && isOwner && (
-              <FavouritesContentPanel posts={posts} />
+              <FavouritesContentPanel
+                posts={posts}
+                fetchNextPage={fetchNextPage}
+                isFetching={isFetching}
+                isFetchingNextPage={isFetchingNextPage}
+                hasNextPage={hasNextPage}
+              />
             )}
           </div>
         </div>

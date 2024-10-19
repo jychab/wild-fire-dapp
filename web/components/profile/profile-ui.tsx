@@ -7,12 +7,12 @@ import {
 } from '@/utils/helper/format';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { DAS } from '@/utils/types/das';
-import { GetPostsResponse } from '@/utils/types/post';
+import { PostBlinksDetail } from '@/utils/types/post';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { IconMoneybag, IconSend } from '@tabler/icons-react';
-import { InitDataParsed, retrieveLaunchParams } from '@telegram-apps/sdk';
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
@@ -30,9 +30,20 @@ import {
 
 export const ContentPanel: FC<{
   isOwner: boolean;
-  posts: GetPostsResponse | null | undefined;
-}> = ({ isOwner, posts }) => {
-  return posts?.posts && posts?.posts.length == 0 ? (
+  posts: PostBlinksDetail[];
+  fetchNextPage: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  isFetching?: boolean;
+}> = ({
+  isOwner,
+  posts,
+  fetchNextPage,
+  isFetching,
+  hasNextPage,
+  isFetchingNextPage,
+}) => {
+  return posts.length == 0 ? (
     isOwner ? (
       <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
         <div className="w-36">
@@ -45,19 +56,41 @@ export const ContentPanel: FC<{
       </div>
     )
   ) : (
-    <ContentGrid multiGrid={true} posts={posts?.posts} />
+    <ContentGrid
+      posts={posts}
+      fetchNextPage={fetchNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      hasNextPage={hasNextPage}
+    />
   );
 };
 
 export const FavouritesContentPanel: FC<{
-  posts: GetPostsResponse | null | undefined;
-}> = ({ posts }) => {
-  return posts?.posts && posts?.posts.length == 0 ? (
+  posts: PostBlinksDetail[];
+  fetchNextPage: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  isFetching?: boolean;
+}> = ({
+  posts,
+  fetchNextPage,
+  isFetching,
+  hasNextPage,
+  isFetchingNextPage,
+}) => {
+  return posts.length == 0 ? (
     <div className="p-4 flex flex-col gap-4 items-center justify-center h-full w-full text-center text-lg">
       {`No liked post :(`}
     </div>
   ) : (
-    <ContentGrid multiGrid={true} posts={posts?.posts} />
+    <ContentGrid
+      posts={posts}
+      fetchNextPage={fetchNextPage}
+      isFetching={isFetching}
+      isFetchingNextPage={isFetchingNextPage}
+      hasNextPage={hasNextPage}
+    />
   );
 };
 
@@ -76,7 +109,7 @@ export const Profile: FC<ProfileProps> = ({
   const { data: metadata, isLoading } = useGetTokenDetails({
     mint: collectionMint,
   });
-  const [initData, setInitData] = useState<InitDataParsed>();
+  const [initData, setInitData] = useState<any>();
   useEffect(() => {
     try {
       const { initData } = retrieveLaunchParams();

@@ -78,8 +78,7 @@ export const ConvertToSolButton: FC = () => {
             <div>No airdrops to convert...</div>
           )}
           <div className="overflow-x-scroll scrollbar-none">
-            <table className="table">
-              {/* head */}
+            <table className="table table-xs ">
               <thead>
                 <tr>
                   <th>

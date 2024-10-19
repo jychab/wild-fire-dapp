@@ -1,11 +1,23 @@
 import { PublicKey } from '@solana/web3.js';
 
-export function generateMintApiEndPoint(mint: PublicKey) {
-  return `https://api.blinksfeed.com/getPosts?mint=${mint.toBase58()}`;
+export function generateMintApiEndPoint(
+  mint: PublicKey,
+  limit?: number,
+  offset?: number
+) {
+  return `https://api.blinksfeed.com/getPosts?mint=${mint.toBase58()}${
+    limit ? `&limit=${limit}` : ''
+  }${offset ? `&offset=${offset}` : ''}`;
 }
 
-export function generateAddressApiEndPoint(address: PublicKey) {
-  return `https://api.blinksfeed.com/getPosts?address=${address.toBase58()}`;
+export function generateAddressApiEndPoint(
+  address: PublicKey,
+  limit?: number,
+  offset?: number
+) {
+  return `https://api.blinksfeed.com/getPosts?address=${address.toBase58()}${
+    limit ? `&limit=${limit}` : ''
+  }${offset ? `&offset=${offset}` : ''}`;
 }
 
 export function generatePostEndPoint(

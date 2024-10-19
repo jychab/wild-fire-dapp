@@ -3,7 +3,6 @@ import { GetPostsResponse, PostContent } from '../types/post';
 import {
   generateAddressApiEndPoint,
   generatePostApiEndPoint,
-  proxify,
 } from './endpoints';
 import { typeSenseClient } from './typesense';
 
@@ -18,8 +17,14 @@ export async function fetchPost(mint: string | null, postId: string | null) {
   return post;
 }
 
-export async function fetchPostByAddress(address: PublicKey) {
-  const result = await fetch(proxify(generateAddressApiEndPoint(address)));
+export async function fetchPostByAddress(
+  address: PublicKey,
+  limit: number,
+  offset: number
+) {
+  const result = await fetch(
+    generateAddressApiEndPoint(address, limit, offset)
+  );
   const posts = (await result.json()) as GetPostsResponse | undefined;
   return posts;
 }
@@ -28,8 +33,8 @@ export async function fetchPostByCategories(
   collections: string,
   search: string,
   query_by: string,
-  page?: number,
-  per_page?: number
+  limit: number = 15,
+  offset: number = 0
 ) {
   if (search) {
     const searchResults = await typeSenseClient
@@ -40,8 +45,8 @@ export async function fetchPostByCategories(
           q: search,
           query_by: query_by,
           sort_by: '_text_match:desc',
-          page: page || 1,
-          per_page: per_page || 10,
+          page: Math.floor(offset / limit) + 1,
+          per_page: limit,
         },
         { cacheSearchResultsForSeconds: 5 * 60 }
       );
