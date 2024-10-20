@@ -10,7 +10,7 @@ import { PublicKey } from '@solana/web3.js';
 import { IconEye, IconHeart } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import {
   useUnifiedWalletContext,
   useWallet,
@@ -40,9 +40,14 @@ export const Blinks: FC<BlinksProps> = ({
   const { adapter, isRegistryLoaded } = useActionsRegistry();
   const { data: action } = useGetActionFromApiUrlQuery({
     url: blinksDetail?.url,
-    adapter,
     isRegistryLoaded,
   });
+
+  useEffect(() => {
+    if (action && adapter) {
+      action.setAdapter(adapter);
+    }
+  }, [action, adapter]);
   const [trade, setTrade] = useState(initialTrade);
   const [liked, setLiked] = useState(blinksDetail?.liked);
   const [animateHeart, setAnimateHeart] = useState(false);

@@ -12,7 +12,6 @@ import { PostCampaign } from '@/utils/types/campaigns';
 import { PostBlinksDetail } from '@/utils/types/post';
 import {
   Action,
-  ActionConfig,
   setProxyUrl,
   unfurlUrlToActionApiUrl,
 } from '@dialectlabs/blinks';
@@ -145,20 +144,15 @@ export function useRemoveContentMutation({
 
 export function useGetActionFromApiUrlQuery({
   url,
-  adapter,
   isRegistryLoaded,
 }: {
   url: string | undefined;
-  adapter: ActionConfig | null;
   isRegistryLoaded: boolean;
 }) {
   return useQuery({
-    queryKey: [
-      'get-action',
-      { url, adapter: adapter?.connect, isRegistryLoaded },
-    ],
+    queryKey: ['get-action', { url, isRegistryLoaded }],
     queryFn: async () => {
-      if (!adapter || !url) return null;
+      if (!url || !isRegistryLoaded) return null;
       let apiUrl = await unfurlUrlToActionApiUrl(url);
       if (!apiUrl) {
         apiUrl = url;
@@ -166,15 +160,12 @@ export function useGetActionFromApiUrlQuery({
       if (apiUrl) {
         setProxyUrl('https://proxify.blinksfeed.com');
         const action = await Action.fetch(apiUrl).catch(() => null);
-        if (action) {
-          action.setAdapter(adapter);
-          return action;
-        }
+        return action;
       }
       return null;
     },
     staleTime: MEDIUM_STALE_TIME,
-    enabled: !!adapter && !!url,
+    enabled: !!url && !!isRegistryLoaded,
   });
 }
 
