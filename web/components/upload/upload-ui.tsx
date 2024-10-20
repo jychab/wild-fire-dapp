@@ -2,18 +2,14 @@
 
 import { Criteria, Duration, Eligibility } from '@/utils/enums/campaign';
 import { ActionTypeEnum, Sentiment } from '@/utils/enums/post';
+import { getAvailableAmountInEscrow } from '@/utils/firebase/functions';
 import {
   generatePostDefaultApiEndPoint,
   generatePostTransferApiEndPoint,
   proxify,
 } from '@/utils/helper/endpoints';
 import { formatLargeNumber, getDDMMYYYY } from '@/utils/helper/format';
-import {
-  getAsset,
-  getAssociatedEscrowAccount,
-  getDerivedMemberMint,
-  getDerivedMint,
-} from '@/utils/helper/mint';
+import { getAsset, getDerivedMint } from '@/utils/helper/mint';
 import { placeholderImage } from '@/utils/helper/placeholder';
 import { generateRandomU64Number } from '@/utils/helper/post';
 import { PostCampaign } from '@/utils/types/campaigns';
@@ -866,28 +862,18 @@ export const MintInputField: FC<{
   const { data: verifiedTokens } = useGetJupiterVerifiedTokens();
   const [showInput, setShowInput] = useState(false);
   const { publicKey } = useWallet();
-
-  const { data: airdropTokenAccountInfo } = useGetTokenAccountInfo({
-    address:
-      mintToSendDetails?.token_info?.token_program &&
-      publicKey &&
-      mintToSendDetails.id ==
-        getDerivedMemberMint(getDerivedMint(publicKey), 0).toBase58()
-        ? getAssociatedTokenAddressSync(
-            new PublicKey(mintToSendDetails.id),
-            getAssociatedEscrowAccount(publicKey),
-            true,
-            new PublicKey(mintToSendDetails.token_info?.token_program)
-          )
-        : null,
-    tokenProgram: mintToSendDetails?.token_info?.token_program
-      ? new PublicKey(mintToSendDetails.token_info?.token_program)
-      : undefined,
-  });
+  const [airdropAvailable, setAirdropAvailable] = useState(0);
+  useEffect(() => {
+    if (mintToSendDetails?.token_info?.token_program) {
+      getAvailableAmountInEscrow(
+        mintToSendDetails.id,
+        mintToSendDetails?.token_info?.token_program
+      ).then((result) => setAirdropAvailable(result));
+    }
+  }, [mintToSendDetails]);
   const airdropAmountAvailable =
-    airdropTokenAccountInfo?.amount && mintToSendDetails?.token_info?.decimals
-      ? Number(airdropTokenAccountInfo?.amount) /
-        10 ** mintToSendDetails?.token_info?.decimals
+    airdropAvailable && mintToSendDetails?.token_info?.decimals
+      ? airdropAvailable / 10 ** mintToSendDetails?.token_info?.decimals
       : 0;
   const { data: tokenAccountInfo } = useGetTokenAccountInfo({
     address:
@@ -1299,15 +1285,6 @@ const ActionModal: FC<{
         </div>
 
         <div className="overflow-y-scroll flex flex-col gap-4 scrollbar-none">
-          {additionalFields.map((field, index) => (
-            <AdditionalFieldComponent
-              key={field.id}
-              field={field}
-              index={index}
-              setAdditionalFields={setAdditionalFields}
-              handleAdditionalFieldChange={handleAdditionalFieldChange}
-            />
-          ))}
           <div className="flex flex-col gap-2">
             <InputField
               label="Button Text"
@@ -1325,6 +1302,15 @@ const ActionModal: FC<{
               tooltip="Amount of tokens to reward user for this action."
             />
           </div>
+          {additionalFields.map((field, index) => (
+            <AdditionalFieldComponent
+              key={field.id}
+              field={field}
+              index={index}
+              setAdditionalFields={setAdditionalFields}
+              handleAdditionalFieldChange={handleAdditionalFieldChange}
+            />
+          ))}
         </div>
         <button onClick={handleAddField} className="btn w-fit btn-sm">
           <IconPlus />

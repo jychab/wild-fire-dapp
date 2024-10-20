@@ -1,7 +1,8 @@
 import { PublicKey } from '@solana/web3.js';
-import { GetPostsResponse, PostContent } from '../types/post';
+import { GetPostsResponse, PostBlinksDetail, PostContent } from '../types/post';
 import {
   generateAddressApiEndPoint,
+  generateMintApiEndPoint,
   generatePostApiEndPoint,
 } from './endpoints';
 import { typeSenseClient } from './typesense';
@@ -20,36 +21,70 @@ export async function fetchPost(mint: string | null, postId: string | null) {
 export async function fetchPostByAddress(
   address: PublicKey,
   limit: number,
-  offset: number
+  startAfter?: number
 ) {
   const result = await fetch(
-    generateAddressApiEndPoint(address, limit, offset)
+    generateAddressApiEndPoint(address, limit, startAfter)
   );
   const posts = (await result.json()) as GetPostsResponse | undefined;
   return posts;
+}
+
+export async function fetchPostByMint(
+  mint: PublicKey,
+  limit: number,
+  startAfter?: number
+) {
+  const result = await fetch(generateMintApiEndPoint(mint, limit, startAfter));
+  const posts = (await result.json()) as GetPostsResponse | undefined;
+  return posts;
+}
+
+export async function fetchPostByCreator(
+  address: PublicKey,
+  limit: number = 10,
+  startAfter?: number
+) {
+  const searchResults = await typeSenseClient
+    .collections('post')
+    .documents()
+    .search(
+      {
+        q: address.toBase58(),
+        query_by: 'likes',
+        sort_by: '_text_match:desc, createdAt:desc',
+        filter_by: `likes: [${address.toBase58()}]${
+          startAfter ? `, createdAt:>${startAfter}` : ''
+        }`,
+        limit,
+      },
+      { cacheSearchResultsForSeconds: 5 * 60 }
+    );
+  if (searchResults.hits) {
+    return searchResults.hits.map((x) => x.document as PostBlinksDetail);
+  }
 }
 
 export async function fetchPostByCategories(
   collections: string,
   search: string,
   query_by: string,
-  limit: number = 15,
-  offset: number = 0
+  limit: number = 10,
+  startAfter?: number
 ) {
   if (search) {
+    let payload;
+    payload = {
+      q: search,
+      query_by: query_by,
+      sort_by: '_text_match:desc, createdAt:desc',
+      limit,
+    };
+    payload = { ...payload, filter_by: `createdAt:>${startAfter}` };
     const searchResults = await typeSenseClient
       .collections(collections)
       .documents()
-      .search(
-        {
-          q: search,
-          query_by: query_by,
-          sort_by: '_text_match:desc',
-          page: Math.floor(offset / limit) + 1,
-          per_page: limit,
-        },
-        { cacheSearchResultsForSeconds: 5 * 60 }
-      );
+      .search(payload, { cacheSearchResultsForSeconds: 5 * 60 });
     if (searchResults.hits) {
       return searchResults.hits.map(
         (x) =>

@@ -3,21 +3,21 @@ import { PublicKey } from '@solana/web3.js';
 export function generateMintApiEndPoint(
   mint: PublicKey,
   limit?: number,
-  offset?: number
+  startAfter?: number
 ) {
   return `https://api.blinksfeed.com/getPosts?mint=${mint.toBase58()}${
     limit ? `&limit=${limit}` : ''
-  }${offset ? `&offset=${offset}` : ''}`;
+  }${startAfter ? `&startAfter=${startAfter}` : ''}`;
 }
 
 export function generateAddressApiEndPoint(
   address: PublicKey,
   limit?: number,
-  offset?: number
+  startAfter?: number
 ) {
   return `https://api.blinksfeed.com/getPosts?address=${address.toBase58()}${
     limit ? `&limit=${limit}` : ''
-  }${offset ? `&offset=${offset}` : ''}`;
+  }${startAfter ? `&startAfter=${startAfter}` : ''}`;
 }
 
 export function generatePostEndPoint(

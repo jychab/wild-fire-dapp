@@ -1,19 +1,11 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { generateMintApiEndPoint } from '@/utils/helper/endpoints';
+import { fetchPostByCreator, fetchPostByMint } from '@/utils/helper/post';
 import { DAS } from '@/utils/types/das';
-import { GetPostsResponse, PostBlinksDetail } from '@/utils/types/post';
+import { PostBlinksDetail } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import {
-  collectionGroup,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  where,
-} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { ProfileTabsEnum } from './profile-feature';
 
 export function useGetPostsFromMint({
@@ -106,30 +98,33 @@ async function fetchPostFromMint(
   selectedTab: ProfileTabsEnum,
   mint: PublicKey | null,
   address: PublicKey | null,
-  limit: number = 15,
-  page: number = 0
+  limit: number,
+  startAfter?: number
 ) {
   let newPosts: PostBlinksDetail[] = [];
 
   if (selectedTab == ProfileTabsEnum.POSTS && mint) {
-    const uriMetadata = await (
-      await fetch(generateMintApiEndPoint(mint, limit, page * limit))
-    ).json();
-    let posts = uriMetadata as GetPostsResponse | undefined;
+    const posts = await fetchPostByMint(
+      mint,
+      limit,
+      startAfter == 0 ? undefined : startAfter
+    );
     newPosts = posts?.posts || [];
   }
   if (selectedTab == ProfileTabsEnum.FAVOURTIES && address) {
-    const docData = await getDocs(
-      query(
-        collectionGroup(db, `Post`),
-        where('softDelete', '==', false),
-        where('likes', 'array-contains', address.toBase58()),
-        orderBy('createdAt', 'desc')
-      )
+    const posts = await fetchPostByCreator(
+      address,
+      limit,
+      startAfter == 0 ? undefined : startAfter
     );
-    newPosts = docData.docs.map((x) => x.data() as PostBlinksDetail);
+    newPosts = posts || [];
   }
 
   const hasMorePosts = newPosts.length === limit;
-  return { rows: newPosts, nextPage: hasMorePosts ? page + 1 : undefined };
+  return {
+    rows: newPosts,
+    nextPage: hasMorePosts
+      ? newPosts[newPosts.length - 1].createdAt
+      : undefined,
+  };
 }

@@ -10,7 +10,7 @@ import {
 import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { buildAndSendTransaction } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
-import { TokenState } from '@/utils/types/program';
+import { TokenState } from '@/utils/types/token';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import {
   PublicKey,

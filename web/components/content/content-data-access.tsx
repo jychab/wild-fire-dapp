@@ -31,15 +31,16 @@ import {
 } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { ProfileTabsEnum } from '../profile/profile-feature';
 import { useTransactionToast } from '../ui/ui-layout';
-import { Categories } from '../ui/ui-provider';
+import { Category } from '../ui/ui-provider';
 
 export function useGetPostsFromAddress({
   category,
   publicKey,
 }: {
   publicKey: PublicKey | null;
-  category: Categories;
+  category: Category;
 }) {
   return useInfiniteQuery({
     queryKey: ['get-posts-from-address', { category, address: publicKey }],
@@ -115,15 +116,25 @@ export function useRemoveContentMutation({
       if (result) {
         await Promise.all([
           client.invalidateQueries({
-            queryKey: ['get-posts-from-mint', { mint }],
+            queryKey: [
+              'get-posts-from-mint',
+              {
+                collectionMint: mint,
+                address: wallet.publicKey,
+                selectedTab: ProfileTabsEnum.POSTS,
+              },
+            ],
           }),
           client.invalidateQueries({
-            queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
+            queryKey: [
+              'get-posts-from-address',
+              { category: Category.FOR_YOU, address: wallet.publicKey },
+            ],
           }),
         ]);
         revalidateTags('post');
         transactionToast(result.signature || 'Success');
-        router.push(`token/?mintId=${mint?.toBase58()}`);
+        router.push(`profile/?mint=${mint?.toBase58()}`);
       }
     },
     onError: (error) => {
@@ -163,14 +174,18 @@ export function useGetActionFromApiUrlQuery({
 }
 
 async function fetchPostsFromAddress(
-  category: Categories,
+  category: Category,
   address: PublicKey,
-  limit: number = 15,
-  page: number = 0
+  limit: number,
+  startAfter?: number
 ) {
   let newPosts: PostBlinksDetail[] = [];
-  if (category === Categories.FOR_YOU) {
-    const result = await fetchPostByAddress(address, limit, page * limit);
+  if (category === Category.FOR_YOU) {
+    const result = await fetchPostByAddress(
+      address,
+      limit,
+      startAfter == 0 ? undefined : startAfter
+    );
     if (result) {
       newPosts = result.posts || [];
     }
@@ -180,12 +195,17 @@ async function fetchPostsFromAddress(
       category,
       'tags',
       limit,
-      page * limit
+      startAfter == 0 ? undefined : startAfter
     );
     if (result) {
       newPosts = result;
     }
   }
   const hasMorePosts = newPosts.length === limit;
-  return { rows: newPosts, nextPage: hasMorePosts ? page + 1 : undefined };
+  return {
+    rows: newPosts,
+    nextPage: hasMorePosts
+      ? newPosts[newPosts.length - 1].createdAt
+      : undefined,
+  };
 }

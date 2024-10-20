@@ -4,7 +4,7 @@ import { createContext, FC, ReactNode, useContext, useState } from 'react';
 import { UiLayout } from './ui-layout';
 
 // Enum for categories
-export enum Categories {
+export enum Category {
   FOR_YOU = 'For You',
   MEMES = 'Memes',
   NFTS = 'NFTs',
@@ -14,8 +14,8 @@ export enum Categories {
 
 // Define the shape of your context state
 interface CategoryContextType {
-  category: Categories;
-  setCategory: (category: Categories) => void;
+  category: Category;
+  setCategory: (category: Category) => void;
 }
 
 // Create the context
@@ -32,7 +32,7 @@ export const useCategory = () => {
 
 // Provider component to wrap your app
 export const UiProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [category, setCategory] = useState(Categories.FOR_YOU);
+  const [category, setCategory] = useState(Category.FOR_YOU);
 
   return (
     <UiContext.Provider value={{ category, setCategory }}>

@@ -25,7 +25,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { ProfileTabsEnum } from '../profile/profile-feature';
 import { useTransactionToast } from '../ui/ui-layout';
+import { Category } from '../ui/ui-provider';
 import { TempPostCampaign } from './upload-ui';
 
 export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
@@ -99,7 +101,14 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
       if (res) {
         await Promise.all([
           client.invalidateQueries({
-            queryKey: ['get-posts-from-mint', { mint }],
+            queryKey: [
+              'get-posts-from-mint',
+              {
+                collectionMint: mint,
+                address: wallet.publicKey,
+                selectedTab: ProfileTabsEnum.POSTS,
+              },
+            ],
           }),
           client.invalidateQueries({
             queryKey: [
@@ -114,7 +123,10 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
             ],
           }),
           client.invalidateQueries({
-            queryKey: ['get-posts-from-address', { address: wallet.publicKey }],
+            queryKey: [
+              'get-posts-from-address',
+              { category: Category.FOR_YOU, address: wallet.publicKey },
+            ],
           }),
         ]);
         revalidateTags('post');

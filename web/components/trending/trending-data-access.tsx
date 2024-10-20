@@ -1,10 +1,13 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
-import { getHolders as getMintSummaryInfo } from '@/utils/helper/mint';
-import { program } from '@/utils/program/instructions';
-import { DAS } from '@/utils/types/das';
+import {
+  getAssetBatch,
+  getHolders as getMintSummaryInfo,
+} from '@/utils/helper/mint';
+import { Summary } from '@/utils/types/token';
 import { useQuery } from '@tanstack/react-query';
 import { doc, getDoc } from 'firebase/firestore';
+import { useConnection } from 'unified-wallet-adapter-with-telegram';
 
 export function useGetSummary() {
   return useQuery({
@@ -12,20 +15,7 @@ export function useGetSummary() {
     queryFn: async () => {
       const result = await getDoc(doc(db, `Summary/mints`));
       if (result.exists()) {
-        return result.data() as {
-          all: { collectionMint: string; memberMint: string }[];
-          allTokenPrices: {
-            collectionMint: string;
-            memberMint: string;
-            price: number;
-            supply: number;
-            volume: number;
-          }[];
-          initializedMints: {
-            collectionMint: string;
-            memberMint: string;
-          }[];
-        };
+        return result.data() as Summary;
       } else {
         return null;
       }
@@ -37,28 +27,14 @@ export function useGetSummary() {
 export function useGenerateTrendingList({
   summary,
 }: {
-  summary: {
-    all: { collectionMint: string; memberMint: string }[];
-    allTokenPrices: {
-      collectionMint: string;
-      memberMint: string;
-      price: number;
-      supply: number;
-      volume: number;
-    }[];
-    initializedMints: {
-      collectionMint: string;
-      memberMint: string;
-    }[];
-  } | null;
+  summary: Summary | null | undefined;
 }) {
+  const { connection } = useConnection();
   return useQuery({
     queryKey: ['generate-trending-list', summary],
     queryFn: async () => {
       if (!summary) return null;
-      const metadatas = await getAssetBatch(
-        summary.initializedMints.map((x) => x.memberMint)
-      );
+
       const filteredList = summary.allTokenPrices
         .filter(
           (x) =>
@@ -72,7 +48,10 @@ export function useGenerateTrendingList({
         getMintSummaryInfo(x.collectionMint)
       );
       const mintData = await Promise.all(mintInfoPromises);
-
+      const metadatas = await getAssetBatch(
+        connection,
+        filteredList.map((x) => x.memberMint)
+      );
       return filteredList.map((x, i) => {
         const metadata = metadatas.find((y) => y.id == x.memberMint);
         const holders = mintData[i];
@@ -89,24 +68,6 @@ export function useGenerateTrendingList({
       });
     },
     staleTime: SHORT_STALE_TIME,
+    enabled: !!summary,
   });
-}
-export async function getAssetBatch(mints: string[]) {
-  if (mints.length == 0) return [];
-  const response = await fetch(program.provider.connection.rpcEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: '',
-      method: 'getAssetBatch',
-      params: {
-        ids: mints,
-      },
-    }),
-  });
-  const result = (await response.json()).result as DAS.GetAssetResponse[];
-  return result;
 }

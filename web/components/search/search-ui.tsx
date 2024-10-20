@@ -6,7 +6,7 @@ import { IconCategory, IconSearch } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useState } from 'react';
-import { Categories, useCategory } from '../ui/ui-provider';
+import { Category, useCategory } from '../ui/ui-provider';
 
 export interface SearchResult {
   id: string;
@@ -95,7 +95,7 @@ export const SearchBar: FC = ({}) => {
           tabIndex={0}
           className="absolute bg-base-200 w-full mt-2 border border-base-300 rounded-box justify-evenly menu gap-4 menu-horizontal"
         >
-          {Object.values(Categories).map((x) => (
+          {Object.values(Category).map((x) => (
             <li key={x} onClick={() => setCategory(x)}>
               <a className={`${category == x ? 'active' : ''} rounded-full`}>
                 {x}

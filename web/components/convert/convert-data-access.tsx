@@ -1,5 +1,5 @@
 import { NATIVE_MINT_DECIMALS, SHORT_STALE_TIME } from '@/utils/consts';
-import { db } from '@/utils/firebase/firebase';
+import { getAssetBatch } from '@/utils/helper/mint';
 import {
   decompressTokenIxs,
   jupiterInstructions,
@@ -12,6 +12,7 @@ import {
   pollAndSendTransaction,
 } from '@/utils/program/transactionBuilder';
 import { DAS } from '@/utils/types/das';
+import { Summary } from '@/utils/types/token';
 import { createRpc, Rpc } from '@lightprotocol/stateless.js';
 import {
   createCloseAccountInstruction,
@@ -27,10 +28,9 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useWallet } from 'unified-wallet-adapter-with-telegram';
-import { getAssetBatch } from '../trending/trending-data-access';
+import { calculatePriceInLamports } from '../trading/trading-data-access';
 import { useTransactionToast } from '../ui/ui-layout';
 
 export function useMultipleSellMutation() {
@@ -224,23 +224,7 @@ export function useGetOwnTokenBalance({
   solPrice,
 }: {
   address: PublicKey | null;
-  summary:
-    | {
-        all: { collectionMint: string; memberMint: string }[];
-        allTokenPrices: {
-          collectionMint: string;
-          memberMint: string;
-          price: number;
-          supply: number;
-          volume: number;
-        }[];
-        initializedMints: {
-          collectionMint: string;
-          memberMint: string;
-        }[];
-      }
-    | null
-    | undefined;
+  summary: Summary | null | undefined;
   solPrice: number | null | undefined;
 }) {
   const connection: Rpc = createRpc(
@@ -261,37 +245,19 @@ export function useGetOwnTokenBalance({
           .filter((x) => summary.all.map((x) => x.memberMint).includes(x.id))
           .map(async (x) => {
             let price = x.token_info?.price_info?.price_per_token;
-            if (
-              !price &&
-              summary.all.find((y) => y.memberMint == x.id)?.collectionMint
-            ) {
-              const docData = await getDocs(
-                query(
-                  collection(
-                    db,
-                    `Mint/${
-                      summary.all.find((y) => y.memberMint == x.id)
-                        ?.collectionMint
-                    }/TradeEvents`
-                  ),
-                  orderBy('timestamp', 'desc'),
-                  limit(1)
-                )
+            if (!price) {
+              const [liquidityPool] = PublicKey.findProgramAddressSync(
+                [Buffer.from('liquidity_pool'), new PublicKey(x.id).toBuffer()],
+                program.programId
               );
-              const realTimeData = docData.docs[0].data() as {
-                event: 'buy' | 'sell';
-                amount: number;
-                amountOut: number;
-                memberMint: string;
-                priceInLamports: number;
-                volume: number;
-                timestamp: number;
-              };
-              price =
-                (realTimeData.priceInLamports * solPrice) /
-                10 ** NATIVE_MINT_DECIMALS;
+              const poolData = await program.account.liquidityPool.fetch(
+                liquidityPool
+              );
+              const priceInLamports = calculatePriceInLamports(
+                Number(poolData.reserveTokenSold)
+              );
+              price = (priceInLamports * solPrice) / 10 ** NATIVE_MINT_DECIMALS;
             }
-
             return {
               collectionMint: summary.all.find((y) => y.memberMint == x.id)
                 ?.collectionMint,
@@ -314,29 +280,26 @@ export function useGetOwnTokenBalance({
 }
 
 export async function getOwnerTokenBalance(connection: Rpc, address: string) {
-  const nonCompressedTokens = await fetch(
-    program.provider.connection.rpcEndpoint,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'getAssetsByOwner',
-        id: '',
-        params: {
-          page: 1,
-          limit: 1000,
-          displayOptions: {
-            showUnverifiedCollections: true,
-            showFungible: true,
-          },
-          ownerAddress: address,
+  const nonCompressedTokens = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'getAssetsByOwner',
+      id: '',
+      params: {
+        page: 1,
+        limit: 1000,
+        displayOptions: {
+          showUnverifiedCollections: true,
+          showFungible: true,
         },
-      }),
-    }
-  );
+        ownerAddress: address,
+      },
+    }),
+  });
   const nonCompressedData = (await nonCompressedTokens.json()).result
     .items as DAS.GetAssetResponse[];
 
@@ -345,6 +308,7 @@ export async function getOwnerTokenBalance(connection: Rpc, address: string) {
   );
 
   const compressedTokenMetadata = await getAssetBatch(
+    connection,
     compressedTokens.items.map((account) => account.mint.toBase58())
   );
   const compressedData = compressedTokens.items
@@ -358,7 +322,7 @@ export async function getOwnerTokenBalance(connection: Rpc, address: string) {
           compressedToken: true,
           token_info: {
             ...metadata.token_info,
-            balance: x.balance,
+            balance: Number(x.balance),
           },
         };
       }

@@ -80,7 +80,7 @@ export const ConvertToSolButton: FC = () => {
             <table className="table table-xs ">
               <thead>
                 <tr>
-                  <th>
+                  <th className="w-4">
                     <label>
                       <input
                         onChange={(e) => {
@@ -141,14 +141,17 @@ export const ConvertToSolButton: FC = () => {
                       </th>
                       <td>
                         <div className="flex items-center gap-2">
-                          <Image
-                            className={`rounded-full object-cover`}
-                            width={32}
-                            height={32}
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            src={proxify(x.content?.links?.image!, true)}
-                            alt={''}
-                          />
+                          <div className=" w-8 h-8 relative mask mask-circle">
+                            <Image
+                              fill={true}
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              alt=""
+                              src={proxify(
+                                x?.content?.links?.image || '',
+                                true
+                              )}
+                            />
+                          </div>
                           <div className="flex flex-col">
                             <span className="text-sm text-start">
                               {`${x.content?.metadata.name} ${
