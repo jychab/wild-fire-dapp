@@ -7,12 +7,7 @@ import { getTimeAgo } from '@/utils/helper/format';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { Blink } from '@dialectlabs/blinks';
 import { PublicKey } from '@solana/web3.js';
-import {
-  IconEye,
-  IconHeart,
-  IconThumbDown,
-  IconThumbUp,
-} from '@tabler/icons-react';
+import { IconEye, IconHeart } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FC, useState } from 'react';
@@ -148,22 +143,13 @@ export const Blinks: FC<BlinksProps> = ({
               onTouchStart={handleDoubleTap}
               className="z-10 absolute w-full aspect-square"
             >
-              {animateHeart &&
-                (liked ? (
-                  <div className="z-10 absolute inset-0 flex gap-2 top-1/2 justify-center">
-                    <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
-                      Like
-                      <IconThumbUp className=" fill-error" />
-                    </div>
+              {animateHeart && liked && (
+                <div className="z-10 absolute inset-0 flex gap-2 top-1/2 justify-center">
+                  <div className="animate-duration-400 animate-jump animate-ease-out opacity-75">
+                    <IconHeart size={120} className=" fill-error text-error" />
                   </div>
-                ) : (
-                  <div className="z-10 absolute inset-0 flex gap-2 top-1/2 justify-center">
-                    <div className="animate-duration-400 animate-jump animate-ease-out btn btn-outline btn-error text-3xl font-bold opacity-75">
-                      Dislike
-                      <IconThumbDown className=" fill-error" />
-                    </div>
-                  </div>
-                ))}
+                </div>
+              )}
             </div>
             {action ? (
               <Blink
@@ -225,7 +211,7 @@ export const BlinksFooter: FC<{
               className={`${liked ? 'fill-primary animate-jump' : ''}`}
             />
             <span className="stat-desc">{`${
-              blinksDetail.likesCount || 0
+              (blinksDetail.likesCount || 0) + (liked ? 1 : 0)
             } likes`}</span>
           </button>
         </div>
