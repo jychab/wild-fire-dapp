@@ -23,13 +23,18 @@ export async function deleteCampaign(id?: number, postId?: string) {
 
 export async function getAvailableAmountInEscrow(
   mint: string,
+  decimals: number,
   tokenProgram: string
 ) {
   const getAvailableAmountInEscrow = httpsCallable(
     functions,
     'getAvailableAmountInEscrow'
   );
-  const result = await getAvailableAmountInEscrow({ mint, tokenProgram });
+  const result = await getAvailableAmountInEscrow({
+    mint,
+    decimals,
+    tokenProgram,
+  });
   return result.data as number;
 }
 

@@ -866,9 +866,13 @@ export const MintInputField: FC<{
   const { publicKey } = useWallet();
   const [airdropAvailable, setAirdropAvailable] = useState(0);
   useEffect(() => {
-    if (mintToSendDetails?.token_info?.token_program) {
+    if (
+      mintToSendDetails?.token_info?.token_program &&
+      mintToSendDetails.token_info.decimals
+    ) {
       getAvailableAmountInEscrow(
         mintToSendDetails.id,
+        mintToSendDetails.token_info.decimals,
         mintToSendDetails?.token_info?.token_program
       ).then((result) => setAirdropAvailable(result));
     }

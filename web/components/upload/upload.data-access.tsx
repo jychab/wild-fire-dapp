@@ -57,20 +57,21 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
         if (
           postCampaign &&
           postCampaign.mintToSend &&
-          postCampaign.mintToSendTokenProgram
+          postCampaign.mintToSendTokenProgram &&
+          postCampaign.mintToSendDecimals
         ) {
-          const currentTokensRemaining =
-            postCampaign?.initialTokensRemaining || 0;
           let difference =
-            (postCampaign.tokensRemaining || 0) - currentTokensRemaining;
-
+            (postCampaign.tokensRemaining || 0) -
+            (postCampaign?.initialTokensRemaining || 0);
           postCampaign.budget = (postCampaign?.initialBudget || 0) + difference;
-          postCampaign.tokensRemaining = currentTokensRemaining + difference;
           const currentBalance = await getAvailableAmountInEscrow(
             postCampaign.mintToSend,
+            postCampaign.mintToSendDecimals,
             postCampaign.mintToSendTokenProgram
           );
-          difference = difference - Math.max(currentBalance, 0);
+          difference =
+            difference * 10 ** postCampaign.mintToSendDecimals -
+            Math.max(currentBalance, 0);
           if (difference > 0) {
             const ixs = await buildSendToDistributorIxs(
               postCampaign,
@@ -183,7 +184,7 @@ async function buildSendToDistributorIxs(
       mintToSend,
       destination,
       publicKey,
-      Math.round(difference * 10 ** (postCampaign.mintToSendDecimals || 0)),
+      difference,
       postCampaign.mintToSendDecimals || 0,
       undefined,
       tokenProgram
