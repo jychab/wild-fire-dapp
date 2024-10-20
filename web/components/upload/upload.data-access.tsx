@@ -130,7 +130,7 @@ export function useUploadMutation({ mint }: { mint: PublicKey | null }) {
           }),
         ]);
         revalidateTags('post');
-        transactionToast(res.signature);
+        transactionToast(res.signature ?? 'Success');
         router.push(`/profile?address=${wallet.publicKey?.toBase58()}`);
       }
     },

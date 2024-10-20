@@ -133,7 +133,7 @@ export function useRemoveContentMutation({
           }),
         ]);
         revalidateTags('post');
-        transactionToast(result.signature || 'Success');
+        transactionToast(result.signature ?? 'Success');
         router.push(`profile/?mint=${mint?.toBase58()}`);
       }
     },

@@ -162,7 +162,9 @@ export const UploadPost: FC<{
         );
         setTags(post.tags?.join(',') || '');
         setFiles(newFiles);
-        setDescription(post.description || '');
+        setDescription(
+          post.description.replace(/\n\nRewards\sRemaining.*$/s, '') || ''
+        );
         setTitle(post.title || '');
         setUseExistingBlink(false);
         setAction(
@@ -452,8 +454,8 @@ export const UploadPost: FC<{
         )}
         {!useExistingBlink && (
           <textarea
-            className="textarea textarea-bordered w-full text-base"
-            rows={3}
+            className="textarea textarea-bordered w-full text-base scrollbar-none"
+            rows={5}
             placeholder="Description"
             value={description}
             onChange={handleInputChange(setDescription)}

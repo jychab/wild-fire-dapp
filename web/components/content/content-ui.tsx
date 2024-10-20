@@ -102,7 +102,11 @@ export const UserProfile: FC<{
             isAuthorized(tokenState, publicKey, metadata)) && (
             <div className="dropdown dropdown-end">
               <div tabIndex={0} role="button" className="">
-                <IconDotsVertical />
+                {removeContentMutation.isPending ? (
+                  <div className="loading loading-spinner" />
+                ) : (
+                  <IconDotsVertical />
+                )}
               </div>
               <ul
                 tabIndex={0}
@@ -124,7 +128,7 @@ export const UserProfile: FC<{
                     }
                   >
                     {removeContentMutation.isPending ? (
-                      <div className="loading loading-spinner loading-sm" />
+                      <div className="loading loading-spinner" />
                     ) : (
                       <>
                         <IconTrash />
