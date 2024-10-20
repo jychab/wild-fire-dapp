@@ -3,9 +3,10 @@ import { formatLargeNumber } from '@/utils/helper/format';
 import { DAS } from '@/utils/types/das';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { IconWallet } from '@tabler/icons-react';
+import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import { FC, useState } from 'react';
-import { useWallet } from 'unified-wallet-adapter-with-telegram';
+import { useConnection, useWallet } from 'unified-wallet-adapter-with-telegram';
 import { useGetTokenPrice } from '../trading/trading-data-access';
 import { useGetSummary } from '../trending/trending-data-access';
 import {
@@ -18,6 +19,7 @@ export const ConvertToSolButton: FC = () => {
   const [filteredTokenBalances, setFilteredTokenBalances] = useState<
     DAS.GetAssetResponse[]
   >([]);
+  const { connection } = useConnection();
   const { data: solPrice } = useGetTokenPrice({ mint: NATIVE_MINT });
   const { data: summary } = useGetSummary();
   const { data: tokenBalances } = useGetOwnTokenBalance({
@@ -25,6 +27,7 @@ export const ConvertToSolButton: FC = () => {
     summary: summary,
     solPrice,
   });
+  const queryClient = useQueryClient();
   const sellMutation = useMultipleSellMutation();
   const handleConvert = async () => {
     if (!publicKey) return;
@@ -48,11 +51,22 @@ export const ConvertToSolButton: FC = () => {
         </span>
       )}
       <button
-        onClick={() => {
+        onClick={async () => {
           if (publicKey) {
-            (
-              document.getElementById('convert')! as HTMLDialogElement
-            ).showModal();
+            queryClient.invalidateQueries({
+              queryKey: [
+                'get-asset-by-owner',
+                {
+                  endpoint: connection.rpcEndpoint,
+                  address: publicKey,
+                  summary,
+                  solPrice,
+                },
+              ],
+            }),
+              (
+                document.getElementById('convert')! as HTMLDialogElement
+              ).showModal();
           }
         }}
         className="group-hover:text-success"

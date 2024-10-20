@@ -37,10 +37,11 @@ export const Blinks: FC<BlinksProps> = ({
 }) => {
   const { setShowModal } = useUnifiedWalletContext();
   const { publicKey } = useWallet();
-  const { adapter } = useActionsRegistry();
+  const { adapter, isRegistryLoaded } = useActionsRegistry();
   const { data: action } = useGetActionFromApiUrlQuery({
     url: blinksDetail?.url,
     adapter,
+    isRegistryLoaded,
   });
   const [trade, setTrade] = useState(initialTrade);
   const [liked, setLiked] = useState(blinksDetail?.liked);

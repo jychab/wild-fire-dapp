@@ -146,12 +146,17 @@ export function useRemoveContentMutation({
 export function useGetActionFromApiUrlQuery({
   url,
   adapter,
+  isRegistryLoaded,
 }: {
   url: string | undefined;
   adapter: ActionConfig | null;
+  isRegistryLoaded: boolean;
 }) {
   return useQuery({
-    queryKey: ['get-action', { url, adapter: adapter != null }],
+    queryKey: [
+      'get-action',
+      { url, adapter: adapter?.connect, isRegistryLoaded },
+    ],
     queryFn: async () => {
       if (!adapter || !url) return null;
       let apiUrl = await unfurlUrlToActionApiUrl(url);
