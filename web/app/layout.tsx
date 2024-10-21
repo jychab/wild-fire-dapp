@@ -23,6 +23,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://proxify.blinksfeed.com" />
         <link rel="preconnect" href="googleapis.com" />
         <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+        <link rel="preconnect" href="https://platform.twitter.com" />
       </head>
       <body>
         <SolanaProvider>

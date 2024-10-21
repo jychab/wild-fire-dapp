@@ -80,7 +80,12 @@ export async function fetchPostByCategories(
       sort_by: '_text_match:desc, createdAt:desc',
       limit,
     };
-    payload = { ...payload, filter_by: `createdAt:>${startAfter}` };
+    if (startAfter) {
+      payload = {
+        ...payload,
+        filter_by: `createdAt:>${Math.round(startAfter)}`,
+      };
+    }
     const searchResults = await typeSenseClient
       .collections(collections)
       .documents()

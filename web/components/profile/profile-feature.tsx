@@ -1,11 +1,13 @@
 'use client';
 
+import { useRelativePathIfPossbile } from '@/utils/helper/endpoints';
 import { checkIfMetadataIsTemporary } from '@/utils/helper/format';
 import { getDerivedMint } from '@/utils/helper/mint';
 import { DAS } from '@/utils/types/das';
 import { PublicKey } from '@solana/web3.js';
 import { IconBookmark, IconChartLine, IconPolaroid } from '@tabler/icons-react';
-import { FC, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { FC } from 'react';
 import { useWallet } from 'unified-wallet-adapter-with-telegram';
 import { TradingPanel } from '../trading/trading.ui';
 import { useGetPostsFromMint, useGetTokenDetails } from './profile-data-access';
@@ -18,17 +20,24 @@ export enum ProfileTabsEnum {
 }
 interface ProfileProps {
   selectedTab: ProfileTabsEnum;
-  setSelectedTab: (value: ProfileTabsEnum) => void;
   metadata: DAS.GetAssetResponse | null | undefined;
   isOwner: boolean;
 }
 
 export const ProfileTabs: FC<ProfileProps> = ({
   selectedTab,
-  setSelectedTab,
   metadata,
   isOwner,
 }) => {
+  const router = useRouter();
+  const pathName = usePathname();
+  const searchParams = useSearchParams();
+  function updateTabParameter(url: string, newTabValue: ProfileTabsEnum) {
+    const urlObject = new URL('https://blinksfeed.com' + url);
+    urlObject.searchParams.delete('tab');
+    urlObject.searchParams.set('tab', newTabValue);
+    return useRelativePathIfPossbile(urlObject.toString());
+  }
   return (
     <div
       role="tablist"
@@ -44,7 +53,14 @@ export const ProfileTabs: FC<ProfileProps> = ({
           role="tab"
           className="hidden"
           checked={selectedTab == ProfileTabsEnum.POSTS}
-          onChange={() => setSelectedTab(ProfileTabsEnum.POSTS)}
+          onChange={() =>
+            router.push(
+              updateTabParameter(
+                `${pathName}?${searchParams}`,
+                ProfileTabsEnum.POSTS
+              )
+            )
+          }
         />
         <IconPolaroid />
       </label>
@@ -59,7 +75,14 @@ export const ProfileTabs: FC<ProfileProps> = ({
             role="tab"
             className="hidden"
             checked={selectedTab == ProfileTabsEnum.TRADE}
-            onChange={() => setSelectedTab(ProfileTabsEnum.TRADE)}
+            onChange={() =>
+              router.push(
+                updateTabParameter(
+                  `${pathName}?${searchParams}`,
+                  ProfileTabsEnum.TRADE
+                )
+              )
+            }
           />
           <IconChartLine />
         </label>
@@ -75,7 +98,14 @@ export const ProfileTabs: FC<ProfileProps> = ({
             role="tab"
             className="hidden"
             checked={selectedTab == ProfileTabsEnum.FAVOURTIES}
-            onChange={() => setSelectedTab(ProfileTabsEnum.FAVOURTIES)}
+            onChange={() =>
+              router.push(
+                updateTabParameter(
+                  `${pathName}?${searchParams}`,
+                  ProfileTabsEnum.FAVOURTIES
+                )
+              )
+            }
           />
           <IconBookmark />
         </label>
@@ -87,8 +117,8 @@ export const ProfileTabs: FC<ProfileProps> = ({
 export const ProfileFeature: FC<{
   address: string | null;
   mint: string | null;
-}> = ({ address, mint }) => {
-  const [selectedTab, setSelectedTab] = useState(ProfileTabsEnum.POSTS);
+  selectedTab?: ProfileTabsEnum;
+}> = ({ address, mint, selectedTab = ProfileTabsEnum.POSTS }) => {
   const { publicKey } = useWallet();
   const collectionMint = mint
     ? new PublicKey(mint)
@@ -116,7 +146,6 @@ export const ProfileFeature: FC<{
         <div className="flex flex-col flex-1 h-full w-full">
           <ProfileTabs
             selectedTab={selectedTab}
-            setSelectedTab={setSelectedTab}
             metadata={metadata}
             isOwner={isOwner}
           />

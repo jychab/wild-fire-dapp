@@ -2,21 +2,14 @@ import { Sentiment } from '@/utils/enums/post';
 import { validatePost } from '@/utils/firebase/functions';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
-import {
-  IconBrandTelegram,
-  IconBrandTwitterFilled,
-  IconCheck,
-  IconShare3,
-} from '@tabler/icons-react';
+import { IconBrandTelegram, IconCheck, IconShare3 } from '@tabler/icons-react';
+import Link from 'next/link';
 import { FC, useState } from 'react';
 
 export const ShareContent: FC<{
   blinksDetail: PostBlinksDetail;
 }> = ({ blinksDetail }) => {
   const [isCopied, setIsCopied] = useState(false);
-  const [url, setUrl] = useState(
-    `https://t.me/blinksfeedbot/blinksfeed?startapp=${blinksDetail.mint}_${blinksDetail.id}`
-  );
   const handleCopy = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -31,6 +24,17 @@ export const ShareContent: FC<{
     }
   };
 
+  const handleShare = async () => {
+    if (!blinksDetail.memberMint) return;
+    if (publicKey) {
+      await validatePost(
+        blinksDetail.memberMint,
+        blinksDetail.mint,
+        blinksDetail.id,
+        Sentiment.SHARE
+      );
+    }
+  };
   return (
     <>
       <button
@@ -62,40 +66,38 @@ export const ShareContent: FC<{
               <button className="btn btn-sm btn-circle btn-ghost">✕</button>
             </form>
           </div>
-          <div className="flex justify-center items-center gap-8">
-            <button
-              onClick={() =>
-                setUrl(
-                  `https://t.me/blinksfeedbot/blinksfeed?startapp=${blinksDetail.mint}_${blinksDetail.id}`
-                )
-              }
+          <div className="flex justify-center items-center gap-4">
+            <Link
+              className="btn btn-sm rounded-full bg-black hover:bg-base-300"
+              href={`https://t.me/share/url?url=https://t.me/blinksfeedbot/blinksfeed?startapp=${blinksDetail.mint}_${blinksDetail.id}`}
+              target="_blank"
+              onClick={() => handleShare()}
             >
-              <IconBrandTelegram size={40} />
-            </button>
-            <button
-              onClick={() =>
-                setUrl(
-                  `https://blinksfeed.com/post?mint=${blinksDetail.mint}&id=${blinksDetail.id}`
-                )
-              }
+              <IconBrandTelegram />
+              <span>Telegram</span>
+            </Link>
+            <Link
+              href="https://twitter.com/share"
+              className="twitter-share-button"
+              data-url={blinksDetail.url}
+              data-text=""
+              data-show-count="false"
+              data-size="large"
+              onClick={() => handleShare()}
             >
-              <IconBrandTwitterFilled size={40} />
-            </button>
+              Tweet
+            </Link>
+            <script
+              async
+              src="https://platform.twitter.com/widgets.js"
+            ></script>
           </div>
           <label className="input input-bordered flex gap-2 justify-between items-center">
-            <span className="w-full truncate ">{url}</span>
+            <span className="w-full truncate ">{blinksDetail.url}</span>
             <button
               onClick={() => {
-                if (!blinksDetail.memberMint) return;
-                if (publicKey) {
-                  validatePost(
-                    blinksDetail.memberMint,
-                    blinksDetail.mint,
-                    blinksDetail.id,
-                    Sentiment.SHARE
-                  );
-                }
-                handleCopy(url);
+                handleShare();
+                handleCopy(blinksDetail.url);
               }}
               className="btn btn-sm btn-primary"
             >

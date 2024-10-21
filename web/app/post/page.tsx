@@ -37,7 +37,7 @@ export async function generateMetadata({
 }
 
 export default async function Page({ searchParams }: Props) {
-  const { mint, id, trade } = searchParams;
+  const { mint, id, tab } = searchParams;
   const post = await fetchPost(mint as string, id as string);
   return (
     <div className="flex flex-col sm:p-4 items-center w-full">
@@ -45,7 +45,7 @@ export default async function Page({ searchParams }: Props) {
         <Blinks
           blinksDetail={post}
           editable={true}
-          initialTrade={trade === 'true'}
+          initialTrade={tab === 'trade'}
         />
       </div>
     </div>
