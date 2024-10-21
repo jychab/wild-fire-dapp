@@ -50,6 +50,7 @@ export const Blinks: FC<BlinksProps> = ({
   }, [action, adapter]);
   const [trade, setTrade] = useState(initialTrade);
   const [liked, setLiked] = useState(blinksDetail?.liked);
+  const [viewed, setViewed] = useState(blinksDetail?.viewed);
   const [animateHeart, setAnimateHeart] = useState(false);
   const [lastTap, setLastTap] = useState<number | null>(null);
 
@@ -64,6 +65,18 @@ export const Blinks: FC<BlinksProps> = ({
       setLastTap(currentTime); // Otherwise, set this as the last tap time
     }
   };
+
+  useEffect(() => {
+    if (blinksDetail?.memberMint && !viewed) {
+      validatePost(
+        blinksDetail.memberMint,
+        blinksDetail.mint,
+        blinksDetail.id,
+        Sentiment.VIEWED
+      );
+      setViewed(true);
+    }
+  }, [viewed]);
 
   const toggleLike = (like: boolean) => {
     if (!blinksDetail?.memberMint || !publicKey) {

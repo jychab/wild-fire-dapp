@@ -21,6 +21,7 @@ export interface PostBlinksDetail {
   likesCount?: number;
   sharesCount?: number;
   viewsCount?: number;
+  viewed?: boolean;
   liked?: boolean;
 }
 

@@ -1,6 +1,14 @@
 import { BN } from '@coral-xyz/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where,
+} from 'firebase/firestore';
 import { PROGRAM_ID } from '../consts';
 import { Scope } from '../enums/das';
 import { db } from '../firebase/firebase';
@@ -104,4 +112,44 @@ export async function getHolders(mint: string) {
   } else {
     return null;
   }
+}
+export async function fetchTokenDetails(
+  mint?: PublicKey,
+  memberMint?: PublicKey
+) {
+  const docData = memberMint
+    ? (
+        await getDocs(
+          query(
+            collection(db, `Mint`),
+            where('memberMint', '==', memberMint?.toBase58()),
+            limit(1)
+          )
+        )
+      ).docs[0]
+    : await getDoc(doc(db, `Mint/${mint?.toBase58()}`));
+  if (docData.exists()) {
+    const parsedData = JSON.parse(docData.data().das) as DAS.GetAssetResponse;
+    if (
+      parsedData.content?.links &&
+      !parsedData.content.links.image &&
+      parsedData.content?.json_uri
+    ) {
+      parsedData.content.links.image = (
+        await (await fetch(parsedData.content?.json_uri)).json()
+      ).image as string;
+    }
+    return {
+      ...parsedData,
+      collectionMint: docData.id,
+    } as DAS.GetAssetResponse;
+  } else {
+    const docData = await getDoc(
+      doc(db, `Mint/${mint?.toBase58()}/Temporary/Profile`)
+    );
+    if (docData.exists()) {
+      return { ...docData.data(), temporary: true } as DAS.GetAssetResponse;
+    }
+  }
+  return null;
 }

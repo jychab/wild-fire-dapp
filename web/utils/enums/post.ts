@@ -16,4 +16,5 @@ export enum Sentiment {
   DISLIKE = 'dislike',
   SHARE = 'share',
   TRADE = 'trade',
+  VIEWED = 'viewed',
 }

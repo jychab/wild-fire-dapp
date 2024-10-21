@@ -8,3 +8,9 @@ export enum TransactionType {
   PostCampaign = 6,
   WithdrawFromPostCampaign = 7,
 }
+
+export enum GlobalTransactionType {
+  Buy = 0,
+  Sell = 1,
+  Win = 2,
+}

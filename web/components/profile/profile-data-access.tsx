@@ -1,7 +1,7 @@
 import { SHORT_STALE_TIME } from '@/utils/consts';
 import { db } from '@/utils/firebase/firebase';
+import { fetchTokenDetails } from '@/utils/helper/mint';
 import { fetchPostByCreator, fetchPostByMint } from '@/utils/helper/post';
-import { DAS } from '@/utils/types/das';
 import { PostBlinksDetail } from '@/utils/types/post';
 import { PublicKey } from '@solana/web3.js';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -64,30 +64,7 @@ export function useGetTokenDetails({ mint }: { mint: PublicKey | null }) {
     queryKey: ['get-token-details', { mint }],
     queryFn: async () => {
       if (!mint) return null;
-      const docData = await getDoc(doc(db, `Mint/${mint.toBase58()}`));
-      if (docData.exists()) {
-        const parsedData = JSON.parse(
-          docData.data().das
-        ) as DAS.GetAssetResponse;
-        if (
-          parsedData.content?.links &&
-          !parsedData.content.links.image &&
-          parsedData.content?.json_uri
-        ) {
-          parsedData.content.links.image = (
-            await (await fetch(parsedData.content?.json_uri)).json()
-          ).image as string;
-        }
-        return parsedData;
-      } else {
-        const docData = await getDoc(
-          doc(db, `Mint/${mint.toBase58()}/Temporary/Profile`)
-        );
-        if (docData.exists()) {
-          return { ...docData.data(), temporary: true } as DAS.GetAssetResponse;
-        }
-      }
-      return null;
+      return fetchTokenDetails(mint);
     },
     enabled: !!mint,
     staleTime: SHORT_STALE_TIME,
